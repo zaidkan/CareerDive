@@ -1,0 +1,23 @@
+{
+  "name": "@sim/ai",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src test",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.55.1",
+    "@sim/schemas": "workspace:*",
+    "zod": "^3.25.56",
+    "zod-to-json-schema": "^3.24.5"
+  },
+  "devDependencies": {
+    "@sim/core": "workspace:*"
+  }
+}

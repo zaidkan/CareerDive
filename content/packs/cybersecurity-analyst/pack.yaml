@@ -1,0 +1,76 @@
+career:
+  id: cybersecurity_analyst
+  title: Junior Cybersecurity Analyst
+  packVersion: 1.0.0
+  reviewStatus: approved
+  lastReviewed: 2026-06-01
+  nextReview: 2027-06-01
+  reviewingRoles:
+    - practitioner
+    - accessibility
+    - bias
+  sources:
+    - title: U.S. Bureau of Labor Statistics Occupational Outlook Handbook
+      url: https://www.bls.gov/ooh/computer-and-information-technology/information-security-analysts.htm
+    - title: NIST NICE Workforce Framework for Cybersecurity
+      url: https://www.nist.gov/itl/applied-cybersecurity/nice/nice-framework-resource-center
+  rhythms:
+    - routine_monitoring
+    - quiet_investigation
+  systems:
+    - alert_dashboard
+    - ticket_queue
+    - email
+    - knowledge_base
+    - team_chat
+  events:
+    - suspicious_login
+    - false_positive
+    - phishing_report
+    - incomplete_handoff
+    - routine_alert_review
+  rhythmBiasReview:
+    ordinaryWorkRepresented: true
+    calmWorkRepresented: true
+    technicalAndRelationalWorkRepresented: true
+
+scenario:
+  location: operations_center
+  manager: Morgan
+  maxAiCostUsd: 0.05
+  eventTemplates:
+    suspicious_login:
+      deadlineMinutes: 40
+      availableActions:
+        - review_alert
+        - inspect_login_context
+        - dismiss_alert
+        - escalate_alert
+        - document_ticket
+        - ask_manager
+      prohibitedOutcomes:
+        - invented_credentials
+        - unrestricted_system_access
+        - silent_safety_bypass
+    false_positive:
+      deadlineMinutes: 60
+      availableActions:
+        - review_alert
+        - document_ticket
+    phishing_report:
+      deadlineMinutes: 50
+      availableActions:
+        - review_alert
+        - escalate_alert
+        - document_ticket
+    incomplete_handoff:
+      deadlineMinutes: 30
+      availableActions:
+        - ask_manager
+        - document_ticket
+    routine_alert_review:
+      deadlineMinutes: 90
+      availableActions:
+        - review_alert
+        - dismiss_alert
+        - document_ticket

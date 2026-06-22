@@ -1,0 +1,82 @@
+import { describe, expect, it } from "vitest";
+import {
+  ActionUnavailableError,
+  applyAction,
+  availableActions,
+  createInitialWorldState,
+  foldActionLog,
+  toClientView,
+} from "../src/index.js";
+
+describe("deterministic simulation core", () => {
+  it("keeps hidden assessment state out of every client view", () => {
+    const state = createInitialWorldState("session-1", 42);
+    const view = toClientView(state);
+
+    expect(view).not.toHaveProperty("hidden");
+    expect(JSON.stringify(view)).not.toContain("trust");
+    expect(JSON.stringify(view)).not.toMatch(/\b\d+%/);
+  });
+
+  it("advances simulated time and fires a delayed consequence", () => {
+    let state = createInitialWorldState("session-1", 42);
+
+    state = applyAction(state, {
+      id: "review_alert",
+      actorId: "user",
+    }).state;
+    state = applyAction(state, {
+      id: "dismiss_alert",
+      actorId: "user",
+    }).state;
+    const turn = applyAction(state, {
+      id: "document_ticket",
+      actorId: "user",
+    });
+
+    expect(turn.state.simClock).toBe(45);
+    expect(turn.state.events[0]?.status).toBe("escalated");
+    expect(turn.effects).toContainEqual(
+      expect.objectContaining({
+        type: "event_escalated",
+        eventId: "suspicious-login-1",
+      }),
+    );
+  });
+
+  it("replays an action log into identical canonical state", () => {
+    const initial = createInitialWorldState("session-1", 99);
+    const actions = [
+      { id: "review_alert", actorId: "user" },
+      { id: "inspect_login_context", actorId: "user" },
+      { id: "escalate_alert", actorId: "user" },
+    ] as const;
+
+    const direct = actions.reduce(
+      (state, action) => applyAction(state, action).state,
+      initial,
+    );
+    const replayed = foldActionLog(
+      initial,
+      actions.map((action, index) => ({
+        sequence: index + 1,
+        action,
+      })),
+    );
+
+    expect(replayed).toEqual(direct);
+  });
+
+  it("rejects actions unavailable in current state without mutation", () => {
+    const state = createInitialWorldState("session-1", 42);
+    const before = structuredClone(state);
+
+    expect(() =>
+      applyAction(state, { id: "escalate_alert", actorId: "user" }),
+    ).toThrow(ActionUnavailableError);
+    expect(state).toEqual(before);
+    expect(availableActions(state).map(({ id }) => id)).not.toContain(
+      "escalate_alert",
+    );
+  });
+});

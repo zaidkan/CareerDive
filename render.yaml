@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: career-sim-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile.server
+    healthCheckPath: /health
+    autoDeploy: false
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false
+      - key: INSTITUTIONAL_DEPLOYMENT_ENABLED
+        value: "false"
+
+  - type: web
+    name: career-sim-web
+    runtime: docker
+    dockerfilePath: ./Dockerfile.web
+    autoDeploy: false
+    envVars:
+      - key: VITE_SERVER_URL
+        sync: false

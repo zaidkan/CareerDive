@@ -1,0 +1,36 @@
+{
+  "name": "@sim/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/main.ts",
+    "lint": "eslint src test",
+    "start": "tsx src/main.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.0.1",
+    "@fastify/rate-limit": "^10.3.0",
+    "@anthropic-ai/sdk": "^0.55.1",
+    "@sim/ai": "workspace:*",
+    "@sim/core": "workspace:*",
+    "@sim/evidence": "workspace:*",
+    "@sim/safety": "workspace:*",
+    "@sim/schemas": "workspace:*",
+    "@supabase/supabase-js": "^2.50.0",
+    "@trpc/server": "^11.4.3",
+    "drizzle-orm": "^0.44.2",
+    "fastify": "^5.4.0",
+    "pino": "^9.7.0",
+    "postgres": "^3.4.7",
+    "zod": "^3.25.56"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.1"
+  }
+}
