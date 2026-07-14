@@ -1,11 +1,16 @@
-import type { ClientView, SimulationActionId } from "@sim/schemas";
+import type { ClientView } from "@sim/schemas";
 
 export function assertViewParity(
   left: ClientView,
   right: ClientView,
-): SimulationActionId[] {
-  const leftIds = left.availableActions.map(({ id }) => id).sort();
-  const rightIds = right.availableActions.map(({ id }) => id).sort();
+): string[] {
+  const actionKey = ({
+    id,
+    eventId,
+    systemId,
+  }: ClientView["availableActions"][number]) => `${id}:${eventId}:${systemId}`;
+  const leftIds = left.availableActions.map(actionKey).sort();
+  const rightIds = right.availableActions.map(actionKey).sort();
   if (JSON.stringify(leftIds) !== JSON.stringify(rightIds)) {
     throw new Error("View adapters expose different action sets");
   }

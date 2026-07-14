@@ -15,6 +15,22 @@ pnpm dev
 Web: `http://localhost:5173`
 API health: `http://localhost:3001/health`
 
+## Current playable shift
+
+Start an assessed shift, enter the workstation, and move between Alerts,
+Email, Tickets, Knowledge Base, and Team Chat. The expected path contains more
+than twenty targeted workplace actions across:
+
+- An incomplete shift handoff.
+- A suspicious-login investigation.
+- Overlapping routine monitoring.
+- An employee phishing report.
+- A calm false-positive review.
+
+Events arrive as simulated time advances. Earlier dismissal choices can create
+delayed consequences while later work is underway. Actions are deterministic
+and replayable; manager guidance cannot change canonical outcomes.
+
 Without `DATABASE_URL`, server uses in-memory repository for local development. Production requires Supabase URL, anon key, and Postgres connection string.
 
 ## Verification
