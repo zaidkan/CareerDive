@@ -26,7 +26,8 @@ const ACTIONS: Record<SimulationActionId, AvailableAction> = {
     eventId: "",
     systemId: "team_chat",
     label: "Confirm the handoff",
-    description: "Tell Morgan what remains open and what you will handle first.",
+    description:
+      "Tell Morgan what remains open and what you will handle first.",
     simulatedMinutes: 5,
   },
   review_alert: {
@@ -50,7 +51,8 @@ const ACTIONS: Record<SimulationActionId, AvailableAction> = {
     eventId: "",
     systemId: "alert_dashboard",
     label: "Compare account history",
-    description: "Compare recent sign-ins, failures, and normal account patterns.",
+    description:
+      "Compare recent sign-ins, failures, and normal account patterns.",
     simulatedMinutes: 10,
   },
   check_device_inventory: {
@@ -58,7 +60,8 @@ const ACTIONS: Record<SimulationActionId, AvailableAction> = {
     eventId: "",
     systemId: "knowledge_base",
     label: "Check device inventory",
-    description: "Confirm whether the device is enrolled and assigned to the employee.",
+    description:
+      "Confirm whether the device is enrolled and assigned to the employee.",
     simulatedMinutes: 10,
   },
   search_knowledge_base: {
@@ -66,7 +69,8 @@ const ACTIONS: Record<SimulationActionId, AvailableAction> = {
     eventId: "",
     systemId: "knowledge_base",
     label: "Check response procedure",
-    description: "Review the approved procedure and closure criteria for this event.",
+    description:
+      "Review the approved procedure and closure criteria for this event.",
     simulatedMinutes: 10,
   },
   dismiss_alert: {
@@ -98,7 +102,8 @@ const ACTIONS: Record<SimulationActionId, AvailableAction> = {
     eventId: "",
     systemId: "email",
     label: "Open phishing report",
-    description: "Read the employee's report without opening the suspicious link.",
+    description:
+      "Read the employee's report without opening the suspicious link.",
     simulatedMinutes: 5,
   },
   inspect_email_headers: {
@@ -114,7 +119,8 @@ const ACTIONS: Record<SimulationActionId, AvailableAction> = {
     eventId: "",
     systemId: "alert_dashboard",
     label: "Analyze link destination",
-    description: "Use the approved inspection tool to examine the destination safely.",
+    description:
+      "Use the approved inspection tool to examine the destination safely.",
     simulatedMinutes: 10,
   },
   quarantine_message: {
@@ -122,7 +128,8 @@ const ACTIONS: Record<SimulationActionId, AvailableAction> = {
     eventId: "",
     systemId: "alert_dashboard",
     label: "Quarantine matching message",
-    description: "Contain matching copies through the approved mail-security control.",
+    description:
+      "Contain matching copies through the approved mail-security control.",
     simulatedMinutes: 5,
   },
   notify_reporter: {
@@ -130,7 +137,8 @@ const ACTIONS: Record<SimulationActionId, AvailableAction> = {
     eventId: "",
     systemId: "email",
     label: "Update the reporter",
-    description: "Explain the safe next steps and confirm the report was received.",
+    description:
+      "Explain the safe next steps and confirm the report was received.",
     simulatedMinutes: 5,
   },
   ask_manager: {
@@ -718,32 +726,35 @@ export function toClientView(state: WorldState): ClientView {
     sessionKind: state.sessionKind,
     simClock: state.simClock,
     currentLocation: location,
-    events: state.events.map(
-      ({
-        id,
-        templateId,
-        title,
-        summary,
-        priority,
-        systemId,
-        status,
-        deadlineAt,
-        completedActionIds,
-        resolution,
-      }) => {
-      const event = {
-        id,
-        templateId,
-        title,
-        summary,
-        priority,
-        systemId,
-        status,
-        deadlineAt,
-        completedActionIds,
-      };
-      return resolution === undefined ? event : { ...event, resolution };
-    }),
+    events: state.events
+      .filter(({ status }) => status !== "pending")
+      .map(
+        ({
+          id,
+          templateId,
+          title,
+          summary,
+          priority,
+          systemId,
+          status,
+          deadlineAt,
+          completedActionIds,
+          resolution,
+        }) => {
+          const event = {
+            id,
+            templateId,
+            title,
+            summary,
+            priority,
+            systemId,
+            status,
+            deadlineAt,
+            completedActionIds,
+          };
+          return resolution === undefined ? event : { ...event, resolution };
+        },
+      ),
     availableActions: availableActions(state),
     operationalMessages,
     pacingMode: state.pacingMode,

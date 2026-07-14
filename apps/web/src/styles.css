@@ -2,7 +2,12 @@
   color: #dce8e8;
   background: #071111;
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
     sans-serif;
   font-synthesis: none;
   line-height: 1.5;
@@ -89,8 +94,10 @@ h1 {
 }
 
 .work-surface,
+.workplace-shell,
 .tutorial,
 .manager-context,
+.shift-briefing,
 .debrief-grid article,
 .privacy-note,
 section[aria-labelledby="structured-title"] {
@@ -102,11 +109,149 @@ section[aria-labelledby="structured-title"] {
   box-shadow: 0 22px 60px rgb(0 0 0 / 25%);
 }
 
-.manager-context {
+.manager-context,
+.shift-briefing {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: clamp(1rem, 4vw, 2rem);
   align-items: start;
+}
+
+.workspace-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #29413f;
+}
+
+.workspace-header time {
+  color: #a8c6c1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.workplace-shell {
+  padding: 0;
+  overflow: hidden;
+}
+
+.system-dock {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-bottom: 1px solid #29413f;
+  background: #081918;
+}
+
+.system-dock button {
+  display: grid;
+  gap: 0.25rem;
+  min-height: 4.5rem;
+  padding: 0.85rem;
+  border: 0;
+  border-right: 1px solid #29413f;
+  background: transparent;
+  cursor: pointer;
+}
+
+.system-dock button[aria-pressed="true"] {
+  color: #071111;
+  background: #86c9bc;
+}
+
+.system-dock small {
+  opacity: 0.75;
+}
+
+.workspace-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.36fr) minmax(0, 1fr);
+  min-height: 32rem;
+}
+
+.work-queue {
+  padding: 1.25rem;
+  border-right: 1px solid #29413f;
+  background: #0a1b1a;
+}
+
+.work-queue button {
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+  margin-bottom: 0.65rem;
+  padding: 0.9rem;
+  border: 1px solid #31504d;
+  border-radius: 0.6rem;
+  color: inherit;
+  background: #0e2322;
+  text-align: left;
+  cursor: pointer;
+}
+
+.work-queue button[aria-pressed="true"] {
+  border-color: #f2d379;
+  background: #18302e;
+}
+
+.work-queue small,
+.context-actions small,
+.detail-meta {
+  color: #a8c6c1;
+}
+
+.work-detail {
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+}
+
+.work-detail h3 {
+  max-width: 24ch;
+  margin-top: 1rem;
+  font-size: clamp(1.6rem, 3vw, 2.5rem);
+}
+
+.detail-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+}
+
+.resolution-note {
+  padding: 1rem;
+  border-left: 4px solid #86c9bc;
+  background: #0e2322;
+}
+
+.context-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.8rem;
+  margin-top: 2rem;
+}
+
+.context-actions button {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1rem;
+  border: 1px solid #42615e;
+  border-radius: 0.7rem;
+  color: inherit;
+  background: #122d2b;
+  text-align: left;
+  cursor: pointer;
+}
+
+.context-actions button:hover {
+  border-color: #86c9bc;
+}
+
+.workplace-shell .activity-log {
+  margin: 0;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid #29413f;
+  background: #081918;
 }
 
 .manager-profile {
@@ -226,5 +371,18 @@ section[aria-labelledby="structured-title"] {
   .site-header,
   .panel-heading {
     flex-direction: column;
+  }
+
+  .system-dock {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .work-queue {
+    border-right: 0;
+    border-bottom: 1px solid #29413f;
   }
 }

@@ -63,9 +63,9 @@ describe("parallel simulation views", () => {
   it("renders identical action ids in work surface and accessible mode", () => {
     const onAction = () => undefined;
     const work = render(<WorkSurface view={view} onAction={onAction} />);
-    const workIds = [...work.container.querySelectorAll("[data-action-id]")].map(
-      (element) => element.getAttribute("data-action-id"),
-    );
+    const workIds = [
+      ...work.container.querySelectorAll("[data-action-id]"),
+    ].map((element) => element.getAttribute("data-action-id"));
     work.unmount();
     const accessible = render(
       <AccessibleMode view={view} onAction={onAction} />,
@@ -103,6 +103,52 @@ describe("parallel simulation views", () => {
       /trust|compatibility|stress:\s*\d|\b\d+%/i,
     );
   });
+
+  it("opens work through professional systems instead of an answer grid", async () => {
+    const user = userEvent.setup();
+    const workplaceView: ClientView = {
+      ...view,
+      events: [
+        ...view.events,
+        {
+          id: "handoff-1",
+          templateId: "incomplete_handoff",
+          title: "Shift handoff",
+          summary: "The previous analyst left incomplete notes.",
+          priority: "normal",
+          systemId: "email",
+          status: "active",
+          deadlineAt: 35,
+          completedActionIds: [],
+        },
+      ],
+      availableActions: [
+        ...view.availableActions,
+        {
+          id: "read_handoff",
+          eventId: "handoff-1",
+          systemId: "email",
+          label: "Read shift handoff",
+          description: "Review the previous analyst's incomplete notes.",
+          simulatedMinutes: 5,
+        },
+      ],
+    };
+
+    render(<WorkSurface view={workplaceView} onAction={() => undefined} />);
+    expect(
+      screen.getByRole("navigation", { name: "Work systems" }),
+    ).toBeVisible();
+    await user.click(screen.getByRole("button", { name: /email/i }));
+
+    expect(
+      screen.getByRole("heading", { name: "Shift handoff" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: /read shift handoff/i }),
+    ).toBeVisible();
+    expect(screen.queryByLabelText("Available actions")).toBeNull();
+  });
 });
 
 describe("tutorial and debrief", () => {
@@ -122,7 +168,11 @@ describe("tutorial and debrief", () => {
         calls.push(input);
         return Promise.resolve({
           sessionId: `${input.sessionKind}-session`,
-          view: { ...view, sessionKind: input.sessionKind, pacingMode: input.pacingMode },
+          view: {
+            ...view,
+            sessionKind: input.sessionKind,
+            pacingMode: input.pacingMode,
+          },
         });
       },
       performAction: () => Promise.resolve(view),
@@ -131,7 +181,9 @@ describe("tutorial and debrief", () => {
 
     render(<App client={client} />);
 
-    expect(await screen.findByRole("heading", { name: "Practice tutorial" })).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: "Practice tutorial" }),
+    ).toBeVisible();
     expect(calls[0]).toEqual(
       expect.objectContaining({
         sessionKind: "tutorial",
@@ -142,8 +194,31 @@ describe("tutorial and debrief", () => {
 
   it("labels tutorial as practice and explains that it records no evidence", () => {
     render(<Tutorial />);
-    expect(screen.getByRole("heading", { name: "Practice tutorial" })).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "Practice tutorial" }),
+    ).toBeVisible();
     expect(screen.getByText(/does not record evidence/i)).toBeVisible();
+  });
+
+  it("welcomes the user into the shift before opening the workstation", async () => {
+    const user = userEvent.setup();
+    const client = {
+      createSession: () => Promise.resolve({ sessionId: "session-1", view }),
+      performAction: () => Promise.resolve(view),
+      getDebrief: () => Promise.reject(new Error("not needed")),
+    };
+
+    render(<App client={client} />);
+    await user.click(
+      await screen.findByRole("button", { name: "Start assessed shift" }),
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Welcome to your shift" }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Open workstation" }),
+    ).toBeVisible();
   });
 
   it("opens manager context after asking for guidance", async () => {
@@ -190,6 +265,10 @@ describe("tutorial and debrief", () => {
     await user.click(
       await screen.findByRole("button", { name: "Start assessed shift" }),
     );
+    await user.click(
+      await screen.findByRole("button", { name: "Open workstation" }),
+    );
+    await user.click(screen.getByRole("button", { name: /team chat/i }));
     await user.click(
       await screen.findByRole("button", { name: /ask manager for context/i }),
     );

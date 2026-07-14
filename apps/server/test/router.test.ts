@@ -94,8 +94,12 @@ describe("authenticated simulation API", () => {
       eventId: "suspicious-login-1",
     });
 
-    expect(repository.evidenceFor("user-1", assessed.sessionId)).toHaveLength(1);
-    expect(repository.evidenceFor("user-1", tutorial.sessionId)).toHaveLength(0);
+    expect(repository.evidenceFor("user-1", assessed.sessionId)).toHaveLength(
+      1,
+    );
+    expect(repository.evidenceFor("user-1", tutorial.sessionId)).toHaveLength(
+      0,
+    );
   });
 
   it("records evidence against the exact targeted workplace event", async () => {
@@ -112,9 +116,9 @@ describe("authenticated simulation API", () => {
       eventId: "handoff-1",
     });
 
-    expect(repository.evidenceFor("user-1", created.sessionId)[0]?.eventId).toBe(
-      "handoff-1",
-    );
+    expect(
+      repository.evidenceFor("user-1", created.sessionId)[0]?.eventId,
+    ).toBe("handoff-1");
   });
 
   it("rejects a valid action aimed at the wrong event", async () => {
@@ -200,22 +204,15 @@ describe("authenticated simulation API", () => {
 describe("mixed-age policy and bounded dialogue", () => {
   it("derives guardian requirements from jurisdiction config", () => {
     expect(
-      resolveConsentRequirement(
-        DEFAULT_JURISDICTION_POLICIES,
-        "US-NY",
-        15,
-      ),
+      resolveConsentRequirement(DEFAULT_JURISDICTION_POLICIES, "US-NY", 15),
     ).toEqual({
       ageTier: "teen",
       guardianConsentRequired: true,
       institutionalUseAllowed: false,
     });
     expect(
-      resolveConsentRequirement(
-        DEFAULT_JURISDICTION_POLICIES,
-        "US-NY",
-        19,
-      ).guardianConsentRequired,
+      resolveConsentRequirement(DEFAULT_JURISDICTION_POLICIES, "US-NY", 19)
+        .guardianConsentRequired,
     ).toBe(false);
   });
 

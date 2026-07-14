@@ -8,6 +8,7 @@ import {
   type Debrief,
   type AvailableAction,
   type SimulationActionId,
+  type WorkSystemId,
 } from "@sim/schemas";
 import { z } from "zod";
 
@@ -92,52 +93,184 @@ type ModeProps = {
 };
 
 export function WorkSurface({ view, onAction }: ModeProps) {
+  const initialSystem: WorkSystemId = view.events.some(
+    ({ systemId }) => systemId === "email",
+  )
+    ? "email"
+    : (view.events[0]?.systemId ?? "alert_dashboard");
+  const [systemId, setSystemId] = useState<WorkSystemId>(initialSystem);
+  const [selectedEventId, setSelectedEventId] = useState<string>();
+  const visibleEvents = view.events.filter(
+    ({ status }) => status !== "pending",
+  );
+  const systemEvents = visibleEvents.filter(
+    (event) =>
+      event.systemId === systemId ||
+      view.availableActions.some(
+        (action) => action.eventId === event.id && action.systemId === systemId,
+      ),
+  );
+  const selectedEvent =
+    systemEvents.find(({ id }) => id === selectedEventId) ?? systemEvents[0];
+  const contextualActions = view.availableActions.filter(
+    (action) =>
+      action.systemId === systemId &&
+      (action.eventId === selectedEvent?.id || action.eventId === "shift"),
+  );
+
   return (
-    <section className="work-surface" aria-labelledby="dashboard-title">
-      <div className="panel-heading">
+    <section className="workplace-shell" aria-labelledby="workspace-title">
+      <header className="workspace-header">
         <div>
-          <p className="eyebrow">Alert dashboard</p>
-          <h2 id="dashboard-title">Active queue</h2>
+          <p className="eyebrow">Security operations workstation</p>
+          <h2 id="workspace-title">Analyst workspace</h2>
         </div>
-        <time
-          aria-label={`${String(view.simClock)} simulated minutes elapsed`}
-        >
+        <time aria-label={`${String(view.simClock)} simulated minutes elapsed`}>
           Shift +{view.simClock}m
         </time>
+      </header>
+
+      <nav className="system-dock" aria-label="Work systems">
+        {WORK_SYSTEMS.map((system) => {
+          const count = visibleEvents.filter(
+            (event) =>
+              event.systemId === system.id ||
+              view.availableActions.some(
+                (action) =>
+                  action.eventId === event.id && action.systemId === system.id,
+              ),
+          ).length;
+          return (
+            <button
+              aria-pressed={systemId === system.id}
+              key={system.id}
+              onClick={() => {
+                setSystemId(system.id);
+                setSelectedEventId(undefined);
+              }}
+              type="button"
+            >
+              <span>{system.label}</span>
+              <small>
+                {count > 0 ? `${String(count)} open` : "No open work"}
+              </small>
+            </button>
+          );
+        })}
+      </nav>
+
+      <div className="workspace-grid">
+        <aside
+          className="work-queue"
+          aria-label={`${systemLabel(systemId)} items`}
+        >
+          <p className="eyebrow">{systemLabel(systemId)}</p>
+          {systemEvents.length === 0 ? (
+            <p>No current item in this system.</p>
+          ) : (
+            systemEvents.map((event) => (
+              <button
+                aria-pressed={selectedEvent?.id === event.id}
+                key={event.id}
+                onClick={() => {
+                  setSelectedEventId(event.id);
+                }}
+                type="button"
+              >
+                <span>{event.title}</span>
+                <small>
+                  {event.priority} priority ·{" "}
+                  {event.status.replaceAll("_", " ")}
+                </small>
+              </button>
+            ))
+          )}
+        </aside>
+
+        <article className="work-detail">
+          {selectedEvent ? (
+            <>
+              <div className="detail-meta">
+                <span className={`status status-${selectedEvent.status}`}>
+                  {selectedEvent.status.replaceAll("_", " ")}
+                </span>
+                <span>Due by shift +{selectedEvent.deadlineAt}m</span>
+              </div>
+              <h3>{selectedEvent.title}</h3>
+              <p>{selectedEvent.summary}</p>
+              {selectedEvent.resolution ? (
+                <p className="resolution-note">{selectedEvent.resolution}</p>
+              ) : null}
+              <div
+                className="context-actions"
+                aria-label={`Actions for ${selectedEvent.title}`}
+              >
+                {contextualActions.length === 0 ? (
+                  <p>
+                    Continue this work in another system or review another item.
+                  </p>
+                ) : (
+                  contextualActions.map((action) => (
+                    <button
+                      data-action-id={action.id}
+                      data-event-id={action.eventId}
+                      key={`${action.id}:${action.eventId}`}
+                      onClick={() => {
+                        onAction(action);
+                      }}
+                      type="button"
+                    >
+                      <span>{action.label}</span>
+                      <small>{action.description}</small>
+                      <small>{action.simulatedMinutes} simulated minutes</small>
+                    </button>
+                  ))
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <h3>{systemLabel(systemId)}</h3>
+              <p>
+                {contextualActions.length > 0
+                  ? "Your assigned work is ready for final handoff."
+                  : "Select another system or wait for new assigned work."}
+              </p>
+              {contextualActions.map((action) => (
+                <div className="context-actions" key={action.id}>
+                  <button
+                    data-action-id={action.id}
+                    data-event-id={action.eventId}
+                    onClick={() => {
+                      onAction(action);
+                    }}
+                    type="button"
+                  >
+                    <span>{action.label}</span>
+                    <small>{action.description}</small>
+                  </button>
+                </div>
+              ))}
+            </>
+          )}
+        </article>
       </div>
 
-      <div className="event-list">
-        {view.events.map((event) => (
-          <article className="event-card" key={event.id}>
-            <span className={`status status-${event.status}`}>
-              {event.status.replaceAll("_", " ")}
-            </span>
-            <h3>{event.title}</h3>
-            {event.resolution ? <p>{event.resolution}</p> : null}
-          </article>
-        ))}
-      </div>
-
-      <div className="action-grid" aria-label="Available actions">
-        {view.availableActions.map((action) => (
-          <button
-            className="action-card"
-            data-action-id={action.id}
-            key={action.id}
-            onClick={() => {
-              onAction(action);
-            }}
-            type="button"
-          >
-            <span>{action.label}</span>
-            <small>{action.description}</small>
-            <small>{action.simulatedMinutes} simulated minutes</small>
-          </button>
-        ))}
-      </div>
       <OperationalMessages messages={view.operationalMessages} />
     </section>
   );
+}
+
+const WORK_SYSTEMS: Array<{ id: WorkSystemId; label: string }> = [
+  { id: "alert_dashboard", label: "Alerts" },
+  { id: "email", label: "Email" },
+  { id: "ticket_queue", label: "Tickets" },
+  { id: "knowledge_base", label: "Knowledge Base" },
+  { id: "team_chat", label: "Team Chat" },
+];
+
+function systemLabel(systemId: WorkSystemId): string {
+  return WORK_SYSTEMS.find(({ id }) => id === systemId)?.label ?? "Work system";
 }
 
 export function AccessibleMode({ view, onAction }: ModeProps) {
@@ -148,29 +281,45 @@ export function AccessibleMode({ view, onAction }: ModeProps) {
         Location: {view.currentLocation.name}. Simulated time elapsed:{" "}
         {view.simClock} minutes.
       </p>
-      <h3>Current events</h3>
-      <ul>
-        {view.events.map((event) => (
-          <li key={event.id}>
-            {event.title}: {event.status.replaceAll("_", " ")}
-          </li>
-        ))}
-      </ul>
-      <h3>Available actions</h3>
-      <div className="accessible-actions">
-        {view.availableActions.map((action) => (
-          <button
-            data-action-id={action.id}
-            key={action.id}
-            onClick={() => {
-              onAction(action);
-            }}
-            type="button"
-          >
-            {action.label}. {action.description}
-          </button>
-        ))}
-      </div>
+      {WORK_SYSTEMS.map((system) => {
+        const actions = view.availableActions.filter(
+          ({ systemId }) => systemId === system.id,
+        );
+        const events = view.events.filter(
+          (event) =>
+            event.systemId === system.id ||
+            actions.some(({ eventId }) => eventId === event.id),
+        );
+        if (actions.length === 0 && events.length === 0) return null;
+        return (
+          <section className="structured-system" key={system.id}>
+            <h3>{system.label}</h3>
+            <ul>
+              {events.map((event) => (
+                <li key={event.id}>
+                  <strong>{event.title}</strong>: {event.summary} Status:{" "}
+                  {event.status.replaceAll("_", " ")}.
+                </li>
+              ))}
+            </ul>
+            <div className="accessible-actions">
+              {actions.map((action) => (
+                <button
+                  data-action-id={action.id}
+                  data-event-id={action.eventId}
+                  key={`${action.id}:${action.eventId}`}
+                  onClick={() => {
+                    onAction(action);
+                  }}
+                  type="button"
+                >
+                  {action.label}. {action.description}
+                </button>
+              ))}
+            </div>
+          </section>
+        );
+      })}
       <OperationalMessages messages={view.operationalMessages} />
     </section>
   );
@@ -220,15 +369,39 @@ export function ManagerContext({
   );
 }
 
+export function ShiftBriefing({ onOpen }: { onOpen: () => void }) {
+  return (
+    <section className="shift-briefing" aria-labelledby="briefing-title">
+      <div className="manager-profile" aria-hidden="true">
+        <span>M</span>
+      </div>
+      <div>
+        <p className="eyebrow">07:55 · Security Operations Center</p>
+        <h2 id="briefing-title">Welcome to your shift</h2>
+        <p className="manager-name">Morgan · Security Operations Manager</p>
+        <p>
+          Morning. The previous analyst left a handoff in your inbox. An alert
+          also arrived as you signed in. Read what is available, keep notes, and
+          use the team channel when you need context. More routine work may
+          arrive while you investigate.
+        </p>
+        <button className="start-shift" onClick={onOpen} type="button">
+          Open workstation
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export function Tutorial() {
   return (
     <section className="tutorial" aria-labelledby="tutorial-title">
       <p className="eyebrow">Before assessed play</p>
       <h2 id="tutorial-title">Practice tutorial</h2>
       <p>
-        Practice opening systems, reviewing events, choosing actions, asking
-        for context, pausing, and changing pacing. This tutorial does not
-        record evidence.
+        Practice opening systems, reviewing events, choosing actions, asking for
+        context, pausing, and changing pacing. This tutorial does not record
+        evidence.
       </p>
       <ol>
         <li>Read current event and operational details.</li>
@@ -269,20 +442,16 @@ export function DebriefView({ debrief }: { debrief: Debrief }) {
   );
 }
 
-export function App({
-  client = defaultClient,
-}: {
-  client?: SimulationClient;
-}) {
+export function App({ client = defaultClient }: { client?: SimulationClient }) {
   const [view, setView] = useState<ClientView>();
   const [sessionId, setSessionId] = useState<string>();
   const [mode, setMode] = useState<"work" | "accessible">("work");
   const [debrief, setDebrief] = useState<Debrief>();
   const [error, setError] = useState<string>();
   const [phase, setPhase] = useState<"tutorial" | "assessed">("tutorial");
-  const [activeSurface, setActiveSurface] = useState<"dashboard" | "manager">(
-    "dashboard",
-  );
+  const [activeSurface, setActiveSurface] = useState<
+    "briefing" | "dashboard" | "manager"
+  >("dashboard");
 
   useEffect(() => {
     void client
@@ -313,7 +482,7 @@ export function App({
       setSessionId(created.sessionId);
       setView(created.view);
       setPhase("assessed");
-      setActiveSurface("dashboard");
+      setActiveSurface("briefing");
     } catch {
       setError("Assessed shift could not start. Try again shortly.");
     }
@@ -345,7 +514,9 @@ export function App({
         <div>
           <p className="eyebrow">Career Expo</p>
           <h1>Junior Cybersecurity Analyst</h1>
-          <p>Ordinary monitoring. Careful investigation. Clear communication.</p>
+          <p>
+            Ordinary monitoring. Careful investigation. Clear communication.
+          </p>
         </div>
         <div className="mode-switch" aria-label="Interaction mode">
           <button
@@ -387,6 +558,12 @@ export function App({
         <p aria-live="polite">Preparing workplace…</p>
       ) : debrief ? (
         <DebriefView debrief={debrief} />
+      ) : activeSurface === "briefing" ? (
+        <ShiftBriefing
+          onOpen={() => {
+            setActiveSurface("dashboard");
+          }}
+        />
       ) : activeSurface === "manager" ? (
         <ManagerContext
           message={
@@ -408,9 +585,9 @@ export function App({
         />
       ) : (
         <AccessibleMode
-        view={view}
-        onAction={(action) => {
-          void perform(action);
+          view={view}
+          onAction={(action) => {
+            void perform(action);
           }}
         />
       )}

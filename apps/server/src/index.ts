@@ -1,13 +1,6 @@
 import { randomUUID } from "node:crypto";
-import {
-  buildNpcContext,
-  type LlmProvider,
-} from "@sim/ai";
-import {
-  applyAction,
-  createInitialWorldState,
-  toClientView,
-} from "@sim/core";
+import { buildNpcContext, type LlmProvider } from "@sim/ai";
+import { applyAction, createInitialWorldState, toClientView } from "@sim/core";
 import { buildDebrief, recordEvidence } from "@sim/evidence";
 import {
   SessionBudget,
@@ -42,23 +35,21 @@ export type JurisdictionPolicy = {
   institutionalUseAllowed: boolean;
 };
 
-export const DEFAULT_JURISDICTION_POLICIES: Record<
-  string,
-  JurisdictionPolicy
-> = {
-  "US-NY": {
-    minimumUserAge: 13,
-    adultAge: 18,
-    guardianConsentUnderAdultAge: true,
-    institutionalUseAllowed: false,
-  },
-  "US-DEFAULT": {
-    minimumUserAge: 13,
-    adultAge: 18,
-    guardianConsentUnderAdultAge: true,
-    institutionalUseAllowed: false,
-  },
-};
+export const DEFAULT_JURISDICTION_POLICIES: Record<string, JurisdictionPolicy> =
+  {
+    "US-NY": {
+      minimumUserAge: 13,
+      adultAge: 18,
+      guardianConsentUnderAdultAge: true,
+      institutionalUseAllowed: false,
+    },
+    "US-DEFAULT": {
+      minimumUserAge: 13,
+      adultAge: 18,
+      guardianConsentUnderAdultAge: true,
+      institutionalUseAllowed: false,
+    },
+  };
 
 export function resolveConsentRequirement(
   policies: Record<string, JurisdictionPolicy>,
@@ -415,7 +406,11 @@ export function createAppRouter(
             );
           }
           await repository.saveSession(session);
-          return { view: toClientView(session.state), sequence, effects: turn.effects };
+          return {
+            view: toClientView(session.state),
+            sequence,
+            effects: turn.effects,
+          };
         }),
       submitFreeText: authenticatedProcedure
         .input(SessionIdSchema.extend({ text: z.string().max(2_000) }))
@@ -532,14 +527,19 @@ export function createAppRouter(
         .mutation(async ({ ctx, input }) => {
           const sessions = await repository.listSessions(ctx.userId);
           for (const session of sessions) {
-            const signal = session.evidence.find(({ id }) => id === input.evidenceId);
+            const signal = session.evidence.find(
+              ({ id }) => id === input.evidenceId,
+            );
             if (signal) {
               signal.annotation = input.annotation;
               await repository.saveSession(session);
               return signal;
             }
           }
-          throw new TRPCError({ code: "NOT_FOUND", message: "Evidence not found" });
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Evidence not found",
+          });
         }),
       reset: authenticatedProcedure
         .output(z.object({ reset: z.literal(true) }))
@@ -587,8 +587,12 @@ export function createAppRouter(
       exportData: authenticatedProcedure
         .output(
           z.object({
-            sessions: z.array(z.object({ sessionId: z.string(), view: ClientViewSchema })),
-            actionLog: z.array(z.object({ sessionId: z.string(), entry: z.unknown() })),
+            sessions: z.array(
+              z.object({ sessionId: z.string(), view: ClientViewSchema }),
+            ),
+            actionLog: z.array(
+              z.object({ sessionId: z.string(), entry: z.unknown() }),
+            ),
             evidence: z.array(EvidenceSignalSchema),
             reflections: z.array(ReflectionSchema),
           }),

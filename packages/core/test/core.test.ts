@@ -199,8 +199,7 @@ describe("deterministic simulation core", () => {
     ).toBe("escalated");
     expect(
       state.ledger.some(
-        ({ eventId, applied }) =>
-          eventId === "suspicious-login-1" && applied,
+        ({ eventId, applied }) => eventId === "suspicious-login-1" && applied,
       ),
     ).toBe(true);
   });
