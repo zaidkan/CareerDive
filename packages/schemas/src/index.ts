@@ -92,6 +92,7 @@ export const EventInstanceSchema = z.object({
   deadlineAt: z.number().int().positive(),
   reviewed: z.boolean(),
   contextInspected: z.boolean(),
+  managerConsulted: z.boolean().default(false),
   resolution: z.string().optional(),
 });
 export type EventInstance = z.infer<typeof EventInstanceSchema>;

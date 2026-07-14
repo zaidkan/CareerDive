@@ -189,6 +189,33 @@ function OperationalMessages({ messages }: { messages: string[] }) {
   );
 }
 
+export function ManagerContext({
+  message,
+  onReturn,
+}: {
+  message: string;
+  onReturn: () => void;
+}) {
+  return (
+    <section className="manager-context" aria-labelledby="manager-title">
+      <div className="manager-profile" aria-hidden="true">
+        <span>M</span>
+      </div>
+      <div>
+        <p className="eyebrow">Security Operations Manager</p>
+        <h2 id="manager-title">Manager context</h2>
+        <p className="manager-name">Morgan</p>
+        <blockquote>
+          <p>{message}</p>
+        </blockquote>
+        <button className="start-shift" onClick={onReturn} type="button">
+          Return to alert dashboard
+        </button>
+      </div>
+    </section>
+  );
+}
+
 export function Tutorial() {
   return (
     <section className="tutorial" aria-labelledby="tutorial-title">
@@ -249,6 +276,9 @@ export function App({
   const [debrief, setDebrief] = useState<Debrief>();
   const [error, setError] = useState<string>();
   const [phase, setPhase] = useState<"tutorial" | "assessed">("tutorial");
+  const [activeSurface, setActiveSurface] = useState<"dashboard" | "manager">(
+    "dashboard",
+  );
 
   useEffect(() => {
     void client
@@ -279,6 +309,7 @@ export function App({
       setSessionId(created.sessionId);
       setView(created.view);
       setPhase("assessed");
+      setActiveSurface("dashboard");
     } catch {
       setError("Assessed shift could not start. Try again shortly.");
     }
@@ -289,6 +320,9 @@ export function App({
     try {
       const nextView = await client.performAction(sessionId, actionId);
       setView(nextView);
+      if (actionId === "ask_manager") {
+        setActiveSurface("manager");
+      }
       if (actionId === "complete_shift") {
         setDebrief(await client.getDebrief(sessionId));
       }
@@ -345,6 +379,18 @@ export function App({
         <p aria-live="polite">Preparing workplace…</p>
       ) : debrief ? (
         <DebriefView debrief={debrief} />
+      ) : activeSurface === "manager" ? (
+        <ManagerContext
+          message={
+            [...view.operationalMessages]
+              .reverse()
+              .find((message) => message.startsWith("Morgan ")) ??
+            "Morgan has no additional context available."
+          }
+          onReturn={() => {
+            setActiveSurface("dashboard");
+          }}
+        />
       ) : mode === "work" ? (
         <WorkSurface
           view={view}

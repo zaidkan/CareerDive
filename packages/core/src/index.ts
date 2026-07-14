@@ -138,6 +138,7 @@ export function createInitialWorldState(
         deadlineAt: 40,
         reviewed: false,
         contextInspected: false,
+        managerConsulted: false,
       },
     ],
     ledger: [],
@@ -164,7 +165,10 @@ export function availableActions(state: WorldState): AvailableAction[] {
 
   const actions: AvailableAction[] = [];
   if (!event.reviewed) {
-    actions.push(ACTIONS.review_alert, ACTIONS.ask_manager);
+    actions.push(ACTIONS.review_alert);
+    if (!event.managerConsulted) {
+      actions.push(ACTIONS.ask_manager);
+    }
     return actions;
   }
 
@@ -173,8 +177,10 @@ export function availableActions(state: WorldState): AvailableAction[] {
       ACTIONS.inspect_login_context,
       ACTIONS.dismiss_alert,
       ACTIONS.document_ticket,
-      ACTIONS.ask_manager,
     );
+    if (!event.managerConsulted) {
+      actions.push(ACTIONS.ask_manager);
+    }
     return actions;
   }
 
@@ -182,8 +188,10 @@ export function availableActions(state: WorldState): AvailableAction[] {
     ACTIONS.escalate_alert,
     ACTIONS.dismiss_alert,
     ACTIONS.document_ticket,
-    ACTIONS.ask_manager,
   );
+  if (!event.managerConsulted) {
+    actions.push(ACTIONS.ask_manager);
+  }
   return actions;
 }
 
@@ -256,6 +264,19 @@ export function applyAction(
         state,
         action.id,
         "The investigation record now contains the user's reasoning.",
+      );
+      state.ledger.push(entry);
+      effects.push({
+        type: "consequence_recorded",
+        consequenceId: entry.id,
+      });
+    }
+    if (action.id === "ask_manager") {
+      event.managerConsulted = true;
+      const entry = consequence(
+        state,
+        action.id,
+        "Morgan recommends reviewing the alert details, checking device and location context, and documenting uncertainty before deciding.",
       );
       state.ledger.push(entry);
       effects.push({

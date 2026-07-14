@@ -90,6 +90,7 @@ h1 {
 
 .work-surface,
 .tutorial,
+.manager-context,
 .debrief-grid article,
 .privacy-note,
 section[aria-labelledby="structured-title"] {
@@ -99,6 +100,38 @@ section[aria-labelledby="structured-title"] {
   border-radius: 1.2rem;
   background: rgb(10 27 26 / 92%);
   box-shadow: 0 22px 60px rgb(0 0 0 / 25%);
+}
+
+.manager-context {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: clamp(1rem, 4vw, 2rem);
+  align-items: start;
+}
+
+.manager-profile {
+  display: grid;
+  width: 4.5rem;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 1px solid #86c9bc;
+  border-radius: 50%;
+  color: #071111;
+  background: #86c9bc;
+  font-size: 1.8rem;
+  font-weight: 900;
+}
+
+.manager-name {
+  color: #a8c6c1;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.manager-context blockquote {
+  margin: 1.5rem 0 0;
+  padding: 1.25rem;
+  border-left: 4px solid #f2d379;
+  background: #0e2322;
 }
 
 .panel-heading time,

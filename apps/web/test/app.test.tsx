@@ -136,6 +136,59 @@ describe("tutorial and debrief", () => {
     expect(screen.getByText(/does not record evidence/i)).toBeVisible();
   });
 
+  it("opens manager context after asking for guidance", async () => {
+    const user = userEvent.setup();
+    const askView: ClientView = {
+      ...view,
+      simClock: 0,
+      availableActions: [
+        {
+          id: "ask_manager",
+          label: "Ask manager for context",
+          description: "Request guidance without transferring responsibility.",
+          simulatedMinutes: 5,
+        },
+      ],
+    };
+    const consultedView: ClientView = {
+      ...askView,
+      simClock: 5,
+      availableActions: [
+        {
+          id: "review_alert",
+          label: "Review alert",
+          description: "Read the alert details.",
+          simulatedMinutes: 10,
+        },
+      ],
+      operationalMessages: [
+        "Morgan recommends reviewing the alert details, checking device and location context, and documenting uncertainty before deciding.",
+      ],
+    };
+    const client = {
+      createSession: () =>
+        Promise.resolve({ sessionId: "session-1", view: askView }),
+      performAction: () => Promise.resolve(consultedView),
+      getDebrief: () => Promise.reject(new Error("not needed")),
+    };
+
+    render(<App client={client} />);
+    await user.click(
+      await screen.findByRole("button", { name: "Start assessed shift" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: /ask manager for context/i }),
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Manager context" }),
+    ).toBeVisible();
+    expect(screen.getByText(/Morgan recommends reviewing/i)).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Return to alert dashboard" }),
+    ).toBeVisible();
+  });
+
   it("renders all eight debrief sections", () => {
     const debrief: Debrief = {
       sessionId: "session-1",

@@ -79,4 +79,34 @@ describe("deterministic simulation core", () => {
       "escalate_alert",
     );
   });
+
+  it("records deterministic manager guidance after consultation", () => {
+    const initial = createInitialWorldState("session-1", 42);
+
+    const turn = applyAction(initial, {
+      id: "ask_manager",
+      actorId: "user",
+    });
+    const view = toClientView(turn.state);
+
+    expect(view.simClock).toBe(5);
+    expect(view.operationalMessages).toContain(
+      "Morgan recommends reviewing the alert details, checking device and location context, and documenting uncertainty before deciding.",
+    );
+  });
+
+  it("allows manager consultation only once per event", () => {
+    const initial = createInitialWorldState("session-1", 42);
+    const consulted = applyAction(initial, {
+      id: "ask_manager",
+      actorId: "user",
+    }).state;
+
+    expect(availableActions(consulted).map(({ id }) => id)).not.toContain(
+      "ask_manager",
+    );
+    expect(() =>
+      applyAction(consulted, { id: "ask_manager", actorId: "user" }),
+    ).toThrow(ActionUnavailableError);
+  });
 });
