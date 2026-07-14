@@ -22,11 +22,21 @@ export const WorkSystemIdSchema = z.enum([
 export type WorkSystemId = z.infer<typeof WorkSystemIdSchema>;
 
 export const SimulationActionIdSchema = z.enum([
+  "read_handoff",
+  "acknowledge_handoff",
   "review_alert",
   "inspect_login_context",
+  "inspect_account_history",
+  "check_device_inventory",
+  "search_knowledge_base",
   "dismiss_alert",
   "escalate_alert",
   "document_ticket",
+  "open_phishing_report",
+  "inspect_email_headers",
+  "check_link_destination",
+  "quarantine_message",
+  "notify_reporter",
   "ask_manager",
   "complete_shift",
 ]);
@@ -99,6 +109,8 @@ export const EventInstanceSchema = z.object({
   id: z.string(),
   templateId: z.string(),
   title: z.string(),
+  summary: z.string().default(""),
+  priority: z.enum(["low", "normal", "high", "urgent"]).default("normal"),
   systemId: WorkSystemIdSchema.default("alert_dashboard"),
   status: EventStatusSchema,
   triggeredAt: z.number().int().nonnegative(),
@@ -106,6 +118,7 @@ export const EventInstanceSchema = z.object({
   reviewed: z.boolean(),
   contextInspected: z.boolean(),
   managerConsulted: z.boolean().default(false),
+  completedActionIds: z.array(SimulationActionIdSchema).default([]),
   resolution: z.string().optional(),
 });
 export type EventInstance = z.infer<typeof EventInstanceSchema>;
@@ -153,8 +166,14 @@ export type WorldState = z.infer<typeof WorldStateSchema>;
 
 export const ClientEventSchema = EventInstanceSchema.pick({
   id: true,
+  templateId: true,
   title: true,
+  summary: true,
+  priority: true,
+  systemId: true,
   status: true,
+  deadlineAt: true,
+  completedActionIds: true,
   resolution: true,
 });
 export const ClientViewSchema = z.object({
