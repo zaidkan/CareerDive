@@ -109,4 +109,30 @@ describe("deterministic simulation core", () => {
       applyAction(consulted, { id: "ask_manager", actorId: "user" }),
     ).toThrow(ActionUnavailableError);
   });
+
+  it("targets every available action to a workplace event and system", () => {
+    const state = createInitialWorldState("session-1", 42);
+
+    expect(availableActions(state)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "review_alert",
+          eventId: "suspicious-login-1",
+          systemId: "alert_dashboard",
+        }),
+      ]),
+    );
+  });
+
+  it("rejects an action aimed at the wrong event", () => {
+    const state = createInitialWorldState("session-1", 42);
+
+    expect(() =>
+      applyAction(state, {
+        id: "review_alert",
+        actorId: "user",
+        eventId: "not-the-visible-event",
+      }),
+    ).toThrow(ActionUnavailableError);
+  });
 });

@@ -34,12 +34,16 @@ const view: ClientView = {
   availableActions: [
     {
       id: "inspect_login_context",
+      eventId: "suspicious-login-1",
+      systemId: "alert_dashboard",
       label: "Inspect login context",
       description: "Review device, location, and account context.",
       simulatedMinutes: 15,
     },
     {
       id: "dismiss_alert",
+      eventId: "suspicious-login-1",
+      systemId: "alert_dashboard",
       label: "Dismiss as false positive",
       description: "Close the alert.",
       simulatedMinutes: 15,
@@ -144,6 +148,8 @@ describe("tutorial and debrief", () => {
       availableActions: [
         {
           id: "ask_manager",
+          eventId: "suspicious-login-1",
+          systemId: "team_chat",
           label: "Ask manager for context",
           description: "Request guidance without transferring responsibility.",
           simulatedMinutes: 5,
@@ -156,6 +162,8 @@ describe("tutorial and debrief", () => {
       availableActions: [
         {
           id: "review_alert",
+          eventId: "suspicious-login-1",
+          systemId: "alert_dashboard",
           label: "Review alert",
           description: "Read the alert details.",
           simulatedMinutes: 10,

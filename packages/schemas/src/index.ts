@@ -12,6 +12,15 @@ export type PacingMode = z.infer<typeof PacingModeSchema>;
 export const SessionKindSchema = z.enum(["tutorial", "assessed"]);
 export type SessionKind = z.infer<typeof SessionKindSchema>;
 
+export const WorkSystemIdSchema = z.enum([
+  "alert_dashboard",
+  "ticket_queue",
+  "email",
+  "knowledge_base",
+  "team_chat",
+]);
+export type WorkSystemId = z.infer<typeof WorkSystemIdSchema>;
+
 export const SimulationActionIdSchema = z.enum([
   "review_alert",
   "inspect_login_context",
@@ -26,12 +35,15 @@ export type SimulationActionId = z.infer<typeof SimulationActionIdSchema>;
 export const SimulationActionSchema = z.object({
   id: SimulationActionIdSchema,
   actorId: z.string().min(1),
+  eventId: z.string().min(1).optional(),
   freeText: z.string().max(2_000).optional(),
 });
 export type SimulationAction = z.infer<typeof SimulationActionSchema>;
 
 export const AvailableActionSchema = z.object({
   id: SimulationActionIdSchema,
+  eventId: z.string().min(1),
+  systemId: WorkSystemIdSchema,
   label: z.string(),
   description: z.string(),
   simulatedMinutes: z.number().int().nonnegative(),
@@ -87,6 +99,7 @@ export const EventInstanceSchema = z.object({
   id: z.string(),
   templateId: z.string(),
   title: z.string(),
+  systemId: WorkSystemIdSchema.default("alert_dashboard"),
   status: EventStatusSchema,
   triggeredAt: z.number().int().nonnegative(),
   deadlineAt: z.number().int().positive(),

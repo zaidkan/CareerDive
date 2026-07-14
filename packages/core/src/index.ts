@@ -14,42 +14,56 @@ import { WorldStateSchema } from "@sim/schemas";
 const ACTIONS: Record<SimulationActionId, AvailableAction> = {
   review_alert: {
     id: "review_alert",
+    eventId: "",
+    systemId: "alert_dashboard",
     label: "Review alert",
     description: "Read the alert details and initial indicators.",
     simulatedMinutes: 10,
   },
   inspect_login_context: {
     id: "inspect_login_context",
+    eventId: "",
+    systemId: "alert_dashboard",
     label: "Inspect login context",
     description: "Check available device, location, and account context.",
     simulatedMinutes: 15,
   },
   dismiss_alert: {
     id: "dismiss_alert",
+    eventId: "",
+    systemId: "alert_dashboard",
     label: "Dismiss as false positive",
     description: "Close the alert without further escalation.",
     simulatedMinutes: 15,
   },
   escalate_alert: {
     id: "escalate_alert",
+    eventId: "",
+    systemId: "alert_dashboard",
     label: "Escalate with evidence",
     description: "Send the reviewed evidence to a senior analyst.",
     simulatedMinutes: 5,
   },
   document_ticket: {
     id: "document_ticket",
+    eventId: "",
+    systemId: "ticket_queue",
     label: "Document ticket",
     description: "Record what was reviewed and why the decision was made.",
     simulatedMinutes: 20,
   },
   ask_manager: {
     id: "ask_manager",
+    eventId: "",
+    systemId: "team_chat",
     label: "Ask manager for context",
     description: "Request guidance without transferring responsibility.",
     simulatedMinutes: 5,
   },
   complete_shift: {
     id: "complete_shift",
+    eventId: "shift",
+    systemId: "team_chat",
     label: "Complete shift",
     description: "Finish the current simulation shift.",
     simulatedMinutes: 0,
@@ -133,6 +147,7 @@ export function createInitialWorldState(
         id: "suspicious-login-1",
         templateId: "suspicious_login",
         title: "Unfamiliar successful login",
+        systemId: "alert_dashboard",
         status: "active",
         triggeredAt: 0,
         deadlineAt: 40,
@@ -163,34 +178,39 @@ export function availableActions(state: WorldState): AvailableAction[] {
     return [ACTIONS.complete_shift];
   }
 
+  const targeted = (action: AvailableAction): AvailableAction => ({
+    ...action,
+    eventId: event.id,
+  });
+
   const actions: AvailableAction[] = [];
   if (!event.reviewed) {
-    actions.push(ACTIONS.review_alert);
+    actions.push(targeted(ACTIONS.review_alert));
     if (!event.managerConsulted) {
-      actions.push(ACTIONS.ask_manager);
+      actions.push(targeted(ACTIONS.ask_manager));
     }
     return actions;
   }
 
   if (!event.contextInspected) {
     actions.push(
-      ACTIONS.inspect_login_context,
-      ACTIONS.dismiss_alert,
-      ACTIONS.document_ticket,
+      targeted(ACTIONS.inspect_login_context),
+      targeted(ACTIONS.dismiss_alert),
+      targeted(ACTIONS.document_ticket),
     );
     if (!event.managerConsulted) {
-      actions.push(ACTIONS.ask_manager);
+      actions.push(targeted(ACTIONS.ask_manager));
     }
     return actions;
   }
 
   actions.push(
-    ACTIONS.escalate_alert,
-    ACTIONS.dismiss_alert,
-    ACTIONS.document_ticket,
+    targeted(ACTIONS.escalate_alert),
+    targeted(ACTIONS.dismiss_alert),
+    targeted(ACTIONS.document_ticket),
   );
   if (!event.managerConsulted) {
-    actions.push(ACTIONS.ask_manager);
+    actions.push(targeted(ACTIONS.ask_manager));
   }
   return actions;
 }
@@ -221,7 +241,9 @@ export function applyAction(
 ): TurnResult {
   const action = rawAction;
   const allowed = availableActions(currentState).some(
-    ({ id }) => id === action.id,
+    ({ id, eventId }) =>
+      id === action.id &&
+      (action.eventId === undefined || action.eventId === eventId),
   );
   if (!allowed) {
     throw new ActionUnavailableError(action.id);
@@ -234,7 +256,9 @@ export function applyAction(
   const definition = ACTIONS[action.id];
   state.simClock += definition.simulatedMinutes;
   state.completedActionIds.push(action.id);
-  const event = state.events[0];
+  const event = action.eventId
+    ? state.events.find(({ id }) => id === action.eventId)
+    : state.events[0];
 
   if (event) {
     if (action.id === "review_alert") {
