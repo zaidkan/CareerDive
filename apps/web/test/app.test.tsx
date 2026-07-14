@@ -27,8 +27,14 @@ const view: ClientView = {
   events: [
     {
       id: "suspicious-login-1",
+      templateId: "suspicious_login",
       title: "Unfamiliar successful login",
+      summary: "Repeated failures followed by a successful sign-in.",
+      priority: "high",
+      systemId: "alert_dashboard",
       status: "active",
+      deadlineAt: 180,
+      completedActionIds: [],
     },
   ],
   availableActions: [
@@ -77,8 +83,8 @@ describe("parallel simulation views", () => {
     render(
       <AccessibleMode
         view={view}
-        onAction={(actionId) => {
-          selected = actionId;
+        onAction={(action) => {
+          selected = action.id;
         }}
       />,
     );

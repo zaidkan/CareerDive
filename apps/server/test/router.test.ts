@@ -43,6 +43,7 @@ describe("authenticated simulation API", () => {
     const turn = await caller.simulation.performAction({
       sessionId: created.sessionId,
       actionId: "review_alert",
+      eventId: "suspicious-login-1",
     });
 
     expect(turn.view.simClock).toBe(10);
@@ -64,6 +65,7 @@ describe("authenticated simulation API", () => {
       otherCaller.simulation.performAction({
         sessionId: created.sessionId,
         actionId: "review_alert",
+        eventId: "suspicious-login-1",
       }),
     ).rejects.toThrow("Session not found");
   });
@@ -84,14 +86,52 @@ describe("authenticated simulation API", () => {
     await caller.simulation.performAction({
       sessionId: assessed.sessionId,
       actionId: "review_alert",
+      eventId: "suspicious-login-1",
     });
     await caller.simulation.performAction({
       sessionId: tutorial.sessionId,
       actionId: "review_alert",
+      eventId: "suspicious-login-1",
     });
 
     expect(repository.evidenceFor("user-1", assessed.sessionId)).toHaveLength(1);
     expect(repository.evidenceFor("user-1", tutorial.sessionId)).toHaveLength(0);
+  });
+
+  it("records evidence against the exact targeted workplace event", async () => {
+    const { caller, repository } = setup();
+    const created = await caller.session.create({
+      seed: 42,
+      sessionKind: "assessed",
+      pacingMode: "standard",
+    });
+
+    await caller.simulation.performAction({
+      sessionId: created.sessionId,
+      actionId: "read_handoff",
+      eventId: "handoff-1",
+    });
+
+    expect(repository.evidenceFor("user-1", created.sessionId)[0]?.eventId).toBe(
+      "handoff-1",
+    );
+  });
+
+  it("rejects a valid action aimed at the wrong event", async () => {
+    const { caller } = setup();
+    const created = await caller.session.create({
+      seed: 42,
+      sessionKind: "assessed",
+      pacingMode: "standard",
+    });
+
+    await expect(
+      caller.simulation.performAction({
+        sessionId: created.sessionId,
+        actionId: "read_handoff",
+        eventId: "suspicious-login-1",
+      }),
+    ).rejects.toThrow("not available");
   });
 
   it("requires explicit sharing grant and revokes access immediately", async () => {
@@ -119,6 +159,7 @@ describe("authenticated simulation API", () => {
     await caller.simulation.performAction({
       sessionId: created.sessionId,
       actionId: "review_alert",
+      eventId: "suspicious-login-1",
     });
 
     const exported = await caller.privacy.exportData();

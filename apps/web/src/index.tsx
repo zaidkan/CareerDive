@@ -6,6 +6,7 @@ import {
   SimulationActionIdSchema,
   type ClientView,
   type Debrief,
+  type AvailableAction,
   type SimulationActionId,
 } from "@sim/schemas";
 import { z } from "zod";
@@ -24,6 +25,7 @@ export interface SimulationClient {
   performAction(
     sessionId: string,
     actionId: SimulationActionId,
+    eventId: string,
   ): Promise<ClientView>;
   getDebrief(sessionId: string): Promise<Debrief>;
 }
@@ -59,11 +61,13 @@ export class HttpSimulationClient implements SimulationClient {
   async performAction(
     sessionId: string,
     actionId: SimulationActionId,
+    eventId: string,
   ): Promise<ClientView> {
     return TurnResultSchema.parse(
       await this.#client.mutation("simulation.performAction", {
         sessionId,
         actionId,
+        eventId,
       }),
     ).view;
   }
@@ -84,7 +88,7 @@ const defaultClient = new HttpSimulationClient(
 
 type ModeProps = {
   view: ClientView;
-  onAction: (actionId: SimulationActionId) => void;
+  onAction: (action: AvailableAction) => void;
 };
 
 export function WorkSurface({ view, onAction }: ModeProps) {
@@ -121,7 +125,7 @@ export function WorkSurface({ view, onAction }: ModeProps) {
             data-action-id={action.id}
             key={action.id}
             onClick={() => {
-              onAction(action.id);
+              onAction(action);
             }}
             type="button"
           >
@@ -159,7 +163,7 @@ export function AccessibleMode({ view, onAction }: ModeProps) {
             data-action-id={action.id}
             key={action.id}
             onClick={() => {
-              onAction(action.id);
+              onAction(action);
             }}
             type="button"
           >
@@ -315,15 +319,19 @@ export function App({
     }
   }
 
-  async function perform(actionId: SimulationActionId) {
+  async function perform(action: AvailableAction) {
     if (!sessionId) return;
     try {
-      const nextView = await client.performAction(sessionId, actionId);
+      const nextView = await client.performAction(
+        sessionId,
+        action.id,
+        action.eventId,
+      );
       setView(nextView);
-      if (actionId === "ask_manager") {
+      if (action.id === "ask_manager") {
         setActiveSurface("manager");
       }
-      if (actionId === "complete_shift") {
+      if (action.id === "complete_shift") {
         setDebrief(await client.getDebrief(sessionId));
       }
     } catch {
@@ -394,15 +402,15 @@ export function App({
       ) : mode === "work" ? (
         <WorkSurface
           view={view}
-          onAction={(id) => {
-            void perform(id);
+          onAction={(action) => {
+            void perform(action);
           }}
         />
       ) : (
         <AccessibleMode
-          view={view}
-          onAction={(id) => {
-            void perform(id);
+        view={view}
+        onAction={(action) => {
+          void perform(action);
           }}
         />
       )}

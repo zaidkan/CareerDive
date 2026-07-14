@@ -293,6 +293,7 @@ const SessionIdSchema = z.object({ sessionId: z.string() });
 function evidenceForAction(
   session: StoredSession,
   actionId: z.infer<typeof SimulationActionIdSchema>,
+  eventId: string,
 ): EvidenceSignal {
   const dimension =
     actionId === "document_ticket"
@@ -304,8 +305,10 @@ function evidenceForAction(
     id: randomUUID(),
     sessionId: session.state.sessionId,
     actionId,
-    eventId: session.state.events[0]?.id ?? "shift",
-    rhythm: session.state.completedActionIds.includes("inspect_login_context")
+    eventId,
+    rhythm: session.state.events
+      .find(({ id }) => id === eventId)
+      ?.completedActionIds.includes("inspect_login_context")
       ? "quiet_investigation"
       : "routine_monitoring",
     pacingMode: session.state.pacingMode,
@@ -376,6 +379,7 @@ export function createAppRouter(
         .input(
           SessionIdSchema.extend({
             actionId: SimulationActionIdSchema,
+            eventId: z.string().min(1),
           }),
         )
         .output(
@@ -392,17 +396,22 @@ export function createAppRouter(
           );
           const turn = applyAction(session.state, {
             id: input.actionId,
+            eventId: input.eventId,
             actorId: "user",
           });
           const sequence = session.actionLog.length + 1;
           session.state = turn.state;
           session.actionLog.push({
             sequence,
-            action: { id: input.actionId, actorId: "user" },
+            action: {
+              id: input.actionId,
+              eventId: input.eventId,
+              actorId: "user",
+            },
           });
           if (session.state.sessionKind === "assessed") {
             session.evidence.push(
-              evidenceForAction(session, input.actionId),
+              evidenceForAction(session, input.actionId, input.eventId),
             );
           }
           await repository.saveSession(session);
