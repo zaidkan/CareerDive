@@ -10,30 +10,38 @@ const ROOMS: Array<{
   unlocked: boolean;
   x: number;
   y: number;
+  w: number;
+  h: number;
 }> = [
   {
     id: "soc",
     label: "Security Operations",
-    hint: "Your desk is here",
+    hint: "Night desk · open",
     unlocked: true,
-    x: 62,
-    y: 38,
+    x: 58,
+    y: 34,
+    w: 28,
+    h: 22,
   },
   {
     id: "break_room",
     label: "Break room",
-    hint: "Not open this shift",
+    hint: "Closed this shift",
     unlocked: false,
-    x: 22,
-    y: 55,
+    x: 20,
+    y: 58,
+    w: 22,
+    h: 18,
   },
   {
     id: "manager_office",
     label: "Manager office",
-    hint: "Not open this shift",
+    hint: "Closed this shift",
     unlocked: false,
-    x: 78,
-    y: 72,
+    x: 76,
+    y: 68,
+    w: 20,
+    h: 16,
   },
 ];
 
@@ -42,7 +50,7 @@ export function FloorMap({
 }: {
   onEnterRoom: (roomId: RoomId) => void;
 }) {
-  const [marker, setMarker] = useState({ x: 18, y: 78 });
+  const [marker, setMarker] = useState({ x: 16, y: 82 });
   const [traveling, setTraveling] = useState(false);
 
   function enter(room: (typeof ROOMS)[number]) {
@@ -58,12 +66,23 @@ export function FloorMap({
   return (
     <section className="floor-map" aria-labelledby="floor-map-title">
       <div className="floor-map-copy">
-        <p className="eyebrow">Workplace floor</p>
+        <p className="eyebrow">Building directory</p>
         <h2 id="floor-map-title">Choose where to go</h2>
         <p>
-          Hallways stay simple — pick a room and you will head there. Only the
-          operations floor is open for this shift.
+          Hallways stay simple on the map. When you arrive, each room is a full
+          workplace space you can walk through.
         </p>
+        <ul className="floor-legend">
+          <li>
+            <span className="legend-open" /> Open tonight
+          </li>
+          <li>
+            <span className="legend-locked" /> Locked this shift
+          </li>
+          <li>
+            <span className="legend-you" /> You
+          </li>
+        </ul>
         {traveling ? (
           <p className="floor-traveling" aria-live="polite">
             Walking over…
@@ -72,14 +91,16 @@ export function FloorMap({
       </div>
       <div className="floor-map-stage">
         <div className="floor-map-grid">
+          <div className="floor-map-label">Floor 1 · Operations</div>
           <span
             className="floor-hall hall-h"
-            style={{ top: "48%", left: "8%", width: "84%" }}
+            style={{ top: "48%", left: "10%", width: "80%" }}
           />
           <span
             className="floor-hall hall-v"
-            style={{ top: "18%", left: "48%", height: "64%" }}
+            style={{ top: "16%", left: "46%", height: "68%" }}
           />
+          <span className="floor-lobby" />
           {ROOMS.map((room) => (
             <button
               className="floor-room"
@@ -89,7 +110,12 @@ export function FloorMap({
               onClick={() => {
                 enter(room);
               }}
-              style={{ left: `${String(room.x)}%`, top: `${String(room.y)}%` }}
+              style={{
+                left: `${String(room.x)}%`,
+                top: `${String(room.y)}%`,
+                width: `${String(room.w)}%`,
+                height: `${String(room.h)}%`,
+              }}
               type="button"
             >
               <strong>{room.label}</strong>

@@ -15,8 +15,13 @@ export function RoomCanvas({
   return (
     <div className="room-canvas">
       <Canvas
-        camera={{ fov: 65, position: [0, 1.6, 4.5], near: 0.1, far: 40 }}
+        camera={{ fov: 62, position: [0, 1.6, 4.5], near: 0.08, far: 50 }}
         dpr={[1, 1.75]}
+        gl={{
+          antialias: true,
+          alpha: false,
+          powerPreference: "high-performance",
+        }}
         shadows
       >
         <Suspense fallback={null}>

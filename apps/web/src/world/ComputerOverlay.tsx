@@ -39,21 +39,35 @@ export function ComputerOverlay({
 
   return (
     <div className="monitor-panel" aria-labelledby="monitor-title">
-      <div className="monitor-bezel">
-        <p className="eyebrow">Workstation · live</p>
-        <h2 id="monitor-title">{guidance?.headline ?? "Your shift console"}</h2>
-        <p>
-          {guidance?.detail ??
-            "Focus the desk to read tickets, email, and alerts clearly."}
-        </p>
-        <div className="monitor-actions">
-          <button className="start-shift" onClick={onFocusDesk} type="button">
-            Focus desk
-          </button>
-          <button className="guidance-secondary" onClick={onStand} type="button">
-            Stand up
-          </button>
+      <div className="monitor-chassis">
+        <div className="monitor-bezel">
+          <div className="monitor-status">
+            <span>SOC-07</span>
+            <span>Secure session</span>
+          </div>
+          <p className="eyebrow">Workstation · live</p>
+          <h2 id="monitor-title">
+            {guidance?.headline ?? "Your shift console"}
+          </h2>
+          <p>
+            {guidance?.detail ??
+              "Focus the desk to read tickets, email, and alerts clearly."}
+          </p>
+          <div className="monitor-actions">
+            <button className="start-shift" onClick={onFocusDesk} type="button">
+              Focus desk
+            </button>
+            <button
+              className="guidance-secondary"
+              onClick={onStand}
+              type="button"
+            >
+              Stand up
+            </button>
+          </div>
         </div>
+        <div className="monitor-stand" aria-hidden="true" />
+        <div className="monitor-base" aria-hidden="true" />
       </div>
     </div>
   );
