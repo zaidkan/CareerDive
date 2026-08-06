@@ -1,102 +1,184 @@
 import { useThree } from "@react-three/fiber";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { Figure } from "../Figure.js";
 import { Hotspot, nearestHotspot, type HotspotDef } from "../Hotspot.js";
-import {
-  PlayerController,
-  type Aabb,
-} from "../PlayerController.js";
+import { PlayerController, type Aabb } from "../PlayerController.js";
 import type { HotspotId } from "../worldTypes.js";
 
+const PLAYER_SPAWN: [number, number, number] = [0, 1.6, 4.2];
+
+/**
+ * Layout (top-down, +Z toward entrance):
+ *  - Door at south wall
+ *  - Player desk against north-east, chair/sit zone SOUTH of desk (walkable)
+ *  - Alert wall north-west
+ *  - Morgan mid-west
+ *  - Coffee south-east
+ */
 const HOTSPOTS: HotspotDef[] = [
   {
     id: "desk_player",
-    label: "Your desk",
-    position: [2.2, 0, -2.8],
-    radius: 1.35,
+    label: "Your chair",
+    // Sit zone in front of the desk — must stay outside desk collider
+    position: [2.4, 0, -1.35],
+    radius: 1.6,
   },
   {
     id: "alert_wall",
     label: "Alert wall",
-    position: [-3.6, 0, -3.2],
-    radius: 1.4,
+    position: [-3.8, 0, -2.6],
+    radius: 1.5,
   },
   {
     id: "morgan_station",
     label: "Morgan's station",
-    position: [-2.4, 0, 1.6],
-    radius: 1.3,
+    position: [-2.6, 0, 1.2],
+    radius: 1.45,
   },
   {
     id: "coffee",
     label: "Coffee nook",
-    position: [3.8, 0, 2.4],
-    radius: 1.1,
+    position: [4.0, 0, 2.6],
+    radius: 1.25,
   },
   {
     id: "door_exit",
     label: "Exit to floor map",
-    position: [0, 0, 4.1],
-    radius: 1.2,
+    position: [0, 0, 4.0],
+    radius: 1.35,
   },
 ];
 
+// Colliders cover furniture bodies only — leave clear aisles and the sit zone
 const COLLIDERS: Aabb[] = [
-  { minX: 1.2, maxX: 3.4, minZ: -3.6, maxZ: -1.8 }, // player desk
-  { minX: -4.6, maxX: -2.4, minZ: -4.0, maxZ: -2.4 }, // alert bank
-  { minX: -3.4, maxX: -1.2, minZ: 0.7, maxZ: 2.5 }, // morgan desk
-  { minX: 3.1, maxX: 4.6, minZ: 1.7, maxZ: 3.2 }, // coffee
+  { minX: 1.45, maxX: 3.55, minZ: -3.85, maxZ: -2.15 }, // player desk top
+  { minX: -4.9, maxX: -2.5, minZ: -4.2, maxZ: -3.0 }, // alert console
+  { minX: -3.5, maxX: -1.3, minZ: 0.35, maxZ: 2.15 }, // morgan desk
+  { minX: 3.35, maxX: 4.75, minZ: 2.0, maxZ: 3.35 }, // coffee table
 ];
 
-function Desk({
+function Workstation({
   position,
-  color = "#3a2c22",
+  dualGlow = true,
 }: {
   position: [number, number, number];
-  color?: string;
+  dualGlow?: boolean;
 }) {
   return (
     <group position={position}>
-      <mesh position={[0, 0.75, 0]} castShadow>
-        <boxGeometry args={[1.8, 0.08, 0.9]} />
-        <meshStandardMaterial color={color} roughness={0.7} />
+      {/* Desktop */}
+      <mesh position={[0, 0.78, 0]} castShadow receiveShadow>
+        <boxGeometry args={[2.0, 0.07, 1.0]} />
+        <meshStandardMaterial color="#2a2118" roughness={0.55} metalness={0.08} />
       </mesh>
-      <mesh position={[-0.75, 0.38, 0.35]}>
-        <boxGeometry args={[0.08, 0.75, 0.08]} />
-        <meshStandardMaterial color="#241912" />
+      {/* Legs */}
+      {[
+        [-0.85, 0.39, 0.4],
+        [0.85, 0.39, 0.4],
+        [-0.85, 0.39, -0.4],
+        [0.85, 0.39, -0.4],
+      ].map((p, i) => (
+        <mesh key={i} position={p as [number, number, number]}>
+          <boxGeometry args={[0.07, 0.78, 0.07]} />
+          <meshStandardMaterial color="#1a130f" />
+        </mesh>
+      ))}
+      {/* Monitor stands */}
+      <mesh position={[-0.4, 0.9, -0.28]}>
+        <boxGeometry args={[0.18, 0.08, 0.18]} />
+        <meshStandardMaterial color="#0d0d0d" />
       </mesh>
-      <mesh position={[0.75, 0.38, 0.35]}>
-        <boxGeometry args={[0.08, 0.75, 0.08]} />
-        <meshStandardMaterial color="#241912" />
+      <mesh position={[0.4, 0.9, -0.28]}>
+        <boxGeometry args={[0.18, 0.08, 0.18]} />
+        <meshStandardMaterial color="#0d0d0d" />
       </mesh>
-      <mesh position={[-0.75, 0.38, -0.35]}>
-        <boxGeometry args={[0.08, 0.75, 0.08]} />
-        <meshStandardMaterial color="#241912" />
+      <mesh position={[-0.4, 1.05, -0.28]}>
+        <boxGeometry args={[0.05, 0.22, 0.05]} />
+        <meshStandardMaterial color="#222" />
       </mesh>
-      <mesh position={[0.75, 0.38, -0.35]}>
-        <boxGeometry args={[0.08, 0.75, 0.08]} />
-        <meshStandardMaterial color="#241912" />
+      <mesh position={[0.4, 1.05, -0.28]}>
+        <boxGeometry args={[0.05, 0.22, 0.05]} />
+        <meshStandardMaterial color="#222" />
       </mesh>
-      <mesh position={[-0.35, 1.05, -0.15]}>
-        <boxGeometry args={[0.55, 0.4, 0.06]} />
+      {/* Screens */}
+      <mesh position={[-0.4, 1.28, -0.28]} castShadow>
+        <boxGeometry args={[0.72, 0.48, 0.05]} />
         <meshStandardMaterial
-          color="#0a1214"
-          emissive="#4fd0c8"
-          emissiveIntensity={0.55}
+          color="#071018"
+          emissive={dualGlow ? "#4fd0c8" : "#e8b84a"}
+          emissiveIntensity={0.65}
+          roughness={0.25}
         />
       </mesh>
-      <mesh position={[0.35, 1.05, -0.15]}>
-        <boxGeometry args={[0.55, 0.4, 0.06]} />
+      <mesh position={[0.4, 1.28, -0.28]} castShadow>
+        <boxGeometry args={[0.72, 0.48, 0.05]} />
         <meshStandardMaterial
-          color="#0a1214"
+          color="#071018"
           emissive="#e8b84a"
-          emissiveIntensity={0.4}
+          emissiveIntensity={0.45}
+          roughness={0.25}
         />
       </mesh>
-      <mesh position={[0, 0.45, 0.7]}>
-        <boxGeometry args={[0.45, 0.08, 0.45]} />
-        <meshStandardMaterial color="#5c4634" />
+      {/* Keyboard + mouse */}
+      <mesh position={[0, 0.84, 0.22]}>
+        <boxGeometry args={[0.55, 0.03, 0.2]} />
+        <meshStandardMaterial color="#121212" />
       </mesh>
+      <mesh position={[0.42, 0.84, 0.28]}>
+        <boxGeometry args={[0.08, 0.025, 0.12]} />
+        <meshStandardMaterial color="#1a1a1a" />
+      </mesh>
+      {/* Task lamp */}
+      <mesh position={[0.85, 1.15, -0.15]}>
+        <cylinderGeometry args={[0.03, 0.04, 0.55, 8]} />
+        <meshStandardMaterial color="#5c4634" metalness={0.4} />
+      </mesh>
+      <mesh position={[0.85, 1.42, 0]}>
+        <sphereGeometry args={[0.08, 12, 12]} />
+        <meshStandardMaterial
+          color="#f3e6c8"
+          emissive="#e8b84a"
+          emissiveIntensity={0.9}
+        />
+      </mesh>
+      <pointLight
+        intensity={0.55}
+        distance={4}
+        position={[0.85, 1.45, 0.1]}
+        color="#e8b84a"
+      />
+    </group>
+  );
+}
+
+function OfficeChair({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      <mesh position={[0, 0.48, 0]} castShadow>
+        <cylinderGeometry args={[0.28, 0.3, 0.08, 16]} />
+        <meshStandardMaterial color="#241912" roughness={0.7} />
+      </mesh>
+      <mesh position={[0, 0.72, -0.12]} castShadow>
+        <boxGeometry args={[0.42, 0.5, 0.08]} />
+        <meshStandardMaterial color="#3a2c22" />
+      </mesh>
+      <mesh position={[0, 0.25, 0]}>
+        <cylinderGeometry args={[0.04, 0.04, 0.4, 8]} />
+        <meshStandardMaterial color="#1a130f" metalness={0.5} />
+      </mesh>
+      {[0, 1, 2, 3, 4].map((i) => {
+        const a = (i / 5) * Math.PI * 2;
+        return (
+          <mesh
+            key={i}
+            position={[Math.cos(a) * 0.28, 0.06, Math.sin(a) * 0.28]}
+          >
+            <sphereGeometry args={[0.05, 10, 10]} />
+            <meshStandardMaterial color="#111" metalness={0.6} />
+          </mesh>
+        );
+      })}
     </group>
   );
 }
@@ -140,130 +222,219 @@ export function SocRoom({
   onInteract: (id: HotspotId) => void;
   enabled: boolean;
 }) {
-  const [playerPos, setPlayerPos] = useState<[number, number, number]>([
-    0, 1.6, 4.5,
-  ]);
-  const nearby = useMemo(
-    () => nearestHotspot(playerPos, HOTSPOTS),
-    [playerPos],
-  );
-
-  useEffect(() => {
-    onNearbyChange(nearby?.id, nearby?.label);
-  }, [nearby, onNearbyChange]);
+  const nearbyId = useRef<HotspotId | undefined>(undefined);
+  const playerPos = useRef<[number, number, number]>([...PLAYER_SPAWN]);
+  const [activeHotspot, setActiveHotspot] = useState<HotspotId | undefined>();
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (!enabled || event.code !== "KeyE" || !nearby) return;
-      onInteract(nearby.id);
+      if (!enabled || event.code !== "KeyE") return;
+      const near = nearestHotspot(playerPos.current, HOTSPOTS);
+      if (near) onInteract(near.id);
     };
     window.addEventListener("keydown", onKey);
     return () => {
       window.removeEventListener("keydown", onKey);
     };
-  }, [enabled, nearby, onInteract]);
+  }, [enabled, onInteract]);
+
+  function handlePosition(next: [number, number, number]) {
+    playerPos.current = next;
+    const near = nearestHotspot(next, HOTSPOTS);
+    const nextId = near?.id;
+    if (nextId !== nearbyId.current) {
+      nearbyId.current = nextId;
+      setActiveHotspot(nextId);
+      onNearbyChange(near?.id, near?.label);
+    }
+  }
 
   return (
     <>
-      <color attach="background" args={["#0a0706"]} />
-      <fog attach="fog" args={["#0a0706", 8, 18]} />
-      <ambientLight intensity={0.28} />
+      <color attach="background" args={["#070504"]} />
+      <fog attach="fog" args={["#070504", 10, 22]} />
+      <hemisphereLight args={["#4a3a2a", "#0a0706", 0.45]} />
       <directionalLight
         castShadow
-        intensity={0.85}
-        position={[4, 8, 2]}
-        color="#e8b84a"
+        intensity={0.95}
+        position={[5, 9, 3]}
+        color="#f0d7a0"
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
       />
-      <pointLight intensity={1.1} position={[2.2, 2.2, -2.4]} color="#4fd0c8" />
-      <pointLight intensity={0.55} position={[-3.2, 2.4, -2.8]} color="#ff6b4a" />
+      <pointLight intensity={0.7} position={[-3.5, 2.6, -3]} color="#ff7a55" />
+      <pointLight intensity={0.5} position={[0, 2.8, 0]} color="#4fd0c8" />
 
-      <mesh
-        receiveShadow
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0, 0]}
-      >
-        <planeGeometry args={[12, 10]} />
-        <meshStandardMaterial color="#1c1410" roughness={0.95} />
+      {/* Floor with slight tile feel */}
+      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+        <planeGeometry args={[14, 12]} />
+        <meshStandardMaterial color="#1a1410" roughness={0.92} />
       </mesh>
-
-      {/* Walls */}
-      <mesh position={[0, 1.5, -5]}>
-        <boxGeometry args={[12, 3, 0.2]} />
-        <meshStandardMaterial color="#15100d" />
-      </mesh>
-      <mesh position={[-6, 1.5, 0]}>
-        <boxGeometry args={[0.2, 3, 10]} />
-        <meshStandardMaterial color="#15100d" />
-      </mesh>
-      <mesh position={[6, 1.5, 0]}>
-        <boxGeometry args={[0.2, 3, 10]} />
-        <meshStandardMaterial color="#15100d" />
-      </mesh>
-      <mesh position={[0, 1.5, 5]}>
-        <boxGeometry args={[12, 3, 0.2]} />
-        <meshStandardMaterial color="#120d0a" />
+      {/* Carpet runner aisle */}
+      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0.4]}>
+        <planeGeometry args={[2.2, 8.5]} />
+        <meshStandardMaterial color="#241912" roughness={1} />
       </mesh>
 
-      <Desk position={[2.2, 0, -2.8]} />
-      <Desk position={[-2.4, 0, 1.6]} color="#2a1f18" />
+      {/* Ceiling */}
+      <mesh position={[0, 3.2, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[14, 12]} />
+        <meshStandardMaterial color="#0e0b09" roughness={1} />
+      </mesh>
+      {/* Ceiling panels / lights */}
+      {[-3, 0, 3].map((x) => (
+        <group key={x} position={[x, 3.05, -1]}>
+          <mesh>
+            <boxGeometry args={[1.6, 0.06, 0.5]} />
+            <meshStandardMaterial
+              color="#f3e6c8"
+              emissive="#e8b84a"
+              emissiveIntensity={0.35}
+            />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Exterior walls */}
+      <mesh position={[0, 1.6, -5.5]} castShadow>
+        <boxGeometry args={[14, 3.2, 0.25]} />
+        <meshStandardMaterial color="#14100d" />
+      </mesh>
+      <mesh position={[-7, 1.6, 0]} castShadow>
+        <boxGeometry args={[0.25, 3.2, 12]} />
+        <meshStandardMaterial color="#14100d" />
+      </mesh>
+      <mesh position={[7, 1.6, 0]} castShadow>
+        <boxGeometry args={[0.25, 3.2, 12]} />
+        <meshStandardMaterial color="#14100d" />
+      </mesh>
+      <mesh position={[0, 1.6, 5.5]} castShadow>
+        <boxGeometry args={[14, 3.2, 0.25]} />
+        <meshStandardMaterial color="#120e0b" />
+      </mesh>
+
+      {/* Baseboards */}
+      <mesh position={[0, 0.08, -5.35]}>
+        <boxGeometry args={[13.5, 0.16, 0.08]} />
+        <meshStandardMaterial color="#3a2c22" />
+      </mesh>
+
+      {/* Low cubicle divider */}
+      <mesh position={[0.2, 0.7, -1.8]} castShadow>
+        <boxGeometry args={[0.08, 1.4, 3.2]} />
+        <meshStandardMaterial color="#2a2118" roughness={0.8} />
+      </mesh>
+      <mesh position={[0.2, 1.35, -1.8]}>
+        <boxGeometry args={[0.06, 0.12, 3.2]} />
+        <meshStandardMaterial color="#4fd0c8" emissive="#4fd0c8" emissiveIntensity={0.2} />
+      </mesh>
+
+      {/* Player workstation + chair in sit zone */}
+      <Workstation position={[2.4, 0, -2.9]} />
+      <OfficeChair position={[2.4, 0, -1.55]} />
+
+      {/* Morgan station */}
+      <Workstation position={[-2.5, 0, 1.0]} dualGlow={false} />
+      <OfficeChair position={[-2.5, 0, 2.2]} />
+      <Figure
+        position={[-2.5, 0, 2.15]}
+        rotationY={Math.PI}
+        primary="#8a9a8e"
+        secondary="#2a322c"
+        accent="#4fd0c8"
+        seated
+      />
 
       {/* Alert wall bank */}
-      <group position={[-3.6, 0, -3.4]}>
-        <mesh position={[0, 1.3, 0]}>
-          <boxGeometry args={[2.4, 1.4, 0.12]} />
-          <meshStandardMaterial
-            color="#0b1012"
-            emissive="#ff6b4a"
-            emissiveIntensity={0.35}
-          />
+      <group position={[-3.8, 0, -3.6]}>
+        <mesh position={[0, 0.55, 0.15]} castShadow>
+          <boxGeometry args={[2.8, 0.12, 0.55]} />
+          <meshStandardMaterial color="#2a2118" />
         </mesh>
-        <mesh position={[0, 0.5, 0.2]}>
-          <boxGeometry args={[2.5, 0.1, 0.5]} />
-          <meshStandardMaterial color="#3a2c22" />
+        {[-0.85, 0, 0.85].map((x) => (
+          <mesh key={x} position={[x, 1.35, 0]} castShadow>
+            <boxGeometry args={[0.75, 1.1, 0.08]} />
+            <meshStandardMaterial
+              color="#080e12"
+              emissive="#ff6b4a"
+              emissiveIntensity={0.4 + Math.abs(x) * 0.1}
+            />
+          </mesh>
+        ))}
+        <mesh position={[0, 2.05, 0]}>
+          <boxGeometry args={[2.6, 0.12, 0.1]} />
+          <meshStandardMaterial color="#1a130f" />
         </mesh>
       </group>
 
       {/* Coffee nook */}
-      <group position={[3.8, 0, 2.4]}>
-        <mesh position={[0, 0.45, 0]}>
-          <cylinderGeometry args={[0.45, 0.5, 0.9, 16]} />
-          <meshStandardMaterial color="#3a2c22" />
+      <group position={[4.0, 0, 2.6]}>
+        <mesh position={[0, 0.48, 0]} castShadow>
+          <cylinderGeometry args={[0.5, 0.55, 0.95, 20]} />
+          <meshStandardMaterial color="#3a2c22" roughness={0.75} />
         </mesh>
-        <mesh position={[0, 0.95, 0]}>
-          <cylinderGeometry args={[0.12, 0.1, 0.18, 12]} />
+        <mesh position={[0, 0.98, 0]}>
+          <cylinderGeometry args={[0.52, 0.52, 0.04, 20]} />
+          <meshStandardMaterial color="#2a2118" />
+        </mesh>
+        <mesh position={[0.15, 1.08, 0.1]}>
+          <cylinderGeometry args={[0.09, 0.08, 0.16, 12]} />
           <meshStandardMaterial color="#f3e6c8" />
+        </mesh>
+        <mesh position={[-0.2, 1.12, -0.05]}>
+          <boxGeometry args={[0.2, 0.28, 0.15]} />
+          <meshStandardMaterial color="#5c4634" />
         </mesh>
       </group>
 
-      {/* Door frame */}
-      <mesh position={[0, 1.2, 4.85]}>
-        <boxGeometry args={[1.4, 2.4, 0.15]} />
-        <meshStandardMaterial color="#241912" />
-      </mesh>
-      <mesh position={[0, 1.2, 4.9]}>
-        <boxGeometry args={[1.1, 2.1, 0.08]} />
-        <meshStandardMaterial color="#4fd0c8" emissive="#4fd0c8" emissiveIntensity={0.15} />
-      </mesh>
+      {/* Side analyst (standing near alerts) */}
+      <Figure
+        position={[-4.2, 0, -1.6]}
+        rotationY={0.4}
+        primary="#6a7a88"
+        secondary="#1e2428"
+        accent="#ff6b4a"
+      />
 
-      {/* Morgan presence */}
-      <mesh position={[-2.4, 1.1, 2.3]}>
-        <capsuleGeometry args={[0.22, 0.7, 4, 8]} />
-        <meshStandardMaterial color="#e8b84a" />
+      {/* Door / exit */}
+      <group position={[0, 0, 5.25]}>
+        <mesh position={[0, 1.35, 0]}>
+          <boxGeometry args={[1.6, 2.7, 0.12]} />
+          <meshStandardMaterial color="#1a130f" />
+        </mesh>
+        <mesh position={[0, 1.35, 0.06]}>
+          <boxGeometry args={[1.2, 2.3, 0.06]} />
+          <meshStandardMaterial
+            color="#0f1716"
+            emissive="#4fd0c8"
+            emissiveIntensity={0.18}
+          />
+        </mesh>
+        <mesh position={[0.45, 1.3, 0.12]}>
+          <sphereGeometry args={[0.05, 10, 10]} />
+          <meshStandardMaterial color="#e8b84a" metalness={0.7} />
+        </mesh>
+      </group>
+
+      {/* Wall accent strip */}
+      <mesh position={[0, 2.4, -5.35]}>
+        <boxGeometry args={[13.5, 0.06, 0.05]} />
+        <meshStandardMaterial color="#e8b84a" emissive="#e8b84a" emissiveIntensity={0.25} />
       </mesh>
 
       {HOTSPOTS.map((def) => (
         <Hotspot
-          active={nearby?.id === def.id}
+          active={activeHotspot === def.id}
           def={def}
           key={def.id}
-          playerPosition={playerPos}
         />
       ))}
 
       <PlayerController
         colliders={COLLIDERS}
         enabled={enabled}
-        onPosition={setPlayerPos}
+        onPosition={handlePosition}
+        spawn={PLAYER_SPAWN}
       />
       <FloorClick enabled={enabled} />
     </>

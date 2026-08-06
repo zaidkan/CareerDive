@@ -1182,10 +1182,15 @@ section[aria-labelledby="debrief-title"] h2 {
   transform: translate(-50%, -50%);
   background: var(--phosphor);
   box-shadow: 0 0 16px var(--phosphor);
-  transition:
-    left 650ms ease,
-    top 650ms ease;
+  transition-property: left, top;
+  transition-timing-function: ease-in-out;
   z-index: 2;
+}
+
+.floor-traveling {
+  margin-top: 0.85rem;
+  color: var(--signal);
+  font-size: 0.95rem;
 }
 
 .spatial-shell {

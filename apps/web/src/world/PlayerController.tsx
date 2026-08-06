@@ -9,10 +9,10 @@ export type Aabb = {
   maxZ: number;
 };
 
-const SPEED = 4.2;
-const LOOK_SENS = 0.0022;
+const SPEED = 3.2;
+const LOOK_SENS = 0.002;
 
-function collides(x: number, z: number, boxes: Aabb[], radius = 0.35): boolean {
+function collides(x: number, z: number, boxes: Aabb[], radius = 0.32): boolean {
   for (const box of boxes) {
     if (
       x + radius > box.minX &&
@@ -30,10 +30,12 @@ export function PlayerController({
   colliders,
   onPosition,
   enabled,
+  spawn = [0, 1.6, 4.2],
 }: {
   colliders: Aabb[];
   onPosition: (position: [number, number, number]) => void;
   enabled: boolean;
+  spawn?: [number, number, number];
 }) {
   const { camera, gl } = useThree();
   const keys = useRef(new Set<string>());
@@ -42,9 +44,11 @@ export function PlayerController({
   const dragging = useRef(false);
   const last = useRef({ x: 0, y: 0 });
   const target = useRef<THREE.Vector3 | null>(null);
-  const pos = useRef(new THREE.Vector3(0, 1.6, 4.5));
+  const pos = useRef(new THREE.Vector3(...spawn));
+  const reported = useRef(0);
 
   useEffect(() => {
+    pos.current.set(...spawn);
     camera.position.copy(pos.current);
     const onKeyDown = (event: KeyboardEvent) => {
       keys.current.add(event.code);
@@ -54,6 +58,8 @@ export function PlayerController({
     };
     const onPointerDown = (event: PointerEvent) => {
       if (!enabled) return;
+      // Left button only for look — avoid fighting UI
+      if (event.button !== 0) return;
       dragging.current = true;
       last.current = { x: event.clientX, y: event.clientY };
     };
@@ -67,13 +73,9 @@ export function PlayerController({
       last.current = { x: event.clientX, y: event.clientY };
       yaw.current -= dx * LOOK_SENS;
       pitch.current = Math.max(
-        -1.2,
-        Math.min(1.2, pitch.current - dy * LOOK_SENS),
+        -1.15,
+        Math.min(1.15, pitch.current - dy * LOOK_SENS),
       );
-    };
-    const onClick = (event: MouseEvent) => {
-      if (!enabled || event.detail < 1) return;
-      // Double-click floor walk handled via custom event from SocRoom
     };
 
     window.addEventListener("keydown", onKeyDown);
@@ -84,7 +86,7 @@ export function PlayerController({
 
     const onWalkTo = (event: Event) => {
       const custom = event as CustomEvent<{ x: number; z: number }>;
-      target.current = new THREE.Vector3(custom.detail.x, 1.6, custom.detail.z);
+      target.current = new THREE.Vector3(custom.detail.x, spawn[1], custom.detail.z);
     };
     window.addEventListener("soc-walk-to", onWalkTo);
 
@@ -95,9 +97,8 @@ export function PlayerController({
       window.removeEventListener("pointerup", onPointerUp);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("soc-walk-to", onWalkTo);
-      window.removeEventListener("click", onClick);
     };
-  }, [camera, enabled, gl.domElement]);
+  }, [camera, enabled, gl.domElement, spawn]);
 
   useFrame((_, delta) => {
     if (!enabled) return;
@@ -150,15 +151,20 @@ export function PlayerController({
       if (!collides(pos.current.x, nextZ, colliders)) {
         pos.current.z = nextZ;
       }
-      pos.current.x = Math.max(-5.4, Math.min(5.4, pos.current.x));
-      pos.current.z = Math.max(-4.4, Math.min(4.6, pos.current.z));
+      pos.current.x = Math.max(-6.2, Math.min(6.2, pos.current.x));
+      pos.current.z = Math.max(-4.8, Math.min(5.0, pos.current.z));
     }
 
     camera.position.copy(pos.current);
     camera.rotation.order = "YXZ";
     camera.rotation.y = yaw.current;
     camera.rotation.x = pitch.current;
-    onPosition([pos.current.x, pos.current.y, pos.current.z]);
+
+    reported.current += delta;
+    if (reported.current >= 0.05) {
+      reported.current = 0;
+      onPosition([pos.current.x, pos.current.y, pos.current.z]);
+    }
   });
 
   return null;

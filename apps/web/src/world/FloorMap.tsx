@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { RoomId } from "./worldTypes.js";
 
+const TRAVEL_MS = 1600;
+
 const ROOMS: Array<{
   id: RoomId;
   label: string;
@@ -50,7 +52,7 @@ export function FloorMap({
     window.setTimeout(() => {
       onEnterRoom(room.id);
       setTraveling(false);
-    }, 650);
+    }, TRAVEL_MS);
   }
 
   return (
@@ -62,11 +64,22 @@ export function FloorMap({
           Hallways stay simple — pick a room and you will head there. Only the
           operations floor is open for this shift.
         </p>
+        {traveling ? (
+          <p className="floor-traveling" aria-live="polite">
+            Walking over…
+          </p>
+        ) : null}
       </div>
-      <div className="floor-map-stage" aria-hidden={false}>
+      <div className="floor-map-stage">
         <div className="floor-map-grid">
-          <span className="floor-hall hall-h" style={{ top: "48%", left: "8%", width: "84%" }} />
-          <span className="floor-hall hall-v" style={{ top: "18%", left: "48%", height: "64%" }} />
+          <span
+            className="floor-hall hall-h"
+            style={{ top: "48%", left: "8%", width: "84%" }}
+          />
+          <span
+            className="floor-hall hall-v"
+            style={{ top: "18%", left: "48%", height: "64%" }}
+          />
           {ROOMS.map((room) => (
             <button
               className="floor-room"
@@ -86,7 +99,11 @@ export function FloorMap({
           <span
             aria-hidden="true"
             className="floor-you"
-            style={{ left: `${String(marker.x)}%`, top: `${String(marker.y)}%` }}
+            style={{
+              left: `${String(marker.x)}%`,
+              top: `${String(marker.y)}%`,
+              transitionDuration: `${String(TRAVEL_MS)}ms`,
+            }}
           />
         </div>
       </div>

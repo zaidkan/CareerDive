@@ -97,8 +97,10 @@ export function SpatialShell({
                 <p className="eyebrow">SOC floor</p>
                 <p>
                   {nearbyLabel
-                    ? `Near: ${nearbyLabel} · press E or Interact`
-                    : "WASD move · drag look · double-click walk · E interact"}
+                    ? nearbyLabel === "Your chair"
+                      ? "At your chair — press E or Sit to use the computer"
+                      : `Near: ${nearbyLabel} · press E or Interact`
+                    : "WASD move · drag to look · double-click to walk · E to interact"}
                 </p>
                 {spatial.flavorMessage ? (
                   <p className="room-flavor">{spatial.flavorMessage}</p>
@@ -113,7 +115,9 @@ export function SpatialShell({
                     }}
                     type="button"
                   >
-                    Interact
+                    {spatial.nearbyHotspotId === "desk_player"
+                      ? "Sit at computer"
+                      : "Interact"}
                   </button>
                 ) : null}
                 <button

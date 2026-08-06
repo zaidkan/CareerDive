@@ -12,39 +12,34 @@ export type HotspotDef = {
 
 export function Hotspot({
   def,
-  playerPosition,
   active,
 }: {
   def: HotspotDef;
-  playerPosition: [number, number, number];
   active: boolean;
 }) {
   const ref = useRef<Group>(null);
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!ref.current) return;
-    ref.current.rotation.y += 0.01;
+    ref.current.rotation.y += delta * 0.8;
   });
-
-  const dx = playerPosition[0] - def.position[0];
-  const dz = playerPosition[2] - def.position[2];
-  const near = Math.hypot(dx, dz) <= def.radius;
 
   return (
     <group position={def.position} ref={ref}>
-      <mesh position={[0, 1.2, 0]}>
-        <sphereGeometry args={[0.12, 12, 12]} />
+      <mesh position={[0, 1.05, 0]}>
+        <octahedronGeometry args={[0.14, 0]} />
         <meshStandardMaterial
-          color={active || near ? "#4fd0c8" : "#e8b84a"}
-          emissive={active || near ? "#4fd0c8" : "#a87a28"}
-          emissiveIntensity={active || near ? 1.2 : 0.45}
+          color={active ? "#4fd0c8" : "#e8b84a"}
+          emissive={active ? "#4fd0c8" : "#a87a28"}
+          emissiveIntensity={active ? 1.4 : 0.55}
+          roughness={0.35}
         />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
-        <ringGeometry args={[0.35, 0.48, 24]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}>
+        <ringGeometry args={[0.42, 0.58, 32]} />
         <meshBasicMaterial
-          color={near ? "#4fd0c8" : "#5c4634"}
+          color={active ? "#4fd0c8" : "#5c4634"}
           transparent
-          opacity={0.7}
+          opacity={active ? 0.85 : 0.45}
         />
       </mesh>
     </group>
