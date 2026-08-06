@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ClientView, Debrief } from "@sim/schemas";
 import {
   App,
@@ -11,6 +11,23 @@ import {
   Tutorial,
   WorkSurface,
 } from "../src/index.js";
+
+vi.mock("../src/world/RoomCanvas.js", () => ({
+  RoomCanvas: ({
+    onInteract,
+  }: {
+    onInteract: (id: string) => void;
+  }) => (
+    <div>
+      <button type="button" onClick={() => onInteract("desk_player")}>
+        Sit at desk
+      </button>
+      <button type="button" onClick={() => onInteract("door_exit")}>
+        Exit room
+      </button>
+    </div>
+  ),
+}));
 
 afterEach(cleanup);
 
@@ -35,6 +52,7 @@ const view: ClientView = {
       status: "active",
       deadlineAt: 180,
       completedActionIds: [],
+      observedArtifactIds: ["suspicious-login-alert"],
     },
   ],
   availableActions: [
@@ -57,6 +75,24 @@ const view: ClientView = {
   ],
   operationalMessages: [],
   pacingMode: "standard",
+  artifacts: [
+    {
+      id: "suspicious-login-alert",
+      systemId: "alert_dashboard",
+      kind: "alert",
+      title: "Unfamiliar successful login",
+      summary: "Alert A-1042",
+      body: "Repeated failures followed by a successful sign-in.",
+      eventIds: ["suspicious-login-1"],
+      relatedArtifactIds: [],
+      searchableText: "login alert",
+      metadata: { alertId: "A-1042" },
+      observed: true,
+    },
+  ],
+  ticketNotes: {},
+  notebook: "",
+  kbQuery: "",
 };
 
 describe("parallel simulation views", () => {
@@ -120,6 +156,7 @@ describe("parallel simulation views", () => {
           status: "active",
           deadlineAt: 35,
           completedActionIds: [],
+          observedArtifactIds: [],
         },
       ],
       availableActions: [
@@ -133,13 +170,30 @@ describe("parallel simulation views", () => {
           simulatedMinutes: 5,
         },
       ],
+      artifacts: [
+        ...view.artifacts,
+        {
+          id: "handoff-email",
+          systemId: "email",
+          kind: "email",
+          title: "Incomplete shift handoff",
+          summary: "From night analyst",
+          body: "Still watching the unfamiliar login thread.",
+          eventIds: ["handoff-1"],
+          relatedArtifactIds: [],
+          searchableText: "handoff",
+          metadata: {},
+          observed: false,
+        },
+      ],
     };
 
     render(<WorkSurface view={workplaceView} onAction={() => undefined} />);
-    expect(
-      screen.getByRole("navigation", { name: "Work systems" }),
-    ).toBeVisible();
-    await user.click(screen.getByRole("button", { name: /email/i }));
+    const systems = screen.getByRole("navigation", { name: "Work systems" });
+    expect(systems).toBeVisible();
+    await user.click(
+      within(systems).getByRole("button", { name: /Email/i }),
+    );
 
     expect(
       screen.getByRole("heading", { name: "Shift handoff" }),
@@ -147,7 +201,71 @@ describe("parallel simulation views", () => {
     expect(
       screen.getByRole("button", { name: /read shift handoff/i }),
     ).toBeVisible();
+    expect(
+      screen.getByText(/Still watching the unfamiliar login thread/i),
+    ).toBeVisible();
     expect(screen.queryByLabelText("Available actions")).toBeNull();
+  });
+
+  it("lets analysts edit ticket notes through the same action targets", async () => {
+    const user = userEvent.setup();
+    const actions: Array<{ id: string; freeText?: string }> = [];
+    const ticketView: ClientView = {
+      ...view,
+      availableActions: [
+        ...view.availableActions,
+        {
+          id: "update_ticket_notes",
+          eventId: "suspicious-login-1",
+          systemId: "ticket_queue",
+          label: "Update investigation notes",
+          description: "Edit ticket notes.",
+          simulatedMinutes: 0,
+        },
+      ],
+      artifacts: [
+        ...view.artifacts,
+        {
+          id: "ticket-suspicious-login",
+          systemId: "ticket_queue",
+          kind: "ticket",
+          title: "Ticket · unfamiliar login",
+          summary: "Investigation notes",
+          body: "Capture evidence before deciding.",
+          eventIds: ["suspicious-login-1"],
+          relatedArtifactIds: [],
+          searchableText: "ticket",
+          metadata: {},
+          observed: false,
+        },
+      ],
+    };
+
+    render(
+      <WorkSurface
+        view={ticketView}
+        onAction={(action, freeText) => {
+          actions.push(
+            freeText === undefined
+              ? { id: action.id }
+              : { id: action.id, freeText },
+          );
+        }}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /Tickets/i }));
+    await user.type(
+      screen.getByLabelText("Investigation notes"),
+      "Need device inventory",
+    );
+    await user.click(
+      screen.getByRole("button", { name: /save update investigation notes/i }),
+    );
+
+    expect(actions.at(-1)).toEqual({
+      id: "update_ticket_notes",
+      freeText: "Need device inventory",
+    });
   });
 });
 
@@ -182,7 +300,9 @@ describe("tutorial and debrief", () => {
     render(<App client={client} />);
 
     expect(
-      await screen.findByRole("heading", { name: "Practice tutorial" }),
+      await screen.findByRole("heading", {
+        name: /Step 1 · Check your inbox/i,
+      }),
     ).toBeVisible();
     expect(calls[0]).toEqual(
       expect.objectContaining({
@@ -195,9 +315,11 @@ describe("tutorial and debrief", () => {
   it("labels tutorial as practice and explains that it records no evidence", () => {
     render(<Tutorial />);
     expect(
-      screen.getByRole("heading", { name: "Practice tutorial" }),
+      screen.getByRole("heading", {
+        name: /Step 1 · Check your inbox/i,
+      }),
     ).toBeVisible();
-    expect(screen.getByText(/does not record evidence/i)).toBeVisible();
+    expect(screen.getByText(/Practice mode · safe to explore/i)).toBeVisible();
   });
 
   it("welcomes the user into the shift before opening the workstation", async () => {
@@ -210,14 +332,20 @@ describe("tutorial and debrief", () => {
 
     render(<App client={client} />);
     await user.click(
-      await screen.findByRole("button", { name: "Start assessed shift" }),
+      await screen.findByRole("button", { name: /Skip practice/i }),
     );
 
     expect(
-      await screen.findByRole("heading", { name: "Welcome to your shift" }),
+      await screen.findByRole("heading", { name: "Welcome to the night shift" }),
     ).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "Open workstation" }),
+      screen.getByRole("button", { name: "Sit down at the desk" }),
+    ).toBeVisible();
+    await user.click(
+      screen.getByRole("button", { name: "Sit down at the desk" }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: /Choose where to go/i }),
     ).toBeVisible();
   });
 
@@ -263,22 +391,22 @@ describe("tutorial and debrief", () => {
 
     render(<App client={client} />);
     await user.click(
-      await screen.findByRole("button", { name: "Start assessed shift" }),
+      await screen.findByRole("button", { name: /Skip practice/i }),
     );
     await user.click(
-      await screen.findByRole("button", { name: "Open workstation" }),
+      await screen.findByRole("button", { name: "Sit down at the desk" }),
     );
-    await user.click(screen.getByRole("button", { name: /team chat/i }));
+    await user.click(screen.getByRole("button", { name: "Simple list" }));
     await user.click(
       await screen.findByRole("button", { name: /ask manager for context/i }),
     );
 
     expect(
-      await screen.findByRole("heading", { name: "Manager context" }),
+      await screen.findByRole("heading", { name: "Morgan is here to help" }),
     ).toBeVisible();
     expect(screen.getByText(/Morgan recommends reviewing/i)).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "Return to alert dashboard" }),
+      screen.getByRole("button", { name: "Back to my desk" }),
     ).toBeVisible();
   });
 

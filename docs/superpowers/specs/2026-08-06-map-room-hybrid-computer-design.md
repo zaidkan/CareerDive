@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-06  
 **Branch / worktree:** `feature/career-sim-beta`  
-**Status:** Approved for planning (pending user review of this written spec)  
+**Status:** Implemented (PR1 vertical slice)  
 **Inspiration:** Presentation craft of *Orwell: Keeping an Eye On You* (sit at desk, enter computer, map-based travel, built rooms). **Not** Orwell’s story, surveillance fantasy, or “watch real people” mechanics.
 
 ---
