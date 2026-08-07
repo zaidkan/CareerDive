@@ -1,11 +1,30 @@
 /**
- * Stylized indie workplace figure — layered silhouette with clothing cues.
- * Presentation only; never drives simulation evidence.
+ * Stylized workplace figure using box limbs (stable proportions).
+ * Presentation only — never drives simulation evidence.
  */
+function Limb({
+  args,
+  position,
+  rotation = [0, 0, 0],
+  color,
+}: {
+  args: [number, number, number];
+  position: [number, number, number];
+  rotation?: [number, number, number];
+  color: string;
+}) {
+  return (
+    <mesh position={position} rotation={rotation} castShadow>
+      <boxGeometry args={args} />
+      <meshStandardMaterial color={color} roughness={0.72} />
+    </mesh>
+  );
+}
+
 export function Figure({
   position = [0, 0, 0],
   rotationY = 0,
-  primary = "#8a9a8e",
+  primary = "#6d7f78",
   secondary = "#2a322c",
   accent = "#4fd0c8",
   skin = "#d4b896",
@@ -21,153 +40,149 @@ export function Figure({
   hair?: string;
   seated?: boolean;
 }) {
-  const hipY = seated ? 0.52 : 0.55;
-  const torsoY = seated ? 1.0 : 1.12;
-  const headY = seated ? 1.58 : 1.78;
-  const legBend = seated ? 0.55 : 0;
-  const legZ = seated ? 0.18 : 0;
+  if (seated) {
+    return (
+      <group position={position} rotation={[0, rotationY, 0]}>
+        {/* Chair-sit: thighs forward, calves down, torso upright */}
+        <Limb args={[0.16, 0.14, 0.42]} position={[-0.12, 0.52, 0.12]} color={secondary} />
+        <Limb args={[0.16, 0.14, 0.42]} position={[0.12, 0.52, 0.12]} color={secondary} />
+        <Limb args={[0.14, 0.38, 0.14]} position={[-0.12, 0.28, 0.28]} color={secondary} />
+        <Limb args={[0.14, 0.38, 0.14]} position={[0.12, 0.28, 0.28]} color={secondary} />
+        <Limb args={[0.16, 0.08, 0.28]} position={[-0.12, 0.08, 0.3]} color="#1a130f" />
+        <Limb args={[0.16, 0.08, 0.28]} position={[0.12, 0.08, 0.3]} color="#1a130f" />
+
+        <Limb args={[0.42, 0.16, 0.28]} position={[0, 0.62, 0]} color={secondary} />
+        <Limb args={[0.4, 0.52, 0.26]} position={[0, 1.0, 0]} color={primary} />
+
+        {/* Arms resting forward */}
+        <Limb
+          args={[0.12, 0.36, 0.12]}
+          position={[-0.3, 0.92, 0.18]}
+          rotation={[0.9, 0, 0.15]}
+          color={primary}
+        />
+        <Limb
+          args={[0.12, 0.36, 0.12]}
+          position={[0.3, 0.92, 0.18]}
+          rotation={[0.9, 0, -0.15]}
+          color={primary}
+        />
+        <mesh position={[-0.32, 0.78, 0.38]}>
+          <sphereGeometry args={[0.07, 12, 12]} />
+          <meshStandardMaterial color={skin} roughness={0.55} />
+        </mesh>
+        <mesh position={[0.32, 0.78, 0.38]}>
+          <sphereGeometry args={[0.07, 12, 12]} />
+          <meshStandardMaterial color={skin} roughness={0.55} />
+        </mesh>
+
+        <Head skin={skin} hair={hair} accent={accent} y={1.42} />
+      </group>
+    );
+  }
 
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
-      {/* Shoes */}
-      <mesh position={[-0.12, 0.06, legZ * 0.5]} castShadow>
-        <boxGeometry args={[0.14, 0.08, 0.26]} />
-        <meshStandardMaterial color="#1a130f" roughness={0.7} />
-      </mesh>
-      <mesh position={[0.12, 0.06, legZ * 0.5]} castShadow>
-        <boxGeometry args={[0.14, 0.08, 0.26]} />
-        <meshStandardMaterial color="#1a130f" roughness={0.7} />
-      </mesh>
+      {/* Standing: clear vertical limbs */}
+      <Limb args={[0.15, 0.08, 0.28]} position={[-0.12, 0.06, 0.02]} color="#1a130f" />
+      <Limb args={[0.15, 0.08, 0.28]} position={[0.12, 0.06, 0.02]} color="#1a130f" />
 
-      {/* Legs */}
-      <mesh
-        position={[-0.12, hipY * 0.55, legZ * 0.4]}
-        rotation={[legBend, 0, 0]}
-        castShadow
-      >
-        <capsuleGeometry args={[0.085, seated ? 0.32 : 0.58, 6, 10]} />
-        <meshStandardMaterial color={secondary} roughness={0.8} />
-      </mesh>
-      <mesh
-        position={[0.12, hipY * 0.55, legZ * 0.4]}
-        rotation={[legBend, 0, 0]}
-        castShadow
-      >
-        <capsuleGeometry args={[0.085, seated ? 0.32 : 0.58, 6, 10]} />
-        <meshStandardMaterial color={secondary} roughness={0.8} />
-      </mesh>
+      <Limb args={[0.14, 0.48, 0.14]} position={[-0.12, 0.36, 0]} color={secondary} />
+      <Limb args={[0.14, 0.48, 0.14]} position={[0.12, 0.36, 0]} color={secondary} />
+      <Limb args={[0.14, 0.42, 0.14]} position={[-0.12, 0.78, 0]} color={secondary} />
+      <Limb args={[0.14, 0.42, 0.14]} position={[0.12, 0.78, 0]} color={secondary} />
 
-      {/* Hips / belt */}
-      <mesh position={[0, hipY, 0]} castShadow>
-        <cylinderGeometry args={[0.2, 0.22, 0.18, 12]} />
-        <meshStandardMaterial color={secondary} roughness={0.75} />
-      </mesh>
-      <mesh position={[0, hipY + 0.08, 0.18]}>
-        <boxGeometry args={[0.12, 0.04, 0.04]} />
-        <meshStandardMaterial color={accent} metalness={0.5} />
-      </mesh>
+      <Limb args={[0.4, 0.16, 0.26]} position={[0, 1.02, 0]} color={secondary} />
+      <Limb args={[0.4, 0.55, 0.26]} position={[0, 1.4, 0]} color={primary} />
 
-      {/* Torso / hoodie */}
-      <mesh position={[0, torsoY, 0]} castShadow>
-        <capsuleGeometry args={[0.22, 0.42, 6, 12]} />
-        <meshStandardMaterial color={primary} roughness={0.65} />
-      </mesh>
-      {/* Collar */}
-      <mesh position={[0, torsoY + 0.28, 0.05]}>
-        <torusGeometry args={[0.14, 0.035, 8, 16]} />
-        <meshStandardMaterial color={primary} roughness={0.7} />
-      </mesh>
+      {/* Upper + lower arms */}
+      <Limb
+        args={[0.12, 0.34, 0.12]}
+        position={[-0.3, 1.42, 0]}
+        rotation={[0.12, 0, 0.35]}
+        color={primary}
+      />
+      <Limb
+        args={[0.12, 0.34, 0.12]}
+        position={[0.3, 1.42, 0]}
+        rotation={[0.12, 0, -0.35]}
+        color={primary}
+      />
+      <Limb
+        args={[0.11, 0.32, 0.11]}
+        position={[-0.38, 1.12, 0.04]}
+        rotation={[0.2, 0, 0.2]}
+        color={primary}
+      />
+      <Limb
+        args={[0.11, 0.32, 0.11]}
+        position={[0.38, 1.12, 0.04]}
+        rotation={[0.2, 0, -0.2]}
+        color={primary}
+      />
 
-      {/* Arms */}
-      <mesh
-        position={[-0.34, torsoY + 0.02, 0.02]}
-        rotation={[seated ? 0.8 : 0.15, 0, 0.45]}
-        castShadow
-      >
-        <capsuleGeometry args={[0.07, 0.42, 5, 10]} />
-        <meshStandardMaterial color={primary} roughness={0.65} />
-      </mesh>
-      <mesh
-        position={[0.34, torsoY + 0.02, 0.02]}
-        rotation={[seated ? 0.8 : 0.15, 0, -0.45]}
-        castShadow
-      >
-        <capsuleGeometry args={[0.07, 0.42, 5, 10]} />
-        <meshStandardMaterial color={primary} roughness={0.65} />
-      </mesh>
-      {/* Hands */}
-      <mesh
-        position={[
-          -0.42,
-          torsoY - (seated ? 0.05 : 0.28),
-          seated ? 0.28 : 0.05,
-        ]}
-      >
-        <sphereGeometry args={[0.07, 10, 10]} />
+      <mesh position={[-0.42, 0.92, 0.06]}>
+        <sphereGeometry args={[0.07, 12, 12]} />
         <meshStandardMaterial color={skin} roughness={0.55} />
       </mesh>
-      <mesh
-        position={[
-          0.42,
-          torsoY - (seated ? 0.05 : 0.28),
-          seated ? 0.28 : 0.05,
-        ]}
-      >
-        <sphereGeometry args={[0.07, 10, 10]} />
+      <mesh position={[0.42, 0.92, 0.06]}>
+        <sphereGeometry args={[0.07, 12, 12]} />
         <meshStandardMaterial color={skin} roughness={0.55} />
       </mesh>
 
-      {/* Neck + head */}
-      <mesh position={[0, headY - 0.18, 0]}>
-        <cylinderGeometry args={[0.07, 0.08, 0.12, 10]} />
+      <Head skin={skin} hair={hair} accent={accent} y={1.82} />
+    </group>
+  );
+}
+
+function Head({
+  skin,
+  hair,
+  accent,
+  y,
+}: {
+  skin: string;
+  hair: string;
+  accent: string;
+  y: number;
+}) {
+  return (
+    <group position={[0, y, 0]}>
+      <mesh position={[0, -0.12, 0]}>
+        <cylinderGeometry args={[0.07, 0.08, 0.1, 12]} />
         <meshStandardMaterial color={skin} />
       </mesh>
-      <mesh position={[0, headY, 0]} castShadow>
-        <sphereGeometry args={[0.165, 20, 20]} />
+      <mesh castShadow>
+        <sphereGeometry args={[0.16, 20, 20]} />
         <meshStandardMaterial color={skin} roughness={0.5} />
       </mesh>
-
-      {/* Hair volume */}
-      <mesh position={[0, headY + 0.08, -0.02]}>
-        <sphereGeometry args={[0.15, 14, 14]} />
-        <meshStandardMaterial color={hair} roughness={0.75} />
+      <mesh position={[0, 0.08, -0.02]}>
+        <sphereGeometry args={[0.14, 14, 14]} />
+        <meshStandardMaterial color={hair} roughness={0.78} />
       </mesh>
-      <mesh position={[0, headY + 0.02, -0.1]}>
-        <sphereGeometry args={[0.12, 12, 12]} />
-        <meshStandardMaterial color={hair} roughness={0.8} />
-      </mesh>
-
-      {/* Soft face cue (eyes) */}
-      <mesh position={[-0.05, headY + 0.02, 0.14]}>
-        <sphereGeometry args={[0.025, 8, 8]} />
+      <mesh position={[-0.05, 0.02, 0.13]}>
+        <sphereGeometry args={[0.022, 8, 8]} />
         <meshStandardMaterial color="#1a130f" />
       </mesh>
-      <mesh position={[0.05, headY + 0.02, 0.14]}>
-        <sphereGeometry args={[0.025, 8, 8]} />
+      <mesh position={[0.05, 0.02, 0.13]}>
+        <sphereGeometry args={[0.022, 8, 8]} />
         <meshStandardMaterial color="#1a130f" />
       </mesh>
-
-      {/* Headset */}
-      <mesh position={[0, headY + 0.02, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <torusGeometry args={[0.15, 0.018, 8, 20]} />
-        <meshStandardMaterial color="#222" metalness={0.4} />
+      <mesh rotation={[0, 0, Math.PI / 2]}>
+        <torusGeometry args={[0.14, 0.016, 8, 20]} />
+        <meshStandardMaterial color="#2a2a2a" metalness={0.35} />
       </mesh>
-      <mesh position={[0.16, headY, 0]}>
-        <sphereGeometry args={[0.055, 10, 10]} />
+      <mesh position={[0.15, 0, 0]}>
+        <sphereGeometry args={[0.05, 10, 10]} />
         <meshStandardMaterial
           color={accent}
           emissive={accent}
-          emissiveIntensity={0.45}
+          emissiveIntensity={0.4}
         />
       </mesh>
-      <mesh position={[-0.16, headY, 0]}>
-        <sphereGeometry args={[0.055, 10, 10]} />
-        <meshStandardMaterial color="#333" metalness={0.3} />
-      </mesh>
-      {/* Mic boom */}
-      <mesh position={[0.1, headY - 0.06, 0.1]} rotation={[0.4, 0.6, 0]}>
-        <cylinderGeometry args={[0.01, 0.01, 0.18, 6]} />
-        <meshStandardMaterial color="#444" />
+      <mesh position={[-0.15, 0, 0]}>
+        <sphereGeometry args={[0.05, 10, 10]} />
+        <meshStandardMaterial color="#333" />
       </mesh>
     </group>
   );

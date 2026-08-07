@@ -9,7 +9,7 @@ export type Aabb = {
   maxZ: number;
 };
 
-const SPEED = 3.2;
+const SPEED = 1.85;
 const LOOK_SENS = 0.002;
 
 function collides(x: number, z: number, boxes: Aabb[], radius = 0.32): boolean {

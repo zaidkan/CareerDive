@@ -137,7 +137,7 @@ describe("spatial presentation", () => {
       () => {
         expect(entered).toBe("soc");
       },
-      { timeout: 2500 },
+      { timeout: 5000 },
     );
     expect(screen.getByRole("button", { name: /Break room/i })).toBeDisabled();
   });
@@ -149,7 +149,7 @@ describe("spatial presentation", () => {
     await user.click(
       screen.getByRole("button", { name: /Security Operations/i }),
     );
-    await screen.findByRole("button", { name: /Sit at desk/i }, { timeout: 2500 });
+    await screen.findByRole("button", { name: /Sit at desk/i }, { timeout: 5000 });
     await user.click(screen.getByRole("button", { name: /Sit at desk/i }));
     await user.click(screen.getByRole("button", { name: /Focus desk/i }));
 

@@ -75,8 +75,8 @@ function PlayerDesk() {
         <meshStandardMaterial color="#1a130f" roughness={0.6} />
       </mesh>
       <pointLight
-        intensity={0.4}
-        distance={3}
+        intensity={1.1}
+        distance={5}
         position={[-0.4, 1.35, -0.1]}
         color="#4fd0c8"
       />
@@ -274,7 +274,7 @@ export function SocRoom({
 
   useEffect(() => {
     gl.toneMapping = THREE.ACESFilmicToneMapping;
-    gl.toneMappingExposure = 1.05;
+    gl.toneMappingExposure = 1.55;
   }, [gl]);
 
   useEffect(() => {
@@ -302,79 +302,84 @@ export function SocRoom({
 
   return (
     <>
-      <color attach="background" args={["#060403"]} />
-      <fog attach="fog" args={["#060403", 11, 24]} />
-      <hemisphereLight args={["#5a4a38", "#0a0604", 0.55]} />
+      <color attach="background" args={["#1a1410"]} />
+      <fog attach="fog" args={["#1a1410", 16, 32]} />
+      <hemisphereLight args={["#ffe2b0", "#3a2c22", 1.1]} />
+      <ambientLight intensity={0.55} />
       <directionalLight
         castShadow
-        intensity={1.05}
-        position={[6, 10, 4]}
-        color="#f2d9a8"
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-        shadow-camera-far={28}
-        shadow-camera-left={-10}
-        shadow-camera-right={10}
-        shadow-camera-top={10}
-        shadow-camera-bottom={-10}
+        intensity={1.6}
+        position={[4, 9, 5]}
+        color="#fff0d0"
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+        shadow-bias={-0.0002}
+        shadow-camera-far={30}
+        shadow-camera-left={-9}
+        shadow-camera-right={9}
+        shadow-camera-top={9}
+        shadow-camera-bottom={-9}
       />
-      <ambientLight intensity={0.12} />
+      <pointLight intensity={1.2} distance={14} position={[0, 2.4, 0]} color="#ffe8b8" />
+      <pointLight intensity={0.9} distance={10} position={[-3, 2.2, -2]} color="#ffb08a" />
+      <pointLight intensity={0.7} distance={9} position={[3, 2.2, 1]} color="#9fe8e2" />
 
       {/* Structural shell */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
         <planeGeometry args={[16, 14]} />
-        <meshStandardMaterial color="#14100d" roughness={1} />
+        <meshStandardMaterial color="#2a221c" roughness={0.95} />
       </mesh>
       <FloorTileGrid />
       {/* Aisle carpet */}
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0.3]}>
         <planeGeometry args={[2.4, 9.2]} />
-        <meshStandardMaterial color="#221810" roughness={1} />
+        <meshStandardMaterial color="#3a2c22" roughness={1} />
       </mesh>
 
       <mesh position={[0, 3.25, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <planeGeometry args={[16, 14]} />
-        <meshStandardMaterial color="#0c0907" roughness={1} />
+        <meshStandardMaterial color="#241c16" roughness={1} />
       </mesh>
       <CeilingFixture position={[-3.2, 3.15, -1.5]} />
       <CeilingFixture position={[0, 3.15, 0.5]} />
       <CeilingFixture position={[3.2, 3.15, -1.2]} />
+      <CeilingFixture position={[0, 3.15, 3.2]} />
 
       <WallPanel position={[0, 1.6, -5.6]} size={[16, 3.25, 0.28]} />
       <WallPanel position={[-7.5, 1.6, 0]} size={[0.28, 3.25, 14]} />
       <WallPanel position={[7.5, 1.6, 0]} size={[0.28, 3.25, 14]} />
-      <WallPanel position={[0, 1.6, 5.6]} size={[16, 3.25, 0.28]} color="#120e0b" />
+      <WallPanel position={[0, 1.6, 5.6]} size={[16, 3.25, 0.28]} color="#26201a" />
 
       {/* Baseboard + crown */}
       <mesh position={[0, 0.1, -5.45]}>
         <boxGeometry args={[15.5, 0.2, 0.08]} />
-        <meshStandardMaterial color="#3a2c22" />
+        <meshStandardMaterial color="#4a3a2c" />
       </mesh>
       <mesh position={[0, 2.55, -5.45]}>
         <boxGeometry args={[15.5, 0.05, 0.05]} />
         <meshStandardMaterial
           color="#e8b84a"
           emissive="#e8b84a"
-          emissiveIntensity={0.3}
+          emissiveIntensity={0.55}
         />
       </mesh>
 
       {/* Cubicle spine */}
       <mesh position={[0.15, 0.75, -1.6]} castShadow>
         <boxGeometry args={[0.1, 1.5, 3.6]} />
-        <meshStandardMaterial color="#2a2118" roughness={0.75} />
+        <meshStandardMaterial color="#3a2c22" roughness={0.75} />
       </mesh>
       <mesh position={[0.15, 1.52, -1.6]}>
         <boxGeometry args={[0.08, 0.1, 3.6]} />
         <meshStandardMaterial
           color="#4fd0c8"
           emissive="#4fd0c8"
-          emissiveIntensity={0.25}
+          emissiveIntensity={0.4}
         />
       </mesh>
       <mesh position={[0.15, 0.75, 1.4]} castShadow>
         <boxGeometry args={[0.1, 1.5, 2.2]} />
-        <meshStandardMaterial color="#2a2118" roughness={0.75} />
+        <meshStandardMaterial color="#3a2c22" roughness={0.75} />
       </mesh>
 
       <PlayerDesk />
@@ -393,8 +398,8 @@ export function SocRoom({
       <Figure
         position={[-2.5, 0, 2.1]}
         rotationY={Math.PI}
-        primary="#6d7f78"
-        secondary="#24302c"
+        primary="#7d9088"
+        secondary="#2e3c36"
         accent="#4fd0c8"
         hair="#1a120c"
         seated
@@ -402,27 +407,27 @@ export function SocRoom({
       <Figure
         position={[-4.4, 0, -1.5]}
         rotationY={0.55}
-        primary="#5a6a78"
-        secondary="#1c242c"
+        primary="#6a7a88"
+        secondary="#243038"
         accent="#ff6b4a"
         hair="#2a1c12"
       />
       <Figure
         position={[1.2, 0, 3.2]}
         rotationY={-0.8}
-        primary="#7a6a5c"
-        secondary="#2a221c"
+        primary="#8a7a68"
+        secondary="#32281e"
         accent="#e8b84a"
         hair="#3a2818"
       />
 
       <ContactShadows
-        opacity={0.45}
+        opacity={0.22}
         scale={18}
-        blur={2.4}
-        far={6}
-        resolution={512}
-        color="#000000"
+        blur={2.8}
+        far={5}
+        resolution={256}
+        color="#1a1008"
       />
 
       {HOTSPOTS.map((def) => (

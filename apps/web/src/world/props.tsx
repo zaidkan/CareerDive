@@ -12,24 +12,24 @@ export function CeilingFixture({
   return (
     <group position={position}>
       <mesh>
-        <boxGeometry args={[1.8, 0.05, 0.55]} />
-        <meshStandardMaterial color="#2a2118" roughness={0.7} />
+        <boxGeometry args={[1.9, 0.06, 0.6]} />
+        <meshStandardMaterial color="#3a3228" roughness={0.65} />
       </mesh>
-      <mesh position={[0, -0.04, 0]}>
-        <boxGeometry args={[1.65, 0.04, 0.4]} />
+      <mesh position={[0, -0.05, 0]}>
+        <boxGeometry args={[1.7, 0.05, 0.42]} />
         <meshStandardMaterial
-          color="#fff4d6"
-          emissive="#e8b84a"
-          emissiveIntensity={0.85}
-          roughness={0.4}
+          color="#fff6dc"
+          emissive="#ffe2a0"
+          emissiveIntensity={1.4}
+          roughness={0.35}
         />
       </mesh>
       <pointLight
-        intensity={0.55}
-        distance={6}
-        decay={2}
-        position={[0, -0.35, 0]}
-        color="#f0d7a0"
+        intensity={3.2}
+        distance={12}
+        decay={1.4}
+        position={[0, -0.5, 0]}
+        color="#ffe8b8"
       />
     </group>
   );
@@ -225,11 +225,11 @@ export function TaskLamp({ position }: { position: [number, number, number] }) {
         />
       </mesh>
       <pointLight
-        intensity={0.65}
-        distance={3.5}
-        decay={2}
+        intensity={1.4}
+        distance={4.5}
+        decay={1.5}
         position={[0.1, 0.55, 0.15]}
-        color="#f0d7a0"
+        color="#ffe8b8"
       />
     </group>
   );
@@ -286,7 +286,7 @@ export function ServerRack({ position }: { position: [number, number, number] })
 export function WallPanel({
   position,
   size,
-  color = "#17120f",
+  color = "#2a221c",
 }: {
   position: [number, number, number];
   size: [number, number, number];
@@ -295,7 +295,7 @@ export function WallPanel({
   return (
     <mesh position={position} castShadow receiveShadow>
       <boxGeometry args={size} />
-      <meshStandardMaterial color={color} roughness={0.88} />
+      <meshStandardMaterial color={color} roughness={0.82} />
     </mesh>
   );
 }
@@ -334,8 +334,8 @@ export function FloorTileGrid() {
         >
           <planeGeometry args={[1.15, 1.15]} />
           <meshStandardMaterial
-            color={dark ? "#1a1410" : "#1e1814"}
-            roughness={0.95}
+            color={dark ? "#2a221c" : "#322820"}
+            roughness={0.9}
           />
         </mesh>,
       );
