@@ -320,10 +320,100 @@ export function Whiteboard({ position }: { position: [number, number, number] })
   );
 }
 
-export function FloorTileGrid() {
+export function CubicleWalls({
+  position,
+  rotationY = 0,
+  width = 2.6,
+  depth = 2.2,
+  height = 1.35,
+}: {
+  position: [number, number, number];
+  rotationY?: number;
+  width?: number;
+  depth?: number;
+  height?: number;
+}) {
+  const t = 0.08;
+  return (
+    <group position={position} rotation={[0, rotationY, 0]}>
+      {/* Back panel */}
+      <mesh position={[0, height / 2, -depth / 2]} castShadow>
+        <boxGeometry args={[width, height, t]} />
+        <meshStandardMaterial color="#3d342a" roughness={0.78} />
+      </mesh>
+      {/* Left wing */}
+      <mesh position={[-width / 2, height / 2, 0]} castShadow>
+        <boxGeometry args={[t, height, depth]} />
+        <meshStandardMaterial color="#3d342a" roughness={0.78} />
+      </mesh>
+      {/* Right wing */}
+      <mesh position={[width / 2, height / 2, 0]} castShadow>
+        <boxGeometry args={[t, height, depth]} />
+        <meshStandardMaterial color="#3d342a" roughness={0.78} />
+      </mesh>
+      {/* Top rail */}
+      <mesh position={[0, height + 0.03, -depth / 2]}>
+        <boxGeometry args={[width + 0.05, 0.06, 0.1]} />
+        <meshStandardMaterial
+          color="#4fd0c8"
+          emissive="#4fd0c8"
+          emissiveIntensity={0.25}
+        />
+      </mesh>
+      <mesh position={[-width / 2, height + 0.03, 0]}>
+        <boxGeometry args={[0.1, 0.06, depth]} />
+        <meshStandardMaterial
+          color="#4fd0c8"
+          emissive="#4fd0c8"
+          emissiveIntensity={0.2}
+        />
+      </mesh>
+      <mesh position={[width / 2, height + 0.03, 0]}>
+        <boxGeometry args={[0.1, 0.06, depth]} />
+        <meshStandardMaterial
+          color="#4fd0c8"
+          emissive="#4fd0c8"
+          emissiveIntensity={0.2}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+export function BreakTable({ position }: { position: [number, number, number] }) {
+  return (
+    <group position={position}>
+      <mesh position={[0, 0.78, 0]} castShadow receiveShadow>
+        <boxGeometry args={[2.2, 0.08, 1.1]} />
+        <meshStandardMaterial color="#4a3a2c" roughness={0.55} />
+      </mesh>
+      {(
+        [
+          [-0.9, 0.4],
+          [0.9, 0.4],
+          [-0.9, -0.4],
+          [0.9, -0.4],
+        ] as const
+      ).map(([x, z], i) => (
+        <mesh key={i} position={[x, 0.39, z]}>
+          <cylinderGeometry args={[0.05, 0.05, 0.78, 10]} />
+          <meshStandardMaterial color="#2a2118" />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+export function FloorTileGrid({
+  rangeX = 8,
+  rangeZ = 7,
+}: {
+  rangeX?: number;
+  rangeZ?: number;
+}) {
   const tiles: ReactNode[] = [];
-  for (let x = -6; x <= 6; x += 1.2) {
-    for (let z = -5; z <= 5; z += 1.2) {
+  for (let x = -rangeX; x <= rangeX; x += 1.2) {
+    for (let z = -rangeZ; z <= rangeZ; z += 1.2) {
       const dark = (Math.round(x / 1.2) + Math.round(z / 1.2)) % 2 === 0;
       tiles.push(
         <mesh

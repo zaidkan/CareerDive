@@ -151,8 +151,8 @@ export function PlayerController({
       if (!collides(pos.current.x, nextZ, colliders)) {
         pos.current.z = nextZ;
       }
-      pos.current.x = Math.max(-6.2, Math.min(6.2, pos.current.x));
-      pos.current.z = Math.max(-4.8, Math.min(5.0, pos.current.z));
+      pos.current.x = Math.max(-8.5, Math.min(8.5, pos.current.x));
+      pos.current.z = Math.max(-5.8, Math.min(5.8, pos.current.z));
     }
 
     camera.position.copy(pos.current);

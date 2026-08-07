@@ -93,8 +93,8 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
           <p className="brand-mark">Career Expo</p>
           <h1>Junior Cybersecurity Analyst</h1>
           <p>
-            Try the job for a shift. Read, decide, and learn what the work is
-            really like.
+            Day one at Verdaly — try the job for a shift. Read, decide, and learn
+            what the work is really like.
           </p>
         </div>
         <div className="mode-switch" aria-label="Interaction mode">

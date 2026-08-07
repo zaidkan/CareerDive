@@ -319,7 +319,7 @@ describe("tutorial and debrief", () => {
         name: /Step 1 · Check your inbox/i,
       }),
     ).toBeVisible();
-    expect(screen.getByText(/Practice mode · safe to explore/i)).toBeVisible();
+    expect(screen.getByText(/Practice · day one at/i)).toBeVisible();
   });
 
   it("welcomes the user into the shift before opening the workstation", async () => {
@@ -336,16 +336,18 @@ describe("tutorial and debrief", () => {
     );
 
     expect(
-      await screen.findByRole("heading", { name: "Welcome to the night shift" }),
+      await screen.findByRole("heading", {
+        name: /Welcome to day one as a Junior Cybersecurity Analyst at Verdaly/i,
+      }),
     ).toBeVisible();
     expect(
-      screen.getByRole("button", { name: "Sit down at the desk" }),
+      screen.getByRole("button", { name: /Enter the Verdaly floor/i }),
     ).toBeVisible();
     await user.click(
-      screen.getByRole("button", { name: "Sit down at the desk" }),
+      screen.getByRole("button", { name: /Enter the Verdaly floor/i }),
     );
     expect(
-      await screen.findByRole("heading", { name: /Choose where to go/i }),
+      await screen.findByRole("heading", { name: /Day one · where to/i }),
     ).toBeVisible();
   });
 
@@ -394,7 +396,7 @@ describe("tutorial and debrief", () => {
       await screen.findByRole("button", { name: /Skip practice/i }),
     );
     await user.click(
-      await screen.findByRole("button", { name: "Sit down at the desk" }),
+      await screen.findByRole("button", { name: /Enter the Verdaly floor/i }),
     );
     await user.click(screen.getByRole("button", { name: "Simple list" }));
     await user.click(

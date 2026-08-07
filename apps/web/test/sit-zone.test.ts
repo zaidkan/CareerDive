@@ -6,16 +6,16 @@ const HOTSPOTS: HotspotDef[] = [
   {
     id: "desk_player",
     label: "Your chair",
-    position: [2.4, 0, -1.35],
-    radius: 1.6,
+    position: [3.2, 0, -1.5],
+    radius: 1.7,
   },
 ];
 
 const DESK_COLLIDER = {
-  minX: 1.45,
-  maxX: 3.55,
-  minZ: -3.85,
-  maxZ: -2.15,
+  minX: 2.1,
+  maxX: 4.5,
+  minZ: -4.2,
+  maxZ: -2.35,
 };
 
 function insideCollider(
@@ -39,12 +39,12 @@ describe("SOC sit zone", () => {
   });
 
   it("detects the desk when standing in the walkable sit zone", () => {
-    const near = nearestHotspot([2.4, 1.6, -1.1], HOTSPOTS);
+    const near = nearestHotspot([3.2, 1.6, -1.2], HOTSPOTS);
     expect(near?.id).toBe("desk_player");
   });
 
   it("does not require standing inside furniture to sit", () => {
-    const approach = [2.4, 1.6, -0.5] as [number, number, number];
+    const approach = [3.2, 1.6, -0.4] as [number, number, number];
     expect(insideCollider(approach[0], approach[2], DESK_COLLIDER)).toBe(false);
     expect(nearestHotspot(approach, HOTSPOTS)?.id).toBe("desk_player");
   });

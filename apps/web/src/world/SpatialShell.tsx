@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useReducer, useState } from "react";
 import type { AvailableAction, ClientView } from "@sim/schemas";
+import { COMPANY } from "./company.js";
 import { ComputerOverlay } from "./ComputerOverlay.js";
 import { FloorMap } from "./FloorMap.js";
 import {
@@ -14,11 +15,11 @@ const RoomCanvas = lazy(async () => {
 });
 
 const FLAVOR: Partial<Record<HotspotId, string>> = {
-  coffee: "Coffee still warm. Nice, but the queue is waiting.",
+  coffee: "Fresh brew in the Break Room. Jules says day-one coffee is tradition.",
   alert_wall:
-    "Shared alert boards glow across the wall. Sit at your desk to work them.",
+    "Shared alert boards. Sit at your desk when you are ready to work them.",
   morgan_station:
-    "Morgan is nearby. Ask her from Team chat once you are at your desk.",
+    "Morgan can help — ask from Team chat once you are at your desk.",
 };
 
 export function SpatialShell({
@@ -54,9 +55,7 @@ export function SpatialShell({
       case "alert_wall":
       case "morgan_station": {
         const message = FLAVOR[id];
-        if (message) {
-          dispatch({ type: "set_flavor", message });
-        }
+        if (message) dispatch({ type: "set_flavor", message });
         break;
       }
       default:
@@ -77,24 +76,33 @@ export function SpatialShell({
   const walking = spatial.phase === "room_walk";
   const seated =
     spatial.phase === "seated_monitor" || spatial.phase === "focus_desk";
+  const roomLabel =
+    spatial.roomId === "break_room"
+      ? "Break Room"
+      : "Security Operations";
 
   return (
     <section className="spatial-shell" aria-label="Workplace space">
       {walking || spatial.phase === "seated_monitor" ? (
         <div className={`room-stage${seated ? " room-stage-dim" : ""}`}>
           <Suspense
-            fallback={<p className="room-loading">Entering the operations floor…</p>}
+            fallback={
+              <p className="room-loading">Entering {roomLabel}…</p>
+            }
           >
             <RoomCanvas
               enabled={walking}
               onInteract={handleInteract}
               onNearbyChange={onNearbyChange}
+              {...(spatial.roomId ? { roomId: spatial.roomId } : {})}
             />
           </Suspense>
           {walking ? (
             <div className="room-hud">
               <div>
-                <p className="eyebrow">SOC floor</p>
+                <p className="eyebrow">
+                  {COMPANY.name} · {roomLabel}
+                </p>
                 <p>
                   {nearbyLabel
                     ? nearbyLabel === "Your chair"
