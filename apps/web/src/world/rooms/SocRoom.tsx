@@ -1,115 +1,198 @@
 import { ContactShadows } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Figure } from "../Figure.js";
 import { Hotspot, nearestHotspot, type HotspotDef } from "../Hotspot.js";
 import { NameTag } from "../NameTag.js";
+import {
+  CeilingAC,
+  CoatRack,
+  DocumentShredder,
+  FramedCertificate,
+  MeshLabel,
+  MonitorArmDesk,
+  OfficeWindow,
+  PersonalLockers,
+  SecurityCamera,
+  StorageCabinet,
+  Thermostat,
+  TrashBin,
+  WallClock,
+} from "../officeExtras.js";
 import { PlayerController, type Aabb } from "../PlayerController.js";
 import {
+  AccentPoster,
+  CarpetRunner,
   CeilingFixture,
-  CubicleWalls,
-  DeskFrame,
-  DualMonitor,
   FloorTileGrid,
-  KeyboardMouse,
   OfficeChair,
-  PlantPot,
   ServerRack,
-  TaskLamp,
+  TallFloorPlant,
+  WallCalendar,
   WallPanel,
   Whiteboard,
 } from "../props.js";
+import { Workstation } from "../Workstation.js";
 import type { HotspotId } from "../worldTypes.js";
+import {
+  BREAK_NOOK,
+  breakNookColliders,
+  GlassBreakNook,
+} from "./GlassBreakNook.js";
+import { DeskMonitorScreen } from "../deskOs/DeskMonitorScreen.js";
+import type { AvailableAction, ClientView } from "@sim/schemas";
+import type { SpatialPhase } from "../worldTypes.js";
 
-const PLAYER_SPAWN: [number, number, number] = [0, 1.6, 5.2];
+/**
+ * Parallel grid layout (enlarged room):
+ * - Center aisle on X=0
+ * - North desk row: You (east) + Morgan (west), mirrored
+ * - Mid desk: hot seat on WEST only — far south of Morgan
+ * - East corridor clear for break access
+ */
+const ROOM = { halfX: 10.9, halfZ: 7.4 } as const;
+/** East column kept inward so the break-glass corridor stays walkable. */
+const COL = { west: -4.4, east: 4.0 } as const;
+/** North desks vs hot seat: ~5.4m between origins; entrance stays free. */
+const ROW = { north: -2.0, mid: 3.4, south: 6.6 } as const;
+const SEAT = 1.65;
+/** Chairs face desks (−Z); seat back is local −Z so rotate π. */
+const CHAIR_FACE_DESK = Math.PI;
 
-const HOTSPOTS: HotspotDef[] = [
+const PLAYER_SPAWN: [number, number, number] = [0, 1.6, ROW.south];
+const PLAYER_DESK: [number, number, number] = [COL.east, 0, ROW.north];
+const MORGAN_DESK: [number, number, number] = [COL.west, 0, ROW.north];
+/** Hot seat opposite column from player — clear spacing. */
+const HOT_DESK: [number, number, number] = [COL.west, 0, ROW.mid];
+const SAMIR_DESK: [number, number, number] = [-9.2, 0, 0.5];
+const ALERT_POS: [number, number, number] = [COL.west, 0, -6.2];
+
+const BASE_HOTSPOTS: HotspotDef[] = [
   {
     id: "desk_player",
     label: "Your chair",
-    position: [3.2, 0, -1.5],
+    position: [PLAYER_DESK[0], 0, PLAYER_DESK[2] + SEAT],
     radius: 1.7,
   },
   {
     id: "alert_wall",
     label: "Alert wall",
-    position: [-4.2, 0, -3.4],
-    radius: 1.6,
+    position: [ALERT_POS[0], 0, ALERT_POS[2] + 0.6],
+    radius: 1.7,
   },
   {
     id: "morgan_station",
-    label: "Morgan's station",
-    position: [-3.2, 0, 1.4],
+    label: "Morgan",
+    position: [MORGAN_DESK[0], 0, MORGAN_DESK[2] + SEAT],
+    radius: 1.5,
+  },
+  {
+    id: "break_door",
+    label: "Break room door",
+    position: [BREAK_NOOK.cornerX - 0.5, 0, BREAK_NOOK.doorZ],
+    radius: 1.45,
+  },
+  {
+    id: "storage",
+    label: "Storage cabinets",
+    position: [-9.4, 0, 4.2],
     radius: 1.5,
   },
   {
     id: "door_exit",
     label: "Exit to floor map",
-    position: [0, 0, 5.0],
+    position: [0, 0, ROW.south],
     radius: 1.4,
   },
 ];
 
-const COLLIDERS: Aabb[] = [
-  { minX: 2.1, maxX: 4.5, minZ: -4.2, maxZ: -2.35 }, // your desk
-  { minX: -5.3, maxX: -2.8, minZ: -4.6, maxZ: -3.2 }, // alert bank
-  { minX: -4.3, maxX: -1.9, minZ: 0.4, maxZ: 2.4 }, // morgan desk
+const BREAK_INTERIOR_HOTSPOTS: HotspotDef[] = [
+  { id: "jules", label: "Jules", position: [7.6, 0, -6.15], radius: 1.3 },
+  { id: "coffee", label: "Coffee", position: [7.2, 0, -6.5], radius: 1.15 },
 ];
 
-function PlayerDesk() {
-  return (
-    <group position={[3.2, 0, -3.2]}>
-      <CubicleWalls position={[0, 0, 0.15]} width={2.8} depth={2.4} />
-      <DeskFrame position={[0, 0, -0.15]} color="#2e251c" width={2.1} />
-      <DualMonitor position={[0, 0.82, -0.4]} />
-      <KeyboardMouse position={[0, 0.84, 0.15]} />
-      <TaskLamp position={[0.9, 0.84, -0.15]} />
-      <PlantPot position={[-0.9, 0.84, 0.2]} />
-      <pointLight intensity={1.1} distance={5} position={[-0.3, 1.4, 0]} color="#4fd0c8" />
-    </group>
-  );
+function deskCollider(origin: [number, number, number]): Aabb {
+  return {
+    minX: origin[0] - 1.35,
+    maxX: origin[0] + 1.35,
+    minZ: origin[2] - 1.25,
+    maxZ: origin[2] + 0.4,
+  };
 }
 
-function MorganDesk() {
-  return (
-    <group position={[-3.2, 0, 1.0]}>
-      <CubicleWalls position={[0, 0, 0.2]} rotationY={Math.PI} width={2.6} depth={2.3} />
-      <DeskFrame position={[0, 0, -0.1]} width={1.95} depth={0.95} color="#26201a" />
-      <DualMonitor
-        position={[0, 0.82, -0.3]}
-        leftEmissive="#e8b84a"
-        rightEmissive="#4fd0c8"
-      />
-      <KeyboardMouse position={[0, 0.84, 0.15]} />
-    </group>
-  );
-}
+const DESK_COLLIDERS: Aabb[] = [
+  deskCollider(PLAYER_DESK),
+  deskCollider(MORGAN_DESK),
+  deskCollider(HOT_DESK),
+  {
+    minX: SAMIR_DESK[0] - 0.6,
+    maxX: SAMIR_DESK[0] + 1.15,
+    minZ: SAMIR_DESK[2] - 1.1,
+    maxZ: SAMIR_DESK[2] + 1.1,
+  },
+  {
+    minX: ALERT_POS[0] - 2.0,
+    maxX: ALERT_POS[0] + 2.0,
+    minZ: ALERT_POS[2] - 0.7,
+    maxZ: ALERT_POS[2] + 0.9,
+  },
+  { minX: -10.2, maxX: -8.8, minZ: 3.2, maxZ: 5.6 },
+  { minX: 6.5, maxX: 10.0, minZ: 5.6, maxZ: 7.15 },
+  { minX: -10.2, maxX: -7.5, minZ: 5.6, maxZ: 7.15 },
+  { minX: -4.1, maxX: -3.1, minZ: 6.2, maxZ: 7.2 },
+  { minX: 4.7, maxX: 5.6, minZ: 6.2, maxZ: 7.2 },
+];
 
 function AlertWall() {
   return (
-    <group position={[-4.2, 0, -4.0]}>
-      <mesh position={[0, 0.52, 0.2]} castShadow receiveShadow>
-        <boxGeometry args={[3.2, 0.1, 0.7]} />
-        <meshStandardMaterial color="#2a2118" roughness={0.6} />
+    <group position={ALERT_POS}>
+      <mesh position={[0, 0.78, 0.15]} castShadow receiveShadow>
+        <boxGeometry args={[3.6, 0.08, 0.85]} />
+        <meshStandardMaterial color="#2a2118" roughness={0.55} />
       </mesh>
-      {([-1.05, 0, 1.05] as const).map((x, i) => (
-        <group key={x} position={[x, 1.45, 0.05]}>
-          <mesh castShadow>
-            <boxGeometry args={[0.9, 1.2, 0.08]} />
-            <meshStandardMaterial color="#0a0e12" metalness={0.2} />
+      {(
+        [
+          [-1.55, 0.4],
+          [1.55, 0.4],
+          [-1.55, -0.15],
+          [1.55, -0.15],
+        ] as const
+      ).map(([x, z], i) => (
+        <mesh key={i} position={[x, 0.39, z]} castShadow>
+          <boxGeometry args={[0.1, 0.78, 0.1]} />
+          <meshStandardMaterial color="#16110e" />
+        </mesh>
+      ))}
+      <mesh position={[0, 0.35, -0.22]} castShadow>
+        <boxGeometry args={[3.4, 0.7, 0.05]} />
+        <meshStandardMaterial color="#1f1814" roughness={0.75} />
+      </mesh>
+      <mesh position={[0, 1.55, -0.55]} castShadow>
+        <boxGeometry args={[3.5, 0.12, 0.08]} />
+        <meshStandardMaterial color="#3a3a3a" metalness={0.4} />
+      </mesh>
+      {([-1.15, 0, 1.15] as const).map((x, i) => (
+        <group key={x} position={[x, 1.65, -0.42]}>
+          <mesh position={[0, -0.15, -0.08]}>
+            <boxGeometry args={[0.12, 0.35, 0.1]} />
+            <meshStandardMaterial color="#2a2a2a" metalness={0.45} />
           </mesh>
-          <mesh position={[0, 0, 0.05]}>
-            <boxGeometry args={[0.78, 1.05, 0.02]} />
+          <mesh castShadow>
+            <boxGeometry args={[1.0, 0.72, 0.07]} />
+            <meshStandardMaterial color="#0a0a0a" metalness={0.25} />
+          </mesh>
+          <mesh position={[0, 0, 0.04]}>
+            <boxGeometry args={[0.9, 0.62, 0.02]} />
             <meshStandardMaterial
               color="#05080a"
               emissive={i === 1 ? "#ff6b4a" : i === 0 ? "#e8b84a" : "#4fd0c8"}
-              emissiveIntensity={0.6}
+              emissiveIntensity={0.65}
             />
           </mesh>
         </group>
       ))}
-      <pointLight intensity={0.9} distance={6} position={[0, 1.6, 1]} color="#ff6b4a" />
+      <pointLight intensity={0.85} distance={5} position={[0, 1.8, 0.6]} color="#ff6b4a" />
     </group>
   );
 }
@@ -143,15 +226,55 @@ export function SocRoom({
   onNearbyChange,
   onInteract,
   enabled,
+  seated = false,
+  maximized = false,
+  deskPhase,
+  view,
+  onAction,
+  guided = false,
+  onLoginSuccess,
+  onStand,
+  onMaximize,
+  onMinimize,
 }: {
   onNearbyChange: (id?: HotspotId, label?: string) => void;
   onInteract: (id: HotspotId) => void;
   enabled: boolean;
+  seated?: boolean;
+  maximized?: boolean;
+  deskPhase?: Extract<SpatialPhase, "desk_login" | "seated_monitor" | "focus_desk">;
+  view?: ClientView;
+  onAction?: (action: AvailableAction, freeText?: string) => void;
+  guided?: boolean;
+  onLoginSuccess?: () => void;
+  onStand?: () => void;
+  onMaximize?: () => void;
+  onMinimize?: () => void;
 }) {
   const nearbyId = useRef<HotspotId | undefined>(undefined);
   const playerPos = useRef<[number, number, number]>([...PLAYER_SPAWN]);
   const [activeHotspot, setActiveHotspot] = useState<HotspotId | undefined>();
+  const [doorOpen, setDoorOpen] = useState(false);
+  const [openCabinet, setOpenCabinet] = useState<string | null>(null);
   const { gl } = useThree();
+
+  const hotspots = useMemo(() => {
+    const list = [...BASE_HOTSPOTS];
+    if (doorOpen) list.push(...BREAK_INTERIOR_HOTSPOTS);
+    return list.map((h) =>
+      h.id === "break_door"
+        ? {
+            ...h,
+            label: doorOpen ? "Close break door" : "Open break door",
+          }
+        : h,
+    );
+  }, [doorOpen]);
+
+  const colliders = useMemo(
+    () => [...DESK_COLLIDERS, ...breakNookColliders(doorOpen)],
+    [doorOpen],
+  );
 
   useEffect(() => {
     gl.toneMapping = THREE.ACESFilmicToneMapping;
@@ -161,16 +284,31 @@ export function SocRoom({
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (!enabled || event.code !== "KeyE") return;
-      const near = nearestHotspot(playerPos.current, HOTSPOTS);
+      const near = nearestHotspot(playerPos.current, hotspots);
       if (near) onInteract(near.id);
     };
+    const onToggle = () => setDoorOpen((v) => !v);
+    const onStorage = () => setOpenCabinet((prev) => (prev ? null : "open"));
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [enabled, onInteract]);
+    window.addEventListener("soc-break-door", onToggle);
+    window.addEventListener("soc-storage", onStorage);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("soc-break-door", onToggle);
+      window.removeEventListener("soc-storage", onStorage);
+    };
+  }, [enabled, hotspots, onInteract]);
+
+  useEffect(() => {
+    const near = nearestHotspot(playerPos.current, hotspots);
+    nearbyId.current = near?.id;
+    setActiveHotspot(near?.id);
+    onNearbyChange(near?.id, near?.label);
+  }, [doorOpen, hotspots, onNearbyChange]);
 
   function handlePosition(next: [number, number, number]) {
     playerPos.current = next;
-    const near = nearestHotspot(next, HOTSPOTS);
+    const near = nearestHotspot(next, hotspots);
     if (near?.id !== nearbyId.current) {
       nearbyId.current = near?.id;
       setActiveHotspot(near?.id);
@@ -178,65 +316,197 @@ export function SocRoom({
     }
   }
 
+  const floorW = ROOM.halfX * 2;
+  const floorD = ROOM.halfZ * 2;
+
   return (
     <>
       <color attach="background" args={["#1a1410"]} />
-      <fog attach="fog" args={["#1a1410", 18, 34]} />
-      <hemisphereLight args={["#ffe2b0", "#3a2c22", 1.1]} />
-      <ambientLight intensity={0.55} />
+      <fog attach="fog" args={["#1a1410", seated ? 14 : 20, seated ? 28 : 38]} />
+      <hemisphereLight args={["#ffe8c8", "#3a2c22", seated ? 0.95 : 1.25]} />
+      <ambientLight intensity={seated ? 0.75 : 0.62} />
       <directionalLight
-        castShadow
-        intensity={1.55}
+        castShadow={!seated}
+        intensity={seated ? 1.15 : 1.55}
         position={[5, 10, 5]}
         color="#fff0d0"
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
+        shadow-mapSize-width={512}
+        shadow-mapSize-height={512}
         shadow-bias={-0.0002}
       />
-      <pointLight intensity={1.1} distance={16} position={[0, 2.5, 0]} color="#ffe8b8" />
+      {!seated ? (
+        <>
+          <pointLight intensity={1.1} distance={16} position={[0, 2.5, 0]} color="#ffe8b8" />
+          <pointLight intensity={0.45} distance={9} position={[-6, 2.2, -3]} color="#4fd0c8" />
+        </>
+      ) : (
+        <pointLight intensity={0.85} distance={8} position={[COL.east, 2.1, ROW.north]} color="#ffe8b8" />
+      )}
 
-      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[20, 16]} />
-        <meshStandardMaterial color="#2a221c" roughness={0.95} />
+      <mesh receiveShadow={!seated} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[floorW, floorD]} />
+        <meshStandardMaterial color="#2e261f" roughness={0.92} />
       </mesh>
-      <FloorTileGrid rangeX={9} rangeZ={7} />
-      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0.8]}>
-        <planeGeometry args={[2.6, 11]} />
-        <meshStandardMaterial color="#3a2c22" roughness={1} />
-      </mesh>
+      {!seated ? <FloorTileGrid rangeX={10} rangeZ={8} step={1.7} /> : null}
+
+      {/* Parallel carpets: center aisle + matching desk pads */}
+      <CarpetRunner position={[0, 0, 0.4]} size={[2.4, floorD - 3]} color="#4a3228" />
+      <CarpetRunner
+        position={[COL.east, 0, ROW.north + 0.35]}
+        size={[2.8, 3.6]}
+        color="#5a3a2e"
+      />
+      <CarpetRunner
+        position={[COL.west, 0, ROW.north + 0.35]}
+        size={[2.8, 3.6]}
+        color="#5a3a2e"
+      />
+      <CarpetRunner
+        position={[COL.west, 0, ROW.mid + 0.35]}
+        size={[2.8, 3.6]}
+        color="#5a3a2e"
+      />
+      <CarpetRunner
+        position={[
+          (BREAK_NOOK.cornerX + BREAK_NOOK.wallX) / 2,
+          0,
+          (BREAK_NOOK.cornerZ + BREAK_NOOK.wallZ) / 2,
+        ]}
+        size={[3.6, 3.4]}
+        color="#4a3a32"
+      />
 
       <mesh position={[0, 3.35, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[20, 16]} />
+        <planeGeometry args={[floorW, floorD]} />
         <meshStandardMaterial color="#241c16" />
       </mesh>
-      <CeilingFixture position={[-4, 3.2, -2]} />
-      <CeilingFixture position={[0, 3.2, 0.5]} />
-      <CeilingFixture position={[4, 3.2, -1.5]} />
-      <CeilingFixture position={[0, 3.2, 3.8]} />
+      <CeilingFixture lit={!seated} position={[-4, 3.2, -2]} />
+      <CeilingFixture lit position={[0, 3.2, 0.5]} />
+      <CeilingFixture lit={!seated} position={[4, 3.2, -1.5]} />
+      <CeilingFixture lit={!seated} position={[0, 3.2, 4]} />
+      <CeilingFixture lit={!seated} position={[8, 3.2, -5]} />
+      {!seated ? (
+        <>
+          <CeilingAC position={[0, 3.12, -0.5]} />
+          <CeilingAC position={[-5, 3.12, 2.5]} rotationY={Math.PI / 2} />
+        </>
+      ) : null}
 
-      <WallPanel position={[0, 1.65, -6.5]} size={[20, 3.3, 0.3]} />
-      <WallPanel position={[-9.5, 1.65, 0]} size={[0.3, 3.3, 16]} />
-      <WallPanel position={[9.5, 1.65, 0]} size={[0.3, 3.3, 16]} />
-      <WallPanel position={[0, 1.65, 6.5]} size={[20, 3.3, 0.3]} color="#26201a" />
+      <WallPanel position={[0, 1.65, -ROOM.halfZ]} size={[floorW, 3.3, 0.3]} />
+      <WallPanel position={[-ROOM.halfX, 1.65, 0]} size={[0.3, 3.3, floorD]} />
+      <WallPanel position={[ROOM.halfX, 1.65, 0]} size={[0.3, 3.3, floorD]} />
+      {/* South wall split around exit doorway */}
+      <WallPanel
+        position={[-(floorW / 4 + 0.55), 1.65, ROOM.halfZ]}
+        size={[floorW / 2 - 1.1, 3.3, 0.3]}
+        color="#26201a"
+      />
+      <WallPanel
+        position={[floorW / 4 + 0.55, 1.65, ROOM.halfZ]}
+        size={[floorW / 2 - 1.1, 3.3, 0.3]}
+        color="#26201a"
+      />
+      {/* Lintel over exit */}
+      <mesh position={[0, 2.85, ROOM.halfZ]} castShadow>
+        <boxGeometry args={[2.2, 0.9, 0.32]} />
+        <meshStandardMaterial color="#26201a" roughness={0.85} />
+      </mesh>
 
-      <mesh position={[0, 0.1, -6.3]}>
-        <boxGeometry args={[19, 0.2, 0.08]} />
+      <mesh position={[0, 0.1, -ROOM.halfZ + 0.2]}>
+        <boxGeometry args={[floorW - 1, 0.2, 0.08]} />
         <meshStandardMaterial color="#4a3a2c" />
       </mesh>
-      <mesh position={[0, 2.7, -6.3]}>
-        <boxGeometry args={[19, 0.05, 0.05]} />
+      <mesh position={[0, 2.7, -ROOM.halfZ + 0.2]}>
+        <boxGeometry args={[floorW - 1, 0.05, 0.05]} />
         <meshStandardMaterial color="#e8b84a" emissive="#e8b84a" emissiveIntensity={0.55} />
       </mesh>
 
-      <PlayerDesk />
-      <OfficeChair position={[3.2, 0, -1.65]} />
-      <NameTag name="You" role="Day-one analyst · this desk" position={[3.2, 2.15, -1.65]} star />
+      {!seated ? (
+        <>
+          <SecurityCamera position={[-ROOM.halfX + 1.1, 2.85, ROOM.halfZ - 1.5]} rotationY={Math.PI * 0.65} />
+          <SecurityCamera position={[ROOM.halfX - 1.1, 2.85, ROOM.halfZ - 1.5]} rotationY={-Math.PI * 0.65} />
+        </>
+      ) : null}
 
-      <MorganDesk />
-      <OfficeChair position={[-3.2, 0, 2.35]} rotationY={Math.PI} />
+      <WallClock position={[0, 2.55, -ROOM.halfZ + 0.3]} />
+      <Thermostat position={[2.2, 1.55, -ROOM.halfZ + 0.25]} />
+
+      <OfficeWindow
+        position={[-ROOM.halfX + 0.15, 1.85, 3.2]}
+        rotationY={Math.PI / 2}
+        width={2.6}
+        height={1.9}
+      />
+      <FramedCertificate
+        position={[-ROOM.halfX + 0.15, 1.7, 1.2]}
+        rotationY={Math.PI / 2}
+        title="SOC TIER-1"
+      />
+      <FramedCertificate
+        position={[-ROOM.halfX + 0.15, 1.7, 0.4]}
+        rotationY={Math.PI / 2}
+        title="SECURE OPS"
+        accent="#4fd0c8"
+      />
+
+      {/* Mirrored desk row — same facing, clear east corridor to break */}
+      <Workstation
+        position={PLAYER_DESK}
+        showLoginNote
+        clutterVariant={0}
+        {...(deskPhase &&
+        view &&
+        onAction &&
+        onLoginSuccess &&
+        onStand &&
+        onMaximize &&
+        onMinimize
+          ? {
+              monitorScreen: (
+                <DeskMonitorScreen
+                  guided={guided}
+                  maximized={maximized}
+                  onAction={onAction}
+                  onLoginSuccess={onLoginSuccess}
+                  onMaximize={onMaximize}
+                  onMinimize={onMinimize}
+                  onStand={onStand}
+                  phase={deskPhase}
+                  view={view}
+                />
+              ),
+            }
+          : {})}
+      />
+      <OfficeChair
+        position={[PLAYER_DESK[0], 0, PLAYER_DESK[2] + SEAT]}
+        rotationY={CHAIR_FACE_DESK}
+      />
+      <NameTag
+        visible={!seated}
+        name="You"
+        role="Day one"
+        position={[PLAYER_DESK[0], 2.3, PLAYER_DESK[2] + SEAT]}
+        star
+      />
+      <TrashBin position={[PLAYER_DESK[0] + 1.55, 0, PLAYER_DESK[2] + 0.85]} />
+      <TrashBin position={[PLAYER_DESK[0] + 1.95, 0, PLAYER_DESK[2] + 0.85]} recycling />
+
+      <Workstation
+        position={MORGAN_DESK}
+        deskColor="#26201a"
+        leftEmissive="#e8b84a"
+        rightEmissive="#4fd0c8"
+        showLamp={false}
+        clutterVariant={1}
+      />
+      <OfficeChair
+        position={[MORGAN_DESK[0], 0, MORGAN_DESK[2] + SEAT]}
+        rotationY={CHAIR_FACE_DESK}
+      />
       <Figure
-        position={[-3.2, 0, 2.3]}
-        rotationY={Math.PI}
+        position={[MORGAN_DESK[0], 0, MORGAN_DESK[2] + SEAT - 0.05]}
+        rotationY={CHAIR_FACE_DESK}
         primary="#7d9088"
         secondary="#2e3c36"
         accent="#4fd0c8"
@@ -244,65 +514,171 @@ export function SocRoom({
         seated
       />
       <NameTag
+        visible={!seated}
         name="Morgan"
-        role="Manager · showing you the ropes"
-        position={[-3.2, 2.0, 2.3]}
+        role="Manager"
+        position={[MORGAN_DESK[0], 2.25, MORGAN_DESK[2] + SEAT - 0.05]}
         star
       />
+      <TrashBin position={[MORGAN_DESK[0] - 1.55, 0, MORGAN_DESK[2] + 0.85]} />
+      <TrashBin position={[MORGAN_DESK[0] - 1.95, 0, MORGAN_DESK[2] + 0.85]} recycling />
 
-      <AlertWall />
-      <ServerRack position={[-8.2, 0.9, -4.5]} />
-      <ServerRack position={[-8.2, 0.9, -3.5]} />
-      <Whiteboard position={[7.2, 1.8, -6.25]} />
-      <PlantPot position={[8.0, 0, 4.8]} />
-      <PlantPot position={[7.2, 0, 5.2]} />
-      <PlantPot position={[-8.0, 0, 5.0]} />
-      <PlantPot position={[5.5, 0, -5.5]} />
-
-      <Figure
-        position={[-5.0, 0, -1.8]}
-        rotationY={0.7}
-        primary="#6a7a88"
-        secondary="#243038"
-        accent="#ff6b4a"
-        hair="#2a1c12"
+      {/* Hot seat — west mid row, well south of Morgan */}
+      <Workstation
+        position={HOT_DESK}
+        showLamp={false}
+        deskColor="#2a221c"
+        clutterVariant={2}
+      />
+      <OfficeChair
+        position={[HOT_DESK[0], 0, HOT_DESK[2] + SEAT]}
+        rotationY={CHAIR_FACE_DESK}
       />
       <NameTag
-        name="Samir"
-        role="Coworker · alert queue"
-        position={[-5.0, 2.05, -1.8]}
-        star
+        visible={!seated}
+        name="Open desk"
+        role="Hot seat"
+        position={[HOT_DESK[0], 2.2, HOT_DESK[2] + SEAT]}
       />
+      <TrashBin position={[HOT_DESK[0] - 1.55, 0, HOT_DESK[2] + 0.85]} />
 
       <Figure
-        position={[1.5, 0, 3.6]}
-        rotationY={-0.9}
+        position={[COL.east - 0.9, 0, 1.0]}
+        rotationY={-0.35}
         primary="#8a7a68"
         secondary="#32281e"
         accent="#e8b84a"
         hair="#3a2818"
       />
-      <NameTag name="Priya" role="Coworker · onboarding buddy" position={[1.5, 2.05, 3.6]} />
+      <NameTag
+        visible={!seated}
+        name="Priya"
+        role="Buddy"
+        position={[COL.east - 0.9, 2.3, 1.0]}
+      />
 
-      {/* Exit */}
-      <mesh position={[0, 1.35, 6.25]}>
-        <boxGeometry args={[1.4, 2.5, 0.12]} />
-        <meshStandardMaterial color="#0f1716" emissive="#4fd0c8" emissiveIntensity={0.2} />
-      </mesh>
+      {/* Samir on west wall — clear of storage */}
+      <MonitorArmDesk position={SAMIR_DESK} rotationY={Math.PI / 2} />
+      <OfficeChair
+        position={[SAMIR_DESK[0] + 1.05, 0, SAMIR_DESK[2]]}
+        rotationY={-Math.PI / 2}
+      />
+      <Figure
+        position={[SAMIR_DESK[0] + 1.0, 0, SAMIR_DESK[2]]}
+        rotationY={-Math.PI / 2}
+        primary="#6a7a88"
+        secondary="#243038"
+        accent="#ff6b4a"
+        hair="#2a1c12"
+        seated
+      />
+      <NameTag
+        visible={!seated}
+        name="Samir"
+        role="Alerts"
+        position={[SAMIR_DESK[0] + 1.0, 2.25, SAMIR_DESK[2]]}
+      />
 
-      <ContactShadows opacity={0.2} scale={20} blur={2.8} far={5} color="#1a1008" />
+      <AlertWall />
+      <ServerRack position={[-ROOM.halfX + 1.0, 0.9, -5.2]} />
+      <ServerRack position={[-ROOM.halfX + 1.0, 0.9, -4.1]} />
+      <Whiteboard position={[COL.east - 0.8, 1.8, -ROOM.halfZ + 0.25]} />
+      <WallCalendar position={[COL.east + 1.0, 1.85, -ROOM.halfZ + 0.25]} />
+      <AccentPoster position={[0, 1.7, -ROOM.halfZ + 0.25]} color="#2a4840" />
 
-      {HOTSPOTS.map((def) => (
-        <Hotspot active={activeHotspot === def.id} def={def} key={def.id} />
-      ))}
+      {/* Only CABLES + ADAPTERS — south of Samir on west wall */}
+      <StorageCabinet
+        position={[-9.6, 0.78, 4.0]}
+        label="CABLES"
+        rotationY={Math.PI / 2}
+        open={openCabinet !== null}
+      />
+      <StorageCabinet
+        position={[-9.6, 0.78, 5.2]}
+        label="ADAPTERS"
+        rotationY={Math.PI / 2}
+        open={openCabinet !== null}
+      />
+      <DocumentShredder position={[-9.8, 0, 2.6]} rotationY={Math.PI / 2} />
+
+      {/* Entrance: coat/lockers east; planters tucked to south-wall corners */}
+      <CoatRack position={[7.2, 0, ROW.south - 0.15]} />
+      <PersonalLockers position={[8.8, 0.95, ROW.south - 0.15]} />
+      <TrashBin position={[6.2, 0, ROW.south - 0.15]} />
+      <TrashBin position={[5.8, 0, ROW.south - 0.15]} recycling />
+      <TallFloorPlant position={[-3.6, 0, ROOM.halfZ - 0.85]} scale={0.95} />
+      <TallFloorPlant position={[5.15, 0, ROOM.halfZ - 0.85]} scale={0.95} />
+
+      <GlassBreakNook cheapGlass={seated} doorOpen={doorOpen} />
+
+      {/* Exit door — frame, leaf, and readable label */}
+      <group position={[0, 0, ROOM.halfZ - 0.2]}>
+        <mesh position={[-0.95, 1.25, 0]} castShadow>
+          <boxGeometry args={[0.14, 2.5, 0.18]} />
+          <meshStandardMaterial color="#3a2c22" roughness={0.65} />
+        </mesh>
+        <mesh position={[0.95, 1.25, 0]} castShadow>
+          <boxGeometry args={[0.14, 2.5, 0.18]} />
+          <meshStandardMaterial color="#3a2c22" roughness={0.65} />
+        </mesh>
+        <mesh position={[0, 2.55, 0]} castShadow>
+          <boxGeometry args={[2.05, 0.14, 0.2]} />
+          <meshStandardMaterial color="#3a2c22" roughness={0.65} />
+        </mesh>
+        <mesh position={[0, 1.25, 0.02]} castShadow>
+          <boxGeometry args={[1.7, 2.4, 0.08]} />
+          <meshStandardMaterial
+            color="#0f1716"
+            emissive="#4fd0c8"
+            emissiveIntensity={0.18}
+            roughness={0.45}
+            metalness={0.2}
+          />
+        </mesh>
+        <mesh position={[0.65, 1.25, 0.08]}>
+          <boxGeometry args={[0.06, 0.28, 0.05]} />
+          <meshStandardMaterial color="#c4a060" metalness={0.55} roughness={0.35} />
+        </mesh>
+        <mesh position={[0, 2.35, -0.06]}>
+          <boxGeometry args={[0.7, 0.18, 0.04]} />
+          <meshStandardMaterial color="#1a3028" />
+        </mesh>
+        <MeshLabel text="EXIT" position={[0, 2.35, -0.09]} width={0.55} height={0.12} />
+        <mesh position={[0, 0.04, -0.15]} receiveShadow>
+          <boxGeometry args={[2.0, 0.06, 0.45]} />
+          <meshStandardMaterial color="#4a3a2c" roughness={0.8} />
+        </mesh>
+      </group>
+
+      {!seated ? (
+        <ContactShadows opacity={0.16} scale={24} blur={2.4} far={4.5} color="#1a1008" frames={1} />
+      ) : null}
+
+      {!seated
+        ? hotspots.map((def) => (
+            <Hotspot active={activeHotspot === def.id} def={def} key={def.id} />
+          ))
+        : null}
 
       <PlayerController
-        colliders={COLLIDERS}
+        colliders={colliders}
         enabled={enabled}
+        maximized={maximized}
         onPosition={handlePosition}
+        seatLookAt={
+          maximized
+            ? [PLAYER_DESK[0] - 0.42, 1.28, PLAYER_DESK[2] - 0.55]
+            : [PLAYER_DESK[0] - 0.42, 1.22, PLAYER_DESK[2] - 0.35]
+        }
+        seatPosition={
+          maximized
+            ? [PLAYER_DESK[0] - 0.42, 1.32, PLAYER_DESK[2] + 0.55]
+            : [PLAYER_DESK[0], 1.35, PLAYER_DESK[2] + SEAT - 0.1]
+        }
+        seated={seated}
         spawn={PLAYER_SPAWN}
       />
-      <FloorClick enabled={enabled} />
+      <FloorClick enabled={enabled && !seated} />
     </>
   );
 }

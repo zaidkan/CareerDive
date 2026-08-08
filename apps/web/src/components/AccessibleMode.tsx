@@ -14,9 +14,12 @@ import {
 
 export function AccessibleMode({ view, onAction }: ModeProps) {
   return (
-    <section aria-labelledby="structured-title">
+    <section
+      className="accessible-shell"
+      aria-labelledby="structured-title"
+    >
       <h2 id="structured-title">Structured workplace view</h2>
-      <p>
+      <p className="accessible-lede">
         Location: {view.currentLocation.name}. Simulated time elapsed:{" "}
         {view.simClock} minutes.
       </p>

@@ -15,6 +15,7 @@ import {
   ShiftBriefing,
   Tutorial,
 } from "./components/shell.js";
+import { COMPANY } from "./world/company.js";
 import { SpatialShell } from "./world/SpatialShell.js";
 
 export function App({ client = defaultClient }: { client?: SimulationClient }) {
@@ -85,16 +86,21 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
   }
 
   const tutorialComplete = phase === "tutorial" && view && !getTutorialStep(view);
+  const phaseLabel = phase === "tutorial" ? "Practice shift" : "Assessed shift";
 
   return (
     <main>
       <header className="site-header">
-        <div>
+        <div className="site-brand">
           <p className="brand-mark">Career Expo</p>
           <h1>Junior Cybersecurity Analyst</h1>
-          <p>
-            Day one at Verdaly — try the job for a shift. Read, decide, and learn
-            what the work is really like.
+          <p className="site-lede">
+            Day one at {COMPANY.name} — try the job for a shift. Read, decide,
+            and learn what the work is really like.
+          </p>
+          <p className="site-meta">
+            <span className="site-chip">{phaseLabel}</span>
+            <span className="site-chip site-chip-muted">{COMPANY.floor}</span>
           </p>
         </div>
         <div className="mode-switch" aria-label="Interaction mode">
@@ -118,35 +124,47 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
           </button>
         </div>
       </header>
-      {error ? <p role="alert">{error}</p> : null}
+
+      {error ? (
+        <p className="app-alert" role="alert">
+          {error}
+        </p>
+      ) : null}
+
       {phase === "tutorial" ? (
         view ? <Tutorial view={view} /> : <Tutorial />
       ) : null}
+
       {phase === "tutorial" && view ? (
-        tutorialComplete ? (
-          <button
-            className="start-shift"
-            onClick={() => {
-              void startAssessedShift();
-            }}
-            type="button"
-          >
-            Start real shift
-          </button>
-        ) : (
-          <button
-            className="skip-tutorial"
-            onClick={() => {
-              void startAssessedShift();
-            }}
-            type="button"
-          >
-            Skip practice — start real shift
-          </button>
-        )
+        <div className="shift-cta-row">
+          {tutorialComplete ? (
+            <button
+              className="start-shift"
+              onClick={() => {
+                void startAssessedShift();
+              }}
+              type="button"
+            >
+              Start real shift
+            </button>
+          ) : (
+            <button
+              className="skip-tutorial"
+              onClick={() => {
+                void startAssessedShift();
+              }}
+              type="button"
+            >
+              Skip practice — start real shift
+            </button>
+          )}
+        </div>
       ) : null}
+
       {!view ? (
-        <p aria-live="polite">Preparing workplace…</p>
+        <p className="app-loading" aria-live="polite">
+          Preparing workplace…
+        </p>
       ) : debrief ? (
         <DebriefView debrief={debrief} />
       ) : activeSurface === "briefing" ? (
@@ -179,6 +197,7 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
           view={view}
         />
       )}
+
       <aside className="privacy-note">
         Reflections stay private unless you explicitly share them.
       </aside>

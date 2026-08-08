@@ -15,6 +15,7 @@ export function ManagerContext({
         <div className="manager-profile">
           <span>M</span>
         </div>
+        <p className="scene-side-caption">Live · manager desk</p>
       </div>
       <div className="scene-copy">
         <p className="eyebrow">{COMPANY.name} · your manager</p>
@@ -38,6 +39,7 @@ export function ShiftBriefing({ onOpen }: { onOpen: () => void }) {
         <div className="manager-profile">
           <span>M</span>
         </div>
+        <p className="scene-side-caption">Day one · onboarding</p>
       </div>
       <div className="scene-copy">
         <p className="eyebrow">
@@ -49,9 +51,15 @@ export function ShiftBriefing({ onOpen }: { onOpen: () => void }) {
         <p className="manager-name">Morgan · your manager · showing you the ropes</p>
         <p>
           Badge in, walk the floor, meet the team. Your desk is in Security
-          Operations. The Break Room has coffee if you need a breath. Read the
-          handoff, ask questions, and take your time — real work is not a race.
+          Operations. The glass break corner has coffee if you need a breath.
+          Read the handoff, ask questions, and take your time — real work is not
+          a race.
         </p>
+        <ul className="briefing-beats">
+          <li>Walk the floor map into Security Operations</li>
+          <li>Sit at your desk and sign in</li>
+          <li>Work alerts, email, and tickets one step at a time</li>
+        </ul>
         <button className="start-shift" onClick={onOpen} type="button">
           Enter the {COMPANY.name} floor
         </button>
@@ -63,12 +71,39 @@ export function ShiftBriefing({ onOpen }: { onOpen: () => void }) {
 export function Tutorial(props: { view?: ClientView } = {}) {
   const view = props.view;
   const step = view ? getTutorialStep(view) : TUTORIAL_STEPS[0];
+  const stepIndex = step
+    ? TUTORIAL_STEPS.findIndex((item) => item.id === step.id)
+    : TUTORIAL_STEPS.length;
+  const total = TUTORIAL_STEPS.length;
+  const progress = Math.min(stepIndex + 1, total);
 
   return (
     <section className="tutorial" aria-labelledby="tutorial-title">
-      <p className="eyebrow">
-        Practice · day one at {COMPANY.name}
-      </p>
+      <div className="tutorial-top">
+        <p className="eyebrow">Practice · day one at {COMPANY.name}</p>
+        {view && step ? (
+          <p className="tutorial-progress" aria-label={`Step ${progress} of ${total}`}>
+            Step {progress} / {total}
+          </p>
+        ) : null}
+      </div>
+      {view && step ? (
+        <div
+          className="tutorial-track"
+          aria-hidden="true"
+        >
+          {TUTORIAL_STEPS.map((item, index) => (
+            <span
+              className={
+                index < progress
+                  ? "tutorial-pip tutorial-pip-done"
+                  : "tutorial-pip"
+              }
+              key={item.id}
+            />
+          ))}
+        </div>
+      ) : null}
       <h2 id="tutorial-title">
         {step ? step.title : "You are ready for the real shift"}
       </h2>

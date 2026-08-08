@@ -9,6 +9,7 @@ import {
   formatShiftClock,
   systemLabel,
 } from "../systems.js";
+import { COMPANY } from "../world/company.js";
 
 export function WorkSurface({
   view,
@@ -61,7 +62,7 @@ export function WorkSurface({
     <section className="workplace-shell" aria-labelledby="workspace-title">
       <header className="workspace-header">
         <div>
-          <p className="eyebrow">Security operations desk</p>
+          <p className="eyebrow">{COMPANY.name} · security operations desk</p>
           <h2 id="workspace-title">Your workstation</h2>
         </div>
         <time

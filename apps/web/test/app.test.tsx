@@ -347,7 +347,7 @@ describe("tutorial and debrief", () => {
       screen.getByRole("button", { name: /Enter the Verdaly floor/i }),
     );
     expect(
-      await screen.findByRole("heading", { name: /Day one · where to/i }),
+      await screen.findByRole("heading", { name: /Day one · floor plan/i }),
     ).toBeVisible();
   });
 

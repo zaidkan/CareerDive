@@ -1,30 +1,34 @@
 import { Html } from "@react-three/drei";
 
+/** Compact floating label — keeps Chrome from ballooning HTML over figures. */
 export function NameTag({
   name,
   role,
-  position = [0, 2.05, 0],
+  position = [0, 2.25, 0],
   star = false,
+  visible = true,
 }: {
   name: string;
-  role: string;
+  role?: string;
   position?: [number, number, number];
   star?: boolean;
+  visible?: boolean;
 }) {
+  if (!visible) return null;
   return (
     <Html
       center
-      distanceFactor={9}
+      distanceFactor={14}
       position={position}
       style={{ pointerEvents: "none", userSelect: "none" }}
-      zIndexRange={[20, 0]}
+      zIndexRange={[12, 0]}
     >
       <div className={`name-tag${star ? " name-tag-star" : ""}`}>
         <strong>
           {star ? "★ " : ""}
           {name}
         </strong>
-        <span>{role}</span>
+        {role ? <span>{role}</span> : null}
       </div>
     </Html>
   );

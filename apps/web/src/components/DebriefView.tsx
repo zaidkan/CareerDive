@@ -13,11 +13,15 @@ const DEBRIEF_LABELS: Array<[keyof Debrief["sections"], string]> = [
 
 export function DebriefView({ debrief }: { debrief: Debrief }) {
   return (
-    <section aria-labelledby="debrief-title">
+    <section className="debrief-shell" aria-labelledby="debrief-title">
       <p className="eyebrow">
         Confidence: {debrief.confidence.replaceAll("_", " ")}
       </p>
       <h2 id="debrief-title">Shift debrief</h2>
+      <p className="debrief-lede">
+        A plain-language wrap of what showed up, what you did, and what that
+        suggests about the work.
+      </p>
       <div className="debrief-grid">
         {DEBRIEF_LABELS.map(([key, label]) => (
           <article key={key}>

@@ -2,26 +2,32 @@ import { useEffect, useRef, useState } from "react";
 import { COMPANY } from "./company.js";
 import type { RoomId } from "./worldTypes.js";
 
-const STEP_MS = 750;
+const STEP_MS = 620;
 
 type Point = { x: number; y: number };
 
-/** Axis-aligned hallway network only — no diagonal shortcuts. */
-const ENTRANCE: Point = { x: 50, y: 90 };
-const JUNCTION: Point = { x: 50, y: 50 };
+/** Lobby mouth on the south spine. */
+const LOBBY: Point = { x: 50, y: 92 };
+/** Central crossroads. */
+const CROSS: Point = { x: 50, y: 50 };
 
+/**
+ * Rooms dock onto hallway edges. Paths end at the physical door,
+ * never cut through room interiors.
+ */
 const ROOMS: Array<{
   id: RoomId;
   label: string;
   hint: string;
   unlocked: boolean;
-  /** Room panel top-left via center positioning */
+  /** Room panel (center positioning via left/top %) */
   x: number;
   y: number;
   w: number;
   h: number;
-  /** Door attaches to hallway edge */
+  /** Door center on the hallway edge (unique per room) */
   door: Point;
+  /** Axis-aligned waypoints: lobby → halls → door */
   path: Point[];
 }> = [
   {
@@ -29,36 +35,38 @@ const ROOMS: Array<{
     label: "Security Operations",
     hint: "Your desk · open",
     unlocked: true,
+    // North of east hall — door on bottom edge
     x: 78,
     y: 28,
-    w: 28,
-    h: 26,
-    door: { x: 64, y: 50 },
-    path: [ENTRANCE, JUNCTION, { x: 64, y: 50 }, { x: 78, y: 28 }],
+    w: 30,
+    h: 34,
+    door: { x: 78, y: 45 },
+    path: [LOBBY, CROSS, { x: 78, y: 50 }, { x: 78, y: 45 }],
   },
   {
     id: "break_room",
-    label: "Break Room",
-    hint: "Coffee · open",
-    unlocked: true,
+    label: "Conference",
+    hint: "Booked · later",
+    unlocked: false,
     x: 22,
     y: 28,
-    w: 26,
-    h: 26,
-    door: { x: 36, y: 50 },
-    path: [ENTRANCE, JUNCTION, { x: 36, y: 50 }, { x: 22, y: 28 }],
+    w: 28,
+    h: 34,
+    door: { x: 22, y: 45 },
+    path: [LOBBY, CROSS, { x: 22, y: 50 }, { x: 22, y: 45 }],
   },
   {
     id: "manager_office",
     label: "Manager Office",
     hint: "Morgan · later",
     unlocked: false,
+    // South of east hall — door on top edge (not shared with SOC)
     x: 78,
-    y: 74,
-    w: 26,
-    h: 22,
-    door: { x: 64, y: 50 },
-    path: [ENTRANCE, JUNCTION, { x: 64, y: 50 }, { x: 78, y: 74 }],
+    y: 72,
+    w: 30,
+    h: 28,
+    door: { x: 78, y: 58 },
+    path: [LOBBY, CROSS, { x: 78, y: 50 }, { x: 78, y: 58 }],
   },
 ];
 
@@ -68,7 +76,7 @@ function expandAxisPath(points: Point[]): Point[] {
     const prev = out[out.length - 1]!;
     const next = points[i]!;
     if (prev.x !== next.x && prev.y !== next.y) {
-      // Force hallway routing through shared axis (prefer junction y, then x)
+      // Prefer vertical then horizontal (stay on spine, then branch)
       out.push({ x: prev.x, y: next.y });
     }
     out.push(next);
@@ -81,9 +89,10 @@ export function FloorMap({
 }: {
   onEnterRoom: (roomId: RoomId) => void;
 }) {
-  const [marker, setMarker] = useState<Point>(ENTRANCE);
+  const [marker, setMarker] = useState<Point>(LOBBY);
   const [traveling, setTraveling] = useState(false);
   const [route, setRoute] = useState<Point[]>([]);
+  const [activeRoomId, setActiveRoomId] = useState<RoomId | null>(null);
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
@@ -95,6 +104,7 @@ export function FloorMap({
   function enter(room: (typeof ROOMS)[number]) {
     if (!room.unlocked || traveling) return;
     setTraveling(true);
+    setActiveRoomId(room.id);
     const path = expandAxisPath(room.path);
     setRoute(path);
     for (const id of timers.current) window.clearTimeout(id);
@@ -108,7 +118,8 @@ export function FloorMap({
             onEnterRoom(room.id);
             setTraveling(false);
             setRoute([]);
-          }, 400);
+            setActiveRoomId(null);
+          }, 480);
           timers.current.push(done);
         }
       }, index * STEP_MS);
@@ -120,46 +131,65 @@ export function FloorMap({
     <section className="floor-map" aria-labelledby="floor-map-title">
       <div className="floor-map-copy">
         <p className="eyebrow">{COMPANY.fullName}</p>
-        <h2 id="floor-map-title">Day one · where to?</h2>
+        <h2 id="floor-map-title">Day one · floor plan</h2>
         <p>
-          Start at the lobby entrance, walk the halls, then enter a room. Only
-          open rooms light up tonight.
+          Walk the halls to a door, then step inside. Coffee lives in the glass
+          break corner inside Security Operations — not a separate map room.
         </p>
         <ul className="floor-legend">
           <li>
-            <span className="legend-open" /> Open
+            <span className="legend-open" /> Open door
           </li>
           <li>
             <span className="legend-locked" /> Locked
           </li>
           <li>
-            <span className="legend-you" aria-hidden="true">
-              🚶
-            </span>{" "}
+            <span className="legend-you" aria-hidden="true" />
             You
           </li>
         </ul>
         {traveling ? (
           <p className="floor-traveling" aria-live="polite">
-            Walking the hallway…
+            Walking to the door…
           </p>
         ) : (
-          <p className="floor-hint">Tip: pick Security Operations to start your desk.</p>
+          <p className="floor-hint">
+            Tip: choose Security Operations — your desk is inside.
+          </p>
         )}
       </div>
       <div className="floor-map-stage">
-        <div className="floor-map-grid floor-map-connected">
-          <div className="floor-map-label">{COMPANY.floor}</div>
+        <div className="floor-map-grid floor-map-v2">
+          <div className="floor-map-label">{COMPANY.floor} · corridor plan</div>
 
-          {/* Connected hallway cross — rooms dock onto these edges */}
-          <div className="hall-strip hall-vertical" aria-hidden="true" />
-          <div className="hall-strip hall-horizontal" aria-hidden="true" />
-          <div className="hall-junction" aria-hidden="true" />
+          {/* Physical hallway geometry */}
+          <div className="hall-body hall-spine" aria-hidden="true" />
+          <div className="hall-body hall-cross" aria-hidden="true" />
+          <div className="hall-body hall-node" aria-hidden="true" />
 
-          <div className="floor-entrance">
-            <span>Lobby / Entrance</span>
-            <small>Start here</small>
+          {/* Lobby vestibule — path starts here */}
+          <div className="floor-vestibule">
+            <span>Lobby</span>
+            <small>Entrance</small>
           </div>
+
+          {/* Door frames on the hall (physical destinations) */}
+          {ROOMS.map((room) => (
+            <div
+              aria-hidden="true"
+              className={`floor-doorframe${activeRoomId === room.id ? " floor-doorframe-active" : ""}${room.unlocked ? " floor-doorframe-open" : ""}`}
+              key={`door-${room.id}`}
+              style={{
+                left: `${String(room.door.x)}%`,
+                top: `${String(room.door.y)}%`,
+              }}
+            >
+              <span className="floor-door-leaf" />
+              <span className="floor-door-label">
+                {room.unlocked ? "OPEN" : "LOCKED"}
+              </span>
+            </div>
+          ))}
 
           {route.length > 1
             ? route.slice(0, -1).map((from, i) => {
@@ -179,12 +209,12 @@ export function FloorMap({
                         ? {
                             left: `${String(midX)}%`,
                             top: `${String(midY)}%`,
-                            height: `${String(len)}%`,
+                            height: `${String(Math.max(len, 2))}%`,
                           }
                         : {
                             left: `${String(midX)}%`,
                             top: `${String(midY)}%`,
-                            width: `${String(len)}%`,
+                            width: `${String(Math.max(len, 2))}%`,
                           }
                     }
                   />
@@ -194,7 +224,7 @@ export function FloorMap({
 
           {ROOMS.map((room) => (
             <button
-              className="floor-room"
+              className="floor-room floor-room-v2"
               data-unlocked={room.unlocked ? "true" : "false"}
               disabled={!room.unlocked || traveling}
               key={room.id}
@@ -211,24 +241,21 @@ export function FloorMap({
             >
               <strong>{room.label}</strong>
               <small>{room.hint}</small>
+              <span className="floor-room-doorhint" aria-hidden="true">
+                {room.unlocked ? "→ door" : "locked"}
+              </span>
             </button>
           ))}
 
-          {/* Door notches on hallway */}
-          <span className="hall-door" style={{ left: "64%", top: "50%" }} />
-          <span className="hall-door" style={{ left: "36%", top: "50%" }} />
-
           <span
             aria-hidden="true"
-            className="floor-you"
+            className="floor-you floor-you-v2"
             style={{
               left: `${String(marker.x)}%`,
               top: `${String(marker.y)}%`,
               transitionDuration: `${String(STEP_MS)}ms`,
             }}
-          >
-            🚶
-          </span>
+          />
         </div>
       </div>
     </section>
