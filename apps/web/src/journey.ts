@@ -107,7 +107,7 @@ export function getJourneyStep({
   if (phase === "desk_login") {
     return step("sign_in", {
       title: "Sign in to your workstation",
-      body: "IT left your credentials on the yellow note beside the monitor.",
+      body: "IT left your credentials on the yellow note stuck to the laptop.",
     });
   }
 

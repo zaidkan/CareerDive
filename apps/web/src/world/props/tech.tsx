@@ -3,13 +3,12 @@
  * cameras and shredders.
  */
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef, type ReactNode } from "react";
+import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { makeMonitorGlowTexture } from "../textures.js";
 import {
   CAMERA_LED_REST,
   DUAL_BAR_INTENSITY,
-  DUAL_OS_SCREEN_INTENSITY,
   DUAL_SCREEN_INTENSITY,
   RACK_STATUS_LED_INTENSITY,
   rackLedOn,
@@ -47,13 +46,11 @@ export function DualMonitor({
   position,
   leftEmissive = "#4fd0c8",
   rightEmissive = "#e8b84a",
-  leftScreen,
   animated = true,
 }: {
   position: [number, number, number];
   leftEmissive?: string;
   rightEmissive?: string;
-  leftScreen?: ReactNode;
   animated?: boolean;
 }) {
   const live = useAmbientMotion(animated);
@@ -69,7 +66,7 @@ export function DualMonitor({
   const rightPane = useRef<THREE.MeshStandardMaterial>(null);
   const leftBar = useRef<THREE.MeshStandardMaterial>(null);
   const rightBar = useRef<THREE.MeshStandardMaterial>(null);
-  const leftBase = leftScreen ? DUAL_OS_SCREEN_INTENSITY : DUAL_SCREEN_INTENSITY;
+  const leftBase = DUAL_SCREEN_INTENSITY;
   const nextBurst = useRef(9.5);
 
   useFrame(({ clock }) => {
@@ -118,7 +115,7 @@ export function DualMonitor({
               ref={i === 0 ? leftPane : rightPane}
               map={i === 0 ? leftTex : rightTex}
               emissive={i === 0 ? leftEmissive : rightEmissive}
-              emissiveIntensity={leftScreen && i === 0 ? 0.15 : 0.55}
+              emissiveIntensity={0.55}
               roughness={0.25}
             />
           </mesh>
@@ -131,9 +128,6 @@ export function DualMonitor({
               emissiveIntensity={1.05}
             />
           </mesh>
-          {i === 0 && leftScreen ? (
-            <group position={[0, 0.42, 0.07]}>{leftScreen}</group>
-          ) : null}
         </group>
       ))}
     </group>

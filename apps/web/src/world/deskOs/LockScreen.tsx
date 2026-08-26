@@ -25,6 +25,15 @@ export function LockScreen({
 
   return (
     <div className="desk-os-lock" aria-labelledby="desk-os-login-title">
+      <aside className="desk-os-bezel-note" data-testid="login-post-it">
+        <p className="desk-os-bezel-note-title">login</p>
+        <p>
+          <code>{DESK_LOGIN.username}</code>
+        </p>
+        <p>
+          <code>{DESK_LOGIN.password}</code>
+        </p>
+      </aside>
       <div className="desk-os-lock-card">
         <div className="desk-os-lock-status">
           <span>SOC-07</span>

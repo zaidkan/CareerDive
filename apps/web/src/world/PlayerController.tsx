@@ -2,6 +2,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { clampToRoom, collidesAt, type Aabb } from "./collision.js";
+import { walkBobOffset } from "./playerMotion.js";
 
 const SPEED = 1.85;
 const SPRINT_MUL = 1.6;
@@ -9,9 +10,7 @@ const LOOK_SENS = 0.002;
 const VEL_DAMP = 11;
 const SEAT_DAMP = 5;
 const STAND_DAMP = 5;
-const BOB_FREQ = 10.5;
-const BOB_Y = 0.032;
-const BOB_Z = 0.016;
+const BOB_FREQ = 8;
 const BOB_FADE = 8;
 const LEAN_MAX = 0.038;
 const LEAN_DAMP = 9;
@@ -77,7 +76,7 @@ function FirstPersonHands({
     const typeSwing = Math.sin(phase.current) * 0.06;
     const swing = lerp(walkSwing, typeSwing, t);
     const bob =
-      (1 - t) * (mode === "walk" && active ? Math.abs(Math.sin(phase.current)) * 0.035 : 0);
+      (1 - t) * (mode === "walk" && active ? Math.abs(Math.sin(phase.current)) * 0.012 : 0);
 
     group.current.position.set(0, 0, 0);
     group.current.rotation.set(0, 0, 0);
@@ -153,7 +152,6 @@ export function PlayerController({
   enabled,
   spawn = [0, 1.6, 4.2],
   seated = false,
-  maximized = false,
   seatPosition = [3.2, 1.35, -1.75],
   seatLookAt = [3.2, 1.25, -3.4],
 }: {
@@ -162,7 +160,6 @@ export function PlayerController({
   enabled: boolean;
   spawn?: [number, number, number];
   seated?: boolean;
-  maximized?: boolean;
   seatPosition?: [number, number, number];
   seatLookAt?: [number, number, number];
 }) {
@@ -270,7 +267,7 @@ export function PlayerController({
 
   useEffect(() => {
     seatSettled.current = false;
-  }, [maximized, seatPosition, seatLookAt]);
+  }, [seatPosition, seatLookAt]);
 
   useFrame((_, delta) => {
     const dt = Math.min(delta, DT_CAP);
@@ -287,7 +284,7 @@ export function PlayerController({
       vel.current.set(0, 0, 0);
       seatScratch.current.set(seatPosition[0], seatPosition[1], seatPosition[2]);
       lookTarget.current.set(seatLookAt[0], seatLookAt[1], seatLookAt[2]);
-      const seatAlpha = expAlpha(maximized && seatSettled.current ? 4 : SEAT_DAMP, dt);
+      const seatAlpha = expAlpha(SEAT_DAMP, dt);
       if (!seatSettled.current) {
         camera.position.lerp(seatScratch.current, seatAlpha);
         look.current.lerp(lookTarget.current, seatAlpha);
@@ -296,16 +293,13 @@ export function PlayerController({
           look.current.copy(lookTarget.current);
           seatSettled.current = true;
         }
-      } else if (maximized) {
-        camera.position.lerp(seatScratch.current, seatAlpha);
-        look.current.lerp(lookTarget.current, seatAlpha);
       } else {
         camera.position.copy(seatScratch.current);
         look.current.copy(lookTarget.current);
       }
       camera.lookAt(look.current);
       if (camera instanceof THREE.PerspectiveCamera) {
-        const targetFov = maximized ? 48 : 58;
+        const targetFov = 52;
         if (Math.abs(camera.fov - targetFov) > 0.05) {
           camera.fov += (targetFov - camera.fov) * expAlpha(3, dt);
           camera.updateProjectionMatrix();
@@ -422,8 +416,9 @@ export function PlayerController({
     bobAmt.current += (bobTarget - bobAmt.current) * expAlpha(BOB_FADE, dt);
     if (bobAmt.current > 0.01) {
       bobPhase.current += dt * BOB_FREQ * (0.55 + bobAmt.current);
-      camera.translateY(Math.sin(bobPhase.current * 2) * BOB_Y * bobAmt.current);
-      camera.translateZ(Math.cos(bobPhase.current) * BOB_Z * bobAmt.current);
+      const bob = walkBobOffset(bobPhase.current, bobAmt.current);
+      camera.translateY(bob.y);
+      camera.translateZ(bob.z);
     } else {
       bobPhase.current *= 0.9;
     }

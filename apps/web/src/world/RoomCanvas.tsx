@@ -1,13 +1,12 @@
 import { Canvas } from "@react-three/fiber";
 import { lazy, Suspense, useMemo } from "react";
-import type { AvailableAction, ClientView } from "@sim/schemas";
 import {
   isLowEndDevice,
   readNavigator,
   useAdaptiveQuality,
 } from "./effects/useAdaptiveQuality.js";
 import { SocRoom } from "./rooms/SocRoom.js";
-import type { HotspotId, SpatialPhase } from "./worldTypes.js";
+import type { HotspotId } from "./worldTypes.js";
 
 const SceneEffects = lazy(async () => {
   const mod = await import("./effects/SceneEffects.js");
@@ -41,40 +40,18 @@ export function RoomCanvas({
   onInteract,
   enabled,
   seated = false,
-  maximized = false,
-  deskPhase,
-  view,
-  onAction,
-  guided = false,
   highlightHotspotId,
-  onLoginSuccess,
-  onStand,
-  onMaximize,
-  onMinimize,
 }: {
   onNearbyChange: (id?: HotspotId, label?: string) => void;
   onInteract: (id: HotspotId) => void;
   enabled: boolean;
   seated?: boolean;
-  maximized?: boolean;
   highlightHotspotId?: HotspotId;
-  deskPhase?: Extract<SpatialPhase, "desk_login" | "seated_monitor" | "focus_desk">;
-  view?: ClientView;
-  onAction?: (action: AvailableAction, freeText?: string) => void;
-  guided?: boolean;
-  onLoginSuccess?: () => void;
-  onStand?: () => void;
-  onMaximize?: () => void;
-  onMinimize?: () => void;
 }) {
   const dpr = useMemo(() => pickDpr(seated), [seated]);
-  const hideSystemCursor =
-    seated && deskPhase !== undefined && deskPhase !== "desk_login";
 
   return (
-    <div
-      className={`room-canvas${hideSystemCursor ? " room-canvas-engaged" : ""}`}
-    >
+    <div className="room-canvas">
       <Canvas
         camera={{ fov: 62, position: [0, 1.6, 5], near: 0.08, far: 48 }}
         dpr={dpr}
@@ -91,19 +68,10 @@ export function RoomCanvas({
         <Suspense fallback={null}>
           <SocRoom
             enabled={enabled}
-            guided={guided}
-            maximized={maximized}
             onInteract={onInteract}
             onNearbyChange={onNearbyChange}
             seated={seated}
             {...(highlightHotspotId ? { highlightHotspotId } : {})}
-            {...(deskPhase ? { deskPhase } : {})}
-            {...(view ? { view } : {})}
-            {...(onAction ? { onAction } : {})}
-            {...(onLoginSuccess ? { onLoginSuccess } : {})}
-            {...(onStand ? { onStand } : {})}
-            {...(onMaximize ? { onMaximize } : {})}
-            {...(onMinimize ? { onMinimize } : {})}
           />
         </Suspense>
         <AdaptiveSceneEffects seated={seated} />

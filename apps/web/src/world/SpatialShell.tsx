@@ -9,6 +9,7 @@ import {
 } from "react";
 import type { AvailableAction, ClientView } from "@sim/schemas";
 import { COMPANY } from "./company.js";
+import { LaptopOverlay } from "./deskOs/LaptopOverlay.js";
 import { FloorMap } from "./FloorMap.js";
 import { getJourneyStep } from "../journey.js";
 import {
@@ -16,6 +17,7 @@ import {
   reduceSpatialEvent,
 } from "./presentation.js";
 import { nextJulesLine } from "./rooms/GlassBreakNook.js";
+import { isTypingTarget, useFullscreen } from "./useFullscreen.js";
 import type { HotspotId } from "./worldTypes.js";
 
 const RoomCanvas = lazy(async () => {
@@ -55,6 +57,8 @@ export function SpatialShell({
   const [nearbyLabel, setNearbyLabel] = useState<string>();
   const [pointerLocked, setPointerLocked] = useState(false);
   const julesLine = useRef(0);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const { active: fullscreen, toggle: toggleFullscreen } = useFullscreen(stageRef);
 
   useEffect(() => {
     const syncLock = () => {
@@ -67,6 +71,20 @@ export function SpatialShell({
       document.removeEventListener("pointerlockerror", syncLock);
     };
   }, []);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (spatial.phase === "floor_map") return;
+      if (event.code !== "KeyF" || event.repeat) return;
+      if (isTypingTarget(event.target)) return;
+      event.preventDefault();
+      void toggleFullscreen();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [spatial.phase, toggleFullscreen]);
 
   const onNearbyChange = useCallback((id?: HotspotId, label?: string) => {
     if (id === undefined) {
@@ -161,6 +179,7 @@ export function SpatialShell({
       ? spatial.phase
       : undefined;
   const roomLabel = "Security Operations";
+  const fullscreenLabel = fullscreen ? "Exit fullscreen" : "Fullscreen";
 
   return (
     <section
@@ -168,7 +187,8 @@ export function SpatialShell({
       aria-label="Workplace space"
     >
       <div
-        className={`room-stage${atDesk ? " room-stage-desk" : ""}${maximized ? " room-stage-desk-max" : ""}`}
+        className={`room-stage${atDesk ? " room-stage-desk" : ""}${maximized ? " room-stage-desk-max" : ""}${fullscreen ? " room-stage-fs" : ""}`}
+        ref={stageRef}
       >
         <Suspense
           fallback={
@@ -177,10 +197,19 @@ export function SpatialShell({
         >
           <RoomCanvas
             enabled={walking}
+            onInteract={handleInteract}
+            onNearbyChange={onNearbyChange}
+            seated={atDesk}
+            {...(journey.target?.kind === "hotspot"
+              ? { highlightHotspotId: journey.target.hotspotId }
+              : {})}
+          />
+        </Suspense>
+        {atDesk && deskPhase ? (
+          <LaptopOverlay
             guided={guided}
             maximized={maximized}
             onAction={onAction}
-            onInteract={handleInteract}
             onLoginSuccess={() => {
               dispatch({ type: "login_success" });
             }}
@@ -190,21 +219,16 @@ export function SpatialShell({
             onMinimize={() => {
               dispatch({ type: "unfocus_desk" });
             }}
-            onNearbyChange={onNearbyChange}
             onStand={() => {
               dispatch({ type: "stand" });
             }}
-            seated={atDesk}
+            phase={deskPhase}
             view={view}
-            {...(deskPhase ? { deskPhase } : {})}
-            {...(journey.target?.kind === "hotspot"
-              ? { highlightHotspotId: journey.target.hotspotId }
-              : {})}
           />
-        </Suspense>
+        ) : null}
         {walking && !pointerLocked ? (
           <p className="room-look-hint">
-            Click to look around · WASD to walk · Esc to release
+            Click to look around · WASD to walk · F fullscreen · Esc to release
           </p>
         ) : null}
         {walking ? (
@@ -219,7 +243,7 @@ export function SpatialShell({
                 <p className="room-hud-nearby">{nearbyPrompt}</p>
               ) : null}
               <p className="room-hud-controls">
-                Double-click to walk · E to interact
+                Double-click to walk · E to interact · F fullscreen
               </p>
               {spatial.flavorMessage ? (
                 <p className="room-flavor">{spatial.flavorMessage}</p>
@@ -238,6 +262,16 @@ export function SpatialShell({
                 </button>
               ) : null}
               <button
+                aria-pressed={fullscreen}
+                className="guidance-secondary"
+                onClick={() => {
+                  void toggleFullscreen();
+                }}
+                type="button"
+              >
+                {fullscreenLabel}
+              </button>
+              <button
                 className="guidance-secondary"
                 onClick={() => {
                   dispatch({ type: "leave_room" });
@@ -251,16 +285,28 @@ export function SpatialShell({
         ) : null}
         {atDesk ? (
           <div className="room-desk-hud">
-            <p className="room-hud-step">
-              {stepLabel} · {journey.title}
-            </p>
-            <p>
-              {spatial.phase === "desk_login"
-                ? "Sign in on the monitor — use the yellow note credentials"
-                : maximized
-                  ? "Maximized workstation · Restore or Leave desk from the window chrome"
-                  : "Click the monitor · Maximize for a closer view · Leave desk to stand"}
-            </p>
+            <div>
+              <p className="room-hud-step">
+                {stepLabel} · {journey.title}
+              </p>
+              <p>
+                {spatial.phase === "desk_login"
+                  ? "Sign in on the laptop — credentials are on the yellow note"
+                  : maximized
+                    ? "Maximized workstation · Restore or Leave desk from the window chrome"
+                    : "Use the laptop · Maximize for a closer view · Leave desk to stand"}
+              </p>
+            </div>
+            <button
+              aria-pressed={fullscreen}
+              className="guidance-secondary room-desk-hud-fs"
+              onClick={() => {
+                void toggleFullscreen();
+              }}
+              type="button"
+            >
+              {fullscreenLabel}
+            </button>
           </div>
         ) : null}
       </div>

@@ -40,6 +40,8 @@ import {
   INNER,
   MORGAN_DESK,
   PLAYER_DESK,
+  PLAYER_SEAT_CAM,
+  PLAYER_SEAT_LOOK,
   PLAYER_SPAWN,
   ROOM,
   ROW,
@@ -47,9 +49,6 @@ import {
   SEAT,
   socColliders,
 } from "./socLayout.js";
-import { DeskMonitorScreen } from "../deskOs/DeskMonitorScreen.js";
-import type { AvailableAction, ClientView } from "@sim/schemas";
-import type { SpatialPhase } from "../worldTypes.js";
 
 /**
  * Parallel grid layout (enlarged room):
@@ -146,31 +145,13 @@ export function SocRoom({
   onInteract,
   enabled,
   seated = false,
-  maximized = false,
-  deskPhase,
-  view,
-  onAction,
-  guided = false,
   highlightHotspotId,
-  onLoginSuccess,
-  onStand,
-  onMaximize,
-  onMinimize,
 }: {
   onNearbyChange: (id?: HotspotId, label?: string) => void;
   onInteract: (id: HotspotId) => void;
   enabled: boolean;
   seated?: boolean;
-  maximized?: boolean;
   highlightHotspotId?: HotspotId;
-  deskPhase?: Extract<SpatialPhase, "desk_login" | "seated_monitor" | "focus_desk">;
-  view?: ClientView;
-  onAction?: (action: AvailableAction, freeText?: string) => void;
-  guided?: boolean;
-  onLoginSuccess?: () => void;
-  onStand?: () => void;
-  onMaximize?: () => void;
-  onMinimize?: () => void;
 }) {
   const nearbyId = useRef<HotspotId | undefined>(undefined);
   const playerPos = useRef<[number, number, number]>([...PLAYER_SPAWN]);
@@ -425,29 +406,6 @@ export function SocRoom({
         position={PLAYER_DESK}
         showLoginNote
         clutterVariant={0}
-        {...(deskPhase &&
-        view &&
-        onAction &&
-        onLoginSuccess &&
-        onStand &&
-        onMaximize &&
-        onMinimize
-          ? {
-              monitorScreen: (
-                <DeskMonitorScreen
-                  guided={guided}
-                  maximized={maximized}
-                  onAction={onAction}
-                  onLoginSuccess={onLoginSuccess}
-                  onMaximize={onMaximize}
-                  onMinimize={onMinimize}
-                  onStand={onStand}
-                  phase={deskPhase}
-                  view={view}
-                />
-              ),
-            }
-          : {})}
       />
       <OfficeChair
         position={[PLAYER_DESK[0], 0, PLAYER_DESK[2] + SEAT]}
@@ -663,18 +621,9 @@ export function SocRoom({
       <PlayerController
         colliders={colliders}
         enabled={enabled}
-        maximized={maximized}
         onPosition={handlePosition}
-        seatLookAt={
-          maximized
-            ? [PLAYER_DESK[0] - 0.42, 1.28, PLAYER_DESK[2] - 0.55]
-            : [PLAYER_DESK[0] - 0.42, 1.22, PLAYER_DESK[2] - 0.35]
-        }
-        seatPosition={
-          maximized
-            ? [PLAYER_DESK[0] - 0.42, 1.32, PLAYER_DESK[2] + 0.55]
-            : [PLAYER_DESK[0], 1.35, PLAYER_DESK[2] + SEAT - 0.1]
-        }
+        seatLookAt={PLAYER_SEAT_LOOK}
+        seatPosition={PLAYER_SEAT_CAM}
         seated={seated}
         spawn={PLAYER_SPAWN}
       />

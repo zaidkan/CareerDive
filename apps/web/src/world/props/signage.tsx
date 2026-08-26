@@ -238,9 +238,12 @@ export function StickyNotes({
 export function LoginPostIt({
   position,
   rotationY = 0,
+  upright = false,
 }: {
   position: [number, number, number];
   rotationY?: number;
+  /** Stick to a monitor bezel, facing the seated player. */
+  upright?: boolean;
 }) {
   const note = useMemo(
     () => makePostItTexture(["login", "day1.analyst", "FirstDay!"]),
@@ -248,10 +251,17 @@ export function LoginPostIt({
   );
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
-      <mesh castShadow position={[0, 0.005, 0]} rotation={[-Math.PI / 2, 0, 0.08]}>
-        <boxGeometry args={[0.22, 0.22, 0.008]} />
-        <meshStandardMaterial map={note} roughness={0.8} />
-      </mesh>
+      {upright ? (
+        <mesh position={[0, 0, 0.004]} rotation={[0.06, 0, 0.1]}>
+          <planeGeometry args={[0.3, 0.3]} />
+          <meshBasicMaterial map={note} toneMapped={false} />
+        </mesh>
+      ) : (
+        <mesh castShadow position={[0, 0.005, 0]} rotation={[-Math.PI / 2, 0, 0.08]}>
+          <boxGeometry args={[0.22, 0.22, 0.008]} />
+          <meshStandardMaterial map={note} roughness={0.8} />
+        </mesh>
+      )}
     </group>
   );
 }

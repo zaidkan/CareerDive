@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { getShiftGuidance } from "../../guidance.js";
 import { CalendarPanel, DashboardHome } from "./DashboardHome.js";
 import { LockScreen } from "./LockScreen.js";
-import { OsCursor } from "./OsCursor.js";
 import { SystemApp } from "./SystemApp.js";
 import { APP_TABS, type DeskOsTab } from "./tabs.js";
 
@@ -52,7 +51,6 @@ export function DeskOs({
       className={`desk-os${maximized ? " desk-os-max" : ""}${locked ? " desk-os-locked" : ""}`}
       data-desk-os="true"
     >
-      <OsCursor active={!locked} />
       <div className="desk-os-chrome">
         <div className="desk-os-traffic" aria-hidden="true">
           <button

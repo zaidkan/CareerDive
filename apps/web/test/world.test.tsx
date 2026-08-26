@@ -3,38 +3,19 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AvailableAction, ClientView } from "@sim/schemas";
+import type { ClientView } from "@sim/schemas";
 import {
   INITIAL_SPATIAL,
   reduceSpatialEvent,
 } from "../src/world/presentation.js";
 import { FloorMap } from "../src/world/FloorMap.js";
 import { SpatialShell } from "../src/world/SpatialShell.js";
-import { DeskOs } from "../src/world/deskOs/DeskOs.js";
 
 vi.mock("../src/world/RoomCanvas.js", () => ({
   RoomCanvas: ({
     onInteract,
-    deskPhase,
-    view,
-    onAction,
-    guided,
-    maximized,
-    onLoginSuccess,
-    onStand,
-    onMaximize,
-    onMinimize,
   }: {
     onInteract: (id: string) => void;
-    deskPhase?: "desk_login" | "seated_monitor" | "focus_desk";
-    view?: ClientView;
-    onAction?: (action: AvailableAction, freeText?: string) => void;
-    guided?: boolean;
-    maximized?: boolean;
-    onLoginSuccess?: () => void;
-    onStand?: () => void;
-    onMaximize?: () => void;
-    onMinimize?: () => void;
   }) => (
     <div>
       <button
@@ -53,25 +34,6 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
       >
         Exit room
       </button>
-      {deskPhase &&
-      view &&
-      onAction &&
-      onLoginSuccess &&
-      onStand &&
-      onMaximize &&
-      onMinimize ? (
-        <DeskOs
-          {...(guided !== undefined ? { guided } : {})}
-          maximized={Boolean(maximized)}
-          onAction={onAction}
-          onLoginSuccess={onLoginSuccess}
-          onMaximize={onMaximize}
-          onMinimize={onMinimize}
-          onStand={onStand}
-          phase={deskPhase}
-          view={view}
-        />
-      ) : null}
     </div>
   ),
 }));
@@ -205,17 +167,16 @@ describe("spatial presentation", () => {
     await user.click(socRoom);
     await screen.findByRole("button", { name: /Sit at desk/i }, { timeout: 6000 });
     expect(screen.getByText(/Find your desk/i)).toBeVisible();
-    expect(
-      screen.getByText(/Click to look around · WASD to walk · Esc to release/i),
-    ).toBeVisible();
+    expect(screen.getByText(/Click to look around/i)).toBeVisible();
+    expect(screen.getByRole("button", { name: /^Fullscreen$/i })).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: /Sit at desk/i }));
     expect(
       screen.getByText(/Sign in to your workstation/i),
     ).toBeVisible();
-    expect(
-      screen.queryByText(/Click to look around · WASD to walk · Esc to release/i),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Click to look around/i)).not.toBeInTheDocument();
+    expect(screen.getByTestId("login-post-it")).toHaveTextContent("day1.analyst");
+    expect(screen.getByTestId("login-post-it")).toHaveTextContent("FirstDay!");
   });
 
   it("hides the look hint while the pointer is locked", async () => {
@@ -265,6 +226,7 @@ describe("spatial presentation", () => {
     expect(
       await screen.findByRole("heading", { name: /Your workstation/i }, { timeout: 3000 }),
     ).toBeVisible();
+    expect(screen.queryByTestId("login-post-it")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /^Maximize$/i }));
     expect(screen.getByRole("button", { name: /^Restore$/i })).toBeVisible();
     await user.click(screen.getByRole("button", { name: /Leave desk/i }));

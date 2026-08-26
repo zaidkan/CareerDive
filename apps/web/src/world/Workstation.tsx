@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { PlantPot } from "./props/decor.js";
 import { CubicleWalls, DESK_SURFACE_Y, DeskFrame } from "./props/furniture.js";
 import { TaskLamp } from "./props/lighting.js";
@@ -15,7 +14,6 @@ export function Workstation({
   showLamp = true,
   showLoginNote = false,
   clutterVariant = 0,
-  monitorScreen,
 }: {
   position: [number, number, number];
   rotationY?: number;
@@ -25,7 +23,6 @@ export function Workstation({
   showLamp?: boolean;
   showLoginNote?: boolean;
   clutterVariant?: number;
-  monitorScreen?: ReactNode;
 }) {
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
@@ -35,14 +32,16 @@ export function Workstation({
         position={[0, DESK_SURFACE_Y, -0.48]}
         {...(leftEmissive ? { leftEmissive } : {})}
         {...(rightEmissive ? { rightEmissive } : {})}
-        {...(monitorScreen ? { leftScreen: monitorScreen } : {})}
       />
       <KeyboardMouse position={[0, DESK_SURFACE_Y, 0.05]} />
       {showLamp ? <TaskLamp position={[0.95, DESK_SURFACE_Y + 0.02, -0.18]} /> : null}
       <PlantPot position={[-0.95, DESK_SURFACE_Y + 0.09, 0.02]} scale={1.05} />
       <DeskClutter position={[0.18, DESK_SURFACE_Y, -0.04]} variant={clutterVariant} />
       {showLoginNote ? (
-        <LoginPostIt position={[0.68, DESK_SURFACE_Y, 0.1]} />
+        <LoginPostIt
+          position={[-0.14, DESK_SURFACE_Y + 0.18, -0.4]}
+          upright
+        />
       ) : null}
     </group>
   );

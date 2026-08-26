@@ -34,6 +34,28 @@ export const CHAIR_FACE_DESK = Math.PI;
 
 export const PLAYER_SPAWN: [number, number, number] = [0, 1.6, ROW.south];
 export const PLAYER_DESK: [number, number, number] = [COL.east, 0, ROW.north];
+
+/**
+ * Left monitor screen center. DualMonitor sits at workstation local
+ * [0, 0.8225, -0.48]; the OS pane is offset [-0.42, 0.42, 0.055].
+ */
+export const PLAYER_MONITOR: [number, number, number] = [
+  PLAYER_DESK[0] - 0.42,
+  1.2425,
+  PLAYER_DESK[2] - 0.425,
+];
+
+/** Square-on seat camera, close enough that the desk and bezel stay in frame. */
+export const PLAYER_SEAT_CAM: [number, number, number] = [
+  PLAYER_MONITOR[0],
+  PLAYER_MONITOR[1] + 0.08,
+  PLAYER_MONITOR[2] + 0.95,
+];
+export const PLAYER_SEAT_LOOK: [number, number, number] = [
+  PLAYER_MONITOR[0],
+  PLAYER_MONITOR[1] - 0.02,
+  PLAYER_MONITOR[2],
+];
 export const MORGAN_DESK: [number, number, number] = [COL.west, 0, ROW.north];
 /** Empty desk opposite the player column — clear spacing. */
 export const HOT_DESK: [number, number, number] = [COL.west, 0, ROW.mid];
