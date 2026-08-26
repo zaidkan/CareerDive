@@ -2004,9 +2004,22 @@ section[aria-labelledby="structured-title"],
   height: min(86vh, 54rem);
 }
 
-.room-stage:fullscreen .desk-os-overlay-max .desk-os-laptop,
-.room-stage:-webkit-full-screen .desk-os-overlay-max .desk-os-laptop {
+.desk-os-laptop:fullscreen,
+.desk-os-laptop:-webkit-full-screen {
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  padding: 0;
+  border-radius: 0;
+  background: #0a0e10;
+}
+
+.desk-os-laptop:fullscreen .desk-os,
+.desk-os-laptop:-webkit-full-screen .desk-os {
   height: 100%;
+  border: 0;
+  border-radius: 0;
+  font-size: 16px;
 }
 
 .desk-os {
@@ -2065,7 +2078,6 @@ section[aria-labelledby="structured-title"],
 }
 
 .desk-os-dot-max {
-  display: inline-block;
   background: #4fd0c8;
 }
 

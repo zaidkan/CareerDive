@@ -1,4 +1,10 @@
+import { useEffect, useRef } from "react";
 import type { AvailableAction, ClientView } from "@sim/schemas";
+import {
+  DESK_OS_FILL_EVENT,
+  isTypingTarget,
+  useFullscreen,
+} from "../useFullscreen.js";
 import { DeskOs } from "./DeskOs.js";
 
 /** Real DOM laptop over the 3D canvas so clicks and typing match the pixels. */
@@ -23,11 +29,39 @@ export function LaptopOverlay({
   onMaximize: () => void;
   onMinimize: () => void;
 }) {
+  const laptopRef = useRef<HTMLDivElement>(null);
+  const { active: osFullscreen, toggle: toggleOsFullscreen } =
+    useFullscreen(laptopRef);
+
+  useEffect(() => {
+    const fill = () => {
+      void toggleOsFullscreen();
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.code !== "KeyF" || event.repeat) return;
+      if (isTypingTarget(event.target)) return;
+      event.preventDefault();
+      fill();
+    };
+    window.addEventListener(DESK_OS_FILL_EVENT, fill);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener(DESK_OS_FILL_EVENT, fill);
+      window.removeEventListener("keydown", onKey);
+      if (document.fullscreenElement === laptopRef.current) {
+        void document.exitFullscreen();
+      }
+    };
+  }, [toggleOsFullscreen]);
+
   return (
     <div
-      className={`desk-os-overlay${maximized ? " desk-os-overlay-max" : ""}`}
+      className={`desk-os-overlay${maximized ? " desk-os-overlay-max" : ""}${osFullscreen ? " desk-os-overlay-os-fs" : ""}`}
     >
-      <div className={`desk-os-laptop${maximized ? " desk-os-laptop-max" : ""}`}>
+      <div
+        className={`desk-os-laptop${maximized ? " desk-os-laptop-max" : ""}`}
+        ref={laptopRef}
+      >
         <DeskOs
           guided={guided}
           maximized={maximized}
@@ -35,7 +69,11 @@ export function LaptopOverlay({
           onLoginSuccess={onLoginSuccess}
           onMaximize={onMaximize}
           onMinimize={onMinimize}
+          onOsFullscreen={() => {
+            void toggleOsFullscreen();
+          }}
           onStand={onStand}
+          osFullscreen={osFullscreen}
           phase={phase}
           view={view}
         />

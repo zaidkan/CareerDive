@@ -17,7 +17,7 @@ import {
   reduceSpatialEvent,
 } from "./presentation.js";
 import { nextJulesLine } from "./rooms/GlassBreakNook.js";
-import { isTypingTarget, useFullscreen } from "./useFullscreen.js";
+import { isTypingTarget, useFullscreen, DESK_OS_FILL_EVENT } from "./useFullscreen.js";
 import type { HotspotId } from "./worldTypes.js";
 
 const RoomCanvas = lazy(async () => {
@@ -74,7 +74,7 @@ export function SpatialShell({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (spatial.phase === "floor_map") return;
+      if (spatial.phase !== "room_walk") return;
       if (event.code !== "KeyF" || event.repeat) return;
       if (isTypingTarget(event.target)) return;
       event.preventDefault();
@@ -293,19 +293,18 @@ export function SpatialShell({
                 {spatial.phase === "desk_login"
                   ? "Sign in on the laptop — credentials are on the yellow note"
                   : maximized
-                    ? "Maximized workstation · Restore or Leave desk from the window chrome"
-                    : "Use the laptop · Maximize for a closer view · Leave desk to stand"}
+                    ? "Maximized workstation · Fill screen for the full OS · Leave desk to stand"
+                    : "Use the laptop · Maximize in the room, or Fill screen for the full OS"}
               </p>
             </div>
             <button
-              aria-pressed={fullscreen}
               className="guidance-secondary room-desk-hud-fs"
               onClick={() => {
-                void toggleFullscreen();
+                window.dispatchEvent(new Event(DESK_OS_FILL_EVENT));
               }}
               type="button"
             >
-              {fullscreenLabel}
+              Fill screen
             </button>
           </div>
         ) : null}

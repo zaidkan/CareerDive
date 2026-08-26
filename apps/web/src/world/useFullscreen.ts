@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState, type RefObject } from "react";
 
+export const DESK_OS_FILL_EVENT = "desk-os-fill-screen";
+
 export function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target.isContentEditable) return true;
@@ -29,7 +31,7 @@ export function useFullscreen(target: RefObject<HTMLElement | null>): {
     const el = target.current;
     if (!el) return;
     try {
-      if (document.fullscreenElement) {
+      if (document.fullscreenElement === el) {
         await document.exitFullscreen();
       } else if (typeof el.requestFullscreen === "function") {
         await el.requestFullscreen();

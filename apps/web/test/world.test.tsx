@@ -177,6 +177,9 @@ describe("spatial presentation", () => {
     expect(screen.queryByText(/Click to look around/i)).not.toBeInTheDocument();
     expect(screen.getByTestId("login-post-it")).toHaveTextContent("day1.analyst");
     expect(screen.getByTestId("login-post-it")).toHaveTextContent("FirstDay!");
+    expect(
+      screen.getAllByRole("button", { name: /^Fill screen$/i }).length,
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it("hides the look hint while the pointer is locked", async () => {
@@ -227,8 +230,14 @@ describe("spatial presentation", () => {
       await screen.findByRole("heading", { name: /Your workstation/i }, { timeout: 3000 }),
     ).toBeVisible();
     expect(screen.queryByTestId("login-post-it")).not.toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: /^Fill screen$/i }).length,
+    ).toBeGreaterThanOrEqual(1);
     await user.click(screen.getByRole("button", { name: /^Maximize$/i }));
     expect(screen.getByRole("button", { name: /^Restore$/i })).toBeVisible();
+    expect(
+      screen.getAllByRole("button", { name: /^Fill screen$/i }).length,
+    ).toBeGreaterThanOrEqual(1);
     await user.click(screen.getByRole("button", { name: /Leave desk/i }));
     expect(
       await screen.findByRole("button", { name: /Sit at desk/i }),

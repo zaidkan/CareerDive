@@ -12,20 +12,24 @@ export function DeskOs({
   onAction,
   guided = false,
   maximized = false,
+  osFullscreen = false,
   onLoginSuccess,
   onStand,
   onMaximize,
   onMinimize,
+  onOsFullscreen,
 }: {
   phase: "desk_login" | "seated_monitor" | "focus_desk";
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
   guided?: boolean;
   maximized?: boolean;
+  osFullscreen?: boolean;
   onLoginSuccess: () => void;
   onStand: () => void;
   onMaximize: () => void;
   onMinimize: () => void;
+  onOsFullscreen: () => void;
 }) {
   const guidance = getShiftGuidance(view);
   const initialTab: DeskOsTab =
@@ -48,7 +52,7 @@ export function DeskOs({
 
   return (
     <div
-      className={`desk-os${maximized ? " desk-os-max" : ""}${locked ? " desk-os-locked" : ""}`}
+      className={`desk-os${maximized ? " desk-os-max" : ""}${osFullscreen ? " desk-os-os-fs" : ""}${locked ? " desk-os-locked" : ""}`}
       data-desk-os="true"
     >
       <div className="desk-os-chrome">
@@ -65,7 +69,13 @@ export function DeskOs({
             title={maximized ? "Restore" : "Maximize"}
             type="button"
           />
-          <span className="desk-os-dot desk-os-dot-max" />
+          <button
+            aria-pressed={osFullscreen}
+            className="desk-os-dot desk-os-dot-max"
+            onClick={onOsFullscreen}
+            title={osFullscreen ? "Exit fill screen" : "Fill screen"}
+            type="button"
+          />
         </div>
         <div className="desk-os-tabs" role="tablist" aria-label="Workstation apps">
           {APP_TABS.map((item) => {
@@ -94,6 +104,14 @@ export function DeskOs({
           })}
         </div>
         <div className="desk-os-window-actions">
+          <button
+            aria-pressed={osFullscreen}
+            className="desk-os-ghost"
+            onClick={onOsFullscreen}
+            type="button"
+          >
+            {osFullscreen ? "Exit fill screen" : "Fill screen"}
+          </button>
           {!locked ? (
             <button
               className="desk-os-ghost"
