@@ -3,43 +3,49 @@ import { useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Figure } from "../Figure.js";
-import { Hotspot, nearestHotspot, type HotspotDef } from "../Hotspot.js";
+import { Hotspot, nearestHotspot } from "../Hotspot.js";
 import { NameTag } from "../NameTag.js";
-import {
-  CeilingAC,
-  CoatRack,
-  DocumentShredder,
-  FramedCertificate,
-  MeshLabel,
-  MonitorArmDesk,
-  OfficeWindow,
-  PersonalLockers,
-  SecurityCamera,
-  StorageCabinet,
-  Thermostat,
-  TrashBin,
-  WallClock,
-} from "../officeExtras.js";
-import { PlayerController, type Aabb } from "../PlayerController.js";
+import { PlayerController } from "../PlayerController.js";
+import { CeilingAC, OfficeWindow, Thermostat, WallPanel } from "../props/building.js";
 import {
   AccentPoster,
-  CarpetRunner,
-  CeilingFixture,
-  FloorTileGrid,
-  OfficeChair,
-  ServerRack,
+  FramedCertificate,
   TallFloorPlant,
-  WallCalendar,
-  WallPanel,
-  Whiteboard,
-} from "../props.js";
+  WallArt,
+  WallClock,
+} from "../props/decor.js";
+import { CarpetRunner, FloorTileGrid } from "../props/floor.js";
+import {
+  CoatRack,
+  MonitorArmDesk,
+  OfficeChair,
+  PersonalLockers,
+  StorageCabinet,
+  TrashBin,
+} from "../props/furniture.js";
+import { CeilingFixture } from "../props/lighting.js";
+import { MeshLabel, WallCalendar, Whiteboard } from "../props/signage.js";
+import { DocumentShredder, SecurityCamera, ServerRack } from "../props/tech.js";
 import { Workstation } from "../Workstation.js";
 import type { HotspotId } from "../worldTypes.js";
+import { BREAK_NOOK, GlassBreakNook } from "./GlassBreakNook.js";
 import {
-  BREAK_NOOK,
-  breakNookColliders,
-  GlassBreakNook,
-} from "./GlassBreakNook.js";
+  ALERT_POS,
+  BASE_HOTSPOTS,
+  BREAK_INTERIOR_HOTSPOTS,
+  CHAIR_FACE_DESK,
+  COL,
+  HOT_DESK,
+  INNER,
+  MORGAN_DESK,
+  PLAYER_DESK,
+  PLAYER_SPAWN,
+  ROOM,
+  ROW,
+  SAMIR_DESK,
+  SEAT,
+  socColliders,
+} from "./socLayout.js";
 import { DeskMonitorScreen } from "../deskOs/DeskMonitorScreen.js";
 import type { AvailableAction, ClientView } from "@sim/schemas";
 import type { SpatialPhase } from "../worldTypes.js";
@@ -48,101 +54,11 @@ import type { SpatialPhase } from "../worldTypes.js";
  * Parallel grid layout (enlarged room):
  * - Center aisle on X=0
  * - North desk row: You (east) + Morgan (west), mirrored
- * - Mid desk: hot seat on WEST only — far south of Morgan
+ * - Mid desk: empty desk on WEST only — far south of Morgan
  * - East corridor clear for break access
+ *
+ * Every coordinate lives in socLayout.ts so the reachability test can guard it.
  */
-const ROOM = { halfX: 10.9, halfZ: 7.4 } as const;
-/** East column kept inward so the break-glass corridor stays walkable. */
-const COL = { west: -4.4, east: 4.0 } as const;
-/** North desks vs hot seat: ~5.4m between origins; entrance stays free. */
-const ROW = { north: -2.0, mid: 3.4, south: 6.6 } as const;
-const SEAT = 1.65;
-/** Chairs face desks (−Z); seat back is local −Z so rotate π. */
-const CHAIR_FACE_DESK = Math.PI;
-
-const PLAYER_SPAWN: [number, number, number] = [0, 1.6, ROW.south];
-const PLAYER_DESK: [number, number, number] = [COL.east, 0, ROW.north];
-const MORGAN_DESK: [number, number, number] = [COL.west, 0, ROW.north];
-/** Hot seat opposite column from player — clear spacing. */
-const HOT_DESK: [number, number, number] = [COL.west, 0, ROW.mid];
-const SAMIR_DESK: [number, number, number] = [-9.2, 0, 0.5];
-const ALERT_POS: [number, number, number] = [COL.west, 0, -6.2];
-
-const BASE_HOTSPOTS: HotspotDef[] = [
-  {
-    id: "desk_player",
-    label: "Your chair",
-    position: [PLAYER_DESK[0], 0, PLAYER_DESK[2] + SEAT],
-    radius: 1.7,
-  },
-  {
-    id: "alert_wall",
-    label: "Alert wall",
-    position: [ALERT_POS[0], 0, ALERT_POS[2] + 0.6],
-    radius: 1.7,
-  },
-  {
-    id: "morgan_station",
-    label: "Morgan",
-    position: [MORGAN_DESK[0], 0, MORGAN_DESK[2] + SEAT],
-    radius: 1.5,
-  },
-  {
-    id: "break_door",
-    label: "Break room door",
-    position: [BREAK_NOOK.cornerX - 0.5, 0, BREAK_NOOK.doorZ],
-    radius: 1.45,
-  },
-  {
-    id: "storage",
-    label: "Storage cabinets",
-    position: [-9.4, 0, 4.2],
-    radius: 1.5,
-  },
-  {
-    id: "door_exit",
-    label: "Exit to floor map",
-    position: [0, 0, ROW.south],
-    radius: 1.4,
-  },
-];
-
-const BREAK_INTERIOR_HOTSPOTS: HotspotDef[] = [
-  { id: "jules", label: "Jules", position: [7.6, 0, -6.15], radius: 1.3 },
-  { id: "coffee", label: "Coffee", position: [7.2, 0, -6.5], radius: 1.15 },
-];
-
-function deskCollider(origin: [number, number, number]): Aabb {
-  return {
-    minX: origin[0] - 1.35,
-    maxX: origin[0] + 1.35,
-    minZ: origin[2] - 1.25,
-    maxZ: origin[2] + 0.4,
-  };
-}
-
-const DESK_COLLIDERS: Aabb[] = [
-  deskCollider(PLAYER_DESK),
-  deskCollider(MORGAN_DESK),
-  deskCollider(HOT_DESK),
-  {
-    minX: SAMIR_DESK[0] - 0.6,
-    maxX: SAMIR_DESK[0] + 1.15,
-    minZ: SAMIR_DESK[2] - 1.1,
-    maxZ: SAMIR_DESK[2] + 1.1,
-  },
-  {
-    minX: ALERT_POS[0] - 2.0,
-    maxX: ALERT_POS[0] + 2.0,
-    minZ: ALERT_POS[2] - 0.7,
-    maxZ: ALERT_POS[2] + 0.9,
-  },
-  { minX: -10.2, maxX: -8.8, minZ: 3.2, maxZ: 5.6 },
-  { minX: 6.5, maxX: 10.0, minZ: 5.6, maxZ: 7.15 },
-  { minX: -10.2, maxX: -7.5, minZ: 5.6, maxZ: 7.15 },
-  { minX: -4.1, maxX: -3.1, minZ: 6.2, maxZ: 7.2 },
-  { minX: 4.7, maxX: 5.6, minZ: 6.2, maxZ: 7.2 },
-];
 
 function AlertWall() {
   return (
@@ -217,7 +133,9 @@ function FloorClick({ enabled }: { enabled: boolean }) {
       }
     };
     gl.domElement.addEventListener("dblclick", onDblClick);
-    return () => gl.domElement.removeEventListener("dblclick", onDblClick);
+    return () => {
+      gl.domElement.removeEventListener("dblclick", onDblClick);
+    };
   }, [camera, enabled, gl.domElement]);
   return null;
 }
@@ -232,6 +150,7 @@ export function SocRoom({
   view,
   onAction,
   guided = false,
+  highlightHotspotId,
   onLoginSuccess,
   onStand,
   onMaximize,
@@ -242,6 +161,7 @@ export function SocRoom({
   enabled: boolean;
   seated?: boolean;
   maximized?: boolean;
+  highlightHotspotId?: HotspotId;
   deskPhase?: Extract<SpatialPhase, "desk_login" | "seated_monitor" | "focus_desk">;
   view?: ClientView;
   onAction?: (action: AvailableAction, freeText?: string) => void;
@@ -271,10 +191,7 @@ export function SocRoom({
     );
   }, [doorOpen]);
 
-  const colliders = useMemo(
-    () => [...DESK_COLLIDERS, ...breakNookColliders(doorOpen)],
-    [doorOpen],
-  );
+  const colliders = useMemo(() => socColliders(doorOpen), [doorOpen]);
 
   useEffect(() => {
     gl.toneMapping = THREE.ACESFilmicToneMapping;
@@ -287,8 +204,12 @@ export function SocRoom({
       const near = nearestHotspot(playerPos.current, hotspots);
       if (near) onInteract(near.id);
     };
-    const onToggle = () => setDoorOpen((v) => !v);
-    const onStorage = () => setOpenCabinet((prev) => (prev ? null : "open"));
+    const onToggle = () => {
+      setDoorOpen((v) => !v);
+    };
+    const onStorage = () => {
+      setOpenCabinet((prev) => (prev ? null : "open"));
+    };
     window.addEventListener("keydown", onKey);
     window.addEventListener("soc-break-door", onToggle);
     window.addEventListener("soc-storage", onStorage);
@@ -323,11 +244,17 @@ export function SocRoom({
     <>
       <color attach="background" args={["#1a1410"]} />
       <fog attach="fog" args={["#1a1410", seated ? 14 : 20, seated ? 28 : 38]} />
-      <hemisphereLight args={["#ffe8c8", "#3a2c22", seated ? 0.95 : 1.25]} />
-      <ambientLight intensity={seated ? 0.75 : 0.62} />
+      {/*
+        Brightness comes mostly from hemisphere/ambient and emissive ceiling
+        panels. Each extra point light costs per-fragment work on every
+        material in the room, so the room runs on three broad fills instead of
+        a light per fixture.
+      */}
+      <hemisphereLight args={["#ffeed4", "#4a3a2c", seated ? 1.15 : 1.85]} />
+      <ambientLight intensity={seated ? 0.9 : 1.05} />
       <directionalLight
         castShadow={!seated}
-        intensity={seated ? 1.15 : 1.55}
+        intensity={seated ? 1.15 : 1.75}
         position={[5, 10, 5]}
         color="#fff0d0"
         shadow-mapSize-width={512}
@@ -336,7 +263,8 @@ export function SocRoom({
       />
       {!seated ? (
         <>
-          <pointLight intensity={1.1} distance={16} position={[0, 2.5, 0]} color="#ffe8b8" />
+          <pointLight intensity={1.5} distance={20} position={[0, 2.5, 0]} color="#ffe8b8" />
+          <pointLight intensity={1.0} distance={15} position={[-6.5, 2.4, 2.0]} color="#ffe4b0" />
           <pointLight intensity={0.45} distance={9} position={[-6, 2.2, -3]} color="#4fd0c8" />
         </>
       ) : (
@@ -372,7 +300,10 @@ export function SocRoom({
           0,
           (BREAK_NOOK.cornerZ + BREAK_NOOK.wallZ) / 2,
         ]}
-        size={[3.6, 3.4]}
+        size={[
+          BREAK_NOOK.wallX - BREAK_NOOK.cornerX - 0.35,
+          BREAK_NOOK.cornerZ - BREAK_NOOK.wallZ - 0.35,
+        ]}
         color="#4a3a32"
       />
 
@@ -380,11 +311,21 @@ export function SocRoom({
         <planeGeometry args={[floorW, floorD]} />
         <meshStandardMaterial color="#241c16" />
       </mesh>
+      {/* Three fixtures carry real lights; the rest are emissive panels only */}
       <CeilingFixture lit={!seated} position={[-4, 3.2, -2]} />
       <CeilingFixture lit position={[0, 3.2, 0.5]} />
-      <CeilingFixture lit={!seated} position={[4, 3.2, -1.5]} />
-      <CeilingFixture lit={!seated} position={[0, 3.2, 4]} />
-      <CeilingFixture lit={!seated} position={[8, 3.2, -5]} />
+      <CeilingFixture lit={!seated} position={[COL.east, 3.2, -1.5]} />
+      {!seated ? (
+        <>
+          <CeilingFixture light={false} position={[0, 3.2, 4]} />
+          <CeilingFixture light={false} position={[8, 3.2, -5]} />
+          <CeilingFixture light={false} position={[-8, 3.2, 2.5]} />
+          <CeilingFixture light={false} position={[-8, 3.2, -4.5]} />
+          <CeilingFixture light={false} position={[4.5, 3.2, 4.5]} />
+          <CeilingFixture light={false} position={[-4, 3.2, 5.5]} />
+          <CeilingFixture light={false} position={[8.5, 3.2, 1.5]} />
+        </>
+      ) : null}
       {!seated ? (
         <>
           <CeilingAC position={[0, 3.12, -0.5]} />
@@ -429,24 +370,41 @@ export function SocRoom({
       ) : null}
 
       <WallClock position={[0, 2.55, -ROOM.halfZ + 0.3]} />
-      <Thermostat position={[2.2, 1.55, -ROOM.halfZ + 0.25]} />
+      {/* Clear of the whiteboard's west edge at x=2.4 */}
+      <Thermostat position={[1.55, 1.55, -ROOM.halfZ + 0.25]} />
 
+      {/* West wall: window sits north of Samir, clear of the parts cabinets */}
       <OfficeWindow
-        position={[-ROOM.halfX + 0.15, 1.85, 3.2]}
+        position={[-ROOM.halfX + 0.16, 1.85, -2.3]}
         rotationY={Math.PI / 2}
         width={2.6}
         height={1.9}
       />
+      {/* Flush to the wall face, and clear of the window casing on both sides */}
       <FramedCertificate
-        position={[-ROOM.halfX + 0.15, 1.7, 1.2]}
+        position={[INNER.minX + 0.015, 1.8, -4.3]}
         rotationY={Math.PI / 2}
         title="SOC TIER-1"
       />
       <FramedCertificate
-        position={[-ROOM.halfX + 0.15, 1.7, 0.4]}
+        position={[INNER.minX + 0.015, 1.8, 0]}
         rotationY={Math.PI / 2}
         title="SECURE OPS"
         accent="#4fd0c8"
+      />
+      {/* Art on the long east wall, south of the break glass */}
+      <WallArt
+        position={[INNER.maxX - 0.03, 1.85, 2.6]}
+        rotationY={-Math.PI / 2}
+        width={1.35}
+        height={0.95}
+      />
+      {/* North wall, in the gap between the alert boards and the poster */}
+      <WallArt
+        position={[-1.4, 1.8, -ROOM.halfZ + 0.27]}
+        variant={1}
+        width={1.15}
+        height={0.85}
       />
 
       {/* Mirrored desk row — same facing, clear east corridor to break */}
@@ -488,9 +446,8 @@ export function SocRoom({
         role="Day one"
         position={[PLAYER_DESK[0], 2.3, PLAYER_DESK[2] + SEAT]}
         star
+        target={highlightHotspotId === "desk_player"}
       />
-      <TrashBin position={[PLAYER_DESK[0] + 1.55, 0, PLAYER_DESK[2] + 0.85]} />
-      <TrashBin position={[PLAYER_DESK[0] + 1.95, 0, PLAYER_DESK[2] + 0.85]} recycling />
 
       <Workstation
         position={MORGAN_DESK}
@@ -520,10 +477,8 @@ export function SocRoom({
         position={[MORGAN_DESK[0], 2.25, MORGAN_DESK[2] + SEAT - 0.05]}
         star
       />
-      <TrashBin position={[MORGAN_DESK[0] - 1.55, 0, MORGAN_DESK[2] + 0.85]} />
-      <TrashBin position={[MORGAN_DESK[0] - 1.95, 0, MORGAN_DESK[2] + 0.85]} recycling />
 
-      {/* Hot seat — west mid row, well south of Morgan */}
+      {/* Empty desk — west mid row, well south of Morgan */}
       <Workstation
         position={HOT_DESK}
         showLamp={false}
@@ -534,27 +489,21 @@ export function SocRoom({
         position={[HOT_DESK[0], 0, HOT_DESK[2] + SEAT]}
         rotationY={CHAIR_FACE_DESK}
       />
-      <NameTag
-        visible={!seated}
-        name="Open desk"
-        role="Hot seat"
-        position={[HOT_DESK[0], 2.2, HOT_DESK[2] + SEAT]}
-      />
-      <TrashBin position={[HOT_DESK[0] - 1.55, 0, HOT_DESK[2] + 0.85]} />
 
+      {/* Priya stands across the aisle, well clear of the player cubicle */}
       <Figure
-        position={[COL.east - 0.9, 0, 1.0]}
-        rotationY={-0.35}
+        position={[-1.65, 0, 2.5]}
+        rotationY={2.2}
         primary="#8a7a68"
         secondary="#32281e"
         accent="#e8b84a"
-        hair="#3a2818"
+        hair="#241610"
       />
       <NameTag
         visible={!seated}
         name="Priya"
-        role="Buddy"
-        position={[COL.east - 0.9, 2.3, 1.0]}
+        role="Coworker"
+        position={[-1.65, 2.26, 2.5]}
       />
 
       {/* Samir on west wall — clear of storage */}
@@ -575,31 +524,36 @@ export function SocRoom({
       <NameTag
         visible={!seated}
         name="Samir"
-        role="Alerts"
+        role="Tier 2"
         position={[SAMIR_DESK[0] + 1.0, 2.25, SAMIR_DESK[2]]}
       />
 
       <AlertWall />
-      <ServerRack position={[-ROOM.halfX + 1.0, 0.9, -5.2]} />
-      <ServerRack position={[-ROOM.halfX + 1.0, 0.9, -4.1]} />
+      {/* Racks read front-on from the aisle, so they belong on the north wall */}
+      <ServerRack position={[-9.8, 0.9, -6.92]} />
+      <ServerRack position={[-9.0, 0.9, -6.92]} />
+      <ServerRack position={[-8.2, 0.9, -6.92]} />
       <Whiteboard position={[COL.east - 0.8, 1.8, -ROOM.halfZ + 0.25]} />
       <WallCalendar position={[COL.east + 1.0, 1.85, -ROOM.halfZ + 0.25]} />
       <AccentPoster position={[0, 1.7, -ROOM.halfZ + 0.25]} color="#2a4840" />
 
-      {/* Only CABLES + ADAPTERS — south of Samir on west wall */}
+      {/* Only CABLES + ADAPTERS — south of Samir, flush to the west wall */}
       <StorageCabinet
-        position={[-9.6, 0.78, 4.0]}
+        position={[-10.42, 0.78, 4.0]}
         label="CABLES"
         rotationY={Math.PI / 2}
         open={openCabinet !== null}
       />
       <StorageCabinet
-        position={[-9.6, 0.78, 5.2]}
+        position={[-10.42, 0.78, 5.2]}
         label="ADAPTERS"
         rotationY={Math.PI / 2}
         open={openCabinet !== null}
       />
-      <DocumentShredder position={[-9.8, 0, 2.6]} rotationY={Math.PI / 2} />
+      <DocumentShredder position={[-10.45, 0, 3.0]} rotationY={Math.PI / 2} />
+      {/* Shared bins live along the walls, never inside a cubicle footprint */}
+      <TrashBin position={[-10.5, 0, 1.8]} />
+      <TrashBin position={[-10.5, 0, 2.32]} recycling />
 
       {/* Entrance: coat/lockers east; planters tucked to south-wall corners */}
       <CoatRack position={[7.2, 0, ROW.south - 0.15]} />

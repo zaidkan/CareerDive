@@ -4,13 +4,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ClientView, Debrief } from "@sim/schemas";
-import {
-  App,
-  AccessibleMode,
-  DebriefView,
-  Tutorial,
-  WorkSurface,
-} from "../src/index.js";
+import { App, AccessibleMode, DebriefView, WorkSurface } from "../src/index.js";
 
 vi.mock("../src/world/RoomCanvas.js", () => ({
   RoomCanvas: ({
@@ -19,10 +13,20 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
     onInteract: (id: string) => void;
   }) => (
     <div>
-      <button type="button" onClick={() => onInteract("desk_player")}>
+      <button
+        type="button"
+        onClick={() => {
+          onInteract("desk_player");
+        }}
+      >
         Sit at desk
       </button>
-      <button type="button" onClick={() => onInteract("door_exit")}>
+      <button
+        type="button"
+        onClick={() => {
+          onInteract("door_exit");
+        }}
+      >
         Exit room
       </button>
     </div>
@@ -301,7 +305,7 @@ describe("tutorial and debrief", () => {
 
     expect(
       await screen.findByRole("heading", {
-        name: /Step 1 · Check your inbox/i,
+        name: /Welcome to day one as a Junior Cybersecurity Analyst at Verdaly/i,
       }),
     ).toBeVisible();
     expect(calls[0]).toEqual(
@@ -312,14 +316,74 @@ describe("tutorial and debrief", () => {
     );
   });
 
-  it("labels tutorial as practice and explains that it records no evidence", () => {
-    render(<Tutorial />);
+  it("does not ask for desk work before the player reaches the desk", async () => {
+    const user = userEvent.setup();
+    const client = {
+      createSession: () => Promise.resolve({ sessionId: "session-1", view }),
+      performAction: () => Promise.resolve(view),
+      getDebrief: () => Promise.reject(new Error("not needed")),
+    };
+
+    render(<App client={client} />);
+    await user.click(
+      await screen.findByRole("button", { name: /Enter the Verdaly floor/i }),
+    );
+
     expect(
-      screen.getByRole("heading", {
+      await screen.findByText(/Head to Security Operations/i),
+    ).toBeVisible();
+    expect(screen.queryByText(/Check your inbox/i)).toBeNull();
+  });
+
+  it("labels tutorial as practice for the structured path", async () => {
+    const user = userEvent.setup();
+    const client = {
+      createSession: () => Promise.resolve({ sessionId: "session-1", view }),
+      performAction: () => Promise.resolve(view),
+      getDebrief: () => Promise.reject(new Error("not needed")),
+    };
+
+    render(<App client={client} />);
+    await user.click(await screen.findByRole("button", { name: "Simple list" }));
+
+    expect(
+      await screen.findByRole("heading", {
         name: /Step 1 · Check your inbox/i,
       }),
     ).toBeVisible();
     expect(screen.getByText(/Practice · day one at/i)).toBeVisible();
+  });
+
+  it("runs the shift from the desk-only mode without the 3D office", async () => {
+    const user = userEvent.setup();
+    const performed: string[] = [];
+    const client = {
+      createSession: () => Promise.resolve({ sessionId: "session-1", view }),
+      performAction: (_sessionId: string, actionId: string) => {
+        performed.push(actionId);
+        return Promise.resolve(view);
+      },
+      getDebrief: () => Promise.reject(new Error("not needed")),
+    };
+
+    render(<App client={client} />);
+    await user.click(await screen.findByRole("button", { name: "Desk only" }));
+    await user.click(
+      await screen.findByRole("button", { name: /Enter the Verdaly floor/i }),
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Your workstation" }),
+    ).toBeVisible();
+    /** The point of this mode: no floor plan, no canvas to walk. */
+    expect(
+      screen.queryByRole("heading", { name: /floor plan/i }),
+    ).toBeNull();
+
+    await user.click(
+      screen.getByRole("button", { name: /Inspect login context/i }),
+    );
+    expect(performed).toEqual(["inspect_login_context"]);
   });
 
   it("welcomes the user into the shift before opening the workstation", async () => {

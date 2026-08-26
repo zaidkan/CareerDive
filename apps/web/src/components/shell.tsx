@@ -82,7 +82,10 @@ export function Tutorial(props: { view?: ClientView } = {}) {
       <div className="tutorial-top">
         <p className="eyebrow">Practice · day one at {COMPANY.name}</p>
         {view && step ? (
-          <p className="tutorial-progress" aria-label={`Step ${progress} of ${total}`}>
+          <p
+            className="tutorial-progress"
+            aria-label={`Step ${String(progress)} of ${String(total)}`}
+          >
             Step {progress} / {total}
           </p>
         ) : null}

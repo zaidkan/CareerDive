@@ -1,3 +1,9 @@
+/**
+ * Migration source of truth, consumed by drizzle-kit via drizzle.config.ts —
+ * not by application code, which queries through `postgres` tagged templates
+ * in db/repository.ts. Nothing imports this file; that is expected. Deleting it
+ * would break `drizzle-kit generate`.
+ */
 import {
   bigint,
   boolean,

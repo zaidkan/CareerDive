@@ -9,6 +9,11 @@ import {
   formatShiftClock,
   systemLabel,
 } from "../systems.js";
+import {
+  deriveSystemState,
+  eventsForSystem,
+  systemOpenCounts,
+} from "../workstation.js";
 import { COMPANY } from "../world/company.js";
 
 export function WorkSurface({
@@ -35,28 +40,9 @@ export function WorkSurface({
     }
   }, [guided, recommendedSystemId, tutorialStep?.id]);
 
-  const visibleEvents = view.events.filter(
-    ({ status }) => status !== "pending",
-  );
-  const systemEvents = visibleEvents.filter(
-    (event) =>
-      event.systemId === systemId ||
-      view.availableActions.some(
-        (action) => action.eventId === event.id && action.systemId === systemId,
-      ),
-  );
-  const selectedEvent =
-    systemEvents.find(({ id }) => id === selectedEventId) ?? systemEvents[0];
-  const contextualActions = view.availableActions.filter(
-    (action) =>
-      action.systemId === systemId &&
-      (action.eventId === selectedEvent?.id ||
-        action.eventId === "shift" ||
-        action.id === "update_notebook"),
-  );
-  const highlightActionId = guidance?.action?.systemId === systemId
-    ? guidance.action.id
-    : undefined;
+  const { systemEvents, selectedEvent, contextualActions, highlightActionId } =
+    deriveSystemState(view, systemId, { selectedEventId, guidance });
+  const openCounts = systemOpenCounts(view);
 
   return (
     <section className="workplace-shell" aria-labelledby="workspace-title">
@@ -85,22 +71,9 @@ export function WorkSurface({
 
       <nav className="system-dock" aria-label="Work systems">
         {WORK_SYSTEMS.map((system) => {
-          const count = visibleEvents.filter(
+          const count = openCounts[system.id];
+          const hot = eventsForSystem(view, system.id).some(
             (event) =>
-              event.systemId === system.id ||
-              view.availableActions.some(
-                (action) =>
-                  action.eventId === event.id && action.systemId === system.id,
-              ),
-          ).length;
-          const hot = visibleEvents.some(
-            (event) =>
-              (event.systemId === system.id ||
-                view.availableActions.some(
-                  (action) =>
-                    action.eventId === event.id &&
-                    action.systemId === system.id,
-                )) &&
               (event.priority === "high" || event.priority === "urgent") &&
               event.status === "active",
           );

@@ -71,11 +71,10 @@ const ROOMS: Array<{
 ];
 
 function expandAxisPath(points: Point[]): Point[] {
-  const out: Point[] = [points[0]!];
-  for (let i = 1; i < points.length; i += 1) {
-    const prev = out[out.length - 1]!;
-    const next = points[i]!;
-    if (prev.x !== next.x && prev.y !== next.y) {
+  const out: Point[] = [];
+  for (const next of points) {
+    const prev = out[out.length - 1];
+    if (prev && prev.x !== next.x && prev.y !== next.y) {
       // Prefer vertical then horizontal (stay on spine, then branch)
       out.push({ x: prev.x, y: next.y });
     }
@@ -86,8 +85,16 @@ function expandAxisPath(points: Point[]): Point[] {
 
 export function FloorMap({
   onEnterRoom,
+  highlightRoomId,
+  hint,
+  stepLabel,
+  title,
 }: {
   onEnterRoom: (roomId: RoomId) => void;
+  highlightRoomId?: RoomId;
+  hint?: string;
+  stepLabel?: string;
+  title?: string;
 }) {
   const [marker, setMarker] = useState<Point>(LOBBY);
   const [traveling, setTraveling] = useState(false);
@@ -130,8 +137,12 @@ export function FloorMap({
   return (
     <section className="floor-map" aria-labelledby="floor-map-title">
       <div className="floor-map-copy">
-        <p className="eyebrow">{COMPANY.fullName}</p>
+        <p className="eyebrow">
+          {COMPANY.fullName}
+          {stepLabel ? ` · ${stepLabel}` : ""}
+        </p>
         <h2 id="floor-map-title">Day one · floor plan</h2>
+        {title ? <p className="floor-step">{title}</p> : null}
         <p>
           Walk the halls to a door, then step inside. Coffee lives in the glass
           break corner inside Security Operations — not a separate map room.
@@ -154,7 +165,7 @@ export function FloorMap({
           </p>
         ) : (
           <p className="floor-hint">
-            Tip: choose Security Operations — your desk is inside.
+            {hint ?? "Tip: choose Security Operations — your desk is inside."}
           </p>
         )}
       </div>
@@ -193,7 +204,8 @@ export function FloorMap({
 
           {route.length > 1
             ? route.slice(0, -1).map((from, i) => {
-                const to = route[i + 1]!;
+                const to = route[i + 1];
+                if (!to) return null;
                 const vertical = from.x === to.x;
                 const midX = (from.x + to.x) / 2;
                 const midY = (from.y + to.y) / 2;
@@ -203,7 +215,7 @@ export function FloorMap({
                 return (
                   <span
                     className={`floor-route${vertical ? " floor-route-v" : ""}`}
-                    key={`seg-${i}`}
+                    key={`seg-${String(i)}`}
                     style={
                       vertical
                         ? {
@@ -224,7 +236,7 @@ export function FloorMap({
 
           {ROOMS.map((room) => (
             <button
-              className="floor-room floor-room-v2"
+              className={`floor-room floor-room-v2${highlightRoomId === room.id ? " floor-room-target" : ""}`}
               data-unlocked={room.unlocked ? "true" : "false"}
               disabled={!room.unlocked || traveling}
               key={room.id}
@@ -241,6 +253,9 @@ export function FloorMap({
             >
               <strong>{room.label}</strong>
               <small>{room.hint}</small>
+              {highlightRoomId === room.id ? (
+                <span className="floor-room-target-chip">Go here next</span>
+              ) : null}
               <span className="floor-room-doorhint" aria-hidden="true">
                 {room.unlocked ? "→ door" : "locked"}
               </span>

@@ -6,10 +6,13 @@ import {
   buildNpcContext,
 } from "../src/index.js";
 import { createInitialWorldState } from "@sim/core";
+import { loadDefaultCybersecurityPack } from "@sim/career-packs";
+
+const pack = loadDefaultCybersecurityPack();
 
 describe("bounded AI context", () => {
   it("removes facts the speaking NPC may not know", () => {
-    const state = createInitialWorldState("session-1", 42);
+    const state = createInitialWorldState("session-1", 42, {}, pack);
     const context = buildNpcContext(state, "manager");
 
     expect(context.facts.map(({ id }) => id)).toContain("alert-visible");

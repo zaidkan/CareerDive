@@ -22,4 +22,6 @@ export type SpatialState = {
   roomId?: RoomId;
   nearbyHotspotId?: HotspotId;
   flavorMessage?: string;
+  /** True once the player has used the workstation, so guidance stops onboarding them to it. */
+  visitedDesk?: boolean;
 };

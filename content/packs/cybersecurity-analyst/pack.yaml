@@ -13,7 +13,7 @@ career:
     - title: U.S. Bureau of Labor Statistics Occupational Outlook Handbook
       url: https://www.bls.gov/ooh/computer-and-information-technology/information-security-analysts.htm
     - title: NIST NICE Workforce Framework for Cybersecurity
-      url: https://www.nist.gov/itl/applied-cybersecurity/nice/nice-framework-resource-center
+      url: https://www.nist.gov/itl/applied-cybersecurity/nice/nice-framework-source-center
   rhythms:
     - routine_monitoring
     - quiet_investigation
@@ -35,56 +35,545 @@ career:
     technicalAndRelationalWorkRepresented: true
 
 scenario:
-  location: operations_center
-  manager: Morgan
+  location:
+    id: operations-center
+    name: Security Operations Center
+    connectedLocationIds: []
+    interactableIds:
+      - alert-dashboard
+      - ticket-queue
+      - email
+      - knowledge-base
+      - team-chat
   maxAiCostUsd: 0.05
+  briefing: >
+    Morning. The previous analyst left a handoff in your inbox. An alert
+    also arrived as you signed in. Read what is available, keep notes, and
+    use the team channel when you need context. More routine work may
+    arrive while you investigate.
+  initialTaskBacklog: 5
+  facts:
+    - id: alert-visible
+      content: >
+        A successful login occurred from an unfamiliar location shortly after
+        repeated failures.
+      visibility: public
+      knownBy: [manager, user]
+      notKnownBy: []
+    - id: employee-private-travel
+      content: The employee privately disclosed planned travel to Montreal.
+      visibility: private
+      knownBy: [employee]
+      notKnownBy: [manager, user]
+  npcs:
+    - id: manager
+      name: Morgan
+      role: Security Operations Manager
+      mood: neutral
+      memoryFactIds: [alert-visible]
+  actions:
+    - id: read_handoff
+      systemId: email
+      label: Read shift handoff
+      description: Review the previous analyst's incomplete handoff notes.
+      simulatedMinutes: 5
+      defaultEffect:
+        observeArtifactIds: [handoff-email]
+    - id: acknowledge_handoff
+      systemId: team_chat
+      label: Confirm the handoff
+      description: Tell Morgan what remains open and what you will handle first.
+      simulatedMinutes: 5
+      defaultEffect:
+        resolve: true
+        resolution: >
+          You confirmed the open work and stated your initial priority to Morgan.
+        emitEventResolved: true
+        hidden:
+          taskBacklog: -1
+    - id: review_alert
+      systemId: alert_dashboard
+      label: Review alert
+      description: Read the alert details and initial indicators.
+      simulatedMinutes: 10
+      defaultEffect:
+        hidden:
+          cognitiveLoad: 1
+    - id: inspect_login_context
+      systemId: alert_dashboard
+      label: Inspect login context
+      description: Check available device, location, and account context.
+      simulatedMinutes: 15
+      defaultEffect:
+        observeArtifactIds: [login-context-1]
+        hidden:
+          accuracy: 1
+    - id: inspect_account_history
+      systemId: alert_dashboard
+      label: Compare account history
+      description: Compare recent sign-ins, failures, and normal account patterns.
+      simulatedMinutes: 10
+      defaultEffect:
+        observeArtifactIds: [account-history-1]
+        hidden:
+          accuracy: 1
+    - id: check_device_inventory
+      systemId: knowledge_base
+      label: Check device inventory
+      description: Confirm whether the device is enrolled and assigned to the employee.
+      simulatedMinutes: 10
+      defaultEffect:
+        observeArtifactIds: [device-inventory-1]
+        hidden:
+          accuracy: 1
+    - id: search_knowledge_base
+      systemId: knowledge_base
+      label: Check response procedure
+      description: Review the approved procedure and closure criteria for this event.
+      simulatedMinutes: 10
+      defaultEffect:
+        setKbQueryFromFreeText: true
+        observeArtifactIds: [kb-false-positive-procedure]
+    - id: dismiss_alert
+      systemId: alert_dashboard
+      label: Dismiss as false positive
+      description: Close the alert without further escalation.
+      simulatedMinutes: 15
+    - id: escalate_alert
+      systemId: alert_dashboard
+      label: Escalate with evidence
+      description: Send the reviewed evidence to a senior analyst.
+      simulatedMinutes: 5
+      defaultEffect:
+        resolve: true
+        resolution: Escalated with reviewed context.
+        emitEventResolved: true
+        consequence:
+          description: A senior analyst received the alert with supporting context.
+        hidden:
+          taskBacklog: -1
+    - id: document_ticket
+      systemId: ticket_queue
+      label: Document ticket
+      description: Record what was reviewed and why the decision was made.
+      simulatedMinutes: 20
+      defaultEffect:
+        setTicketNotesFromFreeText: true
+        consequence:
+          description: >
+            The {{eventTitle}} ticket now records the evidence, reasoning, and next step.
+    - id: update_ticket_notes
+      systemId: ticket_queue
+      label: Update investigation notes
+      description: Edit the ticket investigation notes without closing the work.
+      simulatedMinutes: 0
+      tracksCompletion: false
+      defaultEffect:
+        setTicketNotesFromFreeText: true
+    - id: update_notebook
+      systemId: ticket_queue
+      label: Update case notebook
+      description: Save personal investigation notes that persist across systems.
+      simulatedMinutes: 0
+      tracksCompletion: false
+      defaultEffect:
+        setNotebookFromFreeText: true
+    - id: open_phishing_report
+      systemId: email
+      label: Open phishing report
+      description: Read the employee's report without opening the suspicious link.
+      simulatedMinutes: 5
+      defaultEffect:
+        observeArtifactIds: [phishing-email-1]
+    - id: inspect_email_headers
+      systemId: email
+      label: Inspect email headers
+      description: Check sender, reply-to, authentication, and routing details.
+      simulatedMinutes: 10
+      defaultEffect:
+        observeArtifactIds: [phishing-headers-1]
+        hidden:
+          accuracy: 1
+    - id: check_link_destination
+      systemId: alert_dashboard
+      label: Analyze link destination
+      description: Use the approved inspection tool to examine the destination safely.
+      simulatedMinutes: 10
+      defaultEffect:
+        observeArtifactIds: [phishing-link-1]
+        hidden:
+          accuracy: 1
+    - id: quarantine_message
+      systemId: alert_dashboard
+      label: Quarantine matching message
+      description: Contain matching copies through the approved mail-security control.
+      simulatedMinutes: 5
+      defaultEffect:
+        consequence:
+          description: >
+            Matching messages were quarantined through the approved mail-security control.
+    - id: notify_reporter
+      systemId: email
+      label: Update the reporter
+      description: Explain the safe next steps and confirm the report was received.
+      simulatedMinutes: 5
+      defaultEffect:
+        consequence:
+          description: >
+            The employee received safe next steps and confirmation that the report was being handled.
+    - id: ask_manager
+      systemId: team_chat
+      label: Ask manager for context
+      description: Request guidance without transferring responsibility.
+      simulatedMinutes: 5
+      tracksCompletion: false
+    - id: complete_shift
+      systemId: team_chat
+      label: Complete shift
+      description: Finish the current simulation shift.
+      simulatedMinutes: 0
+      tracksCompletion: false
+
   eventTemplates:
     suspicious_login:
+      instanceId: suspicious-login-1
+      title: Unfamiliar successful login
+      summary: >
+        Repeated failures were followed by a successful sign-in from an unfamiliar network.
+      priority: high
+      systemId: alert_dashboard
       triggerAt: 0
       deadlineMinutes: 180
-      availableActions:
-        - review_alert
-        - inspect_login_context
-        - inspect_account_history
-        - check_device_inventory
-        - dismiss_alert
-        - escalate_alert
-        - document_ticket
-        - ask_manager
+      initialStatus: active
       prohibitedOutcomes:
         - invented_credentials
         - unrestricted_system_access
         - silent_safety_bypass
-    false_positive:
-      triggerAt: 100
-      deadlineMinutes: 300
-      availableActions:
-        - review_alert
-        - inspect_login_context
-        - document_ticket
-        - dismiss_alert
-    phishing_report:
-      triggerAt: 55
-      deadlineMinutes: 260
-      availableActions:
-        - open_phishing_report
-        - inspect_email_headers
-        - check_link_destination
-        - quarantine_message
-        - notify_reporter
-        - document_ticket
+      managerGuidance: >
+        Morgan recommends reviewing the alert details, checking device and location
+        context, and documenting uncertainty before deciding.
+      progression:
+        kind: stages
+        allowManager: true
+        utilityActions: [update_ticket_notes]
+        stages:
+          - after: []
+            offer: [review_alert]
+          - after: [review_alert]
+            offer: [inspect_login_context]
+            alsoOffer: [dismiss_alert]
+          - after: [review_alert, inspect_login_context]
+            offer: [inspect_account_history, check_device_inventory]
+            mode: all_remaining
+            alsoOffer: [dismiss_alert]
+          - after:
+              - review_alert
+              - inspect_login_context
+              - inspect_account_history
+              - check_device_inventory
+            offer: [document_ticket]
+            alsoOffer: [dismiss_alert]
+          - after:
+              - review_alert
+              - inspect_login_context
+              - inspect_account_history
+              - check_device_inventory
+              - document_ticket
+            offer: [escalate_alert]
+            alsoOffer: [dismiss_alert]
+      actionEffects:
+        review_alert:
+          observeArtifactIds: [suspicious-login-alert]
+          hidden:
+            cognitiveLoad: 1
+        dismiss_alert:
+          resolve: true
+          resolution: Dismissed before the available evidence was fully developed.
+          consequence:
+            description: >
+              The dismissed login alert may require renewed attention if related activity appears.
+            delayMinutes: 40
+            escalateOnApply: true
+            escalateResolution: Related activity appeared after the alert was dismissed.
+          hidden:
+            riskExposure: 1
+
     incomplete_handoff:
+      instanceId: handoff-1
+      title: Shift handoff
+      summary: The previous analyst left an incomplete note about open monitoring work.
+      priority: normal
+      systemId: email
       triggerAt: 0
       deadlineMinutes: 35
-      availableActions:
-        - read_handoff
-        - acknowledge_handoff
-        - ask_manager
+      initialStatus: active
+      managerGuidance: >
+        Morgan asks you to read the handoff, identify unfinished work, and confirm
+        what you will prioritize first.
+      progression:
+        kind: linear
+        allowManager: true
+        sequence: [read_handoff, acknowledge_handoff]
+
     routine_alert_review:
+      instanceId: routine-alert-1
+      title: Routine service-account alert
+      summary: A known automation account generated a low-severity authentication alert.
+      priority: low
+      systemId: alert_dashboard
       triggerAt: 25
       deadlineMinutes: 220
-      availableActions:
-        - review_alert
-        - search_knowledge_base
-        - document_ticket
-        - dismiss_alert
+      initialStatus: pending
+      managerGuidance: >
+        Morgan recommends checking the approved activity window and documenting why
+        the alert can be closed.
+      progression:
+        kind: linear
+        allowManager: true
+        utilityActions: [update_ticket_notes]
+        sequence:
+          - review_alert
+          - search_knowledge_base
+          - document_ticket
+          - dismiss_alert
+      actionEffects:
+        review_alert:
+          observeArtifactIds: [routine-alert]
+          hidden:
+            cognitiveLoad: 1
+        dismiss_alert:
+          resolve: true
+          resolution: Reviewed, documented, and closed as expected activity.
+          consequence:
+            description: The reviewed routine alert was documented and closed as expected activity.
+          hidden:
+            taskBacklog: -1
+
+    phishing_report:
+      instanceId: phishing-report-1
+      title: Employee phishing report
+      summary: >
+        An employee reported a benefits-themed message with an unfamiliar sign-in link.
+      priority: high
+      systemId: email
+      triggerAt: 55
+      deadlineMinutes: 260
+      initialStatus: pending
+      managerGuidance: >
+        Morgan recommends preserving the message, checking headers and the link with
+        approved tools, containing matches, and updating the reporter.
+      progression:
+        kind: linear
+        allowManager: true
+        utilityActions: [update_ticket_notes]
+        sequence:
+          - open_phishing_report
+          - inspect_email_headers
+          - check_link_destination
+          - quarantine_message
+          - notify_reporter
+          - document_ticket
+      actionEffects:
+        document_ticket:
+          setTicketNotesFromFreeText: true
+          resolve: true
+          resolution: The message was analyzed, contained, communicated, and documented.
+          emitEventResolved: true
+          consequence:
+            description: >
+              The {{eventTitle}} ticket now records the evidence, reasoning, and next step.
+          hidden:
+            taskBacklog: -1
+
+    false_positive:
+      instanceId: false-positive-1
+      title: Expected scanner activity
+      summary: >
+        A vulnerability scanner triggered a routine connection alert during its approved window.
+      priority: low
+      systemId: alert_dashboard
+      triggerAt: 100
+      deadlineMinutes: 300
+      initialStatus: pending
+      managerGuidance: >
+        Morgan recommends checking the approved activity window and documenting why
+        the alert can be closed.
+      progression:
+        kind: linear
+        allowManager: true
+        utilityActions: [update_ticket_notes]
+        sequence:
+          - review_alert
+          - inspect_login_context
+          - document_ticket
+          - dismiss_alert
+      actionEffects:
+        review_alert:
+          observeArtifactIds: [scanner-alert]
+          hidden:
+            cognitiveLoad: 1
+        inspect_login_context:
+          observeArtifactIds: [scanner-window]
+          hidden:
+            accuracy: 1
+        dismiss_alert:
+          resolve: true
+          resolution: Reviewed, documented, and closed as expected activity.
+          consequence:
+            description: The reviewed routine alert was documented and closed as expected activity.
+          hidden:
+            taskBacklog: -1
+
+  artifacts:
+    - id: suspicious-login-alert
+      systemId: alert_dashboard
+      kind: alert
+      title: Unfamiliar successful login
+      summary: Alert A-1042 · high priority
+      body: >
+        Source IP 203.0.113.44 reported 6 failed MFA challenges followed by one successful
+        password login for j.patel@example.com at 07:41. Geo hint: Montreal metro.
+      eventIds: [suspicious-login-1]
+      relatedArtifactIds: [login-context-1, account-history-1, device-inventory-1]
+      searchableText: unfamiliar login montreal failures MFA
+      metadata:
+        severity: high
+        alertId: A-1042
+    - id: login-context-1
+      systemId: alert_dashboard
+      kind: login_record
+      title: Login context · j.patel
+      summary: Device, network, and MFA context for the flagged session
+      body: >
+        Device name unknown-laptop-17. User agent Chrome/Windows. ASN residential ISP.
+        No prior successful sessions from this ASN in 90 days. Travel calendar empty.
+      eventIds: [suspicious-login-1]
+      relatedArtifactIds: [suspicious-login-alert]
+      searchableText: unknown laptop residential ISP
+    - id: account-history-1
+      systemId: alert_dashboard
+      kind: account_history
+      title: Account history · j.patel
+      summary: Recent authentication pattern
+      body: >
+        Typical weekday logins from HQ Wi-Fi and enrolled MacBook. Two VPN sessions last
+        week from Toronto office. No password resets in 30 days.
+      eventIds: [suspicious-login-1]
+      searchableText: HQ Wi-Fi MacBook Toronto VPN
+    - id: device-inventory-1
+      systemId: knowledge_base
+      kind: device_record
+      title: Device inventory · j.patel
+      summary: Enrolled devices for the account owner
+      body: >
+        Enrolled: corp-macbook-patel (active), corp-phone-patel (active).
+        unknown-laptop-17 is not enrolled and has never checked into MDM.
+      eventIds: [suspicious-login-1]
+      searchableText: MDM enrolled macbook phone
+    - id: handoff-email
+      systemId: email
+      kind: email
+      title: Incomplete shift handoff
+      summary: From night analyst · inbox
+      body: >
+        Still watching the unfamiliar login thread. Did not finish device inventory check.
+        Routine service-account noise usually clears after procedure review. Ping Morgan if
+        the login expands.
+      eventIds: [handoff-1]
+      searchableText: handoff incomplete login routine
+    - id: routine-alert
+      systemId: alert_dashboard
+      kind: alert
+      title: Service-account authentication alert
+      summary: Alert A-1108 · low priority
+      body: >
+        svc-backup-night triggered a low-severity authentication anomaly during its
+        approved 02:00–04:00 window. Similar alerts closed as expected last week.
+      eventIds: [routine-alert-1]
+      relatedArtifactIds: [kb-false-positive-procedure]
+      searchableText: svc-backup-night expected window
+      metadata:
+        severity: low
+        alertId: A-1108
+    - id: kb-false-positive-procedure
+      systemId: knowledge_base
+      kind: kb_document
+      title: Closing expected automation alerts
+      summary: Approved procedure · SOC knowledge base
+      body: >
+        Confirm the service account, approved maintenance window, and prior similar
+        closures. Document the reasoning in the ticket before dismissing.
+      eventIds: [routine-alert-1, false-positive-1]
+      searchableText: automation expected window dismiss procedure
+    - id: phishing-email-1
+      systemId: email
+      kind: email
+      title: Benefits enrollment verification
+      summary: Reported by employee · quarantine pending
+      body: >
+        Please verify your benefits enrollment before Friday using the secure portal link.
+        Reply-to differs from the display name domain.
+      eventIds: [phishing-report-1]
+      relatedArtifactIds: [phishing-headers-1, phishing-link-1]
+      searchableText: benefits enrollment phishing
+    - id: phishing-headers-1
+      systemId: email
+      kind: email
+      title: Message headers · benefits report
+      summary: Authentication and routing details
+      body: >
+        From: Benefits Desk <noreply@benefits-helpdesk.net>
+        Reply-To: accounts@secure-update-mail.net
+        SPF: fail · DKIM: fail · DMARC: fail
+      eventIds: [phishing-report-1]
+      searchableText: SPF DKIM DMARC fail reply-to
+    - id: phishing-link-1
+      systemId: alert_dashboard
+      kind: alert
+      title: Link destination analysis
+      summary: Safe browser inspection result
+      body: >
+        Displayed URL looks like the benefits portal. Resolved host is
+        login-update-secure.net with a recently registered certificate unrelated to HR.
+      eventIds: [phishing-report-1]
+      searchableText: login-update-secure.net certificate
+    - id: scanner-alert
+      systemId: alert_dashboard
+      kind: alert
+      title: Scanner connection alert
+      summary: Alert A-1180 · low priority
+      body: >
+        Vulnerability scanner vuln-scan-03 opened connections across the finance VLAN
+        during the published scanning window.
+      eventIds: [false-positive-1]
+      relatedArtifactIds: [scanner-window]
+      searchableText: vuln-scan finance VLAN
+    - id: scanner-window
+      systemId: knowledge_base
+      kind: kb_document
+      title: Approved scanner window
+      summary: Change calendar · weekly
+      body: >
+        vuln-scan-03 is approved Mondays 10:00–12:00 for finance VLAN discovery.
+        Close matching alerts after documenting the window reference.
+      eventIds: [false-positive-1]
+      searchableText: approved scanner window finance
+    - id: chat-morgan
+      systemId: team_chat
+      kind: chat_thread
+      title: "#soc-day · Morgan"
+      summary: Manager channel
+      body: >
+        Morgan is available for bounded guidance. Ask for context, then keep ownership
+        of the decision.
+      eventIds: [handoff-1, suspicious-login-1]
+      searchableText: Morgan team chat guidance
+
+    - id: ticket-suspicious-login
+      systemId: ticket_queue
+      kind: ticket
+      title: "Ticket · unfamiliar login"
+      summary: Investigation notes
+      body: Capture evidence, uncertainty, and the decision path before escalation or dismissal.
+      eventIds: [suspicious-login-1]
+      searchableText: ticket investigation notes

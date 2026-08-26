@@ -13,5 +13,8 @@
   },
   "dependencies": {
     "@sim/schemas": "workspace:*"
+  },
+  "devDependencies": {
+    "@sim/career-packs": "workspace:*"
   }
 }

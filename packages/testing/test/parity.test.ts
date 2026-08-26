@@ -15,6 +15,10 @@ const baseView = {
   events: [],
   operationalMessages: [],
   pacingMode: "standard",
+  artifacts: [],
+  ticketNotes: {},
+  notebook: "",
+  kbQuery: "",
 } satisfies Omit<ClientView, "availableActions">;
 
 describe("view adapter parity", () => {

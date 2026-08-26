@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import {
   ActionUnavailableError,
   applyAction,
@@ -8,6 +9,10 @@ import {
   toClientView,
 } from "../src/index.js";
 
+const pack = loadDefaultCybersecurityPack();
+const world = (sessionId: string, seed: number) =>
+  createInitialWorldState(sessionId, seed, {}, pack);
+
 describe("deterministic simulation core", () => {
   const act = (
     state: ReturnType<typeof createInitialWorldState>,
@@ -16,7 +21,7 @@ describe("deterministic simulation core", () => {
   ) => applyAction(state, { id, eventId, actorId: "user" }).state;
 
   it("keeps hidden assessment state out of every client view", () => {
-    const state = createInitialWorldState("session-1", 42);
+    const state = world("session-1", 42);
     const view = toClientView(state);
 
     expect(view).not.toHaveProperty("hidden");
@@ -24,8 +29,18 @@ describe("deterministic simulation core", () => {
     expect(JSON.stringify(view)).not.toMatch(/\b\d+%/);
   });
 
+  it("builds the shift entirely from the career pack", () => {
+    const state = world("session-1", 42);
+    expect(state.rules.eventTemplates.suspicious_login).toBeDefined();
+    expect(Object.keys(state.artifacts).length).toBeGreaterThan(5);
+    expect(state.events.every((event) => !("reviewed" in event))).toBe(true);
+    expect(state.events.every((event) => !("contextInspected" in event))).toBe(
+      true,
+    );
+  });
+
   it("advances simulated time and fires a delayed consequence", () => {
-    let state = createInitialWorldState("session-1", 42);
+    let state = world("session-1", 42);
 
     state = act(state, "review_alert", "suspicious-login-1");
     state = act(state, "dismiss_alert", "suspicious-login-1");
@@ -50,7 +65,7 @@ describe("deterministic simulation core", () => {
   });
 
   it("replays an action log into identical canonical state", () => {
-    const initial = createInitialWorldState("session-1", 99);
+    const initial = world("session-1", 99);
     const actions = [
       { id: "review_alert", actorId: "user" },
       { id: "inspect_login_context", actorId: "user" },
@@ -73,7 +88,7 @@ describe("deterministic simulation core", () => {
   });
 
   it("rejects actions unavailable in current state without mutation", () => {
-    const state = createInitialWorldState("session-1", 42);
+    const state = world("session-1", 42);
     const before = structuredClone(state);
 
     expect(() =>
@@ -86,7 +101,7 @@ describe("deterministic simulation core", () => {
   });
 
   it("records deterministic manager guidance after consultation", () => {
-    const initial = createInitialWorldState("session-1", 42);
+    const initial = world("session-1", 42);
 
     const turn = applyAction(initial, {
       id: "ask_manager",
@@ -101,7 +116,7 @@ describe("deterministic simulation core", () => {
   });
 
   it("allows manager consultation only once per event", () => {
-    const initial = createInitialWorldState("session-1", 42);
+    const initial = world("session-1", 42);
     const consulted = applyAction(initial, {
       id: "ask_manager",
       actorId: "user",
@@ -122,7 +137,7 @@ describe("deterministic simulation core", () => {
   });
 
   it("targets every available action to a workplace event and system", () => {
-    const state = createInitialWorldState("session-1", 42);
+    const state = world("session-1", 42);
 
     expect(availableActions(state)).toEqual(
       expect.arrayContaining([
@@ -136,7 +151,7 @@ describe("deterministic simulation core", () => {
   });
 
   it("rejects an action aimed at the wrong event", () => {
-    const state = createInitialWorldState("session-1", 42);
+    const state = world("session-1", 42);
 
     expect(() =>
       applyAction(state, {
@@ -148,7 +163,7 @@ describe("deterministic simulation core", () => {
   });
 
   it("starts a shift with guided handoff and scheduled workplace events", () => {
-    const state = createInitialWorldState("session-1", 42);
+    const state = world("session-1", 42);
 
     expect(state.events).toHaveLength(5);
     expect(
@@ -166,7 +181,7 @@ describe("deterministic simulation core", () => {
   });
 
   it("activates routine work while the login investigation remains open", () => {
-    let state = createInitialWorldState("session-1", 42);
+    let state = world("session-1", 42);
     state = act(state, "review_alert", "suspicious-login-1");
     state = act(state, "read_handoff", "handoff-1");
     state = act(state, "acknowledge_handoff", "handoff-1");
@@ -185,7 +200,7 @@ describe("deterministic simulation core", () => {
   });
 
   it("applies a delayed consequence from an earlier dismissal", () => {
-    let state = createInitialWorldState("session-1", 42);
+    let state = world("session-1", 42);
     state = act(state, "review_alert", "suspicious-login-1");
     state = act(state, "dismiss_alert", "suspicious-login-1");
     state = act(state, "read_handoff", "handoff-1");
@@ -205,7 +220,7 @@ describe("deterministic simulation core", () => {
   });
 
   it("replays a complete expected shift with at least fifteen actions", () => {
-    const initial = createInitialWorldState("session-1", 99);
+    const initial = world("session-1", 99);
     const actions = [
       ["read_handoff", "handoff-1"],
       ["acknowledge_handoff", "handoff-1"],
@@ -249,5 +264,21 @@ describe("deterministic simulation core", () => {
       "complete_shift",
     );
     expect(replayed).toEqual(direct);
+  });
+
+  it("records ticket notes and observed artifacts from pack-driven effects", () => {
+    let state = world("session-1", 42);
+    state = act(state, "review_alert", "suspicious-login-1");
+    state = applyAction(state, {
+      id: "update_ticket_notes",
+      eventId: "suspicious-login-1",
+      actorId: "user",
+      freeText: "Need device inventory before escalate.",
+    }).state;
+
+    expect(state.ticketNotes["suspicious-login-1"]).toBe(
+      "Need device inventory before escalate.",
+    );
+    expect(state.observedArtifactIds).toContain("suspicious-login-alert");
   });
 });

@@ -9,6 +9,12 @@ import {
 } from "../src/index.js";
 import { FakeLlmProvider } from "@sim/ai";
 import { createInitialWorldState } from "@sim/core";
+import { loadDefaultCybersecurityPack } from "@sim/career-packs";
+
+const pack = loadDefaultCybersecurityPack();
+const world = (sessionId: string, seed: number) =>
+  createInitialWorldState(sessionId, seed, {}, pack);
+
 
 function setup(
   userId = "user-1",
@@ -225,7 +231,7 @@ describe("mixed-age policy and bounded dialogue", () => {
 
     const result = await generateSafeNpcReply({
       provider,
-      state: createInitialWorldState("session-1", 42),
+      state: world("session-1", 42),
       npcId: "manager",
       userText: "What context should I review?",
       budgetUsd: 0.05,
@@ -245,7 +251,7 @@ describe("mixed-age policy and bounded dialogue", () => {
 
     const result = await generateSafeNpcReply({
       provider,
-      state: createInitialWorldState("session-1", 42),
+      state: world("session-1", 42),
       npcId: "manager",
       userText: "What context should I review?",
       budgetUsd: 0.05,

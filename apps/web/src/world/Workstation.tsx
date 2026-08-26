@@ -1,14 +1,9 @@
 import type { ReactNode } from "react";
-import {
-  CubicleWalls,
-  DeskClutter,
-  DeskFrame,
-  DualMonitor,
-  KeyboardMouse,
-  LoginPostIt,
-  PlantPot,
-  TaskLamp,
-} from "./props.js";
+import { PlantPot } from "./props/decor.js";
+import { CubicleWalls, DeskFrame } from "./props/furniture.js";
+import { TaskLamp } from "./props/lighting.js";
+import { LoginPostIt } from "./props/signage.js";
+import { DeskClutter, DualMonitor, KeyboardMouse } from "./props/tech.js";
 
 /** Slightly roomier default cubicle footprint. */
 export function Workstation({
@@ -51,8 +46,4 @@ export function Workstation({
       ) : null}
     </group>
   );
-}
-
-export function workstationSeatLocal(): [number, number, number] {
-  return [0, 0, 1.65];
 }

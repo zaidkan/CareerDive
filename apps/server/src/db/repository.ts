@@ -5,12 +5,9 @@ import {
   ReflectionSchema,
   WorldStateSchema,
 } from "@sim/schemas";
-import { TRPCError } from "@trpc/server";
-import type {
-  SharingGrant,
-  SimulationRepository,
-  StoredSession,
-} from "../index.js";
+import { GrantNotFoundError, SessionNotFoundError } from "../domain/errors.js";
+import type { SharingGrant, StoredSession } from "../domain/session.js";
+import type { SimulationRepository } from "../repository/types.js";
 
 type SqlClient = ReturnType<typeof postgres>;
 
@@ -51,7 +48,7 @@ export class PostgresRepository implements SimulationRepository {
     `;
     const row = rows[0];
     if (!row) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
+      throw new SessionNotFoundError();
     }
     const [actionRows, evidenceRows, reflectionRows] = await Promise.all([
       this.#sql<{ sequence: number; action: unknown }[]>`
@@ -194,7 +191,7 @@ export class PostgresRepository implements SimulationRepository {
       RETURNING id
     `;
     if (result.length === 0) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "Session not found" });
+      throw new SessionNotFoundError();
     }
   }
 
@@ -258,7 +255,7 @@ export class PostgresRepository implements SimulationRepository {
       RETURNING id
     `;
     if (rows.length === 0) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "Grant not found" });
+      throw new GrantNotFoundError();
     }
   }
 }

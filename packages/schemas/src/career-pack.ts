@@ -1,0 +1,117 @@
+import { z } from "zod";
+
+import { ActionDefinitionSchema, type SimulationActionId } from "./actions.js";
+import { PackEventTemplateSchema } from "./events.js";
+import { WorkSystemIdSchema } from "./session.js";
+import {
+  FactSchema,
+  LocationSchema,
+  NpcStateSchema,
+  WorkArtifactSchema,
+} from "./world.js";
+
+export const ScenarioRhythmSchema = z.enum([
+  "routine_monitoring",
+  "quiet_investigation",
+]);
+export type ScenarioRhythm = z.infer<typeof ScenarioRhythmSchema>;
+
+export const CareerPackSchema = z
+  .object({
+    career: z.object({
+      id: z.string(),
+      title: z.string(),
+      packVersion: z.string(),
+      reviewStatus: z.enum(["draft", "in_review", "approved"]),
+      lastReviewed: z.string().date(),
+      nextReview: z.string().date(),
+      reviewingRoles: z.array(z.string()).min(3),
+      sources: z
+        .array(z.object({ title: z.string(), url: z.string().url() }))
+        .min(1),
+      rhythms: z.array(ScenarioRhythmSchema).min(2),
+      systems: z.array(WorkSystemIdSchema).min(1),
+      events: z.array(z.string()).min(1),
+      rhythmBiasReview: z.object({
+        ordinaryWorkRepresented: z.literal(true),
+        calmWorkRepresented: z.literal(true),
+        technicalAndRelationalWorkRepresented: z.literal(true),
+      }),
+    }),
+    scenario: z.object({
+      location: LocationSchema,
+      maxAiCostUsd: z.number().nonnegative(),
+      briefing: z.string(),
+      initialTaskBacklog: z.number().int().nonnegative(),
+      facts: z.array(FactSchema).min(1),
+      npcs: z.array(NpcStateSchema).min(1),
+      actions: z.array(ActionDefinitionSchema).min(1),
+      eventTemplates: z.record(z.string(), PackEventTemplateSchema),
+      artifacts: z.array(WorkArtifactSchema).default([]),
+    }),
+  })
+  .superRefine((pack, ctx) => {
+    const templateIds = Object.keys(pack.scenario.eventTemplates);
+    for (const eventId of pack.career.events) {
+      if (!templateIds.includes(eventId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Career event "${eventId}" has no scenario.eventTemplates entry`,
+          path: ["career", "events"],
+        });
+      }
+    }
+    for (const templateId of templateIds) {
+      if (!pack.career.events.includes(templateId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `scenario.eventTemplates.${templateId} is not listed in career.events`,
+          path: ["scenario", "eventTemplates", templateId],
+        });
+      }
+    }
+    const actionIds = new Set(pack.scenario.actions.map(({ id }) => id));
+    for (const [templateId, template] of Object.entries(
+      pack.scenario.eventTemplates,
+    )) {
+      const referenced = new Set<SimulationActionId>();
+      if (template.progression.kind === "linear") {
+        for (const id of template.progression.sequence) referenced.add(id);
+        for (const id of template.progression.utilityActions)
+          referenced.add(id);
+      } else {
+        for (const stage of template.progression.stages) {
+          for (const id of stage.after) referenced.add(id);
+          for (const id of stage.offer) referenced.add(id);
+          for (const id of stage.alsoOffer) referenced.add(id);
+        }
+        for (const id of template.progression.utilityActions)
+          referenced.add(id);
+      }
+      if (template.progression.allowManager) {
+        referenced.add("ask_manager");
+      }
+      for (const actionId of referenced) {
+        if (!actionIds.has(actionId)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Event "${templateId}" references unknown action "${actionId}"`,
+            path: ["scenario", "eventTemplates", templateId],
+          });
+        }
+      }
+    }
+    const artifactIds = new Set(pack.scenario.artifacts.map(({ id }) => id));
+    for (const artifact of pack.scenario.artifacts) {
+      for (const relatedId of artifact.relatedArtifactIds) {
+        if (!artifactIds.has(relatedId)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Artifact "${artifact.id}" references unknown related artifact "${relatedId}"`,
+            path: ["scenario", "artifacts"],
+          });
+        }
+      }
+    }
+  });
+export type CareerPack = z.infer<typeof CareerPackSchema>;

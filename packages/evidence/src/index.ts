@@ -1,15 +1,13 @@
 import {
   DebriefSchema,
-  EvidenceSignalSchema,
   type Debrief,
   type EvidenceSignal,
   type Reflection,
 } from "@sim/schemas";
 import { validateUserFacingText } from "@sim/safety";
 
-export function recordEvidence(signal: EvidenceSignal): EvidenceSignal {
-  return EvidenceSignalSchema.parse(signal);
-}
+export { recordEvidence } from "./record.js";
+export { evidenceFromAction } from "./from-action.js";
 
 export function detectReflectionMismatch(input: {
   reflection: {

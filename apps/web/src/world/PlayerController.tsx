@@ -1,30 +1,10 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-
-export type Aabb = {
-  minX: number;
-  maxX: number;
-  minZ: number;
-  maxZ: number;
-};
+import { clampToRoom, collidesAt, type Aabb } from "./collision.js";
 
 const SPEED = 1.85;
 const LOOK_SENS = 0.002;
-
-function collides(x: number, z: number, boxes: Aabb[], radius = 0.32): boolean {
-  for (const box of boxes) {
-    if (
-      x + radius > box.minX &&
-      x - radius < box.maxX &&
-      z + radius > box.minZ &&
-      z - radius < box.maxZ
-    ) {
-      return true;
-    }
-  }
-  return false;
-}
 
 function FirstPersonHands({
   visible,
@@ -33,7 +13,7 @@ function FirstPersonHands({
 }: {
   visible: boolean;
   mode: "walk" | "type";
-  movingRef: React.MutableRefObject<boolean>;
+  movingRef: React.RefObject<boolean>;
 }) {
   const group = useRef<THREE.Group>(null);
   const left = useRef<THREE.Group>(null);
@@ -327,14 +307,14 @@ export function PlayerController({
     if (wish.lengthSq() > 0) {
       const nextX = pos.current.x + wish.x;
       const nextZ = pos.current.z + wish.z;
-      if (!collides(nextX, pos.current.z, colliders)) {
+      if (!collidesAt(nextX, pos.current.z, colliders)) {
         pos.current.x = nextX;
       }
-      if (!collides(pos.current.x, nextZ, colliders)) {
+      if (!collidesAt(pos.current.x, nextZ, colliders)) {
         pos.current.z = nextZ;
       }
-      pos.current.x = Math.max(-10.2, Math.min(10.2, pos.current.x));
-      pos.current.z = Math.max(-7.0, Math.min(7.0, pos.current.z));
+      pos.current.x = clampToRoom(pos.current.x, "x");
+      pos.current.z = clampToRoom(pos.current.z, "z");
     }
 
     camera.position.copy(pos.current);

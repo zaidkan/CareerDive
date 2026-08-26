@@ -21,11 +21,22 @@ export function reduceSpatialEvent(
 ): SpatialState {
   switch (event.type) {
     case "enter_room":
-      return { phase: "room_walk", roomId: event.roomId };
+      return {
+        phase: "room_walk",
+        roomId: event.roomId,
+        ...(state.visitedDesk ? { visitedDesk: true } : {}),
+      };
     case "leave_room":
-      return { phase: "floor_map" };
+      return {
+        phase: "floor_map",
+        ...(state.visitedDesk ? { visitedDesk: true } : {}),
+      };
     case "sit_desk": {
-      const next: SpatialState = { ...state, phase: "desk_login" };
+      const next: SpatialState = {
+        ...state,
+        phase: "desk_login",
+        visitedDesk: true,
+      };
       delete next.flavorMessage;
       return next;
     }

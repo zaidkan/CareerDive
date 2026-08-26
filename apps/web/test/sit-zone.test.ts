@@ -1,51 +1,59 @@
 import { describe, expect, it } from "vitest";
-import { nearestHotspot, type HotspotDef } from "../src/world/Hotspot.js";
+import { nearestHotspot } from "../src/world/Hotspot.js";
+import {
+  BASE_HOTSPOTS,
+  cubicleCollider,
+  isStandable,
+  PLAYER_DESK,
+  SEAT,
+  socColliders,
+} from "../src/world/rooms/socLayout.js";
 
-/** Mirrors SocRoom layout — keep in sync when moving furniture. */
-const HOTSPOTS: HotspotDef[] = [
-  {
-    id: "desk_player",
-    label: "Your chair",
-    position: [3.2, 0, -1.5],
-    radius: 1.7,
-  },
-];
+/** Asserts against the real layout, so moving furniture cannot silently break sitting. */
+const deskHotspot = BASE_HOTSPOTS.find((h) => h.id === "desk_player");
+if (!deskHotspot) throw new Error("desk_player hotspot missing");
 
-const DESK_COLLIDER = {
-  minX: 2.1,
-  maxX: 4.5,
-  minZ: -4.2,
-  maxZ: -2.35,
-};
-
-function insideCollider(
-  x: number,
-  z: number,
-  box: typeof DESK_COLLIDER,
-  radius = 0.32,
-): boolean {
-  return (
-    x + radius > box.minX &&
-    x - radius < box.maxX &&
-    z + radius > box.minZ &&
-    z - radius < box.maxZ
-  );
-}
+const colliders = socColliders(false);
 
 describe("SOC sit zone", () => {
-  it("keeps the chair hotspot outside the desk collider", () => {
-    const [x, , z] = HOTSPOTS[0]!.position;
-    expect(insideCollider(x, z, DESK_COLLIDER)).toBe(false);
+  it("puts the chair hotspot in front of the cubicle, not inside it", () => {
+    const cubicle = cubicleCollider(PLAYER_DESK);
+
+    expect(deskHotspot.position[2]).toBeGreaterThan(cubicle.maxZ);
+  });
+
+  it("leaves walkable floor right up against the chair", () => {
+    const [x, , z] = deskHotspot.position;
+    /** The chair itself is solid; standing a few cm short of it is enough. */
+    const approach = [0, 0.1, 0.2, 0.3, 0.4].find((gap) =>
+      isStandable(x, z + gap, colliders),
+    );
+
+    expect(approach).toBeDefined();
+    expect(approach ?? 1).toBeLessThanOrEqual(0.2);
   });
 
   it("detects the desk when standing in the walkable sit zone", () => {
-    const near = nearestHotspot([3.2, 1.6, -1.2], HOTSPOTS);
-    expect(near?.id).toBe("desk_player");
+    const approach: [number, number, number] = [
+      PLAYER_DESK[0],
+      1.6,
+      PLAYER_DESK[2] + SEAT + 0.4,
+    ];
+
+    expect(isStandable(approach[0], approach[2], colliders)).toBe(true);
+    expect(nearestHotspot(approach, BASE_HOTSPOTS)?.id).toBe("desk_player");
   });
 
   it("does not require standing inside furniture to sit", () => {
-    const approach = [3.2, 1.6, -0.4] as [number, number, number];
-    expect(insideCollider(approach[0], approach[2], DESK_COLLIDER)).toBe(false);
-    expect(nearestHotspot(approach, HOTSPOTS)?.id).toBe("desk_player");
+    const [x, , z] = deskHotspot.position;
+    const cubicle = cubicleCollider(PLAYER_DESK);
+    const insideCubicle: [number, number, number] = [
+      x,
+      1.6,
+      (cubicle.minZ + cubicle.maxZ) / 2,
+    ];
+
+    expect(isStandable(insideCubicle[0], insideCubicle[2], colliders)).toBe(false);
+    expect(nearestHotspot([x, 1.6, z], BASE_HOTSPOTS)?.id).toBe("desk_player");
   });
 });

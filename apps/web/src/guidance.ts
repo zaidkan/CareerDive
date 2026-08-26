@@ -1,5 +1,5 @@
 import type { AvailableAction, ClientView, WorkSystemId } from "@sim/schemas";
-import { UTILITY_ACTION_IDS, systemLabel } from "./systems.js";
+import { canWrapUpShift, shiftWorkActions } from "./systems.js";
 
 export type ShiftGuidance = {
   headline: string;
@@ -8,16 +8,10 @@ export type ShiftGuidance = {
   action?: AvailableAction;
 };
 
-function primaryActions(view: ClientView): AvailableAction[] {
-  return view.availableActions.filter(
-    (action) => !UTILITY_ACTION_IDS.has(action.id) && action.id !== "complete_shift",
-  );
-}
-
 export function getShiftGuidance(view: ClientView): ShiftGuidance | null {
-  const next = primaryActions(view)[0];
+  const next = shiftWorkActions(view.availableActions)[0];
   if (!next) {
-    return view.availableActions.some(({ id }) => id === "complete_shift")
+    return canWrapUpShift(view.availableActions)
       ? {
           headline: "Wrap up your shift",
           detail: "When you are ready, finish the shift from Team Chat.",
@@ -26,7 +20,6 @@ export function getShiftGuidance(view: ClientView): ShiftGuidance | null {
       : null;
   }
 
-  const where = systemLabel(next.systemId);
   const hints: Partial<Record<string, string>> = {
     read_handoff: "Start by reading what the last analyst left you.",
     review_alert: "Check the alert details before deciding anything.",

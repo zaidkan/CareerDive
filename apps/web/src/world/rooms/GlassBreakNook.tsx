@@ -8,19 +8,16 @@ import * as THREE from "three";
 import { Figure } from "../Figure.js";
 import { NameTag } from "../NameTag.js";
 import {
-  BreakTable,
-  CoffeePot,
-  Fridge,
-  OfficeChair,
-  PlantPot,
-  StickyNotes,
-} from "../props.js";
-import {
   EmployeeOfMonth,
   FramedCertificate,
-  MeshLabel,
-} from "../officeExtras.js";
-import type { Aabb } from "../PlayerController.js";
+  PlantPot,
+  TallFloorPlant,
+  WallArt,
+} from "../props/decor.js";
+import { BreakTable, OfficeChair } from "../props/furniture.js";
+import { CoffeePot, Fridge } from "../props/kitchen.js";
+import { MeshLabel, StickyNotes } from "../props/signage.js";
+import type { Aabb } from "../collision.js";
 
 function GlassPane({
   position,
@@ -66,20 +63,18 @@ function GlassPane({
   );
 }
 
-/** NE corner — leave ~1.1m aisle east of player cubicle. */
+/**
+ * NE corner. The glass sits far enough east to leave a walkable lane past the
+ * player cubicle, and runs well south of the desk row so the lounge is not
+ * cramped around the table.
+ */
 export const BREAK_NOOK = {
-  cornerX: 6.6,
-  cornerZ: -3.2,
-  wallX: 10.7,
+  cornerX: 6.9,
+  cornerZ: -1.35,
+  wallX: 10.75,
   wallZ: -7.2,
   doorZ: -5.2,
 } as const;
-
-export const BREAK_NOOK_ORIGIN: [number, number, number] = [
-  (BREAK_NOOK.cornerX + BREAK_NOOK.wallX) / 2,
-  0,
-  (BREAK_NOOK.cornerZ + BREAK_NOOK.wallZ) / 2,
-];
 
 export function breakNookColliders(doorOpen: boolean): Aabb[] {
   const { cornerX, cornerZ, wallX, wallZ, doorZ } = BREAK_NOOK;
@@ -103,9 +98,16 @@ export function breakNookColliders(doorOpen: boolean): Aabb[] {
       minZ: cornerZ - 0.08,
       maxZ: cornerZ + 0.08,
     },
-    { minX: 7.4, maxX: 9.2, minZ: -5.2, maxZ: -4.0 },
-    { minX: 8.8, maxX: 10.3, minZ: -7.0, maxZ: -5.9 },
-    { minX: 6.8, maxX: 8.0, minZ: -7.0, maxZ: -6.0 },
+    /** Lounge table */
+    { minX: 7.6, maxX: 9.6, minZ: -4.6, maxZ: -3.4 },
+    /** Fridge */
+    { minX: 9.85, maxX: 10.75, minZ: -7.25, maxZ: -6.45 },
+    /** Coffee counter along the north wall */
+    { minX: 6.9, maxX: 9.4, minZ: -7.25, maxZ: -6.55 },
+    /** Soft seating bench on the east wall */
+    { minX: 10.0, maxX: 10.75, minZ: -4.35, maxZ: -2.35 },
+    /** Corner planter by the glass */
+    { minX: 6.97, maxX: 7.73, minZ: -2.42, maxZ: -1.68 },
   ];
   if (!doorOpen) {
     walls.push({
@@ -258,35 +260,86 @@ export function GlassBreakNook({
         accent="#4fd0c8"
       />
 
-      <BreakTable position={[8.4, 0, -4.8]} width={2.0} depth={1.0} />
-      <OfficeChair position={[7.8, 0, -4.05]} rotationY={Math.PI} />
-      <OfficeChair position={[9.0, 0, -5.5]} />
-      <OfficeChair position={[7.7, 0, -5.5]} rotationY={0.4} />
+      {/* Lounge sits mid-room now that the glass reaches further south */}
+      <BreakTable position={[8.6, 0, -4.0]} width={2.0} depth={1.15} />
+      <OfficeChair position={[7.85, 0, -3.1]} rotationY={Math.PI} />
+      <OfficeChair position={[9.35, 0, -3.1]} rotationY={Math.PI - 0.25} />
+      <OfficeChair position={[7.85, 0, -4.9]} rotationY={0.2} />
+      <OfficeChair position={[9.35, 0, -4.9]} rotationY={-0.2} />
 
-      <mesh position={[7.2, 0.95, -6.5]} castShadow>
-        <boxGeometry args={[1.1, 0.9, 0.5]} />
+      {/* Counter run flush against the north wall */}
+      <mesh position={[8.15, 0.45, -6.92]} castShadow receiveShadow>
+        <boxGeometry args={[2.3, 0.9, 0.6]} />
         <meshStandardMaterial color="#3a2c22" roughness={0.7} />
       </mesh>
-      <CoffeePot position={[7.2, 1.42, -6.5]} />
-      <MeshLabel text="COFFEE" position={[7.2, 1.72, -6.2]} width={0.38} height={0.1} />
+      <mesh position={[8.15, 0.92, -6.92]} receiveShadow>
+        <boxGeometry args={[2.4, 0.05, 0.66]} />
+        <meshStandardMaterial color="#5a4a3a" roughness={0.5} />
+      </mesh>
+      <mesh position={[8.15, 0.5, -6.6]}>
+        <boxGeometry args={[2.2, 0.7, 0.03]} />
+        <meshStandardMaterial color="#463629" roughness={0.65} />
+      </mesh>
+      <CoffeePot position={[7.45, 1.09, -6.87]} />
+      {/* Mug shelf on the wall above the counter */}
+      <mesh position={[8.15, 1.62, -7.11]} castShadow>
+        <boxGeometry args={[2.0, 0.05, 0.28]} />
+        <meshStandardMaterial color="#4a3a2c" roughness={0.6} />
+      </mesh>
+      {([-0.6, -0.25, 0.1, 0.45] as const).map((dx) => (
+        <mesh key={dx} position={[8.15 + dx, 1.695, -7.11]} castShadow>
+          <cylinderGeometry args={[0.05, 0.045, 0.1, 10]} />
+          <meshStandardMaterial color={dx > 0 ? "#4a6a88" : "#8a5038"} roughness={0.5} />
+        </mesh>
+      ))}
+      <MeshLabel text="COFFEE" position={[8.15, 2.05, -7.23]} width={0.45} height={0.11} />
 
-      <Fridge position={[9.9, 0.85, -6.4]} />
-      <StickyNotes position={[10.5, 1.55, -4.4]} rotationY={-Math.PI / 2} />
-      <StickyNotes position={[10.5, 1.7, -5.5]} rotationY={-Math.PI / 2} />
+      <Fridge position={[10.3, 0.85, -6.85]} />
+
+      {/* Soft bench on the east wall uses the new depth */}
+      <mesh position={[10.35, 0.22, -3.35]} castShadow receiveShadow>
+        <boxGeometry args={[0.7, 0.44, 1.9]} />
+        <meshStandardMaterial color="#3f5450" roughness={0.85} />
+      </mesh>
+      <mesh position={[10.6, 0.62, -3.35]} castShadow>
+        <boxGeometry args={[0.2, 0.5, 1.9]} />
+        <meshStandardMaterial color="#48605b" roughness={0.85} />
+      </mesh>
+      {([-0.55, 0.55] as const).map((dz) => (
+        <mesh key={dz} position={[10.3, 0.5, -3.35 + dz]} castShadow>
+          <boxGeometry args={[0.34, 0.14, 0.34]} />
+          <meshStandardMaterial color="#e8b84a" roughness={0.8} />
+        </mesh>
+      ))}
+
+      <StickyNotes position={[10.72, 1.75, -5.3]} rotationY={-Math.PI / 2} />
+      <WallArt
+        position={[10.72, 1.75, -2.5]}
+        rotationY={-Math.PI / 2}
+        variant={1}
+        width={0.9}
+        height={0.7}
+      />
       {/* Desk plant on the break table — not a free floor shrub */}
-      <PlantPot position={[8.9, 0.86, -4.5]} scale={0.95} />
+      <PlantPot position={[8.6, 0.86, -4.0]} scale={0.95} />
+      <TallFloorPlant position={[7.35, 0, -2.05]} scale={0.9} />
 
       <Figure
-        position={[7.6, 0, -6.15]}
+        position={[7.6, 0, -6.05]}
         rotationY={0.5}
         primary="#6a7a5c"
         secondary="#2a3224"
         accent="#e8b84a"
         hair="#3a2818"
       />
-      <NameTag name="Jules" position={[7.6, 2.2, -6.15]} visible={!cheapGlass} />
+      <NameTag
+        name="Jules"
+        role="Coworker"
+        position={[7.6, 2.2, -6.05]}
+        visible={!cheapGlass}
+      />
 
-      <pointLight intensity={0.9} distance={6} position={[8.4, 2.3, -5.2]} color="#ffe8b8" />
+      <pointLight intensity={1.05} distance={8} position={[8.6, 2.4, -4.4]} color="#ffe8b8" />
     </group>
   );
 }
@@ -301,6 +354,6 @@ export const JULES_LINES = [
 ] as const;
 
 export function nextJulesLine(index: number): { line: string; nextIndex: number } {
-  const line = JULES_LINES[index % JULES_LINES.length]!;
+  const line = JULES_LINES[index % JULES_LINES.length] ?? JULES_LINES[0];
   return { line, nextIndex: (index + 1) % JULES_LINES.length };
 }

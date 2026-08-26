@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useReducer, useRef, useState } from "react
 import type { AvailableAction, ClientView } from "@sim/schemas";
 import { COMPANY } from "./company.js";
 import { FloorMap } from "./FloorMap.js";
+import { getJourneyStep } from "../journey.js";
 import {
   INITIAL_SPATIAL,
   reduceSpatialEvent,
@@ -21,9 +22,16 @@ const FLAVOR: Partial<Record<HotspotId, string>> = {
     "Shared alert boards. Sit at your desk when you are ready to work them.",
   morgan_station:
     "Morgan can help — ask from Team chat once you are at your desk.",
-  storage:
-    "Cable and adapter cabinets — open them if you need a spare lead.",
   door_exit: "Back to the floor map.",
+};
+
+const INTERACT_LABEL: Partial<Record<HotspotId, string>> = {
+  desk_player: "Sit at computer",
+  break_door: "Use door",
+  door_exit: "Exit to map",
+  jules: "Talk / coffee",
+  coffee: "Talk / coffee",
+  storage: "Open cabinets",
 };
 
 export function SpatialShell({
@@ -70,12 +78,10 @@ export function SpatialShell({
         dispatch({ type: "set_flavor", message: `Jules: “${line}”` });
         break;
       }
-      case "storage": {
+      /** The drawer sliding open is the whole feedback — no caption needed. */
+      case "storage":
         window.dispatchEvent(new Event("soc-storage"));
-        const message = FLAVOR[id];
-        if (message) dispatch({ type: "set_flavor", message });
         break;
-      }
       case "alert_wall":
       case "morgan_station": {
         const message = FLAVOR[id];
@@ -87,15 +93,39 @@ export function SpatialShell({
     }
   }
 
+  const journey = getJourneyStep({
+    phase: spatial.phase,
+    view,
+    ...(spatial.visitedDesk ? { visitedDesk: true } : {}),
+  });
+  const stepLabel = `Step ${String(journey.index)} of ${String(journey.total)}`;
+
   if (spatial.phase === "floor_map") {
     return (
       <FloorMap
+        hint={journey.body}
         onEnterRoom={(roomId) => {
           dispatch({ type: "enter_room", roomId });
         }}
+        stepLabel={stepLabel}
+        title={journey.title}
+        {...(journey.target?.kind === "room"
+          ? { highlightRoomId: journey.target.roomId }
+          : {})}
       />
     );
   }
+
+  const nearbyHotspotId = spatial.nearbyHotspotId;
+  const nearbyPrompt = nearbyLabel
+    ? nearbyLabel === "Your chair"
+      ? "At your chair — press E or Sit to use the computer"
+      : `Near: ${nearbyLabel} · press E or Interact`
+    : undefined;
+  /** Spawning beside the exit should not bury the step the player is actually on. */
+  const nearbyIsTarget =
+    journey.target?.kind === "hotspot" &&
+    journey.target.hotspotId === spatial.nearbyHotspotId;
 
   const walking = spatial.phase === "room_walk";
   const atDesk =
@@ -146,47 +176,39 @@ export function SpatialShell({
             seated={atDesk}
             view={view}
             {...(deskPhase ? { deskPhase } : {})}
-            {...(spatial.roomId ? { roomId: spatial.roomId } : {})}
+            {...(journey.target?.kind === "hotspot"
+              ? { highlightHotspotId: journey.target.hotspotId }
+              : {})}
           />
         </Suspense>
         {walking ? (
           <div className="room-hud">
             <div>
               <p className="eyebrow">
-                {COMPANY.name} · {roomLabel}
+                {COMPANY.name} · {roomLabel} · {stepLabel}
               </p>
-              <p>
-                {nearbyLabel
-                  ? nearbyLabel === "Your chair"
-                    ? "At your chair — press E or Sit to use the computer"
-                    : `Near: ${nearbyLabel} · press E or Interact`
-                  : "WASD move · drag to look · double-click to walk · E to interact"}
+              <p className="room-hud-step">{journey.title}</p>
+              <p>{nearbyIsTarget && nearbyPrompt ? nearbyPrompt : journey.body}</p>
+              {!nearbyIsTarget && nearbyPrompt ? (
+                <p className="room-hud-nearby">{nearbyPrompt}</p>
+              ) : null}
+              <p className="room-hud-controls">
+                WASD move · drag to look · double-click to walk · E to interact
               </p>
               {spatial.flavorMessage ? (
                 <p className="room-flavor">{spatial.flavorMessage}</p>
               ) : null}
             </div>
             <div className="room-hud-actions">
-              {spatial.nearbyHotspotId ? (
+              {nearbyHotspotId ? (
                 <button
                   className="start-shift"
                   onClick={() => {
-                    handleInteract(spatial.nearbyHotspotId!);
+                    handleInteract(nearbyHotspotId);
                   }}
                   type="button"
                 >
-                  {spatial.nearbyHotspotId === "desk_player"
-                    ? "Sit at computer"
-                    : spatial.nearbyHotspotId === "break_door"
-                      ? "Use door"
-                      : spatial.nearbyHotspotId === "door_exit"
-                        ? "Exit to map"
-                        : spatial.nearbyHotspotId === "jules" ||
-                            spatial.nearbyHotspotId === "coffee"
-                          ? "Talk / coffee"
-                          : spatial.nearbyHotspotId === "storage"
-                            ? "Open cabinets"
-                            : "Interact"}
+                  {INTERACT_LABEL[nearbyHotspotId] ?? "Interact"}
                 </button>
               ) : null}
               <button
@@ -203,6 +225,9 @@ export function SpatialShell({
         ) : null}
         {atDesk ? (
           <div className="room-desk-hud">
+            <p className="room-hud-step">
+              {stepLabel} · {journey.title}
+            </p>
             <p>
               {spatial.phase === "desk_login"
                 ? "Sign in on the monitor — use the yellow note credentials"

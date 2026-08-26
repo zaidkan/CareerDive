@@ -42,10 +42,14 @@ export const WORK_SYSTEMS: Array<{
   },
 ];
 
-export const UTILITY_ACTION_IDS = new Set<SimulationActionId>([
+/** Actions that edit the player's own scratch space rather than advance work. */
+const UTILITY_ACTION_IDS = new Set<SimulationActionId>([
   "update_ticket_notes",
   "update_notebook",
 ]);
+
+/** Terminal action; it ends the shift rather than progressing it. */
+const WRAP_UP_ACTION_ID: SimulationActionId = "complete_shift";
 
 export function systemLabel(systemId: WorkSystemId): string {
   return WORK_SYSTEMS.find(({ id }) => id === systemId)?.label ?? "Work system";
@@ -62,16 +66,31 @@ export function systemMeta(systemId: WorkSystemId) {
   );
 }
 
-export function isUtilityAction(action: AvailableAction): boolean {
+function isUtilityAction(action: AvailableAction): boolean {
   return UTILITY_ACTION_IDS.has(action.id);
 }
 
+/** Everything the player can act on in a system panel. */
 export function primaryActions(actions: AvailableAction[]): AvailableAction[] {
   return actions.filter((action) => !isUtilityAction(action));
 }
 
 export function utilityActions(actions: AvailableAction[]): AvailableAction[] {
   return actions.filter((action) => isUtilityAction(action));
+}
+
+/**
+ * Actions that move the shift forward. Narrower than `primaryActions` because
+ * guidance should never point at "finish the shift" while work remains.
+ */
+export function shiftWorkActions(actions: AvailableAction[]): AvailableAction[] {
+  return primaryActions(actions).filter(
+    (action) => action.id !== WRAP_UP_ACTION_ID,
+  );
+}
+
+export function canWrapUpShift(actions: AvailableAction[]): boolean {
+  return actions.some(({ id }) => id === WRAP_UP_ACTION_ID);
 }
 
 export function formatShiftClock(minutes: number): string {

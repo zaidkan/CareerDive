@@ -2,7 +2,7 @@ import { Canvas } from "@react-three/fiber";
 import { Suspense, useMemo } from "react";
 import type { AvailableAction, ClientView } from "@sim/schemas";
 import { SocRoom } from "./rooms/SocRoom.js";
-import type { HotspotId, RoomId, SpatialPhase } from "./worldTypes.js";
+import type { HotspotId, SpatialPhase } from "./worldTypes.js";
 
 function pickDpr(seated: boolean): [number, number] {
   if (typeof window === "undefined") return [1, 1.25];
@@ -17,7 +17,6 @@ function pickDpr(seated: boolean): [number, number] {
 }
 
 export function RoomCanvas({
-  roomId: _roomId = "soc",
   onNearbyChange,
   onInteract,
   enabled,
@@ -27,17 +26,18 @@ export function RoomCanvas({
   view,
   onAction,
   guided = false,
+  highlightHotspotId,
   onLoginSuccess,
   onStand,
   onMaximize,
   onMinimize,
 }: {
-  roomId?: RoomId;
   onNearbyChange: (id?: HotspotId, label?: string) => void;
   onInteract: (id: HotspotId) => void;
   enabled: boolean;
   seated?: boolean;
   maximized?: boolean;
+  highlightHotspotId?: HotspotId;
   deskPhase?: Extract<SpatialPhase, "desk_login" | "seated_monitor" | "focus_desk">;
   view?: ClientView;
   onAction?: (action: AvailableAction, freeText?: string) => void;
@@ -76,6 +76,7 @@ export function RoomCanvas({
             onInteract={onInteract}
             onNearbyChange={onNearbyChange}
             seated={seated}
+            {...(highlightHotspotId ? { highlightHotspotId } : {})}
             {...(deskPhase ? { deskPhase } : {})}
             {...(view ? { view } : {})}
             {...(onAction ? { onAction } : {})}

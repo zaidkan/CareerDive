@@ -37,10 +37,20 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
     onMinimize?: () => void;
   }) => (
     <div>
-      <button type="button" onClick={() => onInteract("desk_player")}>
+      <button
+        type="button"
+        onClick={() => {
+          onInteract("desk_player");
+        }}
+      >
         Sit at desk
       </button>
-      <button type="button" onClick={() => onInteract("door_exit")}>
+      <button
+        type="button"
+        onClick={() => {
+          onInteract("door_exit");
+        }}
+      >
         Exit room
       </button>
       {deskPhase &&
@@ -182,6 +192,24 @@ describe("spatial presentation", () => {
       { timeout: 6000 },
     );
     expect(screen.getByRole("button", { name: /Manager Office/i })).toBeDisabled();
+  });
+
+  it("guides the player to the room, then the desk, then the desk work", async () => {
+    const user = userEvent.setup();
+    render(<SpatialShell view={view} onAction={() => undefined} />);
+
+    const socRoom = screen.getByRole("button", { name: /Security Operations/i });
+    expect(socRoom).toHaveTextContent(/go here next/i);
+    expect(screen.getByText(/Head to Security Operations/i)).toBeVisible();
+
+    await user.click(socRoom);
+    await screen.findByRole("button", { name: /Sit at desk/i }, { timeout: 6000 });
+    expect(screen.getByText(/Find your desk/i)).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /Sit at desk/i }));
+    expect(
+      screen.getByText(/Sign in to your workstation/i),
+    ).toBeVisible();
   });
 
   it("moves from map to in-sim desk OS through the spatial shell", async () => {
