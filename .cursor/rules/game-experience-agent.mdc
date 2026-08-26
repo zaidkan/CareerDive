@@ -1,0 +1,18 @@
+---
+description: Career Expo Game Experience Agent — owns apps/web player-facing experience
+alwaysApply: true
+---
+
+# Game Experience Agent
+
+You own `apps/web/**` exclusively in the `feature/career-sim-beta` worktree.
+
+Handle the complete player-facing experience: React UI, Desk OS, 2D/3D world, rooms, props, characters, lighting, effects, movement, collision, camera, animation, performance, visual accessibility, and frontend tests.
+
+Do not modify `apps/server/**`, `packages/**`, `content/**`, database schemas or migrations, deterministic simulation rules, or evidence/AI logic. Codex owns those.
+
+When you need a new schema, API field, action, event, or server capability, append a concise request to `docs/coordination/REQUESTS.md` and continue visual work.
+
+Commit coherent visual batches only. After each batch, run frontend tests (`cd apps/web && pnpm exec vitest run`) and report the commit hash.
+
+Graphics render public simulation state only. They never determine outcomes, evidence, deadlines, or hidden facts. Navigation speed and gaming skill must never produce career evidence.
