@@ -1,4 +1,12 @@
-import { lazy, Suspense, useCallback, useReducer, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import type { AvailableAction, ClientView } from "@sim/schemas";
 import { COMPANY } from "./company.js";
 import { FloorMap } from "./FloorMap.js";
@@ -45,7 +53,20 @@ export function SpatialShell({
 }) {
   const [spatial, dispatch] = useReducer(reduceSpatialEvent, INITIAL_SPATIAL);
   const [nearbyLabel, setNearbyLabel] = useState<string>();
+  const [pointerLocked, setPointerLocked] = useState(false);
   const julesLine = useRef(0);
+
+  useEffect(() => {
+    const syncLock = () => {
+      setPointerLocked(document.pointerLockElement != null);
+    };
+    document.addEventListener("pointerlockchange", syncLock);
+    document.addEventListener("pointerlockerror", syncLock);
+    return () => {
+      document.removeEventListener("pointerlockchange", syncLock);
+      document.removeEventListener("pointerlockerror", syncLock);
+    };
+  }, []);
 
   const onNearbyChange = useCallback((id?: HotspotId, label?: string) => {
     if (id === undefined) {
@@ -181,6 +202,11 @@ export function SpatialShell({
               : {})}
           />
         </Suspense>
+        {walking && !pointerLocked ? (
+          <p className="room-look-hint">
+            Click to look around · WASD to walk · Esc to release
+          </p>
+        ) : null}
         {walking ? (
           <div className="room-hud">
             <div>
@@ -193,7 +219,7 @@ export function SpatialShell({
                 <p className="room-hud-nearby">{nearbyPrompt}</p>
               ) : null}
               <p className="room-hud-controls">
-                WASD move · drag to look · double-click to walk · E to interact
+                Double-click to walk · E to interact
               </p>
               {spatial.flavorMessage ? (
                 <p className="room-flavor">{spatial.flavorMessage}</p>

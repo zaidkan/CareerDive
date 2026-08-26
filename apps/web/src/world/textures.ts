@@ -285,6 +285,21 @@ export const makePaintingTexture = memoizeTexture((variant: number = 0): THREE.C
   }),
 );
 
+/** Soft radial sprite for steam wisps and dust motes. Shared via memoizeTexture. */
+export const makeSoftParticleTexture = memoizeTexture((): THREE.CanvasTexture => {
+  const tex = canvasTexture(64, 64, (ctx, w, h) => {
+    const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+    g.addColorStop(0, "rgba(255,255,255,0.7)");
+    g.addColorStop(0.45, "rgba(255,255,255,0.22)");
+    g.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+  });
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  return tex;
+});
+
 export function makePostItTexture(
   lines: string[],
 ): THREE.CanvasTexture {

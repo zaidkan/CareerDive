@@ -5,7 +5,15 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { makeCubicleFabricTexture, makeWoodTexture } from "../textures.js";
+import { ARM_SCREEN_INTENSITY, screenIntensity, useAmbientMotion } from "./ambient.js";
 import { MeshLabel } from "./signage.js";
+
+/** Slab center and thicknesses — `DESK_SURFACE_Y` is the finished top. */
+export const DESK_SLAB_Y = 0.78;
+export const DESK_SLAB_THICKNESS = 0.06;
+export const DESK_VENEER_Y = 0.815;
+export const DESK_VENEER_THICKNESS = 0.015;
+export const DESK_SURFACE_Y = DESK_VENEER_Y + DESK_VENEER_THICKNESS / 2;
 
 export function DeskFrame({
   position,
@@ -24,8 +32,8 @@ export function DeskFrame({
   const hz = depth / 2 - 0.12;
   return (
     <group position={position}>
-      <mesh position={[0, 0.78, 0]} castShadow receiveShadow>
-        <boxGeometry args={[width, 0.06, depth]} />
+      <mesh position={[0, DESK_SLAB_Y, 0]} castShadow receiveShadow>
+        <boxGeometry args={[width, DESK_SLAB_THICKNESS, depth]} />
         <meshStandardMaterial
           map={wood}
           color={color}
@@ -33,8 +41,8 @@ export function DeskFrame({
           metalness={0.08}
         />
       </mesh>
-      <mesh position={[0, 0.815, 0]}>
-        <boxGeometry args={[width + 0.02, 0.015, depth + 0.02]} />
+      <mesh position={[0, DESK_VENEER_Y, 0]}>
+        <boxGeometry args={[width + 0.02, DESK_VENEER_THICKNESS, depth + 0.02]} />
         <meshStandardMaterial color="#3a2c22" roughness={0.6} />
       </mesh>
       {(
@@ -208,10 +216,33 @@ export function BreakTable({
 export function MonitorArmDesk({
   position,
   rotationY = 0,
+  animated = true,
 }: {
   position: [number, number, number];
   rotationY?: number;
+  animated?: boolean;
 }) {
+  const live = useAmbientMotion(animated);
+  const screens = useRef<(THREE.MeshStandardMaterial | null)[]>([null, null]);
+  const nextBurst = useRef(11.2);
+
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    if (live && t > nextBurst.current + 0.26) {
+      nextBurst.current = t + 14 + (t % 5);
+    }
+    const burst = nextBurst.current;
+    const freqs = [0.41, 0.33] as const;
+    for (let i = 0; i < screens.current.length; i += 1) {
+      const mat = screens.current[i];
+      const freq = freqs[i];
+      if (!mat || freq === undefined) continue;
+      mat.emissiveIntensity = live
+        ? screenIntensity(t, ARM_SCREEN_INTENSITY, freq, burst + i * 2.8)
+        : ARM_SCREEN_INTENSITY;
+    }
+  });
+
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
       {/* Desk against wall */}
@@ -255,6 +286,9 @@ export function MonitorArmDesk({
           <mesh position={[0, 0, 0.03]}>
             <boxGeometry args={[0.62, 0.38, 0.02]} />
             <meshStandardMaterial
+              ref={(node) => {
+                screens.current[i] = node;
+              }}
               color="#050a0c"
               emissive={i === 0 ? "#ff6b4a" : "#4fd0c8"}
               emissiveIntensity={0.55}

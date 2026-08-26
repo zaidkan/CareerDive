@@ -193,9 +193,12 @@ export function WallCalendar({
 export function StickyNotes({
   position,
   rotationY = 0,
+  flat = false,
 }: {
   position: [number, number, number];
   rotationY?: number;
+  /** Lie on a desk instead of hanging on a wall. */
+  flat?: boolean;
 }) {
   const notes = [
     { x: 0, y: 0, color: "#f3e6a8", rot: 0.05 },
@@ -204,12 +207,29 @@ export function StickyNotes({
   ] as const;
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
-      {notes.map((n, i) => (
-        <mesh key={i} position={[n.x, n.y, 0.01 * i]} rotation={[0, 0, n.rot]} castShadow>
-          <boxGeometry args={[0.16, 0.16, 0.01]} />
-          <meshStandardMaterial color={n.color} roughness={0.75} />
-        </mesh>
-      ))}
+      {notes.map((n, i) =>
+        flat ? (
+          <mesh
+            key={i}
+            position={[n.x, 0.004 + 0.002 * i, n.y]}
+            rotation={[-Math.PI / 2, 0, n.rot]}
+            castShadow
+          >
+            <boxGeometry args={[0.14, 0.14, 0.006]} />
+            <meshStandardMaterial color={n.color} roughness={0.75} />
+          </mesh>
+        ) : (
+          <mesh
+            key={i}
+            position={[n.x, n.y, 0.01 * i]}
+            rotation={[0, 0, n.rot]}
+            castShadow
+          >
+            <boxGeometry args={[0.16, 0.16, 0.01]} />
+            <meshStandardMaterial color={n.color} roughness={0.75} />
+          </mesh>
+        ),
+      )}
     </group>
   );
 }
@@ -227,9 +247,9 @@ export function LoginPostIt({
     [],
   );
   return (
-    <group position={position} rotation={[0, rotationY, 0.12]}>
-      <mesh castShadow rotation={[-Math.PI / 2.35, 0.05, 0.12]}>
-        <boxGeometry args={[0.24, 0.24, 0.01]} />
+    <group position={position} rotation={[0, rotationY, 0]}>
+      <mesh castShadow position={[0, 0.005, 0]} rotation={[-Math.PI / 2, 0, 0.08]}>
+        <boxGeometry args={[0.22, 0.22, 0.008]} />
         <meshStandardMaterial map={note} roughness={0.8} />
       </mesh>
     </group>

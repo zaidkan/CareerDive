@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AvailableAction, ClientView } from "@sim/schemas";
@@ -205,11 +205,48 @@ describe("spatial presentation", () => {
     await user.click(socRoom);
     await screen.findByRole("button", { name: /Sit at desk/i }, { timeout: 6000 });
     expect(screen.getByText(/Find your desk/i)).toBeVisible();
+    expect(
+      screen.getByText(/Click to look around · WASD to walk · Esc to release/i),
+    ).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: /Sit at desk/i }));
     expect(
       screen.getByText(/Sign in to your workstation/i),
     ).toBeVisible();
+    expect(
+      screen.queryByText(/Click to look around · WASD to walk · Esc to release/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("hides the look hint while the pointer is locked", async () => {
+    const user = userEvent.setup();
+    render(<SpatialShell view={view} onAction={() => undefined} />);
+    await user.click(
+      screen.getByRole("button", { name: /Security Operations/i }),
+    );
+    await screen.findByRole("button", { name: /Sit at desk/i }, { timeout: 6000 });
+    expect(screen.getByText(/Click to look around/i)).toBeVisible();
+
+    const previous = Object.getOwnPropertyDescriptor(
+      Document.prototype,
+      "pointerLockElement",
+    );
+    Object.defineProperty(Document.prototype, "pointerLockElement", {
+      configurable: true,
+      enumerable: true,
+      get() {
+        return document.body;
+      },
+    });
+    expect(document.pointerLockElement).toBe(document.body);
+    document.dispatchEvent(new Event("pointerlockchange"));
+    await waitFor(() => {
+      expect(screen.queryByText(/Click to look around/i)).not.toBeInTheDocument();
+    });
+
+    if (previous) {
+      Object.defineProperty(Document.prototype, "pointerLockElement", previous);
+    }
   });
 
   it("moves from map to in-sim desk OS through the spatial shell", async () => {

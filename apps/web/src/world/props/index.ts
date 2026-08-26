@@ -9,6 +9,7 @@ export {
   Thermostat,
   WallPanel,
 } from "./building.js";
+export { DustMotes, VentPapers } from "./atmosphere.js";
 export {
   AccentPoster,
   EmployeeOfMonth,
@@ -24,6 +25,7 @@ export {
   CoatRack,
   CubicleWalls,
   DeskFrame,
+  DESK_SURFACE_Y,
   MonitorArmDesk,
   OfficeChair,
   PersonalLockers,

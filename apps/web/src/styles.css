@@ -1892,6 +1892,24 @@ section[aria-labelledby="structured-title"],
   letter-spacing: 0.03em;
 }
 
+.room-look-hint {
+  position: absolute;
+  left: 50%;
+  top: 1.05rem;
+  z-index: 3;
+  margin: 0;
+  padding: 0.38rem 0.8rem;
+  transform: translateX(-50%);
+  border: 1px solid var(--line);
+  background: rgb(10 7 6 / 82%);
+  color: var(--phosphor);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 .room-flavor {
   margin: 0.4rem 0 0;
   color: var(--phosphor);

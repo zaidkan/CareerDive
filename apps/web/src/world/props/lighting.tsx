@@ -1,17 +1,52 @@
 /**
  * Light fixtures — ceiling panels and task lamps.
  */
+import { useFrame } from "@react-three/fiber";
+import { useRef } from "react";
+import * as THREE from "three";
+import {
+  FIXTURE_LIT_INTENSITY,
+  FIXTURE_UNLIT_INTENSITY,
+  fixtureFlickerMul,
+  isAutoFlickerFixture,
+  useAmbientMotion,
+} from "./ambient.js";
 
 export function CeilingFixture({
   position,
   lit = true,
   /** Emissive panel without a point light — extra brightness at no light cost. */
   light = true,
+  animated = true,
+  flicker,
 }: {
   position: [number, number, number];
   lit?: boolean;
   light?: boolean;
+  animated?: boolean;
+  /** Rare fluorescent dip. Defaults on for the west-north emissive panel. */
+  flicker?: boolean;
 }) {
+  const live = useAmbientMotion(animated);
+  const panel = useRef<THREE.MeshStandardMaterial>(null);
+  const nextBurst = useRef(18);
+  const shouldFlicker = flicker ?? isAutoFlickerFixture(position);
+  const rest = lit ? FIXTURE_LIT_INTENSITY : FIXTURE_UNLIT_INTENSITY;
+
+  useFrame(({ clock }) => {
+    const mat = panel.current;
+    if (!mat) return;
+    if (!live || !shouldFlicker) {
+      mat.emissiveIntensity = rest;
+      return;
+    }
+    const t = clock.elapsedTime;
+    if (t > nextBurst.current + 0.38) {
+      nextBurst.current = t + 16 + (t % 9);
+    }
+    mat.emissiveIntensity = rest * fixtureFlickerMul(t, nextBurst.current);
+  });
+
   return (
     <group position={position}>
       <mesh>
@@ -21,6 +56,7 @@ export function CeilingFixture({
       <mesh position={[0, -0.05, 0]}>
         <boxGeometry args={[1.7, 0.05, 0.42]} />
         <meshStandardMaterial
+          ref={panel}
           color="#fff6dc"
           emissive="#ffe2a0"
           emissiveIntensity={lit ? 1.7 : 0.35}

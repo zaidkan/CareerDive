@@ -6,6 +6,7 @@ import { Figure } from "../Figure.js";
 import { Hotspot, nearestHotspot } from "../Hotspot.js";
 import { NameTag } from "../NameTag.js";
 import { PlayerController } from "../PlayerController.js";
+import { DustMotes, VentPapers } from "../props/atmosphere.js";
 import { CeilingAC, OfficeWindow, Thermostat, WallPanel } from "../props/building.js";
 import {
   AccentPoster,
@@ -173,6 +174,10 @@ export function SocRoom({
 }) {
   const nearbyId = useRef<HotspotId | undefined>(undefined);
   const playerPos = useRef<[number, number, number]>([...PLAYER_SPAWN]);
+  const publishedLook = useRef<[number, number, number]>([...PLAYER_SPAWN]);
+  const [lookAt, setLookAt] = useState<[number, number, number]>([
+    ...PLAYER_SPAWN,
+  ]);
   const [activeHotspot, setActiveHotspot] = useState<HotspotId | undefined>();
   const [doorOpen, setDoorOpen] = useState(false);
   const [openCabinet, setOpenCabinet] = useState<string | null>(null);
@@ -234,6 +239,14 @@ export function SocRoom({
       nearbyId.current = near?.id;
       setActiveHotspot(near?.id);
       onNearbyChange(near?.id, near?.label);
+    }
+    const prev = publishedLook.current;
+    if (
+      Math.hypot(next[0] - prev[0], next[1] - prev[1], next[2] - prev[2]) >
+      0.4
+    ) {
+      publishedLook.current = next;
+      setLookAt(next);
     }
   }
 
@@ -462,6 +475,9 @@ export function SocRoom({
         rotationY={CHAIR_FACE_DESK}
       />
       <Figure
+        activity="talking"
+        animated={!seated}
+        lookAt={lookAt}
         position={[MORGAN_DESK[0], 0, MORGAN_DESK[2] + SEAT - 0.05]}
         rotationY={CHAIR_FACE_DESK}
         primary="#7d9088"
@@ -469,6 +485,7 @@ export function SocRoom({
         accent="#4fd0c8"
         hair="#1a120c"
         seated
+        seed={1}
       />
       <NameTag
         visible={!seated}
@@ -489,15 +506,20 @@ export function SocRoom({
         position={[HOT_DESK[0], 0, HOT_DESK[2] + SEAT]}
         rotationY={CHAIR_FACE_DESK}
       />
+      <VentPapers animated={!seated} position={[-3.85, 0.824, 3.55]} />
 
       {/* Priya stands across the aisle, well clear of the player cubicle */}
       <Figure
+        activity="idle"
+        animated={!seated}
+        lookAt={lookAt}
         position={[-1.65, 0, 2.5]}
         rotationY={2.2}
         primary="#8a7a68"
         secondary="#32281e"
         accent="#e8b84a"
         hair="#241610"
+        seed={2}
       />
       <NameTag
         visible={!seated}
@@ -513,6 +535,9 @@ export function SocRoom({
         rotationY={-Math.PI / 2}
       />
       <Figure
+        activity="typing"
+        animated={!seated}
+        lookAt={lookAt}
         position={[SAMIR_DESK[0] + 1.0, 0, SAMIR_DESK[2]]}
         rotationY={-Math.PI / 2}
         primary="#6a7a88"
@@ -520,6 +545,7 @@ export function SocRoom({
         accent="#ff6b4a"
         hair="#2a1c12"
         seated
+        seed={3}
       />
       <NameTag
         visible={!seated}
@@ -533,6 +559,21 @@ export function SocRoom({
       <ServerRack position={[-9.8, 0.9, -6.92]} />
       <ServerRack position={[-9.0, 0.9, -6.92]} />
       <ServerRack position={[-8.2, 0.9, -6.92]} />
+      <DustMotes
+        animated={!seated}
+        count={180}
+        depth={12}
+        position={[0, 1.55, 0.4]}
+        width={16}
+      />
+      <DustMotes
+        animated={!seated}
+        count={50}
+        depth={1.8}
+        height={2.0}
+        position={[-9.0, 1.35, -6.35]}
+        width={2.4}
+      />
       <Whiteboard position={[COL.east - 0.8, 1.8, -ROOM.halfZ + 0.25]} />
       <WallCalendar position={[COL.east + 1.0, 1.85, -ROOM.halfZ + 0.25]} />
       <AccentPoster position={[0, 1.7, -ROOM.halfZ + 0.25]} color="#2a4840" />
@@ -563,7 +604,12 @@ export function SocRoom({
       <TallFloorPlant position={[-3.6, 0, ROOM.halfZ - 0.85]} scale={0.95} />
       <TallFloorPlant position={[5.15, 0, ROOM.halfZ - 0.85]} scale={0.95} />
 
-      <GlassBreakNook cheapGlass={seated} doorOpen={doorOpen} />
+      <GlassBreakNook
+        animated={!seated}
+        cheapGlass={seated}
+        doorOpen={doorOpen}
+        lookAt={lookAt}
+      />
 
       {/* Exit door — frame, leaf, and readable label */}
       <group position={[0, 0, ROOM.halfZ - 0.2]}>

@@ -1,8 +1,11 @@
 /**
  * Building shell and services — wall panels, windows, HVAC, thermostat.
  */
-import { useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
+import * as THREE from "three";
 import { makeWallTexture } from "../textures.js";
+import { useAmbientMotion } from "./ambient.js";
 
 export function WallPanel({
   position,
@@ -115,10 +118,24 @@ export function OfficeWindow({
 export function CeilingAC({
   position,
   rotationY = 0,
+  animated = true,
 }: {
   position: [number, number, number];
   rotationY?: number;
+  animated?: boolean;
 }) {
+  const live = useAmbientMotion(animated);
+  const fan = useRef<THREE.Group>(null);
+
+  useFrame((_, delta) => {
+    if (!fan.current) return;
+    if (!live) {
+      fan.current.rotation.y = 0;
+      return;
+    }
+    fan.current.rotation.y += delta * 0.85;
+  });
+
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
       {/* Large cassette / inverter housing */}
@@ -136,6 +153,20 @@ export function CeilingAC({
         <boxGeometry args={[1.1, 0.04, 0.7]} />
         <meshStandardMaterial color="#8a8880" />
       </mesh>
+      <group ref={fan} position={[0, -0.232, 0]}>
+        <mesh>
+          <cylinderGeometry args={[0.055, 0.055, 0.018, 12]} />
+          <meshStandardMaterial color="#7a7870" metalness={0.35} roughness={0.5} />
+        </mesh>
+        {([0, 1, 2, 3] as const).map((i) => (
+          <mesh key={i} rotation={[0, (Math.PI / 2) * i, 0.12]}>
+            <mesh position={[0.2, 0, 0]}>
+              <boxGeometry args={[0.34, 0.008, 0.08]} />
+              <meshStandardMaterial color="#6a6860" roughness={0.55} />
+            </mesh>
+          </mesh>
+        ))}
+      </group>
       {([-0.35, -0.18, 0, 0.18, 0.35] as const).map((z) => (
         <mesh key={z} position={[0, -0.22, z]}>
           <boxGeometry args={[0.95, 0.015, 0.04]} />

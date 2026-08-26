@@ -7,6 +7,7 @@ import { useRef } from "react";
 import * as THREE from "three";
 import { Figure } from "../Figure.js";
 import { NameTag } from "../NameTag.js";
+import { DustMotes, VentPapers } from "../props/atmosphere.js";
 import {
   EmployeeOfMonth,
   FramedCertificate,
@@ -123,9 +124,13 @@ export function breakNookColliders(doorOpen: boolean): Aabb[] {
 export function GlassBreakNook({
   doorOpen,
   cheapGlass = false,
+  animated = true,
+  lookAt,
 }: {
   doorOpen: boolean;
   cheapGlass?: boolean;
+  animated?: boolean;
+  lookAt?: [number, number, number];
 }) {
   const door = useRef<THREE.Group>(null);
   const angle = useRef(0);
@@ -281,6 +286,7 @@ export function GlassBreakNook({
         <meshStandardMaterial color="#463629" roughness={0.65} />
       </mesh>
       <CoffeePot position={[7.45, 1.09, -6.87]} />
+      <VentPapers animated={animated} position={[8.4, 0.96, -6.68]} />
       {/* Mug shelf on the wall above the counter */}
       <mesh position={[8.15, 1.62, -7.11]} castShadow>
         <boxGeometry args={[2.0, 0.05, 0.28]} />
@@ -325,12 +331,16 @@ export function GlassBreakNook({
       <TallFloorPlant position={[7.35, 0, -2.05]} scale={0.9} />
 
       <Figure
+        activity="talking"
+        animated={animated}
+        {...(lookAt ? { lookAt } : {})}
         position={[7.6, 0, -6.05]}
         rotationY={0.5}
         primary="#6a7a5c"
         secondary="#2a3224"
         accent="#e8b84a"
         hair="#3a2818"
+        seed={4}
       />
       <NameTag
         name="Jules"
@@ -339,6 +349,14 @@ export function GlassBreakNook({
         visible={!cheapGlass}
       />
 
+      <DustMotes
+        animated={animated}
+        count={70}
+        depth={3.6}
+        height={2.2}
+        position={[8.2, 1.65, -4.5]}
+        width={3.2}
+      />
       <pointLight intensity={1.05} distance={8} position={[8.6, 2.4, -4.4]} color="#ffe8b8" />
     </group>
   );
