@@ -293,7 +293,11 @@ export function WallClock({
 }) {
   const hour = useRef<THREE.Mesh>(null);
   const minute = useRef<THREE.Mesh>(null);
-  useFrame(() => {
+  const lastTick = useRef(-1);
+  useFrame(({ clock }) => {
+    const t = Math.floor(clock.elapsedTime);
+    if (t === lastTick.current) return;
+    lastTick.current = t;
     const now = new Date();
     const h = (now.getHours() % 12) + now.getMinutes() / 60;
     const m = now.getMinutes() + now.getSeconds() / 60;

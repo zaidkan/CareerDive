@@ -2,7 +2,7 @@
  * Placeable atmospheric dressing — dust motes and papers that catch HVAC flow.
  */
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { makeSoftParticleTexture } from "../textures.js";
 import { clampParticleCount, useAmbientMotion } from "./ambient.js";
@@ -55,7 +55,7 @@ export function DustMotes({
 }) {
   const live = useAmbientMotion(animated);
   const n = clampParticleCount(count);
-  const sprite = makeSoftParticleTexture();
+  const sprite = useMemo(() => makeSoftParticleTexture(), []);
   const attrRef = useRef<THREE.BufferAttribute | null>(null);
   const speedsRef = useRef<Float32Array | null>(null);
 
@@ -65,10 +65,17 @@ export function DustMotes({
     const attr = new THREE.BufferAttribute(positions, 3);
     attr.setUsage(THREE.DynamicDrawUsage);
     geom.setAttribute("position", attr);
+    geom.computeBoundingSphere();
     attrRef.current = attr;
     speedsRef.current = speeds;
     return geom;
   }, [n, width, height, depth]);
+
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
 
   useFrame(({ clock }, delta) => {
     if (!live) return;
@@ -106,7 +113,7 @@ export function DustMotes({
   });
 
   return (
-    <points position={position} geometry={geometry} frustumCulled={false}>
+    <points position={position} geometry={geometry}>
       <pointsMaterial
         map={sprite}
         color="#d8d0c4"
@@ -169,7 +176,7 @@ export function VentPapers({
           }}
           position={[spec.x, spec.y, spec.z]}
           rotation={[0, spec.rotY, 0]}
-          castShadow
+          castShadow={false}
         >
           <boxGeometry args={[spec.w, 0.002, spec.d]} />
           <meshStandardMaterial color="#efe6d4" roughness={0.85} />

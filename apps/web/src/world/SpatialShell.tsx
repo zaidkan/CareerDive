@@ -6,6 +6,7 @@ import {
   useReducer,
   useRef,
   useState,
+  useSyncExternalStore,
 } from "react";
 import type { AvailableAction, ClientView } from "@sim/schemas";
 import { COMPANY } from "./company.js";
@@ -21,8 +22,12 @@ import {
   WAKE_ENERGY,
   drainEnergy,
   didCollapse,
+  energyRedirectsWayfinder,
   energyTone,
+  getEnergy,
   restoreEnergy,
+  setEnergySnapshot,
+  subscribeEnergy,
 } from "./energy.js";
 import {
   INITIAL_SPATIAL,
@@ -61,7 +66,8 @@ const ALREADY_FED = "You're fine. Save it for later.";
 const COFFEE_SIP = "The coffee's harsh, but you're awake again.";
 const BAR_BITE = "The bar is dry cardboard. Energy comes back anyway.";
 
-function EnergyMeter({ value }: { value: number }) {
+function EnergyMeter() {
+  const value = useSyncExternalStore(subscribeEnergy, getEnergy, getEnergy);
   const tone = energyTone(value);
   return (
     <div
@@ -77,7 +83,7 @@ function EnergyMeter({ value }: { value: number }) {
       <span className="energy-meter-track">
         <span
           className="energy-meter-fill"
-          style={{ width: `${String(value)}%` }}
+          style={{ width: `${String(Math.round(value))}%` }}
         />
       </span>
     </div>
@@ -142,6 +148,7 @@ export function SpatialShell({
 
   function applyEnergy(next: number) {
     energyRef.current = next;
+    setEnergySnapshot(next);
     setEnergy(next);
   }
 
@@ -154,7 +161,7 @@ export function SpatialShell({
     dispatch({ type: "set_flavor", message: restoredMessage });
   }
 
-  function handleInteract(id: HotspotId) {
+  const handleInteract = useCallback((id: HotspotId) => {
     if (sleepingRef.current) return;
     switch (id) {
       case "desk_player":
@@ -195,7 +202,7 @@ export function SpatialShell({
       default:
         break;
     }
-  }
+  }, []);
 
   const journey = getJourneyStep({
     phase: spatial.phase,
@@ -223,7 +230,12 @@ export function SpatialShell({
         const next = drainEnergy(previous, dt, seatedRef.current);
         if (next !== previous) {
           energyRef.current = next;
-          setEnergy(next);
+          setEnergySnapshot(next);
+          const prevTone = energyTone(previous);
+          const nextTone = energyTone(next);
+          if (prevTone !== nextTone) {
+            setEnergy(next);
+          }
           if (didCollapse(previous, next)) {
             sleepingRef.current = true;
             setSleeping(true);
@@ -246,6 +258,7 @@ export function SpatialShell({
     });
     const id = window.setTimeout(() => {
       energyRef.current = WAKE_ENERGY;
+      setEnergySnapshot(WAKE_ENERGY);
       setEnergy(WAKE_ENERGY);
       sleepingRef.current = false;
       setSleeping(false);
@@ -278,8 +291,10 @@ export function SpatialShell({
       ? "At your chair — press E or Sit to use the computer"
       : `Near: ${nearbyLabel} · press E or Interact`
     : undefined;
-  const energyLow = energyTone(energy) !== "ok";
-  const highlightHotspotId: HotspotId | undefined = energyLow
+  const energyBand = energyTone(energy);
+  const redirectSnack = energyRedirectsWayfinder(energyBand, spatial.visitedDesk);
+  const energyLow = energyBand !== "ok";
+  const highlightHotspotId: HotspotId | undefined = redirectSnack
     ? "snack"
     : journey.target?.kind === "hotspot"
       ? journey.target.hotspotId
@@ -300,9 +315,11 @@ export function SpatialShell({
   const fullscreenLabel = fullscreen ? "Exit fullscreen" : "Fullscreen";
   const compass = sleeping
     ? undefined
-    : energyLow
+    : redirectSnack
       ? "Energy low · follow the gold marker to the snack bars (coffee is in the break corner)"
-      : highlightHotspotId === "desk_player"
+      : energyLow
+        ? "Energy getting low · snack bars are in the east aisle, coffee in the break corner"
+        : highlightHotspotId === "desk_player"
         ? "Your desk · follow the gold marker"
         : undefined;
 
@@ -366,7 +383,7 @@ export function SpatialShell({
               {!nearbyIsTarget && nearbyPrompt ? (
                 <p className="room-hud-nearby">{nearbyPrompt}</p>
               ) : null}
-              <EnergyMeter value={energy} />
+              <EnergyMeter />
               <p className="room-hud-controls">
                 Double-click to walk · E to interact · F fullscreen
               </p>
@@ -426,7 +443,7 @@ export function SpatialShell({
                   Energy low · stand up and follow the gold marker to the snack bars
                 </p>
               ) : null}
-              <EnergyMeter value={energy} />
+              <EnergyMeter />
             </div>
             <button
               className="guidance-secondary room-desk-hud-fs"

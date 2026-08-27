@@ -204,7 +204,7 @@ export function PlayerController({
   }, []);
 
   useEffect(() => {
-    if (seated && document.pointerLockElement === gl.domElement) {
+    if ((!enabled || seated) && document.pointerLockElement === gl.domElement) {
       document.exitPointerLock();
     }
 

@@ -1,9 +1,10 @@
 import { Canvas } from "@react-three/fiber";
-import { lazy, Suspense, useMemo } from "react";
+import { lazy, memo, Suspense, useMemo } from "react";
 import {
   isLowEndDevice,
   readNavigator,
-  useAdaptiveQuality,
+  useWorldQuality,
+  WorldQualityProvider,
 } from "./effects/useAdaptiveQuality.js";
 import { SocRoom } from "./rooms/SocRoom.js";
 import type { HotspotId } from "./worldTypes.js";
@@ -16,8 +17,8 @@ const SceneEffects = lazy(async () => {
 function pickDpr(seated: boolean): [number, number] {
   if (typeof window === "undefined") return [1, 1.25];
   const lowEnd = isLowEndDevice(readNavigator());
-  if (seated) return [1, lowEnd ? 1 : 1.15];
-  return [1, lowEnd ? 1.15 : 1.5];
+  if (seated) return [1, 1];
+  return [1, lowEnd ? 1 : 1.25];
 }
 
 /**
@@ -25,8 +26,8 @@ function pickDpr(seated: boolean): [number, number] {
  * and the extra composer pass is wasted while shadows/DPR are already cut.
  * Off, not weaker: a live composer still costs a full-screen blit.
  */
-function AdaptiveSceneEffects({ seated }: { seated: boolean }) {
-  const { composer, grain } = useAdaptiveQuality(seated);
+function AdaptiveSceneEffects() {
+  const { composer, grain } = useWorldQuality();
   if (!composer) return null;
   return (
     <Suspense fallback={null}>
@@ -35,7 +36,7 @@ function AdaptiveSceneEffects({ seated }: { seated: boolean }) {
   );
 }
 
-export function RoomCanvas({
+export const RoomCanvas = memo(function RoomCanvas({
   onNearbyChange,
   onInteract,
   enabled,
@@ -65,17 +66,19 @@ export function RoomCanvas({
         shadows={!seated}
         performance={{ min: 0.5 }}
       >
-        <Suspense fallback={null}>
-          <SocRoom
-            enabled={enabled}
-            onInteract={onInteract}
-            onNearbyChange={onNearbyChange}
-            seated={seated}
-            {...(highlightHotspotId ? { highlightHotspotId } : {})}
-          />
-        </Suspense>
-        <AdaptiveSceneEffects seated={seated} />
+        <WorldQualityProvider seated={seated}>
+          <Suspense fallback={null}>
+            <SocRoom
+              enabled={enabled}
+              onInteract={onInteract}
+              onNearbyChange={onNearbyChange}
+              seated={seated}
+              {...(highlightHotspotId ? { highlightHotspotId } : {})}
+            />
+          </Suspense>
+          <AdaptiveSceneEffects />
+        </WorldQualityProvider>
       </Canvas>
     </div>
   );
-}
+});

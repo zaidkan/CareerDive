@@ -40,3 +40,34 @@ export function energyTone(value: number): "ok" | "low" | "critical" {
   if (value <= LOW_ENERGY) return "low";
   return "ok";
 }
+
+/** Steal the gold marker for snacks only after the desk is known, or on collapse. */
+export function energyRedirectsWayfinder(
+  tone: ReturnType<typeof energyTone>,
+  visitedDesk: boolean,
+): boolean {
+  if (tone === "ok") return false;
+  return visitedDesk || tone === "critical";
+}
+
+type EnergyListener = () => void;
+const energyListeners = new Set<EnergyListener>();
+let energySnapshot = ENERGY_MAX;
+
+export function getEnergy(): number {
+  return energySnapshot;
+}
+
+export function subscribeEnergy(listener: EnergyListener): () => void {
+  energyListeners.add(listener);
+  return () => {
+    energyListeners.delete(listener);
+  };
+}
+
+export function setEnergySnapshot(next: number): void {
+  const value = clampEnergy(next);
+  if (value === energySnapshot) return;
+  energySnapshot = value;
+  for (const listener of energyListeners) listener();
+}

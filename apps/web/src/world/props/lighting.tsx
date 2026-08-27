@@ -76,7 +76,13 @@ export function CeilingFixture({
   );
 }
 
-export function TaskLamp({ position }: { position: [number, number, number] }) {
+export function TaskLamp({
+  position,
+  light = false,
+}: {
+  position: [number, number, number];
+  light?: boolean;
+}) {
   return (
     <group position={position}>
       <mesh>
@@ -96,13 +102,15 @@ export function TaskLamp({ position }: { position: [number, number, number] }) {
           roughness={0.3}
         />
       </mesh>
-      <pointLight
-        intensity={1.4}
-        distance={4.5}
-        decay={1.5}
-        position={[0.1, 0.55, 0.15]}
-        color="#ffe8b8"
-      />
+      {light ? (
+        <pointLight
+          intensity={1.4}
+          distance={4.5}
+          decay={1.5}
+          position={[0.1, 0.55, 0.15]}
+          color="#ffe8b8"
+        />
+      ) : null}
     </group>
   );
 }

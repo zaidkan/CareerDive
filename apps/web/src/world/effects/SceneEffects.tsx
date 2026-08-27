@@ -15,12 +15,12 @@ export function SceneEffects({ grain }: { grain: boolean }) {
       stencilBuffer={false}
     >
       <Bloom
-        intensity={0.36}
-        levels={6}
+        intensity={0.32}
+        levels={4}
         luminanceSmoothing={0.22}
-        luminanceThreshold={0.88}
+        luminanceThreshold={0.9}
         mipmapBlur
-        radius={0.4}
+        radius={0.32}
       />
       <Vignette darkness={0.38} eskil={false} offset={0.42} />
       {grain ? (

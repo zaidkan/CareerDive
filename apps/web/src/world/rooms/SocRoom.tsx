@@ -6,7 +6,7 @@ import { Figure } from "../Figure.js";
 import { Hotspot, nearestHotspot } from "../Hotspot.js";
 import { NameTag } from "../NameTag.js";
 import { PlayerController } from "../PlayerController.js";
-import { DustMotes, VentPapers } from "../props/atmosphere.js";
+import { useWorldQuality } from "../effects/useAdaptiveQuality.js";
 import { CeilingAC, OfficeWindow, Thermostat, WallPanel } from "../props/building.js";
 import {
   AccentPoster,
@@ -111,7 +111,6 @@ function AlertWall() {
           </mesh>
         </group>
       ))}
-      <pointLight intensity={0.85} distance={5} position={[0, 1.8, 0.6]} color="#ff6b4a" />
     </group>
   );
 }
@@ -236,6 +235,7 @@ export function SocRoom({
 
   const floorW = ROOM.halfX * 2;
   const floorD = ROOM.halfZ * 2;
+  const quality = useWorldQuality();
   const wayfinderTo =
     !seated && highlightHotspotId
       ? hotspotAnchor(highlightHotspotId)
@@ -251,26 +251,29 @@ export function SocRoom({
         material in the room, so the room runs on three broad fills instead of
         a light per fixture.
       */}
-      <hemisphereLight args={["#ffeed4", "#4a3a2c", seated ? 1.15 : 1.85]} />
-      <ambientLight intensity={seated ? 0.9 : 1.05} />
+      <hemisphereLight args={["#ffeed4", "#4a3a2c", seated ? 1.2 : 2.05]} />
+      <ambientLight intensity={seated ? 0.95 : 1.15} />
       <directionalLight
         castShadow={!seated}
-        intensity={seated ? 1.15 : 1.75}
+        intensity={seated ? 1.2 : 1.9}
         position={[5, 10, 5]}
         color="#fff0d0"
         shadow-mapSize-width={512}
         shadow-mapSize-height={512}
         shadow-bias={-0.0002}
+        shadow-camera-near={2}
+        shadow-camera-far={28}
+        shadow-camera-left={-12}
+        shadow-camera-right={12}
+        shadow-camera-top={12}
+        shadow-camera-bottom={-12}
       />
-      {!seated ? (
-        <>
-          <pointLight intensity={1.5} distance={20} position={[0, 2.5, 0]} color="#ffe8b8" />
-          <pointLight intensity={1.0} distance={15} position={[-6.5, 2.4, 2.0]} color="#ffe4b0" />
-          <pointLight intensity={0.45} distance={9} position={[-6, 2.2, -3]} color="#4fd0c8" />
-        </>
-      ) : (
-        <pointLight intensity={0.85} distance={8} position={[COL.east, 2.1, ROW.north]} color="#ffe8b8" />
-      )}
+      <pointLight
+        intensity={seated ? 0.85 : 1.45}
+        distance={seated ? 8 : 18}
+        position={seated ? [COL.east, 2.1, ROW.north] : [0, 2.5, 0]}
+        color="#ffe8b8"
+      />
 
       <mesh receiveShadow={!seated} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[floorW, floorD]} />
@@ -312,10 +315,10 @@ export function SocRoom({
         <planeGeometry args={[floorW, floorD]} />
         <meshStandardMaterial color="#241c16" />
       </mesh>
-      {/* Three fixtures carry real lights; the rest are emissive panels only */}
-      <CeilingFixture lit={!seated} position={[-4, 3.2, -2]} />
-      <CeilingFixture lit position={[0, 3.2, 0.5]} />
-      <CeilingFixture lit={!seated} position={[COL.east, 3.2, -1.5]} />
+      {/* Fixtures are emissive panels only — extra point lights multiply fill cost. */}
+      <CeilingFixture light={false} lit={!seated} position={[-4, 3.2, -2]} />
+      <CeilingFixture light={false} lit position={[0, 3.2, 0.5]} />
+      <CeilingFixture light={false} lit={!seated} position={[COL.east, 3.2, -1.5]} />
       {!seated ? (
         <>
           <CeilingFixture light={false} position={[0, 3.2, 4]} />
@@ -453,11 +456,11 @@ export function SocRoom({
         seed={1}
       />
       <NameTag
-        visible={!seated}
+        visible={!seated && highlightHotspotId === "morgan_station"}
         name="Morgan"
         role="Manager"
         position={[MORGAN_DESK[0], 2.25, MORGAN_DESK[2] + SEAT - 0.05]}
-        star
+        target={highlightHotspotId === "morgan_station"}
       />
 
       {/* Empty desk — west mid row, well south of Morgan */}
@@ -486,12 +489,6 @@ export function SocRoom({
         hair="#241610"
         seed={2}
       />
-      <NameTag
-        visible={!seated}
-        name="Priya"
-        role="Coworker"
-        position={[-1.65, 2.26, 2.5]}
-      />
 
       {/* Samir on west wall — clear of storage */}
       <MonitorArmDesk position={SAMIR_DESK} rotationY={Math.PI / 2} />
@@ -512,33 +509,31 @@ export function SocRoom({
         seated
         seed={3}
       />
-      <NameTag
-        visible={!seated}
-        name="Samir"
-        role="Tier 2"
-        position={[SAMIR_DESK[0] + 1.0, 2.25, SAMIR_DESK[2]]}
-      />
 
       <AlertWall />
       {/* Racks read front-on from the aisle, so they belong on the north wall */}
       <ServerRack position={[-9.8, 0.9, -6.92]} />
       <ServerRack position={[-9.0, 0.9, -6.92]} />
       <ServerRack position={[-8.2, 0.9, -6.92]} />
-      <DustMotes
-        animated={!seated}
-        count={180}
-        depth={12}
-        position={[0, 1.55, 0.4]}
-        width={16}
-      />
-      <DustMotes
-        animated={!seated}
-        count={50}
-        depth={1.8}
-        height={2.0}
-        position={[-9.0, 1.35, -6.35]}
-        width={2.4}
-      />
+      {quality.dustMul > 0 ? (
+        <>
+          <DustMotes
+            animated={!seated}
+            count={Math.max(8, Math.round(72 * quality.dustMul))}
+            depth={12}
+            position={[0, 1.55, 0.4]}
+            width={16}
+          />
+          <DustMotes
+            animated={!seated}
+            count={Math.max(6, Math.round(24 * quality.dustMul))}
+            depth={1.8}
+            height={2.0}
+            position={[-9.0, 1.35, -6.35]}
+            width={2.4}
+          />
+        </>
+      ) : null}
       <Whiteboard position={[COL.east - 0.8, 1.8, -ROOM.halfZ + 0.25]} />
       <WallCalendar position={[COL.east + 1.0, 1.85, -ROOM.halfZ + 0.25]} />
       <AccentPoster position={[0, 1.7, -ROOM.halfZ + 0.25]} color="#2a4840" />
@@ -573,8 +568,9 @@ export function SocRoom({
 
       <GlassBreakNook
         animated={!seated}
-        cheapGlass={seated}
+        cheapGlass={quality.cheapGlass}
         doorOpen={doorOpen}
+        highlightJules={highlightHotspotId === "jules"}
         lookAt={lookAt}
       />
 
@@ -617,7 +613,7 @@ export function SocRoom({
         </mesh>
       </group>
 
-      {!seated ? (
+      {quality.contactShadows ? (
         <ContactShadows opacity={0.16} scale={24} blur={2.4} far={4.5} color="#1a1008" frames={1} />
       ) : null}
 

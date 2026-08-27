@@ -85,7 +85,7 @@ function Limb({
   color: string;
 }) {
   return (
-    <mesh position={position} rotation={rotation} castShadow>
+    <mesh position={position} rotation={rotation} castShadow={false}>
       <boxGeometry args={args} />
       <meshStandardMaterial color={color} roughness={0.72} />
     </mesh>

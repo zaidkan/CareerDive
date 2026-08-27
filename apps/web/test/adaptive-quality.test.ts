@@ -144,8 +144,15 @@ describe("resolveEffects", () => {
         composerOn: true,
         seated: false,
         reducedMotion: true,
+        lowEnd: false,
       }),
-    ).toEqual({ composer: true, grain: false });
+    ).toEqual({
+      composer: true,
+      grain: false,
+      cheapGlass: true,
+      dustMul: 0.5,
+      contactShadows: true,
+    });
   });
 
   it("turns the composer off while seated so desk UI text stays sharp", () => {
@@ -154,8 +161,15 @@ describe("resolveEffects", () => {
         composerOn: true,
         seated: true,
         reducedMotion: false,
+        lowEnd: false,
       }),
-    ).toEqual({ composer: false, grain: false });
+    ).toEqual({
+      composer: false,
+      grain: false,
+      cheapGlass: true,
+      dustMul: 0,
+      contactShadows: false,
+    });
   });
 
   it("allows grain only when the composer is actually running", () => {
@@ -164,7 +178,14 @@ describe("resolveEffects", () => {
         composerOn: false,
         seated: false,
         reducedMotion: false,
+        lowEnd: false,
       }),
-    ).toEqual({ composer: false, grain: false });
+    ).toEqual({
+      composer: false,
+      grain: false,
+      cheapGlass: true,
+      dustMul: 0.5,
+      contactShadows: false,
+    });
   });
 });

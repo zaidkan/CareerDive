@@ -1,5 +1,6 @@
+import { createContext, useContext, useRef, useState, useSyncExternalStore } from "react";
+import type { ReactNode } from "react";
 import { useFrame } from "@react-three/fiber";
-import { useRef, useState, useSyncExternalStore } from "react";
 
 export type NavBits = {
   hardwareConcurrency?: number;
@@ -34,6 +35,17 @@ export type QualityMachine = {
 export type AdaptiveQuality = {
   composer: boolean;
   grain: boolean;
+  cheapGlass: boolean;
+  dustMul: number;
+  contactShadows: boolean;
+};
+
+export const DEFAULT_QUALITY: AdaptiveQuality = {
+  composer: false,
+  grain: false,
+  cheapGlass: true,
+  dustMul: 0.45,
+  contactShadows: false,
 };
 
 /**
@@ -153,9 +165,36 @@ export function resolveEffects(input: {
   composerOn: boolean;
   seated: boolean;
   reducedMotion: boolean;
+  lowEnd: boolean;
 }): AdaptiveQuality {
   const composer = input.composerOn && !input.seated;
-  return { composer, grain: composer && !input.reducedMotion };
+  const lean = input.seated || input.lowEnd || input.reducedMotion || !input.composerOn;
+  return {
+    composer,
+    grain: composer && !input.reducedMotion,
+    cheapGlass: true,
+    dustMul: input.seated ? 0 : input.lowEnd ? 0.35 : lean ? 0.5 : 1,
+    contactShadows: !input.seated && !input.lowEnd && input.composerOn,
+  };
+}
+
+const QualityContext = createContext<AdaptiveQuality>(DEFAULT_QUALITY);
+
+export function WorldQualityProvider({
+  seated,
+  children,
+}: {
+  seated: boolean;
+  children: ReactNode;
+}) {
+  const quality = useAdaptiveQuality(seated);
+  return (
+    <QualityContext.Provider value={quality}>{children}</QualityContext.Provider>
+  );
+}
+
+export function useWorldQuality(): AdaptiveQuality {
+  return useContext(QualityContext);
 }
 
 function subscribeReducedMotion(onStoreChange: () => void): () => void {
@@ -200,5 +239,5 @@ export function useAdaptiveQuality(seated: boolean): AdaptiveQuality {
     setComposerOn(machine.composerOn);
   });
 
-  return resolveEffects({ composerOn, seated, reducedMotion });
+  return resolveEffects({ composerOn, seated, reducedMotion, lowEnd });
 }

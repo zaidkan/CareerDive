@@ -126,11 +126,13 @@ export function GlassBreakNook({
   cheapGlass = false,
   animated = true,
   lookAt,
+  highlightJules = false,
 }: {
   doorOpen: boolean;
   cheapGlass?: boolean;
   animated?: boolean;
   lookAt?: [number, number, number];
+  highlightJules?: boolean;
 }) {
   const door = useRef<THREE.Group>(null);
   const angle = useRef(0);
@@ -347,18 +349,20 @@ export function GlassBreakNook({
         name="Jules"
         role="Coworker"
         position={[7.6, 2.2, -6.05]}
-        visible={!cheapGlass}
+        target={highlightJules}
+        visible={highlightJules}
       />
 
-      <DustMotes
-        animated={animated}
-        count={70}
-        depth={3.6}
-        height={2.2}
-        position={[8.2, 1.65, -4.5]}
-        width={3.2}
-      />
-      <pointLight intensity={1.05} distance={8} position={[8.6, 2.4, -4.4]} color="#ffe8b8" />
+      {animated ? (
+        <DustMotes
+          animated={animated}
+          count={28}
+          depth={3.6}
+          height={2.2}
+          position={[8.2, 1.65, -4.5]}
+          width={3.2}
+        />
+      ) : null}
     </group>
   );
 }

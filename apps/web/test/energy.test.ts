@@ -6,6 +6,7 @@ import {
   clampEnergy,
   didCollapse,
   drainEnergy,
+  energyRedirectsWayfinder,
   energyTone,
   restoreEnergy,
 } from "../src/world/energy.js";
@@ -39,5 +40,12 @@ describe("energy meter", () => {
     expect(energyTone(50)).toBe("ok");
     expect(energyTone(20)).toBe("low");
     expect(energyTone(8)).toBe("critical");
+  });
+
+  it("only steals the journey marker after desk visit or on critical energy", () => {
+    expect(energyRedirectsWayfinder("low", false)).toBe(false);
+    expect(energyRedirectsWayfinder("low", true)).toBe(true);
+    expect(energyRedirectsWayfinder("critical", false)).toBe(true);
+    expect(energyRedirectsWayfinder("ok", true)).toBe(false);
   });
 });
