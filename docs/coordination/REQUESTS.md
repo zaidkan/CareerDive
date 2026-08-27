@@ -1,6 +1,6 @@
 # Coordination requests
 
-Game Experience Agent (`apps/web`) files needs here when a visual feature depends on a new schema, API field, action, event, or server capability. Codex owns backend and simulation and should resolve these.
+Optional notes for cross-cutting work (schema, API, simulation behavior). Implement directly when you can; use this file only to track ideas that span sessions or need follow-up.
 
 ## Open
 
