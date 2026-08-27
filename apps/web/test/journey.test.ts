@@ -42,6 +42,8 @@ const baseView: ClientView = {
   ticketNotes: {},
   notebook: "",
   kbQuery: "",
+  tasks: [],
+  notifications: [],
 };
 
 describe("day-one journey", () => {

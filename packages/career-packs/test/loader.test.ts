@@ -63,4 +63,101 @@ describe("career pack governance", () => {
     );
     expect(() => loadCareerPack(source, new Date("2026-06-22"))).toThrow();
   });
+
+  it("loads deterministic multi-step work tasks", async () => {
+    const source = (await readCheckedInPack()).replace(
+      "  initialTaskBacklog: 5",
+      `  initialTaskBacklog: 5
+  tasks:
+    - id: handoff-open-items
+      eventTemplateId: incomplete_handoff
+      actionId: read_handoff
+      systemId: email
+      kind: select_clues
+      title: Find unfinished work
+      whyItMatters: Handoffs keep work from getting lost.
+      steps:
+        - id: open-item
+          title: What still needs attention?
+          prompt: Pick the unfinished item.
+          instruction: Select one clue from the handoff.
+          relatedArtifactIds: [handoff-email]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: inventory-check
+              label: Device inventory was not checked
+            - id: coffee-order
+              label: Coffee order was completed
+          requiredOptionIds: [inventory-check]
+          coachOnFailure: Look for work described as unfinished.
+          successText: You found the open device check.`,
+    );
+    const pack = loadCareerPack(source, new Date("2026-06-22"));
+    expect(pack.scenario.tasks).toHaveLength(1);
+    expect(pack.scenario.tasks[0]?.steps).toHaveLength(1);
+  });
+
+  it("rejects duplicate option ids inside a task step", async () => {
+    const source = (await readCheckedInPack()).replace(
+      "  initialTaskBacklog: 5",
+      `  initialTaskBacklog: 5
+  tasks:
+    - id: duplicate-options
+      eventTemplateId: incomplete_handoff
+      actionId: read_handoff
+      systemId: email
+      kind: select_clues
+      title: Duplicate test
+      whyItMatters: Test validation.
+      steps:
+        - id: step-one
+          title: Pick
+          prompt: Pick one.
+          instruction: Pick one.
+          relatedArtifactIds: [handoff-email]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - { id: same, label: First }
+            - { id: same, label: Second }
+          requiredOptionIds: [same]
+          coachOnFailure: Try again.
+          successText: Done.`,
+    );
+    expect(() => loadCareerPack(source, new Date("2026-06-22"))).toThrow(
+      /duplicate option/i,
+    );
+  });
+
+  it("rejects task answer ids that are not public options", async () => {
+    const source = (await readCheckedInPack()).replace(
+      "  initialTaskBacklog: 5",
+      `  initialTaskBacklog: 5
+  tasks:
+    - id: missing-answer-option
+      eventTemplateId: incomplete_handoff
+      actionId: read_handoff
+      systemId: email
+      kind: select_clues
+      title: Missing answer test
+      whyItMatters: Test validation.
+      steps:
+        - id: step-one
+          title: Pick
+          prompt: Pick one.
+          instruction: Pick one.
+          relatedArtifactIds: [handoff-email]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - { id: visible, label: Visible }
+          requiredOptionIds: [not-visible]
+          coachOnFailure: Try again.
+          successText: Done.`,
+    );
+    expect(() => loadCareerPack(source, new Date("2026-06-22"))).toThrow(
+      /unknown required option/i,
+    );
+  });
 });

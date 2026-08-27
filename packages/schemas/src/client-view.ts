@@ -3,6 +3,7 @@ import { z } from "zod";
 import { AvailableActionSchema } from "./actions.js";
 import { EventInstanceSchema } from "./events.js";
 import { PacingModeSchema, SessionKindSchema } from "./session.js";
+import { ClientNotificationSchema, ClientTaskViewSchema } from "./tasks.js";
 import { LocationSchema, WorkArtifactSchema } from "./world.js";
 
 export const ClientArtifactSchema = WorkArtifactSchema.omit({
@@ -38,5 +39,7 @@ export const ClientViewSchema = z.object({
   ticketNotes: z.record(z.string(), z.string()),
   notebook: z.string(),
   kbQuery: z.string(),
+  tasks: z.array(ClientTaskViewSchema).default([]),
+  notifications: z.array(ClientNotificationSchema).default([]),
 });
 export type ClientView = z.infer<typeof ClientViewSchema>;

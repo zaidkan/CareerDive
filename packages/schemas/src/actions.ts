@@ -40,6 +40,7 @@ export const AvailableActionSchema = z.object({
   label: z.string(),
   description: z.string(),
   simulatedMinutes: z.number().int().nonnegative(),
+  taskId: z.string().min(1).optional(),
 });
 export type AvailableAction = z.infer<typeof AvailableActionSchema>;
 

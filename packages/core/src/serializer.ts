@@ -56,5 +56,7 @@ export function toClientView(state: WorldState): ClientView {
     ticketNotes: state.ticketNotes,
     notebook: state.notebook,
     kbQuery: state.kbQuery,
+    tasks: [],
+    notifications: [],
   };
 }

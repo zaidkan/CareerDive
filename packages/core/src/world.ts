@@ -18,6 +18,12 @@ export function createInitialWorldState(
   const actions = Object.fromEntries(
     pack.scenario.actions.map((action) => [action.id, action]),
   );
+  const tasks = Object.fromEntries(
+    pack.scenario.tasks.map((task) => [task.id, task]),
+  );
+  const notifications = Object.fromEntries(
+    pack.scenario.notifications.map((notification) => [notification.id, notification]),
+  );
   const events = Object.entries(pack.scenario.eventTemplates).map(
     ([templateId, template]) => ({
       id: template.instanceId,
@@ -60,6 +66,8 @@ export function createInitialWorldState(
     rules: {
       actions,
       eventTemplates: pack.scenario.eventTemplates,
+      tasks,
+      notifications,
     },
     artifacts: Object.fromEntries(
       pack.scenario.artifacts.map((artifact) => [artifact.id, artifact]),
@@ -68,6 +76,8 @@ export function createInitialWorldState(
     ticketNotes: {},
     notebook: "",
     kbQuery: "",
+    taskProgress: {},
+    notifications: [],
     hidden: {
       stress: 0,
       fatigue: 0,

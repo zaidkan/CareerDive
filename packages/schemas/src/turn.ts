@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { SimulationActionIdSchema, SimulationActionSchema } from "./actions.js";
 import { WorldStateSchema } from "./world.js";
+import { TaskAttemptOutcomeSchema } from "./tasks.js";
 
 export const DomainEffectSchema = z.discriminatedUnion("type", [
   z.object({
@@ -28,6 +29,12 @@ export const TurnResultSchema = z.object({
   effects: z.array(DomainEffectSchema),
 });
 export type TurnResult = z.infer<typeof TurnResultSchema>;
+
+export const TaskAttemptTurnSchema = TaskAttemptOutcomeSchema.extend({
+  state: WorldStateSchema,
+  effects: z.array(DomainEffectSchema),
+});
+export type TaskAttemptTurn = z.infer<typeof TaskAttemptTurnSchema>;
 
 export const ActionLogEntrySchema = z.object({
   sequence: z.number().int().positive(),

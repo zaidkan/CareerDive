@@ -7,6 +7,12 @@ import {
   SessionKindSchema,
   WorkSystemIdSchema,
 } from "./session.js";
+import {
+  NotificationStateSchema,
+  PackNotificationDefinitionSchema,
+  PackTaskDefinitionSchema,
+  TaskProgressSchema,
+} from "./tasks.js";
 
 export const LocationSchema = z.object({
   id: z.string(),
@@ -69,6 +75,10 @@ export type WorkArtifact = z.infer<typeof WorkArtifactSchema>;
 export const ScenarioRulesSchema = z.object({
   actions: z.record(z.string(), ActionDefinitionSchema),
   eventTemplates: z.record(z.string(), PackEventTemplateSchema),
+  tasks: z.record(z.string(), PackTaskDefinitionSchema).default({}),
+  notifications: z
+    .record(z.string(), PackNotificationDefinitionSchema)
+    .default({}),
 });
 export type ScenarioRules = z.infer<typeof ScenarioRulesSchema>;
 
@@ -115,6 +125,8 @@ export const WorldStateSchema = z.object({
   ticketNotes: z.record(z.string(), z.string()).default({}),
   notebook: z.string().default(""),
   kbQuery: z.string().default(""),
+  taskProgress: z.record(z.string(), TaskProgressSchema).default({}),
+  notifications: z.array(NotificationStateSchema).default([]),
   hidden: HiddenStateSchema,
 });
 export type WorldState = z.infer<typeof WorldStateSchema>;

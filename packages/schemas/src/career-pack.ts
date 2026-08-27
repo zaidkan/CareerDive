@@ -4,6 +4,10 @@ import { ActionDefinitionSchema, type SimulationActionId } from "./actions.js";
 import { PackEventTemplateSchema } from "./events.js";
 import { WorkSystemIdSchema } from "./session.js";
 import {
+  PackNotificationDefinitionSchema,
+  PackTaskDefinitionSchema,
+} from "./tasks.js";
+import {
   FactSchema,
   LocationSchema,
   NpcStateSchema,
@@ -48,6 +52,8 @@ export const CareerPackSchema = z
       actions: z.array(ActionDefinitionSchema).min(1),
       eventTemplates: z.record(z.string(), PackEventTemplateSchema),
       artifacts: z.array(WorkArtifactSchema).default([]),
+      tasks: z.array(PackTaskDefinitionSchema).default([]),
+      notifications: z.array(PackNotificationDefinitionSchema).default([]),
     }),
   })
   .superRefine((pack, ctx) => {
@@ -111,6 +117,78 @@ export const CareerPackSchema = z
             path: ["scenario", "artifacts"],
           });
         }
+      }
+    }
+    const taskIds = new Set<string>();
+    const taskBindings = new Set<string>();
+    for (const task of pack.scenario.tasks) {
+      if (taskIds.has(task.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Duplicate task id "${task.id}"`,
+          path: ["scenario", "tasks"],
+        });
+      }
+      taskIds.add(task.id);
+      if (!templateIds.includes(task.eventTemplateId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Task "${task.id}" references unknown event template "${task.eventTemplateId}"`,
+          path: ["scenario", "tasks"],
+        });
+      }
+      if (!actionIds.has(task.actionId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Task "${task.id}" references unknown action "${task.actionId}"`,
+          path: ["scenario", "tasks"],
+        });
+      }
+      const action = pack.scenario.actions.find(({ id }) => id === task.actionId);
+      if (action && action.systemId !== task.systemId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Task "${task.id}" system does not match action "${task.actionId}"`,
+          path: ["scenario", "tasks"],
+        });
+      }
+      const binding = `${task.eventTemplateId}:${task.actionId}`;
+      if (taskBindings.has(binding)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Duplicate task binding "${binding}"`,
+          path: ["scenario", "tasks"],
+        });
+      }
+      taskBindings.add(binding);
+      for (const step of task.steps) {
+        for (const artifactId of step.relatedArtifactIds) {
+          if (!artifactIds.has(artifactId)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: `Task "${task.id}" references unknown artifact "${artifactId}"`,
+              path: ["scenario", "tasks"],
+            });
+          }
+        }
+      }
+    }
+    const notificationIds = new Set<string>();
+    for (const notification of pack.scenario.notifications) {
+      if (notificationIds.has(notification.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Duplicate notification id "${notification.id}"`,
+          path: ["scenario", "notifications"],
+        });
+      }
+      notificationIds.add(notification.id);
+      if (!templateIds.includes(notification.eventTemplateId)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Notification "${notification.id}" references unknown event template "${notification.eventTemplateId}"`,
+          path: ["scenario", "notifications"],
+        });
       }
     }
   });

@@ -57,6 +57,8 @@ const view: ClientView = {
   ticketNotes: {},
   notebook: "",
   kbQuery: "",
+  tasks: [],
+  notifications: [],
 };
 
 describe("energy collapse", () => {

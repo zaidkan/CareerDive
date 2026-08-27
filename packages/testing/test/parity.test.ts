@@ -19,6 +19,8 @@ const baseView = {
   ticketNotes: {},
   notebook: "",
   kbQuery: "",
+  tasks: [],
+  notifications: [],
 } satisfies Omit<ClientView, "availableActions">;
 
 describe("view adapter parity", () => {
