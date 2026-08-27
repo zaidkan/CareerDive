@@ -1,6 +1,13 @@
-import { createContext, useContext, useRef, useState, useSyncExternalStore } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { ReactNode } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 
 export type NavBits = {
   hardwareConcurrency?: number;
@@ -38,14 +45,18 @@ export type AdaptiveQuality = {
   cheapGlass: boolean;
   dustMul: number;
   contactShadows: boolean;
+  dpr: 1 | 1.25;
+  directionalShadows: boolean;
 };
 
 export const DEFAULT_QUALITY: AdaptiveQuality = {
   composer: false,
   grain: false,
   cheapGlass: true,
-  dustMul: 0.45,
+  dustMul: 0,
   contactShadows: false,
+  dpr: 1,
+  directionalShadows: false,
 };
 
 /**
@@ -169,12 +180,15 @@ export function resolveEffects(input: {
 }): AdaptiveQuality {
   const composer = input.composerOn && !input.seated;
   const lean = input.seated || input.lowEnd || input.reducedMotion || !input.composerOn;
+  const fullScene = !input.seated && !input.lowEnd && input.composerOn;
   return {
     composer,
     grain: composer && !input.reducedMotion,
     cheapGlass: true,
-    dustMul: input.seated ? 0 : input.lowEnd ? 0.35 : lean ? 0.5 : 1,
-    contactShadows: !input.seated && !input.lowEnd && input.composerOn,
+    dustMul: input.seated || input.lowEnd || !input.composerOn ? 0 : lean ? 0.5 : 1,
+    contactShadows: fullScene,
+    dpr: fullScene ? 1.25 : 1,
+    directionalShadows: fullScene,
   };
 }
 
@@ -216,6 +230,7 @@ function getReducedMotion(): boolean {
 }
 
 export function useAdaptiveQuality(seated: boolean): AdaptiveQuality {
+  const setDpr = useThree((state) => state.setDpr);
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
     getReducedMotion,
@@ -239,5 +254,9 @@ export function useAdaptiveQuality(seated: boolean): AdaptiveQuality {
     setComposerOn(machine.composerOn);
   });
 
-  return resolveEffects({ composerOn, seated, reducedMotion, lowEnd });
+  const quality = resolveEffects({ composerOn, seated, reducedMotion, lowEnd });
+  useEffect(() => {
+    setDpr(quality.dpr);
+  }, [quality.dpr, setDpr]);
+  return quality;
 }

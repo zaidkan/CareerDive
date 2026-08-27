@@ -18,6 +18,7 @@ export function LaptopOverlay({
   onStand,
   onMaximize,
   onMinimize,
+  disabled = false,
 }: {
   phase: "desk_login" | "seated_monitor" | "focus_desk";
   view: ClientView;
@@ -28,6 +29,7 @@ export function LaptopOverlay({
   onStand: () => void;
   onMaximize: () => void;
   onMinimize: () => void;
+  disabled?: boolean;
 }) {
   const laptopRef = useRef<HTMLDivElement>(null);
   const { active: osFullscreen, toggle: toggleOsFullscreen } =
@@ -35,9 +37,11 @@ export function LaptopOverlay({
 
   useEffect(() => {
     const fill = () => {
+      if (disabled) return;
       void toggleOsFullscreen();
     };
     const onKey = (event: KeyboardEvent) => {
+      if (disabled) return;
       if (event.code !== "KeyF" || event.repeat) return;
       if (isTypingTarget(event.target)) return;
       event.preventDefault();
@@ -52,11 +56,25 @@ export function LaptopOverlay({
         void document.exitFullscreen();
       }
     };
-  }, [toggleOsFullscreen]);
+  }, [disabled, toggleOsFullscreen]);
+
+  useEffect(() => {
+    if (!disabled) return;
+    const focused = document.activeElement;
+    if (focused instanceof HTMLElement && laptopRef.current?.contains(focused)) {
+      focused.blur();
+    }
+    if (document.fullscreenElement === laptopRef.current) {
+      void document.exitFullscreen();
+    }
+  }, [disabled]);
 
   return (
     <div
+      aria-hidden={disabled || undefined}
       className={`desk-os-overlay${maximized ? " desk-os-overlay-max" : ""}${osFullscreen ? " desk-os-overlay-os-fs" : ""}`}
+      data-testid="desk-os-overlay"
+      inert={disabled || undefined}
     >
       <div
         className={`desk-os-laptop${maximized ? " desk-os-laptop-max" : ""}`}

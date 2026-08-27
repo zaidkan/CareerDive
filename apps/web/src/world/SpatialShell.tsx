@@ -27,6 +27,7 @@ import {
   getEnergy,
   restoreEnergy,
   setEnergySnapshot,
+  shouldPublishEnergy,
   subscribeEnergy,
 } from "./energy.js";
 import {
@@ -107,9 +108,14 @@ export function SpatialShell({
   const julesLine = useRef(0);
   const stageRef = useRef<HTMLDivElement>(null);
   const energyRef = useRef(ENERGY_MAX);
+  const energyPublishElapsedRef = useRef(0);
   const seatedRef = useRef(false);
   const sleepingRef = useRef(false);
   const { active: fullscreen, toggle: toggleFullscreen } = useFullscreen(stageRef);
+
+  useEffect(() => {
+    setEnergySnapshot(energyRef.current);
+  }, []);
 
   useEffect(() => {
     const syncLock = () => {
@@ -146,20 +152,21 @@ export function SpatialShell({
     setNearbyLabel(label);
   }, []);
 
-  function applyEnergy(next: number) {
+  const applyEnergy = useCallback((next: number) => {
     energyRef.current = next;
+    energyPublishElapsedRef.current = 0;
     setEnergySnapshot(next);
     setEnergy(next);
-  }
+  }, []);
 
-  function sipOrSnack(amount: number, restoredMessage: string) {
+  const sipOrSnack = useCallback((amount: number, restoredMessage: string) => {
     if (energyRef.current >= ENERGY_MAX - 0.5) {
       dispatch({ type: "set_flavor", message: ALREADY_FED });
       return;
     }
     applyEnergy(restoreEnergy(energyRef.current, amount));
     dispatch({ type: "set_flavor", message: restoredMessage });
-  }
+  }, [applyEnergy]);
 
   const handleInteract = useCallback((id: HotspotId) => {
     if (sleepingRef.current) return;
@@ -202,7 +209,7 @@ export function SpatialShell({
       default:
         break;
     }
-  }, []);
+  }, [sipOrSnack]);
 
   const journey = getJourneyStep({
     phase: spatial.phase,
@@ -230,13 +237,18 @@ export function SpatialShell({
         const next = drainEnergy(previous, dt, seatedRef.current);
         if (next !== previous) {
           energyRef.current = next;
-          setEnergySnapshot(next);
+          energyPublishElapsedRef.current += dt;
           const prevTone = energyTone(previous);
           const nextTone = energyTone(next);
+          const collapsed = didCollapse(previous, next);
+          if (shouldPublishEnergy(energyPublishElapsedRef.current, previous, next)) {
+            energyPublishElapsedRef.current = 0;
+            setEnergySnapshot(next);
+          }
           if (prevTone !== nextTone) {
             setEnergy(next);
           }
-          if (didCollapse(previous, next)) {
+          if (collapsed) {
             sleepingRef.current = true;
             setSleeping(true);
           }
@@ -292,7 +304,10 @@ export function SpatialShell({
       : `Near: ${nearbyLabel} · press E or Interact`
     : undefined;
   const energyBand = energyTone(energy);
-  const redirectSnack = energyRedirectsWayfinder(energyBand, spatial.visitedDesk);
+  const redirectSnack = energyRedirectsWayfinder(
+    energyBand,
+    spatial.visitedDesk === true,
+  );
   const energyLow = energyBand !== "ok";
   const highlightHotspotId: HotspotId | undefined = redirectSnack
     ? "snack"
@@ -347,6 +362,7 @@ export function SpatialShell({
         </Suspense>
         {atDesk && deskPhase ? (
           <LaptopOverlay
+            disabled={sleeping}
             guided={guided}
             maximized={maximized}
             onAction={onAction}

@@ -152,6 +152,8 @@ describe("resolveEffects", () => {
       cheapGlass: true,
       dustMul: 0.5,
       contactShadows: true,
+      dpr: 1.25,
+      directionalShadows: true,
     });
   });
 
@@ -169,6 +171,8 @@ describe("resolveEffects", () => {
       cheapGlass: true,
       dustMul: 0,
       contactShadows: false,
+      dpr: 1,
+      directionalShadows: false,
     });
   });
 
@@ -184,8 +188,27 @@ describe("resolveEffects", () => {
       composer: false,
       grain: false,
       cheapGlass: true,
-      dustMul: 0.5,
+      dustMul: 0,
       contactShadows: false,
+      dpr: 1,
+      directionalShadows: false,
+    });
+  });
+
+  it("drops particles, DPR, and directional shadows with the composer", () => {
+    expect(
+      resolveEffects({
+        composerOn: false,
+        seated: false,
+        reducedMotion: false,
+        lowEnd: false,
+      }),
+    ).toMatchObject({
+      composer: false,
+      dustMul: 0,
+      contactShadows: false,
+      dpr: 1,
+      directionalShadows: false,
     });
   });
 });

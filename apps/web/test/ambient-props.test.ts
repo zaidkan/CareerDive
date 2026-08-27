@@ -99,8 +99,7 @@ describe("prefers-reduced-motion", () => {
 
   it("reads the reduce media query when present", () => {
     const previous = window.matchMedia;
-    window.matchMedia = ((query: string): MediaQueryList =>
-      ({
+    window.matchMedia = (query: string): MediaQueryList => ({
         matches: query.includes("prefers-reduced-motion: reduce"),
         media: query,
         onchange: null,
@@ -109,7 +108,7 @@ describe("prefers-reduced-motion", () => {
         addEventListener: () => undefined,
         removeEventListener: () => undefined,
         dispatchEvent: () => false,
-      })) as typeof window.matchMedia;
+      });
     expect(readPrefersReducedMotion()).toBe(true);
     window.matchMedia = previous;
   });

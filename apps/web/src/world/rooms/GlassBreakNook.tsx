@@ -4,6 +4,7 @@
  */
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
+import type { RefObject } from "react";
 import * as THREE from "three";
 import { Figure } from "../Figure.js";
 import { NameTag } from "../NameTag.js";
@@ -125,13 +126,13 @@ export function GlassBreakNook({
   doorOpen,
   cheapGlass = false,
   animated = true,
-  lookAt,
+  lookAtRef,
   highlightJules = false,
 }: {
   doorOpen: boolean;
   cheapGlass?: boolean;
   animated?: boolean;
-  lookAt?: [number, number, number];
+  lookAtRef?: RefObject<[number, number, number]>;
   highlightJules?: boolean;
 }) {
   const door = useRef<THREE.Group>(null);
@@ -336,7 +337,7 @@ export function GlassBreakNook({
       <Figure
         activity="talking"
         animated={animated}
-        {...(lookAt ? { lookAt } : {})}
+        {...(lookAtRef ? { lookAtRef } : {})}
         position={[7.6, 0, -6.05]}
         rotationY={0.5}
         primary="#6a7a5c"

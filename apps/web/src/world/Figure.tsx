@@ -30,6 +30,7 @@ export type FigureProps = {
   seated?: boolean;
   seed?: number;
   lookAt?: [number, number, number];
+  lookAtRef?: RefObject<[number, number, number]>;
   activity?: FigureActivity;
   animated?: boolean;
 };
@@ -158,6 +159,7 @@ export function Figure({
   seated = false,
   seed,
   lookAt,
+  lookAtRef,
   activity = "idle",
   animated = true,
 }: FigureProps) {
@@ -190,11 +192,12 @@ export function Figure({
   live.phase = phase;
   live.seated = seated;
   live.activity = activity;
-  live.hasLookAt = lookAt !== undefined;
-  if (lookAt !== undefined) {
-    live.lookAtX = lookAt[0];
-    live.lookAtY = lookAt[1];
-    live.lookAtZ = lookAt[2];
+  const initialLookAt = lookAtRef?.current ?? lookAt;
+  live.hasLookAt = initialLookAt !== undefined;
+  if (initialLookAt !== undefined) {
+    live.lookAtX = initialLookAt[0];
+    live.lookAtY = initialLookAt[1];
+    live.lookAtZ = initialLookAt[2];
   }
   live.figureX = position[0];
   live.figureY = position[1];
@@ -207,6 +210,13 @@ export function Figure({
     const motion = motionRef.current;
     const input = inputRef.current;
     if (motion === null || input === null) return;
+    const currentLookAt = lookAtRef?.current ?? lookAt;
+    input.hasLookAt = currentLookAt !== undefined;
+    if (currentLookAt !== undefined) {
+      input.lookAtX = currentLookAt[0];
+      input.lookAtY = currentLookAt[1];
+      input.lookAtZ = currentLookAt[2];
+    }
     localTimeRef.current += delta;
     input.time = localTimeRef.current;
     input.delta = delta;

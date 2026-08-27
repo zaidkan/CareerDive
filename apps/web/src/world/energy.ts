@@ -8,6 +8,8 @@ export const COFFEE_RESTORE = 44;
 export const BAR_RESTORE = 58;
 export const WAKE_ENERGY = 36;
 export const LOW_ENERGY = 28;
+/** Isolate the meter at 5 Hz instead of scheduling React work every frame. */
+export const ENERGY_PUBLISH_INTERVAL_S = 0.2;
 /** How long the player is out after a crash. Does not advance sim clock. */
 export const SLEEP_MS = 2800;
 
@@ -33,6 +35,18 @@ export function restoreEnergy(current: number, amount: number): number {
 
 export function didCollapse(previous: number, next: number): boolean {
   return previous > 0 && next <= 0;
+}
+
+export function shouldPublishEnergy(
+  elapsedSeconds: number,
+  previous: number,
+  next: number,
+): boolean {
+  return (
+    elapsedSeconds >= ENERGY_PUBLISH_INTERVAL_S ||
+    energyTone(previous) !== energyTone(next) ||
+    didCollapse(previous, next)
+  );
 }
 
 export function energyTone(value: number): "ok" | "low" | "critical" {

@@ -7,6 +7,7 @@ import { Hotspot, nearestHotspot } from "../Hotspot.js";
 import { NameTag } from "../NameTag.js";
 import { PlayerController } from "../PlayerController.js";
 import { useWorldQuality } from "../effects/useAdaptiveQuality.js";
+import { DustMotes, VentPapers } from "../props/atmosphere.js";
 import { CeilingAC, OfficeWindow, Thermostat, WallPanel } from "../props/building.js";
 import {
   AccentPoster,
@@ -157,10 +158,7 @@ export function SocRoom({
 }) {
   const nearbyId = useRef<HotspotId | undefined>(undefined);
   const playerPos = useRef<[number, number, number]>([...PLAYER_SPAWN]);
-  const publishedLook = useRef<[number, number, number]>([...PLAYER_SPAWN]);
-  const [lookAt, setLookAt] = useState<[number, number, number]>([
-    ...PLAYER_SPAWN,
-  ]);
+  const lookAtRef = useRef<[number, number, number]>([...PLAYER_SPAWN]);
   const [activeHotspot, setActiveHotspot] = useState<HotspotId | undefined>();
   const [doorOpen, setDoorOpen] = useState(false);
   const [openCabinet, setOpenCabinet] = useState<string | null>(null);
@@ -223,14 +221,7 @@ export function SocRoom({
       setActiveHotspot(near?.id);
       onNearbyChange(near?.id, near?.label);
     }
-    const prev = publishedLook.current;
-    if (
-      Math.hypot(next[0] - prev[0], next[1] - prev[1], next[2] - prev[2]) >
-      0.4
-    ) {
-      publishedLook.current = next;
-      setLookAt(next);
-    }
+    lookAtRef.current = next;
   }
 
   const floorW = ROOM.halfX * 2;
@@ -254,7 +245,7 @@ export function SocRoom({
       <hemisphereLight args={["#ffeed4", "#4a3a2c", seated ? 1.2 : 2.05]} />
       <ambientLight intensity={seated ? 0.95 : 1.15} />
       <directionalLight
-        castShadow={!seated}
+        castShadow={quality.directionalShadows}
         intensity={seated ? 1.2 : 1.9}
         position={[5, 10, 5]}
         color="#fff0d0"
@@ -445,7 +436,7 @@ export function SocRoom({
       <Figure
         activity="talking"
         animated={!seated}
-        lookAt={lookAt}
+        lookAtRef={lookAtRef}
         position={[MORGAN_DESK[0], 0, MORGAN_DESK[2] + SEAT - 0.05]}
         rotationY={CHAIR_FACE_DESK}
         primary="#7d9088"
@@ -480,7 +471,7 @@ export function SocRoom({
       <Figure
         activity="idle"
         animated={!seated}
-        lookAt={lookAt}
+        lookAtRef={lookAtRef}
         position={[-1.65, 0, 2.5]}
         rotationY={2.2}
         primary="#8a7a68"
@@ -499,7 +490,7 @@ export function SocRoom({
       <Figure
         activity="typing"
         animated={!seated}
-        lookAt={lookAt}
+        lookAtRef={lookAtRef}
         position={[SAMIR_DESK[0] + 1.0, 0, SAMIR_DESK[2]]}
         rotationY={-Math.PI / 2}
         primary="#6a7a88"
@@ -571,7 +562,7 @@ export function SocRoom({
         cheapGlass={quality.cheapGlass}
         doorOpen={doorOpen}
         highlightJules={highlightHotspotId === "jules"}
-        lookAt={lookAt}
+        lookAtRef={lookAtRef}
       />
 
       {/* Exit door — frame, leaf, and readable label */}

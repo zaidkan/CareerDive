@@ -9,6 +9,7 @@ import {
   energyRedirectsWayfinder,
   energyTone,
   restoreEnergy,
+  shouldPublishEnergy,
 } from "../src/world/energy.js";
 
 describe("energy meter", () => {
@@ -47,5 +48,12 @@ describe("energy meter", () => {
     expect(energyRedirectsWayfinder("low", true)).toBe(true);
     expect(energyRedirectsWayfinder("critical", false)).toBe(true);
     expect(energyRedirectsWayfinder("ok", true)).toBe(false);
+  });
+
+  it("publishes meter updates at 5 Hz, immediately on tone changes and collapse", () => {
+    expect(shouldPublishEnergy(0.19, 80, 79)).toBe(false);
+    expect(shouldPublishEnergy(0.2, 80, 79)).toBe(true);
+    expect(shouldPublishEnergy(0.01, 29, 28)).toBe(true);
+    expect(shouldPublishEnergy(0.01, 2, 0)).toBe(true);
   });
 });
