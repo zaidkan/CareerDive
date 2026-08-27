@@ -32,7 +32,7 @@ export {
   StorageCabinet,
   TrashBin,
 } from "./furniture.js";
-export { CoffeePot, Fridge } from "./kitchen.js";
+export { CoffeePot, Fridge, SnackBasket } from "./kitchen.js";
 export { CeilingFixture, TaskLamp } from "./lighting.js";
 export {
   LoginPostIt,

@@ -344,46 +344,17 @@ describe("tutorial and debrief", () => {
     };
 
     render(<App client={client} />);
-    await user.click(await screen.findByRole("button", { name: "Simple list" }));
+    expect(await screen.findByText("Practice shift")).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Simple list" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Desk only" })).toBeNull();
 
-    expect(
-      await screen.findByRole("heading", {
-        name: /Step 1 · Check your inbox/i,
-      }),
-    ).toBeVisible();
-    expect(screen.getByText(/Practice · day one at/i)).toBeVisible();
-  });
-
-  it("runs the shift from the desk-only mode without the 3D office", async () => {
-    const user = userEvent.setup();
-    const performed: string[] = [];
-    const client = {
-      createSession: () => Promise.resolve({ sessionId: "session-1", view }),
-      performAction: (_sessionId: string, actionId: string) => {
-        performed.push(actionId);
-        return Promise.resolve(view);
-      },
-      getDebrief: () => Promise.reject(new Error("not needed")),
-    };
-
-    render(<App client={client} />);
-    await user.click(await screen.findByRole("button", { name: "Desk only" }));
     await user.click(
       await screen.findByRole("button", { name: /Enter the Verdaly floor/i }),
     );
-
     expect(
-      await screen.findByRole("heading", { name: "Your workstation" }),
+      await screen.findByText(/Head to Security Operations/i),
     ).toBeVisible();
-    /** The point of this mode: no floor plan, no canvas to walk. */
-    expect(
-      screen.queryByRole("heading", { name: /floor plan/i }),
-    ).toBeNull();
-
-    await user.click(
-      screen.getByRole("button", { name: /Inspect login context/i }),
-    );
-    expect(performed).toEqual(["inspect_login_context"]);
+    expect(screen.getByText(/Go here next — gold door on the plan/i)).toBeVisible();
   });
 
   it("welcomes the user into the shift before opening the workstation", async () => {
@@ -462,7 +433,19 @@ describe("tutorial and debrief", () => {
     await user.click(
       await screen.findByRole("button", { name: /Enter the Verdaly floor/i }),
     );
-    await user.click(screen.getByRole("button", { name: "Simple list" }));
+    await user.click(
+      screen.getByRole("button", { name: /Security Operations/i }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: /Sit at desk/i }, { timeout: 6000 }),
+    );
+    await user.type(screen.getByLabelText(/Username/i), "day1.analyst");
+    await user.type(screen.getByLabelText(/Password/i), "FirstDay!");
+    await user.click(screen.getByRole("button", { name: /^Login$/i }));
+    expect(
+      await screen.findByRole("heading", { name: /Your workstation/i }),
+    ).toBeVisible();
+    await user.click(screen.getByRole("tab", { name: /Team/i }));
     await user.click(
       await screen.findByRole("button", { name: /ask manager for context/i }),
     );

@@ -153,3 +153,30 @@ export function CoffeePot({
     </group>
   );
 }
+
+export function SnackBasket({ position }: { position: [number, number, number] }) {
+  const bars = [
+    { x: -0.04, z: 0.02, rot: 0.18, color: "#c45c48" },
+    { x: 0.05, z: -0.03, rot: -0.22, color: "#e8b84a" },
+    { x: 0.0, z: 0.05, rot: 0.08, color: "#7dba6a" },
+  ] as const;
+  return (
+    <group position={position}>
+      <mesh position={[0, 0.06, 0]} castShadow>
+        <boxGeometry args={[0.28, 0.08, 0.2]} />
+        <meshStandardMaterial color="#5a3a28" roughness={0.75} />
+      </mesh>
+      {bars.map((bar) => (
+        <mesh
+          key={bar.color}
+          position={[bar.x, 0.13, bar.z]}
+          rotation={[0, bar.rot, 0.12]}
+          castShadow
+        >
+          <boxGeometry args={[0.16, 0.05, 0.07]} />
+          <meshStandardMaterial color={bar.color} roughness={0.55} />
+        </mesh>
+      ))}
+    </group>
+  );
+}

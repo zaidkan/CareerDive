@@ -14,6 +14,7 @@ export type HotspotId =
   | "break_door"
   | "jules"
   | "coffee"
+  | "snack"
   | "storage"
   | "door_exit";
 

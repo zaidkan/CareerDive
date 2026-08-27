@@ -26,8 +26,10 @@ import {
 } from "../props/furniture.js";
 import { CeilingFixture } from "../props/lighting.js";
 import { MeshLabel, WallCalendar, Whiteboard } from "../props/signage.js";
+import { SnackBasket } from "../props/kitchen.js";
 import { DocumentShredder, SecurityCamera, ServerRack } from "../props/tech.js";
 import { Workstation } from "../Workstation.js";
+import { Wayfinder } from "../Wayfinder.js";
 import type { HotspotId } from "../worldTypes.js";
 import { BREAK_NOOK, GlassBreakNook } from "./GlassBreakNook.js";
 import {
@@ -47,6 +49,7 @@ import {
   ROW,
   SAMIR_DESK,
   SEAT,
+  hotspotAnchor,
   socColliders,
 } from "./socLayout.js";
 
@@ -233,6 +236,10 @@ export function SocRoom({
 
   const floorW = ROOM.halfX * 2;
   const floorD = ROOM.halfZ * 2;
+  const wayfinderTo =
+    !seated && highlightHotspotId
+      ? hotspotAnchor(highlightHotspotId)
+      : undefined;
 
   return (
     <>
@@ -559,6 +566,8 @@ export function SocRoom({
       <PersonalLockers position={[8.8, 0.95, ROW.south - 0.15]} />
       <TrashBin position={[6.2, 0, ROW.south - 0.15]} />
       <TrashBin position={[5.8, 0, ROW.south - 0.15]} recycling />
+      <SnackBasket position={[5.9, 0, 0.2]} />
+      <MeshLabel text="SNACKS" position={[5.9, 1.12, 0.2]} width={0.62} height={0.12} />
       <TallFloorPlant position={[-3.6, 0, ROOM.halfZ - 0.85]} scale={0.95} />
       <TallFloorPlant position={[5.15, 0, ROOM.halfZ - 0.85]} scale={0.95} />
 
@@ -614,9 +623,16 @@ export function SocRoom({
 
       {!seated
         ? hotspots.map((def) => (
-            <Hotspot active={activeHotspot === def.id} def={def} key={def.id} />
+            <Hotspot
+              active={activeHotspot === def.id}
+              def={def}
+              key={def.id}
+              target={highlightHotspotId === def.id}
+            />
           ))
         : null}
+
+      {wayfinderTo ? <Wayfinder fromRef={playerPos} to={wayfinderTo} /> : null}
 
       <PlayerController
         colliders={colliders}

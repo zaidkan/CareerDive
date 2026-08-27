@@ -1,47 +1,15 @@
 import { useEffect, useState } from "react";
 import type { AvailableAction, ClientView, Debrief } from "@sim/schemas";
 import { defaultClient, type SimulationClient } from "./client.js";
-import { AccessibleMode } from "./components/AccessibleMode.js";
 import { DebriefView } from "./components/DebriefView.js";
 import { getTutorialStep } from "./guidance.js";
-import {
-  ManagerContext,
-  ShiftBriefing,
-  Tutorial,
-} from "./components/shell.js";
-import { WorkSurface } from "./components/WorkSurface.js";
+import { ManagerContext, ShiftBriefing } from "./components/shell.js";
 import { COMPANY } from "./world/company.js";
 import { SpatialShell } from "./world/SpatialShell.js";
-
-/**
- * Peer renderers over the same simulation state. They are interchangeable by
- * design: every mode produces the same actions and consequences, so switching
- * is a presentation choice and never an easier or harder run.
- */
-const MODES = [
-  {
-    id: "world",
-    label: "Walk the office",
-    hint: "Explore the floor in 3D. Needs a reasonably fast computer.",
-  },
-  {
-    id: "desk",
-    label: "Desk only",
-    hint: "Work the same shift straight from your desk, without the 3D office.",
-  },
-  {
-    id: "list",
-    label: "Simple list",
-    hint: "A plain, screen-reader friendly list of everything you can do.",
-  },
-] as const;
-
-type Mode = (typeof MODES)[number]["id"];
 
 export function App({ client = defaultClient }: { client?: SimulationClient }) {
   const [view, setView] = useState<ClientView>();
   const [sessionId, setSessionId] = useState<string>();
-  const [mode, setMode] = useState<Mode>("world");
   const [debrief, setDebrief] = useState<Debrief>();
   const [error, setError] = useState<string>();
   const [phase, setPhase] = useState<"tutorial" | "assessed">("tutorial");
@@ -123,32 +91,12 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
             <span className="site-chip site-chip-muted">{COMPANY.floor}</span>
           </p>
         </div>
-        <div className="mode-switch" aria-label="Interaction mode">
-          {MODES.map(({ id, label, hint }) => (
-            <button
-              aria-pressed={mode === id}
-              key={id}
-              onClick={() => {
-                setMode(id);
-              }}
-              title={hint}
-              type="button"
-            >
-              {label}
-            </button>
-          ))}
-        </div>
       </header>
 
       {error ? (
         <p className="app-alert" role="alert">
           {error}
         </p>
-      ) : null}
-
-      {/* The list path has no HUD or guidance panel, so it keeps the text step card. */}
-      {phase === "tutorial" && mode === "list" ? (
-        view ? <Tutorial view={view} /> : <Tutorial />
       ) : null}
 
       {phase === "tutorial" && view ? (
@@ -201,20 +149,9 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
             setActiveSurface("dashboard");
           }}
         />
-      ) : mode === "world" ? (
+      ) : (
         <SpatialShell
           guided={phase === "tutorial"}
-          onAction={(action, freeText) => void perform(action, freeText)}
-          view={view}
-        />
-      ) : mode === "desk" ? (
-        <WorkSurface
-          guided={phase === "tutorial"}
-          onAction={(action, freeText) => void perform(action, freeText)}
-          view={view}
-        />
-      ) : (
-        <AccessibleMode
           onAction={(action, freeText) => void perform(action, freeText)}
           view={view}
         />

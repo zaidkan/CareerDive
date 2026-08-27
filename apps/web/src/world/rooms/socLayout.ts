@@ -7,6 +7,7 @@
  */
 import type { Aabb } from "../collision.js";
 import type { HotspotDef } from "../Hotspot.js";
+import type { HotspotId } from "../worldTypes.js";
 import { BREAK_NOOK, breakNookColliders } from "./GlassBreakNook.js";
 
 export const ROOM = { halfX: 10.9, halfZ: 7.4 } as const;
@@ -118,12 +119,30 @@ export const BASE_HOTSPOTS: HotspotDef[] = [
     position: [0, 0, ROW.south],
     radius: 1.4,
   },
+  {
+    id: "snack",
+    label: "Snack bars",
+    position: [5.9, 0, 0.2],
+    radius: 1.15,
+  },
 ];
 
 export const BREAK_INTERIOR_HOTSPOTS: HotspotDef[] = [
   { id: "jules", label: "Jules", position: [7.6, 0, -6.05], radius: 1.3 },
   { id: "coffee", label: "Coffee", position: [7.45, 0, -6.4], radius: 1.15 },
 ];
+
+export function hotspotAnchor(
+  id: HotspotId,
+): [number, number, number] | undefined {
+  for (const hotspot of BASE_HOTSPOTS) {
+    if (hotspot.id === id) return hotspot.position;
+  }
+  for (const hotspot of BREAK_INTERIOR_HOTSPOTS) {
+    if (hotspot.id === id) return hotspot.position;
+  }
+  return undefined;
+}
 
 export const ROOM_COLLIDERS: Aabb[] = [
   cubicleCollider(PLAYER_DESK),

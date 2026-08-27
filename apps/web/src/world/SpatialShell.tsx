@@ -13,6 +13,18 @@ import { LaptopOverlay } from "./deskOs/LaptopOverlay.js";
 import { FloorMap } from "./FloorMap.js";
 import { getJourneyStep } from "../journey.js";
 import {
+  BAR_RESTORE,
+  COFFEE_RESTORE,
+  ENERGY_MAX,
+  MORGAN_SCOLD,
+  SLEEP_MS,
+  WAKE_ENERGY,
+  drainEnergy,
+  didCollapse,
+  energyTone,
+  restoreEnergy,
+} from "./energy.js";
+import {
   INITIAL_SPATIAL,
   reduceSpatialEvent,
 } from "./presentation.js";
@@ -39,10 +51,38 @@ const INTERACT_LABEL: Partial<Record<HotspotId, string>> = {
   desk_player: "Sit at computer",
   break_door: "Use door",
   door_exit: "Exit to map",
-  jules: "Talk / coffee",
-  coffee: "Talk / coffee",
+  jules: "Talk to Jules",
+  coffee: "Drink coffee",
+  snack: "Eat a bar",
   storage: "Open cabinets",
 };
+
+const ALREADY_FED = "You're fine. Save it for later.";
+const COFFEE_SIP = "The coffee's harsh, but you're awake again.";
+const BAR_BITE = "The bar is dry cardboard. Energy comes back anyway.";
+
+function EnergyMeter({ value }: { value: number }) {
+  const tone = energyTone(value);
+  return (
+    <div
+      aria-label="Energy"
+      aria-valuemax={ENERGY_MAX}
+      aria-valuemin={0}
+      aria-valuenow={Math.round(value)}
+      className={`energy-meter energy-meter-${tone}`}
+      data-testid="energy-meter"
+      role="meter"
+    >
+      <span className="energy-meter-label">Energy</span>
+      <span className="energy-meter-track">
+        <span
+          className="energy-meter-fill"
+          style={{ width: `${String(value)}%` }}
+        />
+      </span>
+    </div>
+  );
+}
 
 export function SpatialShell({
   view,
@@ -56,8 +96,13 @@ export function SpatialShell({
   const [spatial, dispatch] = useReducer(reduceSpatialEvent, INITIAL_SPATIAL);
   const [nearbyLabel, setNearbyLabel] = useState<string>();
   const [pointerLocked, setPointerLocked] = useState(false);
+  const [energy, setEnergy] = useState(ENERGY_MAX);
+  const [sleeping, setSleeping] = useState(false);
   const julesLine = useRef(0);
   const stageRef = useRef<HTMLDivElement>(null);
+  const energyRef = useRef(ENERGY_MAX);
+  const seatedRef = useRef(false);
+  const sleepingRef = useRef(false);
   const { active: fullscreen, toggle: toggleFullscreen } = useFullscreen(stageRef);
 
   useEffect(() => {
@@ -95,7 +140,22 @@ export function SpatialShell({
     setNearbyLabel(label);
   }, []);
 
+  function applyEnergy(next: number) {
+    energyRef.current = next;
+    setEnergy(next);
+  }
+
+  function sipOrSnack(amount: number, restoredMessage: string) {
+    if (energyRef.current >= ENERGY_MAX - 0.5) {
+      dispatch({ type: "set_flavor", message: ALREADY_FED });
+      return;
+    }
+    applyEnergy(restoreEnergy(energyRef.current, amount));
+    dispatch({ type: "set_flavor", message: restoredMessage });
+  }
+
   function handleInteract(id: HotspotId) {
+    if (sleepingRef.current) return;
     switch (id) {
       case "desk_player":
         dispatch({ type: "sit_desk" });
@@ -110,13 +170,18 @@ export function SpatialShell({
           if (message) dispatch({ type: "set_flavor", message });
         }
         break;
-      case "jules":
-      case "coffee": {
+      case "jules": {
         const { line, nextIndex } = nextJulesLine(julesLine.current);
         julesLine.current = nextIndex;
         dispatch({ type: "set_flavor", message: `Jules: “${line}”` });
         break;
       }
+      case "coffee":
+        sipOrSnack(COFFEE_RESTORE, COFFEE_SIP);
+        break;
+      case "snack":
+        sipOrSnack(BAR_RESTORE, BAR_BITE);
+        break;
       /** The drawer sliding open is the whole feedback — no caption needed. */
       case "storage":
         window.dispatchEvent(new Event("soc-storage"));
@@ -138,6 +203,58 @@ export function SpatialShell({
     ...(spatial.visitedDesk ? { visitedDesk: true } : {}),
   });
   const stepLabel = `Step ${String(journey.index)} of ${String(journey.total)}`;
+  const walking = spatial.phase === "room_walk";
+  const atDesk =
+    spatial.phase === "desk_login" ||
+    spatial.phase === "seated_monitor" ||
+    spatial.phase === "focus_desk";
+  seatedRef.current = atDesk;
+  sleepingRef.current = sleeping;
+
+  useEffect(() => {
+    if (spatial.phase === "floor_map") return;
+    let last = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const dt = Math.min(0.08, (now - last) / 1000);
+      last = now;
+      if (!sleepingRef.current) {
+        const previous = energyRef.current;
+        const next = drainEnergy(previous, dt, seatedRef.current);
+        if (next !== previous) {
+          energyRef.current = next;
+          setEnergy(next);
+          if (didCollapse(previous, next)) {
+            sleepingRef.current = true;
+            setSleeping(true);
+          }
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+    };
+  }, [spatial.phase]);
+
+  useEffect(() => {
+    if (!sleeping) return;
+    dispatch({
+      type: "set_flavor",
+      message: "You nodded off. Someone is shaking your shoulder…",
+    });
+    const id = window.setTimeout(() => {
+      energyRef.current = WAKE_ENERGY;
+      setEnergy(WAKE_ENERGY);
+      sleepingRef.current = false;
+      setSleeping(false);
+      dispatch({ type: "set_flavor", message: MORGAN_SCOLD });
+    }, SLEEP_MS);
+    return () => {
+      window.clearTimeout(id);
+    };
+  }, [sleeping]);
 
   if (spatial.phase === "floor_map") {
     return (
@@ -161,16 +278,17 @@ export function SpatialShell({
       ? "At your chair — press E or Sit to use the computer"
       : `Near: ${nearbyLabel} · press E or Interact`
     : undefined;
+  const energyLow = energyTone(energy) !== "ok";
+  const highlightHotspotId: HotspotId | undefined = energyLow
+    ? "snack"
+    : journey.target?.kind === "hotspot"
+      ? journey.target.hotspotId
+      : undefined;
   /** Spawning beside the exit should not bury the step the player is actually on. */
   const nearbyIsTarget =
-    journey.target?.kind === "hotspot" &&
-    journey.target.hotspotId === spatial.nearbyHotspotId;
+    highlightHotspotId !== undefined &&
+    highlightHotspotId === spatial.nearbyHotspotId;
 
-  const walking = spatial.phase === "room_walk";
-  const atDesk =
-    spatial.phase === "desk_login" ||
-    spatial.phase === "seated_monitor" ||
-    spatial.phase === "focus_desk";
   const maximized = spatial.phase === "focus_desk";
   const deskPhase =
     spatial.phase === "desk_login" ||
@@ -180,6 +298,13 @@ export function SpatialShell({
       : undefined;
   const roomLabel = "Security Operations";
   const fullscreenLabel = fullscreen ? "Exit fullscreen" : "Fullscreen";
+  const compass = sleeping
+    ? undefined
+    : energyLow
+      ? "Energy low · follow the gold marker to the snack bars (coffee is in the break corner)"
+      : highlightHotspotId === "desk_player"
+        ? "Your desk · follow the gold marker"
+        : undefined;
 
   return (
     <section
@@ -196,13 +321,11 @@ export function SpatialShell({
           }
         >
           <RoomCanvas
-            enabled={walking}
+            enabled={walking && !sleeping}
             onInteract={handleInteract}
             onNearbyChange={onNearbyChange}
             seated={atDesk}
-            {...(journey.target?.kind === "hotspot"
-              ? { highlightHotspotId: journey.target.hotspotId }
-              : {})}
+            {...(highlightHotspotId ? { highlightHotspotId } : {})}
           />
         </Suspense>
         {atDesk && deskPhase ? (
@@ -226,7 +349,7 @@ export function SpatialShell({
             view={view}
           />
         ) : null}
-        {walking && !pointerLocked ? (
+        {walking && !pointerLocked && !sleeping ? (
           <p className="room-look-hint">
             Click to look around · WASD to walk · F fullscreen · Esc to release
           </p>
@@ -239,9 +362,11 @@ export function SpatialShell({
               </p>
               <p className="room-hud-step">{journey.title}</p>
               <p>{nearbyIsTarget && nearbyPrompt ? nearbyPrompt : journey.body}</p>
+              {compass ? <p className="room-hud-compass">{compass}</p> : null}
               {!nearbyIsTarget && nearbyPrompt ? (
                 <p className="room-hud-nearby">{nearbyPrompt}</p>
               ) : null}
+              <EnergyMeter value={energy} />
               <p className="room-hud-controls">
                 Double-click to walk · E to interact · F fullscreen
               </p>
@@ -296,6 +421,12 @@ export function SpatialShell({
                     ? "Maximized workstation · Fill screen for the full OS · Leave desk to stand"
                     : "Use the laptop · Maximize in the room, or Fill screen for the full OS"}
               </p>
+              {energyLow && !sleeping ? (
+                <p className="room-hud-compass">
+                  Energy low · stand up and follow the gold marker to the snack bars
+                </p>
+              ) : null}
+              <EnergyMeter value={energy} />
             </div>
             <button
               className="guidance-secondary room-desk-hud-fs"
@@ -306,6 +437,12 @@ export function SpatialShell({
             >
               Fill screen
             </button>
+          </div>
+        ) : null}
+        {sleeping ? (
+          <div className="sleep-overlay" role="status">
+            <p className="sleep-overlay-title">You fell asleep</p>
+            <p>Morgan is shaking your shoulder. This nap does not skip the shift clock.</p>
           </div>
         ) : null}
       </div>

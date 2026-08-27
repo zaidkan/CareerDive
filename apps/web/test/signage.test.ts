@@ -17,6 +17,7 @@ const PLATES: [string, number, number][] = [
   ["CABLES", 256, 64],
   ["ADAPTERS", 256, 64],
   ["COFFEE", 256, 64],
+  ["SNACKS", 256, 64],
   ["EXIT", 256, 64],
 ];
 

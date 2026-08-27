@@ -16,7 +16,7 @@ import {
   WallArt,
 } from "../props/decor.js";
 import { BreakTable, OfficeChair } from "../props/furniture.js";
-import { CoffeePot, Fridge } from "../props/kitchen.js";
+import { CoffeePot, Fridge, SnackBasket } from "../props/kitchen.js";
 import { MeshLabel, StickyNotes } from "../props/signage.js";
 import type { Aabb } from "../collision.js";
 
@@ -286,6 +286,7 @@ export function GlassBreakNook({
         <meshStandardMaterial color="#463629" roughness={0.65} />
       </mesh>
       <CoffeePot position={[7.45, 1.09, -6.87]} />
+      <SnackBasket position={[8.85, 0.945, -6.72]} />
       <VentPapers animated={animated} position={[8.4, 0.96, -6.68]} />
       {/* Mug shelf on the wall above the counter */}
       <mesh position={[8.15, 1.62, -7.11]} castShadow>

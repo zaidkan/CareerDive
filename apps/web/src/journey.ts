@@ -98,7 +98,7 @@ export function getJourneyStep({
           }
         : {
             title: "Find your desk",
-            body: "Look for the starred name tag, then press E to sit at the computer.",
+            body: "Follow the gold floor marker to the starred name tag, then press E to sit.",
             target: { kind: "hotspot", hotspotId: "desk_player" },
           },
     );

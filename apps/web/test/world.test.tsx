@@ -29,6 +29,14 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
       <button
         type="button"
         onClick={() => {
+          onInteract("snack");
+        }}
+      >
+        Eat a bar
+      </button>
+      <button
+        type="button"
+        onClick={() => {
           onInteract("door_exit");
         }}
       >
@@ -163,10 +171,13 @@ describe("spatial presentation", () => {
     const socRoom = screen.getByRole("button", { name: /Security Operations/i });
     expect(socRoom).toHaveTextContent(/go here next/i);
     expect(screen.getByText(/Head to Security Operations/i)).toBeVisible();
+    expect(screen.getByText(/gold door on the plan/i)).toBeVisible();
 
     await user.click(socRoom);
     await screen.findByRole("button", { name: /Sit at desk/i }, { timeout: 6000 });
     expect(screen.getByText(/Find your desk/i)).toBeVisible();
+    expect(screen.getByText(/follow the gold marker/i)).toBeVisible();
+    expect(screen.getByTestId("energy-meter")).toBeVisible();
     expect(screen.getByText(/Click to look around/i)).toBeVisible();
     expect(screen.getByRole("button", { name: /^Fullscreen$/i })).toBeVisible();
 
@@ -242,5 +253,16 @@ describe("spatial presentation", () => {
     expect(
       await screen.findByRole("button", { name: /Sit at desk/i }),
     ).toBeVisible();
+  });
+
+  it("leaves snack bars for later when energy is already full", async () => {
+    const user = userEvent.setup();
+    render(<SpatialShell view={view} onAction={() => undefined} />);
+    await user.click(
+      screen.getByRole("button", { name: /Security Operations/i }),
+    );
+    await screen.findByRole("button", { name: /Eat a bar/i }, { timeout: 6000 });
+    await user.click(screen.getByRole("button", { name: /Eat a bar/i }));
+    expect(screen.getByText(/You're fine. Save it for later/i)).toBeVisible();
   });
 });

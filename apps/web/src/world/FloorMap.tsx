@@ -143,6 +143,9 @@ export function FloorMap({
         </p>
         <h2 id="floor-map-title">Day one · floor plan</h2>
         {title ? <p className="floor-step">{title}</p> : null}
+        {highlightRoomId ? (
+          <p className="floor-guide-callout">Go here next — gold door on the plan</p>
+        ) : null}
         <p>
           Walk the halls to a door, then step inside. Coffee lives in the glass
           break corner inside Security Operations — not a separate map room.
@@ -188,7 +191,7 @@ export function FloorMap({
           {ROOMS.map((room) => (
             <div
               aria-hidden="true"
-              className={`floor-doorframe${activeRoomId === room.id ? " floor-doorframe-active" : ""}${room.unlocked ? " floor-doorframe-open" : ""}`}
+              className={`floor-doorframe${activeRoomId === room.id ? " floor-doorframe-active" : ""}${room.unlocked ? " floor-doorframe-open" : ""}${highlightRoomId === room.id ? " floor-doorframe-target" : ""}`}
               key={`door-${room.id}`}
               style={{
                 left: `${String(room.door.x)}%`,
