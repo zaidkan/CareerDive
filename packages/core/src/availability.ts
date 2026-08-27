@@ -22,6 +22,10 @@ function target(
   if (!definition) {
     throw new Error(`Unknown action "${actionId}" in scenario rules`);
   }
+  const task = Object.values(rules.tasks).find(
+    ({ eventTemplateId, actionId }) =>
+      eventTemplateId === event.templateId && actionId === definition.id,
+  );
   return {
     id: definition.id,
     eventId: event.id,
@@ -29,6 +33,7 @@ function target(
     label: definition.label,
     description: definition.description,
     simulatedMinutes: definition.simulatedMinutes,
+    ...(task ? { taskId: task.id } : {}),
   };
 }
 

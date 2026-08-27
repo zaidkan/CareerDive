@@ -1,5 +1,9 @@
 import type { DomainEffect, SimulationActionId, WorldState } from "@sim/schemas";
 import { consequence } from "./effects.js";
+import {
+  ensureNotificationsForEvent,
+  wakeSnoozedNotifications,
+} from "./notifications.js";
 
 export function activatePendingEvents(
   state: WorldState,
@@ -12,6 +16,7 @@ export function activatePendingEvents(
       state.simClock >= pendingEvent.triggeredAt
     ) {
       pendingEvent.status = "active";
+      ensureNotificationsForEvent(state, pendingEvent.id);
       const entry = consequence(
         state,
         pendingEvent.id,
@@ -77,3 +82,5 @@ export function applyDueConsequences(
     }
   }
 }
+
+export { wakeSnoozedNotifications };

@@ -21,7 +21,7 @@ export function createInitialWorldState(
   const tasks = Object.fromEntries(
     pack.scenario.tasks.map((task) => [task.id, task]),
   );
-  const notifications = Object.fromEntries(
+  const notificationRules = Object.fromEntries(
     pack.scenario.notifications.map((notification) => [notification.id, notification]),
   );
   const events = Object.entries(pack.scenario.eventTemplates).map(
@@ -44,6 +44,22 @@ export function createInitialWorldState(
   const trust = Object.fromEntries(
     pack.scenario.npcs.map((npc) => [npc.id, 0]),
   );
+  const notifications = pack.scenario.notifications.flatMap((definition) => {
+    const event = events.find(
+      ({ templateId, status }) =>
+        templateId === definition.eventTemplateId && status === "active",
+    );
+    return event
+      ? [
+          {
+            id: definition.id,
+            eventId: event.id,
+            status: "unread" as const,
+            snoozeUsed: false,
+          },
+        ]
+      : [];
+  });
 
   return WorldStateSchema.parse({
     sessionId,
@@ -67,7 +83,7 @@ export function createInitialWorldState(
       actions,
       eventTemplates: pack.scenario.eventTemplates,
       tasks,
-      notifications,
+      notifications: notificationRules,
     },
     artifacts: Object.fromEntries(
       pack.scenario.artifacts.map((artifact) => [artifact.id, artifact]),
@@ -77,7 +93,7 @@ export function createInitialWorldState(
     notebook: "",
     kbQuery: "",
     taskProgress: {},
-    notifications: [],
+    notifications,
     hidden: {
       stress: 0,
       fatigue: 0,
