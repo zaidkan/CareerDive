@@ -25,8 +25,6 @@ career:
     - team_chat
   events:
     - suspicious_login
-    - false_positive
-    - phishing_report
     - incomplete_handoff
     - routine_alert_review
   rhythmBiasReview:
@@ -51,7 +49,406 @@ scenario:
     also arrived as you signed in. Read what is available, keep notes, and
     use the team channel when you need context. More routine work may
     arrive while you investigate.
-  initialTaskBacklog: 5
+  initialTaskBacklog: 3
+  tasks:
+    - id: handoff-open-items
+      eventTemplateId: incomplete_handoff
+      actionId: read_handoff
+      systemId: email
+      kind: select_clues
+      title: Find what the last analyst left open
+      whyItMatters: A handoff stops unfinished work from disappearing between shifts.
+      steps:
+        - id: unfinished-check
+          title: Find the unfinished investigation step
+          prompt: Which item still needs someone to check it?
+          instruction: Select one clue from the handoff message.
+          relatedArtifactIds: [handoff-email]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: device-check
+              label: The unfamiliar device was not checked in inventory
+            - id: manager-online
+              label: Morgan is available in team chat
+            - id: login-watched
+              label: The login alert is being watched
+          requiredOptionIds: [device-check]
+          coachOnFailure: Look for wording that says a check was not finished.
+          successText: You found the unfinished device check.
+        - id: missing-reference
+          title: Spot the missing routine-work detail
+          prompt: What information did the handoff fail to include?
+          instruction: Select one missing reference.
+          relatedArtifactIds: [handoff-email]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: scanner-window
+              label: The approved scanner schedule
+            - id: employee-password
+              label: The employee's password
+            - id: alert-color
+              label: The alert dashboard color
+          requiredOptionIds: [scanner-window]
+          coachOnFailure: Routine alerts need a trusted schedule or procedure before closure.
+          successText: You noticed that the scanner schedule reference is missing.
+
+    - id: handoff-priority-message
+      eventTemplateId: incomplete_handoff
+      actionId: acknowledge_handoff
+      systemId: team_chat
+      kind: choose_response
+      title: Tell Morgan your starting plan
+      whyItMatters: Analysts name their priority so teammates know what is covered.
+      steps:
+        - id: choose-priority
+          title: Choose a clear handoff reply
+          prompt: Which message keeps ownership and starts with the highest-risk work?
+          instruction: Pick one reply to send Morgan.
+          relatedArtifactIds: [handoff-email, chat-morgan]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: login-first-watch-routine
+              label: I will investigate the unfamiliar login first and watch for the routine scanner alert.
+            - id: close-everything
+              label: I will close both alerts now because the last analyst mentioned them.
+            - id: manager-does-it
+              label: Please take both items while I wait for more instructions.
+          requiredOptionIds: [login-first-watch-routine]
+          coachOnFailure: Keep ownership, start with higher risk, and leave routine work open until checked.
+          successText: Morgan knows your priority and what you are watching next.
+
+    - id: login-alert-compare
+      eventTemplateId: suspicious_login
+      actionId: review_alert
+      systemId: alert_dashboard
+      kind: compare_records
+      title: Read the alert signal
+      whyItMatters: One detail rarely proves anything. Analysts combine signals before deciding.
+      steps:
+        - id: alert-sequence
+          title: Reconstruct what happened
+          prompt: Which sequence made this alert worth investigating?
+          instruction: Select the event sequence shown in the alert.
+          relatedArtifactIds: [suspicious-login-alert]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: failures-then-success
+              label: Six failed checks, then one successful login
+            - id: one-normal-login
+              label: One normal login from headquarters
+            - id: password-reset
+              label: A password reset followed by no login
+          requiredOptionIds: [failures-then-success]
+          coachOnFailure: Read the order of events, not only the location.
+          successText: You identified the unusual failed-then-successful sequence.
+        - id: alert-uncertainty
+          title: Separate signal from proof
+          prompt: Which detail needs more context before it can support a decision?
+          instruction: Select one uncertain detail.
+          relatedArtifactIds: [suspicious-login-alert]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: geo-hint
+              label: The Montreal location hint
+              detail: Location estimates can be incomplete or wrong.
+            - id: alert-id
+              label: The alert number A-1042
+            - id: priority-label
+              label: The dashboard says high priority
+          requiredOptionIds: [geo-hint]
+          coachOnFailure: Find the clue that is useful but not reliable enough by itself.
+          successText: You kept the location as a clue instead of treating it as proof.
+
+    - id: login-context-clues
+      eventTemplateId: suspicious_login
+      actionId: inspect_login_context
+      systemId: alert_dashboard
+      kind: select_clues
+      title: Find the strongest context clues
+      whyItMatters: Device and network context help analysts judge whether a login fits normal use.
+      steps:
+        - id: context-clues
+          title: Mark details that need follow-up
+          prompt: Which two details make this session different from known activity?
+          instruction: Select exactly two clues.
+          relatedArtifactIds: [login-context-1, suspicious-login-alert]
+          minSelections: 2
+          maxSelections: 2
+          options:
+            - id: unknown-windows-device
+              label: The session used unknown-laptop-17 with Windows
+            - id: new-residential-network
+              label: No successful login from this residential network appeared in 90 days
+            - id: chrome-browser
+              label: The browser was Chrome
+            - id: morning-time
+              label: The event happened in the morning
+          requiredOptionIds: [unknown-windows-device, new-residential-network]
+          coachOnFailure: Compare what is new for this account, not what is common for many users.
+          successText: You isolated the new device and network as follow-up clues.
+
+    - id: account-pattern-compare
+      eventTemplateId: suspicious_login
+      actionId: inspect_account_history
+      systemId: alert_dashboard
+      kind: compare_records
+      title: Compare the account's normal pattern
+      whyItMatters: A baseline is the account's usual pattern. It makes unusual activity easier to see.
+      steps:
+        - id: usual-pattern
+          title: Build the normal baseline
+          prompt: Which combination describes J. Patel's usual sign-ins?
+          instruction: Select two normal-pattern details.
+          relatedArtifactIds: [account-history-1, login-context-1]
+          minSelections: 2
+          maxSelections: 2
+          options:
+            - id: hq-wifi
+              label: Headquarters Wi-Fi on weekdays
+            - id: enrolled-macbook
+              label: An enrolled MacBook
+            - id: unknown-windows
+              label: An unknown Windows laptop
+            - id: residential-asn
+              label: A new residential internet provider
+          requiredOptionIds: [hq-wifi, enrolled-macbook]
+          coachOnFailure: Use the history record to find repeated, known behavior.
+          successText: You built a useful baseline from the account history.
+        - id: difference
+          title: State the meaningful difference
+          prompt: Which sentence best compares the flagged login with the baseline?
+          instruction: Pick one comparison.
+          relatedArtifactIds: [account-history-1, login-context-1]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: device-and-network-differ
+              label: Both the device and network differ from the usual pattern.
+            - id: browser-proves-attack
+              label: Chrome proves the login was an attack.
+            - id: city-matches-office
+              label: Montreal matches the Toronto office pattern.
+          requiredOptionIds: [device-and-network-differ]
+          coachOnFailure: Compare device and network facts without claiming they prove an attack.
+          successText: You explained the difference without overstating the evidence.
+
+    - id: device-owner-match
+      eventTemplateId: suspicious_login
+      actionId: check_device_inventory
+      systemId: knowledge_base
+      kind: match_reference
+      title: Match the device to inventory
+      whyItMatters: Inventory shows which devices the organization recognizes and manages.
+      steps:
+        - id: inventory-match
+          title: Check device ownership
+          prompt: What does inventory say about unknown-laptop-17?
+          instruction: Match the alert device to the inventory record.
+          relatedArtifactIds: [device-inventory-1, login-context-1]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: not-enrolled
+              label: It is not enrolled and has never checked in
+            - id: assigned-macbook
+              label: It is J. Patel's assigned corporate MacBook
+            - id: assigned-phone
+              label: It is J. Patel's corporate phone
+          requiredOptionIds: [not-enrolled]
+          coachOnFailure: Match the exact device name, not only the employee name.
+          successText: You confirmed the alert came from an unmanaged device.
+        - id: owner-reply
+          title: Use the employee's reply
+          prompt: What new fact strengthens the reason to escalate?
+          instruction: Select what the employee confirmed.
+          relatedArtifactIds: [employee-login-reply]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: denied-login
+              label: J. Patel was not traveling and did not use a Windows laptop
+            - id: forgot-password
+              label: J. Patel forgot the account password
+            - id: approved-device
+              label: J. Patel approved unknown-laptop-17
+          requiredOptionIds: [denied-login]
+          coachOnFailure: Read the reply for what the account owner directly confirmed.
+          successText: You added the account owner's denial to the evidence.
+
+    - id: login-ticket-summary
+      eventTemplateId: suspicious_login
+      actionId: document_ticket
+      systemId: ticket_queue
+      kind: build_summary
+      title: Build an investigation note
+      whyItMatters: Clear notes let the next analyst act without repeating your work.
+      steps:
+        - id: summary-evidence
+          title: Choose evidence
+          prompt: Which two facts belong in the ticket?
+          instruction: Select exactly two verified facts.
+          relatedArtifactIds: [suspicious-login-alert, device-inventory-1]
+          minSelections: 2
+          maxSelections: 2
+          options:
+            - id: failed-then-success
+              label: Six failed challenges were followed by a successful login
+            - id: unmanaged-device
+              label: unknown-laptop-17 is not enrolled
+            - id: definite-attacker
+              label: A hacker definitely owns the account
+            - id: montreal-proof
+              label: Montreal alone proves misuse
+          requiredOptionIds: [failed-then-success, unmanaged-device]
+          coachOnFailure: Include verified records, not guesses or conclusions stated as facts.
+          successText: Your note now contains two verified facts.
+        - id: summary-uncertainty
+          title: Record uncertainty and confirmation
+          prompt: Which statement accurately adds the employee response?
+          instruction: Select one careful statement.
+          relatedArtifactIds: [employee-login-reply]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: employee-denial
+              label: J. Patel reports no travel and no use of a Windows laptop; identity misuse is suspected, not yet proven.
+            - id: employee-proves-attacker
+              label: J. Patel's reply proves who performed the login.
+            - id: ignore-reply
+              label: Employee confirmation should not be included.
+          requiredOptionIds: [employee-denial]
+          coachOnFailure: Record what the employee said and keep the conclusion appropriately uncertain.
+          successText: Your note separates confirmed information from the working conclusion.
+        - id: summary-next-step
+          title: Add the next step
+          prompt: What should the ticket request next?
+          instruction: Select one professional next step.
+          relatedArtifactIds: [ticket-suspicious-login]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: escalate-evidence
+              label: Escalate for account containment review with the evidence attached
+            - id: delete-account
+              label: Delete the employee account immediately
+            - id: close-no-reason
+              label: Close the alert without further action
+          requiredOptionIds: [escalate-evidence]
+          coachOnFailure: Choose a reversible next step that gives a senior analyst the reviewed evidence.
+          successText: Ticket is ready for evidence-based escalation.
+
+    - id: scanner-alert-compare
+      eventTemplateId: routine_alert_review
+      actionId: review_alert
+      systemId: alert_dashboard
+      kind: compare_records
+      title: Triage the new scanner alert
+      whyItMatters: Interruptions need quick priority checks before they take over the main case.
+      steps:
+        - id: scanner-identity
+          title: Identify the source and target
+          prompt: Which two details should be checked against the approved schedule?
+          instruction: Select the scanner name and affected network.
+          relatedArtifactIds: [scanner-alert]
+          minSelections: 2
+          maxSelections: 2
+          options:
+            - id: scanner-name
+              label: Scanner vuln-scan-03
+            - id: finance-network
+              label: Finance network
+            - id: alert-number
+              label: Alert number A-1180
+            - id: low-color
+              label: Low-priority dashboard color
+          requiredOptionIds: [scanner-name, finance-network]
+          coachOnFailure: Match operational facts—who generated traffic and where it went.
+          successText: You captured the details needed for a schedule check.
+
+    - id: scanner-window-match
+      eventTemplateId: routine_alert_review
+      actionId: search_knowledge_base
+      systemId: knowledge_base
+      kind: match_reference
+      title: Check the approved scanner window
+      whyItMatters: Trusted change records distinguish expected maintenance from unexplained activity.
+      steps:
+        - id: schedule-match
+          title: Match alert to change calendar
+          prompt: Which approved record matches this alert?
+          instruction: Select one schedule entry.
+          relatedArtifactIds: [scanner-alert, scanner-window]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: matching-window
+              label: vuln-scan-03 · Monday 10:00–12:00 · finance network
+            - id: wrong-system
+              label: backup-night · daily 02:00–04:00 · storage network
+            - id: no-schedule
+              label: No approved scanner schedule exists
+          requiredOptionIds: [matching-window]
+          coachOnFailure: Match scanner name, time window, and target network together.
+          successText: Alert matches the approved scanner window.
+
+    - id: scanner-ticket-summary
+      eventTemplateId: routine_alert_review
+      actionId: document_ticket
+      systemId: ticket_queue
+      kind: build_summary
+      title: Document why routine work is safe to close
+      whyItMatters: Even expected alerts need a record showing what was checked.
+      steps:
+        - id: scanner-evidence
+          title: Record the match
+          prompt: Which evidence supports expected activity?
+          instruction: Select two matching facts.
+          relatedArtifactIds: [scanner-alert, scanner-window]
+          minSelections: 2
+          maxSelections: 2
+          options:
+            - id: scanner-matches
+              label: The scanner name matches vuln-scan-03
+            - id: scope-matches
+              label: Time and finance network match the approved window
+            - id: priority-proves-safe
+              label: Low priority alone proves the alert is safe
+            - id: handoff-proves-safe
+              label: The handoff alone proves the alert is safe
+          requiredOptionIds: [scanner-matches, scope-matches]
+          coachOnFailure: Use matching source, time, and scope—not priority or someone else's assumption.
+          successText: Your note records the trusted schedule match.
+        - id: scanner-decision
+          title: State the closure reason
+          prompt: Which conclusion fits the evidence?
+          instruction: Select one closure note.
+          relatedArtifactIds: [scanner-alert, scanner-window]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: expected-close
+              label: Activity matches the approved scan; close as expected and return to the login case.
+            - id: attack-close
+              label: This was an attack, but close it anyway.
+            - id: unexplained-close
+              label: Cause is unknown; close without recording why.
+          requiredOptionIds: [expected-close]
+          coachOnFailure: Closure should say what matched and avoid unsupported claims.
+          successText: Routine alert is documented and ready to close.
+
+  notifications:
+    - id: routine-scanner-arrived
+      eventTemplateId: routine_alert_review
+      systemId: alert_dashboard
+      title: New low-priority scanner alert
+      body: A routine-looking alert arrived while you were investigating the login. Triage it now, snooze it once, or keep your current view open.
+      priority: low
+      snoozeMinutes: 15
   facts:
     - id: alert-visible
       content: >
@@ -133,7 +530,7 @@ scenario:
       simulatedMinutes: 10
       defaultEffect:
         setKbQueryFromFreeText: true
-        observeArtifactIds: [kb-false-positive-procedure]
+        observeArtifactIds: [scanner-window]
     - id: dismiss_alert
       systemId: alert_dashboard
       label: Dismiss as false positive
@@ -286,6 +683,10 @@ scenario:
           observeArtifactIds: [suspicious-login-alert]
           hidden:
             cognitiveLoad: 1
+        check_device_inventory:
+          observeArtifactIds: [device-inventory-1, employee-login-reply]
+          consequence:
+            description: J. Patel replied that they were not traveling and did not use a Windows laptop.
         dismiss_alert:
           resolve: true
           resolution: Dismissed before the available evidence was fully developed.
@@ -317,8 +718,8 @@ scenario:
 
     routine_alert_review:
       instanceId: routine-alert-1
-      title: Routine service-account alert
-      summary: A known automation account generated a low-severity authentication alert.
+      title: Expected scanner activity
+      summary: A vulnerability scanner generated a routine connection alert during a possible approved window.
       priority: low
       systemId: alert_dashboard
       triggerAt: 25
@@ -338,84 +739,9 @@ scenario:
           - dismiss_alert
       actionEffects:
         review_alert:
-          observeArtifactIds: [routine-alert]
-          hidden:
-            cognitiveLoad: 1
-        dismiss_alert:
-          resolve: true
-          resolution: Reviewed, documented, and closed as expected activity.
-          consequence:
-            description: The reviewed routine alert was documented and closed as expected activity.
-          hidden:
-            taskBacklog: -1
-
-    phishing_report:
-      instanceId: phishing-report-1
-      title: Employee phishing report
-      summary: >
-        An employee reported a benefits-themed message with an unfamiliar sign-in link.
-      priority: high
-      systemId: email
-      triggerAt: 55
-      deadlineMinutes: 260
-      initialStatus: pending
-      managerGuidance: >
-        Morgan recommends preserving the message, checking headers and the link with
-        approved tools, containing matches, and updating the reporter.
-      progression:
-        kind: linear
-        allowManager: true
-        utilityActions: [update_ticket_notes]
-        sequence:
-          - open_phishing_report
-          - inspect_email_headers
-          - check_link_destination
-          - quarantine_message
-          - notify_reporter
-          - document_ticket
-      actionEffects:
-        document_ticket:
-          setTicketNotesFromFreeText: true
-          resolve: true
-          resolution: The message was analyzed, contained, communicated, and documented.
-          emitEventResolved: true
-          consequence:
-            description: >
-              The {{eventTitle}} ticket now records the evidence, reasoning, and next step.
-          hidden:
-            taskBacklog: -1
-
-    false_positive:
-      instanceId: false-positive-1
-      title: Expected scanner activity
-      summary: >
-        A vulnerability scanner triggered a routine connection alert during its approved window.
-      priority: low
-      systemId: alert_dashboard
-      triggerAt: 100
-      deadlineMinutes: 300
-      initialStatus: pending
-      managerGuidance: >
-        Morgan recommends checking the approved activity window and documenting why
-        the alert can be closed.
-      progression:
-        kind: linear
-        allowManager: true
-        utilityActions: [update_ticket_notes]
-        sequence:
-          - review_alert
-          - inspect_login_context
-          - document_ticket
-          - dismiss_alert
-      actionEffects:
-        review_alert:
           observeArtifactIds: [scanner-alert]
           hidden:
             cognitiveLoad: 1
-        inspect_login_context:
-          observeArtifactIds: [scanner-window]
-          hidden:
-            accuracy: 1
         dismiss_alert:
           resolve: true
           resolution: Reviewed, documented, and closed as expected activity.
@@ -434,7 +760,8 @@ scenario:
         Source IP 203.0.113.44 reported 6 failed MFA challenges followed by one successful
         password login for j.patel@example.com at 07:41. Geo hint: Montreal metro.
       eventIds: [suspicious-login-1]
-      relatedArtifactIds: [login-context-1, account-history-1, device-inventory-1]
+      relatedArtifactIds:
+        [login-context-1, account-history-1, device-inventory-1]
       searchableText: unfamiliar login montreal failures MFA
       metadata:
         severity: high
@@ -477,66 +804,20 @@ scenario:
       summary: From night analyst · inbox
       body: >
         Still watching the unfamiliar login thread. Did not finish device inventory check.
-        Routine service-account noise usually clears after procedure review. Ping Morgan if
-        the login expands.
+        A routine scanner alert may appear, but I forgot to include the approved schedule
+        reference. Ping Morgan if the login expands.
       eventIds: [handoff-1]
       searchableText: handoff incomplete login routine
-    - id: routine-alert
-      systemId: alert_dashboard
-      kind: alert
-      title: Service-account authentication alert
-      summary: Alert A-1108 · low priority
-      body: >
-        svc-backup-night triggered a low-severity authentication anomaly during its
-        approved 02:00–04:00 window. Similar alerts closed as expected last week.
-      eventIds: [routine-alert-1]
-      relatedArtifactIds: [kb-false-positive-procedure]
-      searchableText: svc-backup-night expected window
-      metadata:
-        severity: low
-        alertId: A-1108
-    - id: kb-false-positive-procedure
-      systemId: knowledge_base
-      kind: kb_document
-      title: Closing expected automation alerts
-      summary: Approved procedure · SOC knowledge base
-      body: >
-        Confirm the service account, approved maintenance window, and prior similar
-        closures. Document the reasoning in the ticket before dismissing.
-      eventIds: [routine-alert-1, false-positive-1]
-      searchableText: automation expected window dismiss procedure
-    - id: phishing-email-1
+    - id: employee-login-reply
       systemId: email
       kind: email
-      title: Benefits enrollment verification
-      summary: Reported by employee · quarantine pending
+      title: "Re: Was this login yours?"
+      summary: Reply from J. Patel
       body: >
-        Please verify your benefits enrollment before Friday using the secure portal link.
-        Reply-to differs from the display name domain.
-      eventIds: [phishing-report-1]
-      relatedArtifactIds: [phishing-headers-1, phishing-link-1]
-      searchableText: benefits enrollment phishing
-    - id: phishing-headers-1
-      systemId: email
-      kind: email
-      title: Message headers · benefits report
-      summary: Authentication and routing details
-      body: >
-        From: Benefits Desk <noreply@benefits-helpdesk.net>
-        Reply-To: accounts@secure-update-mail.net
-        SPF: fail · DKIM: fail · DMARC: fail
-      eventIds: [phishing-report-1]
-      searchableText: SPF DKIM DMARC fail reply-to
-    - id: phishing-link-1
-      systemId: alert_dashboard
-      kind: alert
-      title: Link destination analysis
-      summary: Safe browser inspection result
-      body: >
-        Displayed URL looks like the benefits portal. Resolved host is
-        login-update-secure.net with a recently registered certificate unrelated to HR.
-      eventIds: [phishing-report-1]
-      searchableText: login-update-secure.net certificate
+        No. I am not traveling, and I did not use a Windows laptop this morning.
+        My work MacBook and phone are both with me.
+      eventIds: [suspicious-login-1]
+      searchableText: employee reply no travel windows laptop
     - id: scanner-alert
       systemId: alert_dashboard
       kind: alert
@@ -545,7 +826,7 @@ scenario:
       body: >
         Vulnerability scanner vuln-scan-03 opened connections across the finance VLAN
         during the published scanning window.
-      eventIds: [false-positive-1]
+      eventIds: [routine-alert-1]
       relatedArtifactIds: [scanner-window]
       searchableText: vuln-scan finance VLAN
     - id: scanner-window
@@ -556,7 +837,7 @@ scenario:
       body: >
         vuln-scan-03 is approved Mondays 10:00–12:00 for finance VLAN discovery.
         Close matching alerts after documenting the window reference.
-      eventIds: [false-positive-1]
+      eventIds: [routine-alert-1]
       searchableText: approved scanner window finance
     - id: chat-morgan
       systemId: team_chat

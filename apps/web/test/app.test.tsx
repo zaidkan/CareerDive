@@ -7,11 +7,7 @@ import type { ClientView, Debrief } from "@sim/schemas";
 import { App, AccessibleMode, DebriefView, WorkSurface } from "../src/index.js";
 
 vi.mock("../src/world/RoomCanvas.js", () => ({
-  RoomCanvas: ({
-    onInteract,
-  }: {
-    onInteract: (id: string) => void;
-  }) => (
+  RoomCanvas: ({ onInteract }: { onInteract: (id: string) => void }) => (
     <div>
       <button
         type="button"
@@ -101,7 +97,119 @@ const view: ClientView = {
   notifications: [],
 };
 
+const clientInteractionStubs = {
+  submitTaskAttempt: () =>
+    Promise.resolve({
+      view,
+      accepted: true,
+      completed: true,
+      feedback: "Done.",
+    }),
+  respondToNotification: () => Promise.resolve(view),
+};
+
 describe("parallel simulation views", () => {
+  it("renders a real work task with guided retry in both views", async () => {
+    const user = userEvent.setup();
+    const inspectAction = view.availableActions[0];
+    if (!inspectAction) throw new Error("Expected inspect action fixture");
+    const onTaskAttempt = vi.fn().mockResolvedValue({
+      accepted: false,
+      completed: false,
+      feedback: "Compare what is new for this account.",
+    });
+    const taskView: ClientView = {
+      ...view,
+      availableActions: [
+        {
+          ...inspectAction,
+          taskId: "login-context-clues",
+        },
+      ],
+      tasks: [
+        {
+          id: "login-context-clues",
+          eventId: "suspicious-login-1",
+          actionId: "inspect_login_context",
+          systemId: "alert_dashboard",
+          kind: "select_clues",
+          title: "Find the strongest context clues",
+          prompt: "Which two details make this session different?",
+          instruction: "Select exactly two clues.",
+          whyItMatters: "Device and network context reveal unusual activity.",
+          relatedArtifactIds: ["suspicious-login-alert"],
+          stepIndex: 0,
+          stepCount: 1,
+          options: [
+            { id: "unknown-device", label: "Unknown Windows device" },
+            { id: "new-network", label: "New residential network" },
+            { id: "chrome", label: "Chrome browser" },
+          ],
+          minSelections: 2,
+          maxSelections: 2,
+        },
+      ],
+    };
+
+    render(
+      <WorkSurface
+        onAction={() => undefined}
+        onTaskAttempt={onTaskAttempt}
+        view={taskView}
+      />,
+    );
+    expect(
+      screen.getByRole("heading", { name: "Find the strongest context clues" }),
+    ).toBeVisible();
+    expect(screen.getByText(/why this matters/i)).toBeVisible();
+    await user.click(screen.getByLabelText("Unknown Windows device"));
+    await user.click(screen.getByLabelText("Chrome browser"));
+    await user.click(screen.getByRole("button", { name: /check my work/i }));
+
+    expect(onTaskAttempt).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "login-context-clues" }),
+      ["unknown-device", "chrome"],
+    );
+    expect(await screen.findByText(/Compare what is new/i)).toBeVisible();
+  });
+
+  it("keeps current cases visible and handles interruption choices", async () => {
+    const user = userEvent.setup();
+    const onNotification = vi.fn().mockResolvedValue(undefined);
+    const interrupted: ClientView = {
+      ...view,
+      notifications: [
+        {
+          id: "routine-scanner-arrived",
+          eventId: "suspicious-login-1",
+          systemId: "alert_dashboard",
+          title: "New low-priority scanner alert",
+          body: "Routine work arrived while you investigated the login.",
+          priority: "low",
+          status: "unread",
+          canSnooze: true,
+        },
+      ],
+    };
+    render(
+      <WorkSurface
+        onAction={() => undefined}
+        onNotification={onNotification}
+        view={interrupted}
+      />,
+    );
+
+    expect(
+      screen.getByRole("complementary", { name: "Current shift" }),
+    ).toBeVisible();
+    expect(screen.getByRole("status", { name: /new work/i })).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Snooze 15 minutes" }));
+    expect(onNotification).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "routine-scanner-arrived" }),
+      "snooze",
+    );
+  });
+
   it("renders identical action ids in work surface and accessible mode", () => {
     const onAction = () => undefined;
     const work = render(<WorkSurface view={view} onAction={onAction} />);
@@ -131,7 +239,7 @@ describe("parallel simulation views", () => {
       />,
     );
 
-    await user.tab();
+    screen.getByRole("button", { name: /Inspect login context/i }).focus();
     await user.keyboard("{Enter}");
 
     expect(selected).toBe("inspect_login_context");
@@ -197,9 +305,7 @@ describe("parallel simulation views", () => {
     render(<WorkSurface view={workplaceView} onAction={() => undefined} />);
     const systems = screen.getByRole("navigation", { name: "Work systems" });
     expect(systems).toBeVisible();
-    await user.click(
-      within(systems).getByRole("button", { name: /Email/i }),
-    );
+    await user.click(within(systems).getByRole("button", { name: /Email/i }));
 
     expect(
       screen.getByRole("heading", { name: "Shift handoff" }),
@@ -279,6 +385,7 @@ describe("tutorial and debrief", () => {
   it("starts with a separate practice session before assessed play", async () => {
     const calls: Array<{ sessionKind: string; pacingMode: string }> = [];
     const client = {
+      ...clientInteractionStubs,
       createSession: (input: {
         seed: number;
         sessionKind: "tutorial" | "assessed";
@@ -321,6 +428,7 @@ describe("tutorial and debrief", () => {
   it("does not ask for desk work before the player reaches the desk", async () => {
     const user = userEvent.setup();
     const client = {
+      ...clientInteractionStubs,
       createSession: () => Promise.resolve({ sessionId: "session-1", view }),
       performAction: () => Promise.resolve(view),
       getDebrief: () => Promise.reject(new Error("not needed")),
@@ -340,6 +448,7 @@ describe("tutorial and debrief", () => {
   it("labels tutorial as practice for the structured path", async () => {
     const user = userEvent.setup();
     const client = {
+      ...clientInteractionStubs,
       createSession: () => Promise.resolve({ sessionId: "session-1", view }),
       performAction: () => Promise.resolve(view),
       getDebrief: () => Promise.reject(new Error("not needed")),
@@ -356,12 +465,15 @@ describe("tutorial and debrief", () => {
     expect(
       await screen.findByText(/Head to Security Operations/i),
     ).toBeVisible();
-    expect(screen.getByText(/Go here next — gold door on the plan/i)).toBeVisible();
+    expect(
+      screen.getByText(/Go here next — gold door on the plan/i),
+    ).toBeVisible();
   });
 
   it("welcomes the user into the shift before opening the workstation", async () => {
     const user = userEvent.setup();
     const client = {
+      ...clientInteractionStubs,
       createSession: () => Promise.resolve({ sessionId: "session-1", view }),
       performAction: () => Promise.resolve(view),
       getDebrief: () => Promise.reject(new Error("not needed")),
@@ -422,6 +534,7 @@ describe("tutorial and debrief", () => {
       ],
     };
     const client = {
+      ...clientInteractionStubs,
       createSession: () =>
         Promise.resolve({ sessionId: "session-1", view: askView }),
       performAction: () => Promise.resolve(consultedView),
@@ -439,7 +552,11 @@ describe("tutorial and debrief", () => {
       screen.getByRole("button", { name: /Security Operations/i }),
     );
     await user.click(
-      await screen.findByRole("button", { name: /Sit at desk/i }, { timeout: 6000 }),
+      await screen.findByRole(
+        "button",
+        { name: /Sit at desk/i },
+        { timeout: 6000 },
+      ),
     );
     await user.type(screen.getByLabelText(/Username/i), "day1.analyst");
     await user.type(screen.getByLabelText(/Password/i), "FirstDay!");

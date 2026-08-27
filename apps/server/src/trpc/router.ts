@@ -1,6 +1,12 @@
 import { randomUUID } from "node:crypto";
 import type { LlmProvider } from "@sim/ai";
-import { applyAction, createInitialWorldState, toClientView } from "@sim/core";
+import {
+  applyAction,
+  applyTaskAttempt,
+  createInitialWorldState,
+  respondToNotification,
+  toClientView,
+} from "@sim/core";
 import { buildDebrief, evidenceFromAction } from "@sim/evidence";
 import { deterministicInputSafety, validateUserFacingText } from "@sim/safety";
 import {
@@ -8,8 +14,10 @@ import {
   DebriefSchema,
   DomainEffectSchema,
   EvidenceSignalSchema,
+  NotificationResponseSchema,
   ReflectionSchema,
   SimulationActionIdSchema,
+  TaskAttemptSchema,
   type CareerPack,
 } from "@sim/schemas";
 import { z } from "zod";
@@ -110,7 +118,7 @@ export function createAppRouter(
           session.state = turn.state;
           session.actionLog.push({
             sequence,
-            action,
+            interaction: { type: "action", action },
           });
           if (session.state.sessionKind === "assessed") {
             session.evidence.push(
@@ -127,6 +135,96 @@ export function createAppRouter(
             sequence,
             effects: turn.effects,
           };
+        }),
+      submitTaskAttempt: authenticatedProcedure
+        .input(
+          SessionIdSchema.extend({
+            taskId: TaskAttemptSchema.shape.taskId,
+            eventId: TaskAttemptSchema.shape.eventId,
+            selectedOptionIds: TaskAttemptSchema.shape.selectedOptionIds,
+          }),
+        )
+        .output(
+          z.object({
+            view: ClientViewSchema,
+            sequence: z.number().int().positive(),
+            effects: z.array(DomainEffectSchema),
+            accepted: z.boolean(),
+            completed: z.boolean(),
+            feedback: z.string(),
+          }),
+        )
+        .mutation(async ({ ctx, input }) => {
+          const session = await repository.getSession(
+            ctx.userId,
+            input.sessionId,
+          );
+          const attempt = {
+            taskId: input.taskId,
+            eventId: input.eventId,
+            selectedOptionIds: input.selectedOptionIds,
+          };
+          const task = session.state.rules.tasks[input.taskId];
+          const turn = applyTaskAttempt(session.state, attempt);
+          const sequence = session.actionLog.length + 1;
+          session.state = turn.state;
+          session.actionLog.push({
+            sequence,
+            interaction: { type: "task_attempt", attempt },
+          });
+          if (
+            turn.completed &&
+            task &&
+            session.state.sessionKind === "assessed"
+          ) {
+            session.evidence.push(
+              evidenceFromAction({
+                state: session.state,
+                actionId: task.actionId,
+                eventId: input.eventId,
+              }),
+            );
+          }
+          await repository.saveSession(session);
+          return {
+            view: toClientView(session.state),
+            sequence,
+            effects: turn.effects,
+            accepted: turn.accepted,
+            completed: turn.completed,
+            feedback: turn.feedback,
+          };
+        }),
+      respondToNotification: authenticatedProcedure
+        .input(
+          SessionIdSchema.extend({
+            notificationId: NotificationResponseSchema.shape.notificationId,
+            response: NotificationResponseSchema.shape.response,
+          }),
+        )
+        .output(
+          z.object({
+            view: ClientViewSchema,
+            sequence: z.number().int().positive(),
+          }),
+        )
+        .mutation(async ({ ctx, input }) => {
+          const session = await repository.getSession(
+            ctx.userId,
+            input.sessionId,
+          );
+          const response = {
+            notificationId: input.notificationId,
+            response: input.response,
+          };
+          session.state = respondToNotification(session.state, response);
+          const sequence = session.actionLog.length + 1;
+          session.actionLog.push({
+            sequence,
+            interaction: { type: "notification_response", response },
+          });
+          await repository.saveSession(session);
+          return { view: toClientView(session.state), sequence };
         }),
       submitFreeText: authenticatedProcedure
         .input(SessionIdSchema.extend({ text: z.string().max(2_000) }))

@@ -4,27 +4,39 @@ import { SystemToolPanel } from "../../components/SystemToolPanel.js";
 import type { ShiftGuidance } from "../../guidance.js";
 import { systemLabel } from "../../systems.js";
 import { deriveSystemState } from "../../workstation.js";
+import type { TaskAttemptHandler } from "../../components/shared.js";
+import { useEffect } from "react";
 
 export function SystemApp({
   view,
   systemId,
   onAction,
+  onTaskAttempt,
+  focusEventId,
   guidance,
   guided,
 }: {
   view: ClientView;
   systemId: WorkSystemId;
   onAction: (action: AvailableAction, freeText?: string) => void;
+  onTaskAttempt?: TaskAttemptHandler;
+  focusEventId?: string;
   guidance: ShiftGuidance | null;
   guided?: boolean;
 }) {
   const [selectedEventId, setSelectedEventId] = useState<string>();
+  useEffect(() => {
+    if (focusEventId) setSelectedEventId(focusEventId);
+  }, [focusEventId]);
   const { systemEvents, selectedEvent, contextualActions, highlightActionId } =
     deriveSystemState(view, systemId, { selectedEventId, guidance });
 
   return (
     <div className="desk-os-system">
-      <aside className="desk-os-queue" aria-label={`${systemLabel(systemId)} items`}>
+      <aside
+        className="desk-os-queue"
+        aria-label={`${systemLabel(systemId)} items`}
+      >
         <p className="eyebrow">{systemLabel(systemId)}</p>
         {systemEvents.length === 0 ? (
           <p className="desk-os-empty">Nothing here right now.</p>
@@ -64,6 +76,7 @@ export function SystemApp({
               actions={contextualActions}
               {...(highlightActionId ? { highlightActionId } : {})}
               onAction={onAction}
+              {...(onTaskAttempt ? { onTaskAttempt } : {})}
               selectedEventId={selectedEvent.id}
               systemId={systemId}
               view={view}
@@ -81,6 +94,7 @@ export function SystemApp({
               actions={contextualActions}
               {...(highlightActionId ? { highlightActionId } : {})}
               onAction={onAction}
+              {...(onTaskAttempt ? { onTaskAttempt } : {})}
               systemId={systemId}
               view={view}
             />

@@ -30,13 +30,18 @@ import {
   shouldPublishEnergy,
   subscribeEnergy,
 } from "./energy.js";
-import {
-  INITIAL_SPATIAL,
-  reduceSpatialEvent,
-} from "./presentation.js";
+import { INITIAL_SPATIAL, reduceSpatialEvent } from "./presentation.js";
 import { nextJulesLine } from "./rooms/GlassBreakNook.js";
-import { isTypingTarget, useFullscreen, DESK_OS_FILL_EVENT } from "./useFullscreen.js";
+import {
+  isTypingTarget,
+  useFullscreen,
+  DESK_OS_FILL_EVENT,
+} from "./useFullscreen.js";
 import type { HotspotId } from "./worldTypes.js";
+import type {
+  NotificationHandler,
+  TaskAttemptHandler,
+} from "../components/shared.js";
 
 const RoomCanvas = lazy(async () => {
   const mod = await import("./RoomCanvas.js");
@@ -94,10 +99,14 @@ function EnergyMeter() {
 export function SpatialShell({
   view,
   onAction,
+  onTaskAttempt,
+  onNotification,
   guided = false,
 }: {
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
+  onTaskAttempt?: TaskAttemptHandler;
+  onNotification?: NotificationHandler;
   guided?: boolean;
 }) {
   const [spatial, dispatch] = useReducer(reduceSpatialEvent, INITIAL_SPATIAL);
@@ -111,7 +120,8 @@ export function SpatialShell({
   const energyPublishElapsedRef = useRef(0);
   const seatedRef = useRef(false);
   const sleepingRef = useRef(false);
-  const { active: fullscreen, toggle: toggleFullscreen } = useFullscreen(stageRef);
+  const { active: fullscreen, toggle: toggleFullscreen } =
+    useFullscreen(stageRef);
 
   useEffect(() => {
     setEnergySnapshot(energyRef.current);
@@ -159,57 +169,63 @@ export function SpatialShell({
     setEnergy(next);
   }, []);
 
-  const sipOrSnack = useCallback((amount: number, restoredMessage: string) => {
-    if (energyRef.current >= ENERGY_MAX - 0.5) {
-      dispatch({ type: "set_flavor", message: ALREADY_FED });
-      return;
-    }
-    applyEnergy(restoreEnergy(energyRef.current, amount));
-    dispatch({ type: "set_flavor", message: restoredMessage });
-  }, [applyEnergy]);
+  const sipOrSnack = useCallback(
+    (amount: number, restoredMessage: string) => {
+      if (energyRef.current >= ENERGY_MAX - 0.5) {
+        dispatch({ type: "set_flavor", message: ALREADY_FED });
+        return;
+      }
+      applyEnergy(restoreEnergy(energyRef.current, amount));
+      dispatch({ type: "set_flavor", message: restoredMessage });
+    },
+    [applyEnergy],
+  );
 
-  const handleInteract = useCallback((id: HotspotId) => {
-    if (sleepingRef.current) return;
-    switch (id) {
-      case "desk_player":
-        dispatch({ type: "sit_desk" });
-        break;
-      case "door_exit":
-        dispatch({ type: "leave_room" });
-        break;
-      case "break_door":
-        window.dispatchEvent(new Event("soc-break-door"));
-        {
+  const handleInteract = useCallback(
+    (id: HotspotId) => {
+      if (sleepingRef.current) return;
+      switch (id) {
+        case "desk_player":
+          dispatch({ type: "sit_desk" });
+          break;
+        case "door_exit":
+          dispatch({ type: "leave_room" });
+          break;
+        case "break_door":
+          window.dispatchEvent(new Event("soc-break-door"));
+          {
+            const message = FLAVOR[id];
+            if (message) dispatch({ type: "set_flavor", message });
+          }
+          break;
+        case "jules": {
+          const { line, nextIndex } = nextJulesLine(julesLine.current);
+          julesLine.current = nextIndex;
+          dispatch({ type: "set_flavor", message: `Jules: “${line}”` });
+          break;
+        }
+        case "coffee":
+          sipOrSnack(COFFEE_RESTORE, COFFEE_SIP);
+          break;
+        case "snack":
+          sipOrSnack(BAR_RESTORE, BAR_BITE);
+          break;
+        /** The drawer sliding open is the whole feedback — no caption needed. */
+        case "storage":
+          window.dispatchEvent(new Event("soc-storage"));
+          break;
+        case "alert_wall":
+        case "morgan_station": {
           const message = FLAVOR[id];
           if (message) dispatch({ type: "set_flavor", message });
+          break;
         }
-        break;
-      case "jules": {
-        const { line, nextIndex } = nextJulesLine(julesLine.current);
-        julesLine.current = nextIndex;
-        dispatch({ type: "set_flavor", message: `Jules: “${line}”` });
-        break;
+        default:
+          break;
       }
-      case "coffee":
-        sipOrSnack(COFFEE_RESTORE, COFFEE_SIP);
-        break;
-      case "snack":
-        sipOrSnack(BAR_RESTORE, BAR_BITE);
-        break;
-      /** The drawer sliding open is the whole feedback — no caption needed. */
-      case "storage":
-        window.dispatchEvent(new Event("soc-storage"));
-        break;
-      case "alert_wall":
-      case "morgan_station": {
-        const message = FLAVOR[id];
-        if (message) dispatch({ type: "set_flavor", message });
-        break;
-      }
-      default:
-        break;
-    }
-  }, [sipOrSnack]);
+    },
+    [sipOrSnack],
+  );
 
   const journey = getJourneyStep({
     phase: spatial.phase,
@@ -241,7 +257,9 @@ export function SpatialShell({
           const prevTone = energyTone(previous);
           const nextTone = energyTone(next);
           const collapsed = didCollapse(previous, next);
-          if (shouldPublishEnergy(energyPublishElapsedRef.current, previous, next)) {
+          if (
+            shouldPublishEnergy(energyPublishElapsedRef.current, previous, next)
+          ) {
             energyPublishElapsedRef.current = 0;
             setEnergySnapshot(next);
           }
@@ -335,8 +353,8 @@ export function SpatialShell({
       : energyLow
         ? "Energy getting low · snack bars are in the east aisle, coffee in the break corner"
         : highlightHotspotId === "desk_player"
-        ? "Your desk · follow the gold marker"
-        : undefined;
+          ? "Your desk · follow the gold marker"
+          : undefined;
 
   return (
     <section
@@ -348,9 +366,7 @@ export function SpatialShell({
         ref={stageRef}
       >
         <Suspense
-          fallback={
-            <p className="room-loading">Entering {roomLabel}…</p>
-          }
+          fallback={<p className="room-loading">Entering {roomLabel}…</p>}
         >
           <RoomCanvas
             enabled={walking && !sleeping}
@@ -366,6 +382,8 @@ export function SpatialShell({
             guided={guided}
             maximized={maximized}
             onAction={onAction}
+            {...(onTaskAttempt ? { onTaskAttempt } : {})}
+            {...(onNotification ? { onNotification } : {})}
             onLoginSuccess={() => {
               dispatch({ type: "login_success" });
             }}
@@ -394,7 +412,9 @@ export function SpatialShell({
                 {COMPANY.name} · {roomLabel} · {stepLabel}
               </p>
               <p className="room-hud-step">{journey.title}</p>
-              <p>{nearbyIsTarget && nearbyPrompt ? nearbyPrompt : journey.body}</p>
+              <p>
+                {nearbyIsTarget && nearbyPrompt ? nearbyPrompt : journey.body}
+              </p>
               {compass ? <p className="room-hud-compass">{compass}</p> : null}
               {!nearbyIsTarget && nearbyPrompt ? (
                 <p className="room-hud-nearby">{nearbyPrompt}</p>
@@ -456,7 +476,8 @@ export function SpatialShell({
               </p>
               {energyLow && !sleeping ? (
                 <p className="room-hud-compass">
-                  Energy low · stand up and follow the gold marker to the snack bars
+                  Energy low · stand up and follow the gold marker to the snack
+                  bars
                 </p>
               ) : null}
               <EnergyMeter />
@@ -475,7 +496,10 @@ export function SpatialShell({
         {sleeping ? (
           <div className="sleep-overlay" role="status">
             <p className="sleep-overlay-title">You fell asleep</p>
-            <p>Morgan is shaking your shoulder. This nap does not skip the shift clock.</p>
+            <p>
+              Morgan is shaking your shoulder. This nap does not skip the shift
+              clock.
+            </p>
           </div>
         ) : null}
       </div>

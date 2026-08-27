@@ -5,11 +5,19 @@ import { CalendarPanel, DashboardHome } from "./DashboardHome.js";
 import { LockScreen } from "./LockScreen.js";
 import { SystemApp } from "./SystemApp.js";
 import { APP_TABS, type DeskOsTab } from "./tabs.js";
+import { CaseRail } from "../../components/CaseRail.js";
+import { NotificationBanner } from "../../components/NotificationBanner.js";
+import type {
+  NotificationHandler,
+  TaskAttemptHandler,
+} from "../../components/shared.js";
 
 export function DeskOs({
   phase,
   view,
   onAction,
+  onTaskAttempt,
+  onNotification,
   guided = false,
   maximized = false,
   osFullscreen = false,
@@ -22,6 +30,8 @@ export function DeskOs({
   phase: "desk_login" | "seated_monitor" | "focus_desk";
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
+  onTaskAttempt?: TaskAttemptHandler;
+  onNotification?: NotificationHandler;
   guided?: boolean;
   maximized?: boolean;
   osFullscreen?: boolean;
@@ -40,6 +50,7 @@ export function DeskOs({
   const [tab, setTab] = useState<DeskOsTab>(
     phase === "desk_login" ? "home" : initialTab,
   );
+  const [focusEventId, setFocusEventId] = useState<string>();
 
   useEffect(() => {
     if (phase !== "desk_login" && guidance?.systemId && guided) {
@@ -77,7 +88,11 @@ export function DeskOs({
             type="button"
           />
         </div>
-        <div className="desk-os-tabs" role="tablist" aria-label="Workstation apps">
+        <div
+          className="desk-os-tabs"
+          role="tablist"
+          aria-label="Workstation apps"
+        >
           {APP_TABS.map((item) => {
             const suggested =
               !locked && guidance?.systemId === item.id && tab !== item.id;
@@ -135,6 +150,27 @@ export function DeskOs({
       </div>
 
       <div className="desk-os-body">
+        {!locked ? (
+          <>
+            <NotificationBanner
+              notifications={view.notifications}
+              onNotification={async (notification, response) => {
+                await onNotification?.(notification, response);
+                if (response === "handle") {
+                  setTab(notification.systemId);
+                  setFocusEventId(notification.eventId);
+                }
+              }}
+            />
+            <CaseRail
+              onResume={({ eventId, systemId }) => {
+                setTab(systemId);
+                setFocusEventId(eventId);
+              }}
+              view={view}
+            />
+          </>
+        ) : null}
         {locked ? (
           <LockScreen onLoginSuccess={onLoginSuccess} onStand={onStand} />
         ) : tab === "home" ? (
@@ -155,6 +191,8 @@ export function DeskOs({
             guidance={guidance}
             guided={guided}
             onAction={onAction}
+            {...(onTaskAttempt ? { onTaskAttempt } : {})}
+            {...(focusEventId ? { focusEventId } : {})}
             systemId={tab}
             view={view}
           />

@@ -10,6 +10,38 @@ import {
   toClientView,
 } from "../src/index.js";
 
+function performRequiredTask(
+  initial: ReturnType<typeof createInitialWorldState>,
+  actionId: Parameters<typeof applyAction>[1]["id"],
+  eventId: string,
+) {
+  let state = initial;
+  const available = toClientView(state).availableActions.find(
+    (action) => action.id === actionId && action.eventId === eventId,
+  );
+  if (!available?.taskId) {
+    return applyAction(state, {
+      id: actionId,
+      eventId,
+      actorId: "user",
+    }).state;
+  }
+  const task = state.rules.tasks[available.taskId];
+  if (!task) throw new Error(`Missing task ${available.taskId}`);
+  while (!state.taskProgress[`${eventId}:${task.id}`]?.completed) {
+    const stepIndex =
+      state.taskProgress[`${eventId}:${task.id}`]?.currentStep ?? 0;
+    const step = task.steps[stepIndex];
+    if (!step) throw new Error(`Missing task step ${String(stepIndex)}`);
+    state = applyTaskAttempt(state, {
+      taskId: task.id,
+      eventId,
+      selectedOptionIds: step.requiredOptionIds,
+    }).state;
+  }
+  return state;
+}
+
 function packWithHandoffTask(): CareerPack {
   const pack = structuredClone(loadDefaultCybersecurityPack());
   pack.scenario.tasks = [
@@ -51,7 +83,8 @@ function packWithHandoffTask(): CareerPack {
             { id: "lunch-menu", label: "Lunch menu" },
           ],
           requiredOptionIds: ["scanner-window"],
-          coachOnFailure: "The routine alert needs an approved schedule reference.",
+          coachOnFailure:
+            "The routine alert needs an approved schedule reference.",
           successText: "You identified the missing schedule reference.",
         },
       ],
@@ -61,12 +94,7 @@ function packWithHandoffTask(): CareerPack {
 }
 
 function world() {
-  return createInitialWorldState(
-    "task-session",
-    42,
-    {},
-    packWithHandoffTask(),
-  );
+  return createInitialWorldState("task-session", 42, {}, packWithHandoffTask());
 }
 
 describe("deterministic work tasks", () => {
@@ -83,7 +111,9 @@ describe("deterministic work tasks", () => {
     expect(turn.feedback).toMatch(/not finished/i);
     expect(turn.state.simClock).toBe(0);
     expect(turn.state.completedActionIds).not.toContain("read_handoff");
-    expect(turn.state.taskProgress["handoff-1:handoff-open-items"]).toMatchObject({
+    expect(
+      turn.state.taskProgress["handoff-1:handoff-open-items"],
+    ).toMatchObject({
       currentStep: 0,
       attempts: 1,
       completed: false,
@@ -99,7 +129,9 @@ describe("deterministic work tasks", () => {
     expect(first.accepted).toBe(true);
     expect(first.completed).toBe(false);
     expect(first.state.simClock).toBe(0);
-    expect(first.state.taskProgress["handoff-1:handoff-open-items"]?.currentStep).toBe(1);
+    expect(
+      first.state.taskProgress["handoff-1:handoff-open-items"]?.currentStep,
+    ).toBe(1);
 
     const second = applyTaskAttempt(first.state, {
       taskId: "handoff-open-items",
@@ -141,8 +173,49 @@ describe("deterministic work tasks", () => {
       stepIndex: 0,
       stepCount: 2,
     });
-    expect(task?.options.map(({ id }) => id)).toEqual(["device-check", "coffee"]);
-    expect(JSON.stringify(task)).not.toMatch(/requiredOptionIds|coachOnFailure|successText/);
+    expect(task?.options.map(({ id }) => id)).toEqual([
+      "device-check",
+      "coffee",
+    ]);
+    expect(JSON.stringify(task)).not.toMatch(
+      /requiredOptionIds|coachOnFailure|successText/,
+    );
+  });
+
+  it("turns a completed summary task into persistent ticket notes", () => {
+    let state = createInitialWorldState(
+      "summary-session",
+      42,
+      {},
+      loadDefaultCybersecurityPack(),
+    );
+    state = performRequiredTask(state, "review_alert", "suspicious-login-1");
+    state = performRequiredTask(
+      state,
+      "inspect_login_context",
+      "suspicious-login-1",
+    );
+    state = performRequiredTask(
+      state,
+      "inspect_account_history",
+      "suspicious-login-1",
+    );
+    state = performRequiredTask(
+      state,
+      "check_device_inventory",
+      "suspicious-login-1",
+    );
+    state = performRequiredTask(state, "document_ticket", "suspicious-login-1");
+
+    expect(state.ticketNotes["suspicious-login-1"]).toContain(
+      "unknown-laptop-17 is not enrolled",
+    );
+    expect(state.ticketNotes["suspicious-login-1"]).toContain(
+      "identity misuse is suspected, not yet proven",
+    );
+    expect(state.ticketNotes["suspicious-login-1"]).toContain(
+      "Escalate for account containment review",
+    );
   });
 });
 
@@ -165,26 +238,14 @@ describe("deterministic interruption notifications", () => {
 
   function activateRoutine() {
     let state = notificationWorld();
-    state = applyAction(state, {
-      id: "review_alert",
-      eventId: "suspicious-login-1",
-      actorId: "user",
-    }).state;
-    state = applyAction(state, {
-      id: "read_handoff",
-      eventId: "handoff-1",
-      actorId: "user",
-    }).state;
-    state = applyAction(state, {
-      id: "acknowledge_handoff",
-      eventId: "handoff-1",
-      actorId: "user",
-    }).state;
-    state = applyAction(state, {
-      id: "inspect_login_context",
-      eventId: "suspicious-login-1",
-      actorId: "user",
-    }).state;
+    state = performRequiredTask(state, "review_alert", "suspicious-login-1");
+    state = performRequiredTask(state, "read_handoff", "handoff-1");
+    state = performRequiredTask(state, "acknowledge_handoff", "handoff-1");
+    state = performRequiredTask(
+      state,
+      "inspect_login_context",
+      "suspicious-login-1",
+    );
     return state;
   }
 
@@ -218,16 +279,16 @@ describe("deterministic interruption notifications", () => {
       snoozedUntil: active.simClock + 15,
     });
 
-    state = applyAction(state, {
-      id: "inspect_account_history",
-      eventId: "suspicious-login-1",
-      actorId: "user",
-    }).state;
-    state = applyAction(state, {
-      id: "check_device_inventory",
-      eventId: "suspicious-login-1",
-      actorId: "user",
-    }).state;
+    state = performRequiredTask(
+      state,
+      "inspect_account_history",
+      "suspicious-login-1",
+    );
+    state = performRequiredTask(
+      state,
+      "check_device_inventory",
+      "suspicious-login-1",
+    );
     expect(state.notifications[0]?.status).toBe("unread");
     expect(() =>
       respondToNotification(state, {

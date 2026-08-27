@@ -1,8 +1,30 @@
-import type { AvailableAction, ClientView } from "@sim/schemas";
+import type {
+  AvailableAction,
+  ClientNotification,
+  ClientTaskView,
+  ClientView,
+  NotificationResponse,
+} from "@sim/schemas";
+
+export type TaskAttemptFeedback = {
+  accepted: boolean;
+  completed: boolean;
+  feedback: string;
+};
+export type TaskAttemptHandler = (
+  task: ClientTaskView,
+  selectedOptionIds: string[],
+) => Promise<TaskAttemptFeedback>;
+export type NotificationHandler = (
+  notification: ClientNotification,
+  response: NotificationResponse["response"],
+) => Promise<void>;
 
 export type ModeProps = {
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
+  onTaskAttempt?: TaskAttemptHandler;
+  onNotification?: NotificationHandler;
 };
 
 export function OperationalMessages({ messages }: { messages: string[] }) {

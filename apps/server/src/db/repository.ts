@@ -93,7 +93,7 @@ export class PostgresRepository implements SimulationRepository {
       actionLog: actionRows.map((entry) =>
         ActionLogEntrySchema.parse({
           sequence: entry.sequence,
-          action: entry.action,
+          interaction: entry.action,
         }),
       ),
       evidence: evidenceRows.map(({ payload }) =>
@@ -126,7 +126,7 @@ export class PostgresRepository implements SimulationRepository {
             ${session.state.sessionId}::uuid,
             ${session.ownerId}::uuid,
             ${entry.sequence},
-            ${transaction.json(entry.action)},
+            ${transaction.json(entry.interaction)},
             '{}'::jsonb
           )
         `;

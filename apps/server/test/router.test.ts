@@ -15,7 +15,6 @@ const pack = loadDefaultCybersecurityPack();
 const world = (sessionId: string, seed: number) =>
   createInitialWorldState(sessionId, seed, {}, pack);
 
-
 function setup(
   userId = "user-1",
   provider?: ConstructorParameters<typeof FakeLlmProvider>[0],
@@ -46,14 +45,71 @@ describe("authenticated simulation API", () => {
     expect(created.view.availableActions.map(({ id }) => id)).toContain(
       "review_alert",
     );
-    const turn = await caller.simulation.performAction({
+    const first = await caller.simulation.submitTaskAttempt({
       sessionId: created.sessionId,
-      actionId: "review_alert",
+      taskId: "login-alert-compare",
       eventId: "suspicious-login-1",
+      selectedOptionIds: ["failures-then-success"],
+    });
+    expect(first.view.simClock).toBe(0);
+    expect(first.completed).toBe(false);
+
+    const turn = await caller.simulation.submitTaskAttempt({
+      sessionId: created.sessionId,
+      taskId: "login-alert-compare",
+      eventId: "suspicious-login-1",
+      selectedOptionIds: ["geo-hint"],
+    });
+    expect(turn.view.simClock).toBe(10);
+    expect(turn.sequence).toBe(2);
+    expect(turn.completed).toBe(true);
+  });
+
+  it("coaches a failed task attempt without evidence, then logs completion", async () => {
+    const { caller, repository } = setup();
+    const created = await caller.session.create({
+      seed: 42,
+      sessionKind: "assessed",
+      pacingMode: "standard",
     });
 
-    expect(turn.view.simClock).toBe(10);
-    expect(turn.sequence).toBe(1);
+    const weak = await caller.simulation.submitTaskAttempt({
+      sessionId: created.sessionId,
+      taskId: "login-alert-compare",
+      eventId: "suspicious-login-1",
+      selectedOptionIds: ["one-normal-login"],
+    });
+    expect(weak).toMatchObject({
+      accepted: false,
+      completed: false,
+      sequence: 1,
+    });
+    expect(weak.feedback).toMatch(/order of events/i);
+    expect(repository.evidenceFor("user-1", created.sessionId)).toHaveLength(0);
+
+    await caller.simulation.submitTaskAttempt({
+      sessionId: created.sessionId,
+      taskId: "login-alert-compare",
+      eventId: "suspicious-login-1",
+      selectedOptionIds: ["failures-then-success"],
+    });
+    const completed = await caller.simulation.submitTaskAttempt({
+      sessionId: created.sessionId,
+      taskId: "login-alert-compare",
+      eventId: "suspicious-login-1",
+      selectedOptionIds: ["geo-hint"],
+    });
+    expect(completed.completed).toBe(true);
+    expect(repository.evidenceFor("user-1", created.sessionId)).toHaveLength(1);
+
+    await expect(
+      caller.simulation.submitTaskAttempt({
+        sessionId: created.sessionId,
+        taskId: "login-alert-compare",
+        eventId: "suspicious-login-1",
+        selectedOptionIds: ["geo-hint"],
+      }),
+    ).rejects.toThrow("not available");
   });
 
   it("prevents another user from reading or mutating the session", async () => {
@@ -89,16 +145,20 @@ describe("authenticated simulation API", () => {
       pacingMode: "practice",
     });
 
-    await caller.simulation.performAction({
-      sessionId: assessed.sessionId,
-      actionId: "review_alert",
-      eventId: "suspicious-login-1",
-    });
-    await caller.simulation.performAction({
-      sessionId: tutorial.sessionId,
-      actionId: "review_alert",
-      eventId: "suspicious-login-1",
-    });
+    for (const sessionId of [assessed.sessionId, tutorial.sessionId]) {
+      await caller.simulation.submitTaskAttempt({
+        sessionId,
+        taskId: "login-alert-compare",
+        eventId: "suspicious-login-1",
+        selectedOptionIds: ["failures-then-success"],
+      });
+      await caller.simulation.submitTaskAttempt({
+        sessionId,
+        taskId: "login-alert-compare",
+        eventId: "suspicious-login-1",
+        selectedOptionIds: ["geo-hint"],
+      });
+    }
 
     expect(repository.evidenceFor("user-1", assessed.sessionId)).toHaveLength(
       1,
@@ -116,10 +176,17 @@ describe("authenticated simulation API", () => {
       pacingMode: "standard",
     });
 
-    await caller.simulation.performAction({
+    await caller.simulation.submitTaskAttempt({
       sessionId: created.sessionId,
-      actionId: "read_handoff",
+      taskId: "handoff-open-items",
       eventId: "handoff-1",
+      selectedOptionIds: ["device-check"],
+    });
+    await caller.simulation.submitTaskAttempt({
+      sessionId: created.sessionId,
+      taskId: "handoff-open-items",
+      eventId: "handoff-1",
+      selectedOptionIds: ["scanner-window"],
     });
 
     expect(
@@ -144,6 +211,53 @@ describe("authenticated simulation API", () => {
     ).rejects.toThrow("not available");
   });
 
+  it("persists a notification response without time or evidence", async () => {
+    const { caller, repository } = setup();
+    const created = await caller.session.create({
+      seed: 42,
+      sessionKind: "assessed",
+      pacingMode: "standard",
+    });
+    const attempts = [
+      ["login-alert-compare", "suspicious-login-1", ["failures-then-success"]],
+      ["login-alert-compare", "suspicious-login-1", ["geo-hint"]],
+      ["handoff-open-items", "handoff-1", ["device-check"]],
+      ["handoff-open-items", "handoff-1", ["scanner-window"]],
+      ["handoff-priority-message", "handoff-1", ["login-first-watch-routine"]],
+      [
+        "login-context-clues",
+        "suspicious-login-1",
+        ["unknown-windows-device", "new-residential-network"],
+      ],
+    ] as const;
+    for (const [taskId, eventId, selectedOptionIds] of attempts) {
+      await caller.simulation.submitTaskAttempt({
+        sessionId: created.sessionId,
+        taskId,
+        eventId,
+        selectedOptionIds: [...selectedOptionIds],
+      });
+    }
+    const before = await caller.session.get({ sessionId: created.sessionId });
+    expect(before.view.notifications[0]?.id).toBe("routine-scanner-arrived");
+    const evidenceCount = repository.evidenceFor(
+      "user-1",
+      created.sessionId,
+    ).length;
+
+    const response = await caller.simulation.respondToNotification({
+      sessionId: created.sessionId,
+      notificationId: "routine-scanner-arrived",
+      response: "continue",
+    });
+
+    expect(response.view.simClock).toBe(before.view.simClock);
+    expect(response.view.notifications[0]?.status).toBe("acknowledged");
+    expect(repository.evidenceFor("user-1", created.sessionId)).toHaveLength(
+      evidenceCount,
+    );
+  });
+
   it("requires explicit sharing grant and revokes access immediately", async () => {
     const { caller } = setup();
     const grant = await caller.sharing.grant({
@@ -166,15 +280,22 @@ describe("authenticated simulation API", () => {
       sessionKind: "assessed",
       pacingMode: "standard",
     });
-    await caller.simulation.performAction({
+    await caller.simulation.submitTaskAttempt({
       sessionId: created.sessionId,
-      actionId: "review_alert",
+      taskId: "login-alert-compare",
       eventId: "suspicious-login-1",
+      selectedOptionIds: ["failures-then-success"],
+    });
+    await caller.simulation.submitTaskAttempt({
+      sessionId: created.sessionId,
+      taskId: "login-alert-compare",
+      eventId: "suspicious-login-1",
+      selectedOptionIds: ["geo-hint"],
     });
 
     const exported = await caller.privacy.exportData();
     expect(exported.sessions).toHaveLength(1);
-    expect(exported.actionLog).toHaveLength(1);
+    expect(exported.actionLog).toHaveLength(2);
 
     await caller.privacy.deleteSession({ sessionId: created.sessionId });
     await expect(

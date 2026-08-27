@@ -4,21 +4,21 @@ import { SystemToolPanel } from "./SystemToolPanel.js";
 import { GuidancePanel } from "./GuidancePanel.js";
 import { OperationalMessages, type ModeProps } from "./shared.js";
 import { getShiftGuidance, getTutorialStep } from "../guidance.js";
-import {
-  WORK_SYSTEMS,
-  formatShiftClock,
-  systemLabel,
-} from "../systems.js";
+import { WORK_SYSTEMS, formatShiftClock, systemLabel } from "../systems.js";
 import {
   deriveSystemState,
   eventsForSystem,
   systemOpenCounts,
 } from "../workstation.js";
 import { COMPANY } from "../world/company.js";
+import { CaseRail } from "./CaseRail.js";
+import { NotificationBanner } from "./NotificationBanner.js";
 
 export function WorkSurface({
   view,
   onAction,
+  onTaskAttempt,
+  onNotification,
   guided = false,
 }: ModeProps & { guided?: boolean }) {
   const guidance = getShiftGuidance(view);
@@ -60,6 +60,29 @@ export function WorkSurface({
           <span>{view.simClock} minutes in</span>
         </time>
       </header>
+
+      <NotificationBanner
+        notifications={view.notifications}
+        {...(onNotification
+          ? {
+              onNotification: async (notification, response) => {
+                await onNotification(notification, response);
+                if (response === "handle") {
+                  setSystemId(notification.systemId);
+                  setSelectedEventId(notification.eventId);
+                }
+              },
+            }
+          : {})}
+      />
+
+      <CaseRail
+        onResume={({ eventId, systemId: targetSystem }) => {
+          setSystemId(targetSystem);
+          setSelectedEventId(eventId);
+        }}
+        view={view}
+      />
 
       <GuidancePanel
         body="Pick a tab below to open a tool. Read what is there, then take one action at a time."
@@ -104,7 +127,9 @@ export function WorkSurface({
         >
           <p className="eyebrow">{systemLabel(systemId)}</p>
           {systemEvents.length === 0 ? (
-            <p className="queue-empty">Nothing here right now. Try another tab.</p>
+            <p className="queue-empty">
+              Nothing here right now. Try another tab.
+            </p>
           ) : (
             systemEvents.map((event) => (
               <button
@@ -147,6 +172,7 @@ export function WorkSurface({
                 actions={contextualActions}
                 {...(highlightActionId ? { highlightActionId } : {})}
                 onAction={onAction}
+                {...(onTaskAttempt ? { onTaskAttempt } : {})}
                 selectedEventId={selectedEvent.id}
                 systemId={systemId}
                 view={view}
@@ -164,6 +190,7 @@ export function WorkSurface({
                 actions={contextualActions}
                 {...(highlightActionId ? { highlightActionId } : {})}
                 onAction={onAction}
+                {...(onTaskAttempt ? { onTaskAttempt } : {})}
                 systemId={systemId}
                 view={view}
               />

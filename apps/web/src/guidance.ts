@@ -9,7 +9,11 @@ export type ShiftGuidance = {
 };
 
 export function getShiftGuidance(view: ClientView): ShiftGuidance | null {
-  const next = shiftWorkActions(view.availableActions)[0];
+  const work = shiftWorkActions(view.availableActions);
+  const next =
+    work.find(({ id }) => id === "read_handoff") ??
+    work.find(({ id }) => id === "acknowledge_handoff") ??
+    work[0];
   if (!next) {
     return canWrapUpShift(view.availableActions)
       ? {
@@ -23,10 +27,14 @@ export function getShiftGuidance(view: ClientView): ShiftGuidance | null {
   const hints: Partial<Record<string, string>> = {
     read_handoff: "Start by reading what the last analyst left you.",
     review_alert: "Check the alert details before deciding anything.",
-    inspect_login_context: "Look at login and device info to understand the alert.",
-    open_phishing_report: "Open the employee report, but do not click suspicious links.",
-    search_knowledge_base: "Search the knowledge base for the approved procedure.",
-    ask_manager: "Ask Morgan if you are stuck. She can hint, not decide for you.",
+    inspect_login_context:
+      "Look at login and device info to understand the alert.",
+    open_phishing_report:
+      "Open the employee report, but do not click suspicious links.",
+    search_knowledge_base:
+      "Search the knowledge base for the approved procedure.",
+    ask_manager:
+      "Ask Morgan if you are stuck. She can hint, not decide for you.",
   };
 
   return {
@@ -59,7 +67,9 @@ export const TUTORIAL_STEPS = [
   },
 ] as const;
 
-export function getTutorialStep(view: ClientView): (typeof TUTORIAL_STEPS)[number] | null {
+export function getTutorialStep(
+  view: ClientView,
+): (typeof TUTORIAL_STEPS)[number] | null {
   const completed = new Set(
     view.events.flatMap((event) => event.completedActionIds),
   );

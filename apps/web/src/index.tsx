@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import type { AvailableAction, ClientView, Debrief } from "@sim/schemas";
+import type {
+  AvailableAction,
+  ClientNotification,
+  ClientTaskView,
+  ClientView,
+  Debrief,
+  NotificationResponse,
+} from "@sim/schemas";
 import { defaultClient, type SimulationClient } from "./client.js";
 import { DebriefView } from "./components/DebriefView.js";
 import { getTutorialStep } from "./guidance.js";
@@ -73,7 +80,60 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
     }
   }
 
-  const tutorialComplete = phase === "tutorial" && view && !getTutorialStep(view);
+  async function submitTaskAttempt(
+    task: ClientTaskView,
+    selectedOptionIds: string[],
+  ) {
+    if (!sessionId) {
+      return {
+        accepted: false,
+        completed: false,
+        feedback: "Session is not ready.",
+      };
+    }
+    try {
+      const result = await client.submitTaskAttempt(
+        sessionId,
+        task.id,
+        task.eventId,
+        selectedOptionIds,
+      );
+      setView(result.view);
+      return {
+        accepted: result.accepted,
+        completed: result.completed,
+        feedback: result.feedback,
+      };
+    } catch {
+      setError("That work step could not be checked.");
+      return {
+        accepted: false,
+        completed: false,
+        feedback: "Something interrupted the check. Try again.",
+      };
+    }
+  }
+
+  async function respondToWorkNotification(
+    notification: ClientNotification,
+    response: NotificationResponse["response"],
+  ) {
+    if (!sessionId) return;
+    try {
+      setView(
+        await client.respondToNotification(
+          sessionId,
+          notification.id,
+          response,
+        ),
+      );
+    } catch {
+      setError("That notification choice could not be saved.");
+    }
+  }
+
+  const tutorialComplete =
+    phase === "tutorial" && view && !getTutorialStep(view);
   const phaseLabel = phase === "tutorial" ? "Practice shift" : "Assessed shift";
 
   return (
@@ -153,6 +213,8 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
         <SpatialShell
           guided={phase === "tutorial"}
           onAction={(action, freeText) => void perform(action, freeText)}
+          onNotification={respondToWorkNotification}
+          onTaskAttempt={submitTaskAttempt}
           view={view}
         />
       )}
@@ -167,10 +229,6 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
 export { AccessibleMode } from "./components/AccessibleMode.js";
 export { DebriefView } from "./components/DebriefView.js";
 export { WorkSurface } from "./components/WorkSurface.js";
-export {
-  ManagerContext,
-  ShiftBriefing,
-  Tutorial,
-} from "./components/shell.js";
+export { ManagerContext, ShiftBriefing, Tutorial } from "./components/shell.js";
 export type { SimulationClient } from "./client.js";
 export { HttpSimulationClient } from "./client.js";

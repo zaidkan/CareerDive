@@ -14,7 +14,10 @@ async function readCheckedInPack(): Promise<string> {
 
 describe("career pack governance", () => {
   it("loads the checked-in cybersecurity pack with authoritative scenario", async () => {
-    const pack = loadCareerPack(await readCheckedInPack(), new Date("2026-06-22"));
+    const pack = loadCareerPack(
+      await readCheckedInPack(),
+      new Date("2026-06-22"),
+    );
     expect(pack.career.systems).toContain("ticket_queue");
     expect(pack.scenario.eventTemplates.suspicious_login?.instanceId).toBe(
       "suspicious-login-1",
@@ -26,6 +29,38 @@ describe("career pack governance", () => {
     expect(
       pack.scenario.eventTemplates.suspicious_login?.progression.kind,
     ).toBe("stages");
+  });
+
+  it("ships the approved beginner shift task set and one routine interruption", async () => {
+    const pack = loadCareerPack(
+      await readCheckedInPack(),
+      new Date("2026-06-22"),
+    );
+    expect(pack.career.events).toEqual([
+      "suspicious_login",
+      "incomplete_handoff",
+      "routine_alert_review",
+    ]);
+    expect(pack.scenario.tasks.map(({ id }) => id)).toEqual(
+      expect.arrayContaining([
+        "handoff-open-items",
+        "handoff-priority-message",
+        "login-alert-compare",
+        "login-context-clues",
+        "account-pattern-compare",
+        "device-owner-match",
+        "login-ticket-summary",
+        "scanner-alert-compare",
+        "scanner-window-match",
+        "scanner-ticket-summary",
+      ]),
+    );
+    expect(pack.scenario.notifications).toEqual([
+      expect.objectContaining({
+        id: "routine-scanner-arrived",
+        eventTemplateId: "routine_alert_review",
+      }),
+    ]);
   });
 
   it("rejects packs missing scenario event templates for listed events", async () => {
@@ -66,13 +101,12 @@ describe("career pack governance", () => {
 
   it("loads deterministic multi-step work tasks", async () => {
     const source = (await readCheckedInPack()).replace(
-      "  initialTaskBacklog: 5",
-      `  initialTaskBacklog: 5
-  tasks:
-    - id: handoff-open-items
-      eventTemplateId: incomplete_handoff
-      actionId: read_handoff
-      systemId: email
+      "  tasks:\n",
+      `  tasks:
+    - id: test-manager-context
+      eventTemplateId: suspicious_login
+      actionId: ask_manager
+      systemId: team_chat
       kind: select_clues
       title: Find unfinished work
       whyItMatters: Handoffs keep work from getting lost.
@@ -91,22 +125,24 @@ describe("career pack governance", () => {
               label: Coffee order was completed
           requiredOptionIds: [inventory-check]
           coachOnFailure: Look for work described as unfinished.
-          successText: You found the open device check.`,
+          successText: You found the open device check.
+`,
     );
     const pack = loadCareerPack(source, new Date("2026-06-22"));
-    expect(pack.scenario.tasks).toHaveLength(1);
-    expect(pack.scenario.tasks[0]?.steps).toHaveLength(1);
+    expect(
+      pack.scenario.tasks.find(({ id }) => id === "test-manager-context")
+        ?.steps,
+    ).toHaveLength(1);
   });
 
   it("rejects duplicate option ids inside a task step", async () => {
     const source = (await readCheckedInPack()).replace(
-      "  initialTaskBacklog: 5",
-      `  initialTaskBacklog: 5
-  tasks:
+      "  tasks:\n",
+      `  tasks:
     - id: duplicate-options
-      eventTemplateId: incomplete_handoff
-      actionId: read_handoff
-      systemId: email
+      eventTemplateId: suspicious_login
+      actionId: ask_manager
+      systemId: team_chat
       kind: select_clues
       title: Duplicate test
       whyItMatters: Test validation.
@@ -123,7 +159,8 @@ describe("career pack governance", () => {
             - { id: same, label: Second }
           requiredOptionIds: [same]
           coachOnFailure: Try again.
-          successText: Done.`,
+          successText: Done.
+`,
     );
     expect(() => loadCareerPack(source, new Date("2026-06-22"))).toThrow(
       /duplicate option/i,
@@ -132,13 +169,12 @@ describe("career pack governance", () => {
 
   it("rejects task answer ids that are not public options", async () => {
     const source = (await readCheckedInPack()).replace(
-      "  initialTaskBacklog: 5",
-      `  initialTaskBacklog: 5
-  tasks:
+      "  tasks:\n",
+      `  tasks:
     - id: missing-answer-option
-      eventTemplateId: incomplete_handoff
-      actionId: read_handoff
-      systemId: email
+      eventTemplateId: suspicious_login
+      actionId: ask_manager
+      systemId: team_chat
       kind: select_clues
       title: Missing answer test
       whyItMatters: Test validation.
@@ -154,7 +190,8 @@ describe("career pack governance", () => {
             - { id: visible, label: Visible }
           requiredOptionIds: [not-visible]
           coachOnFailure: Try again.
-          successText: Done.`,
+          successText: Done.
+`,
     );
     expect(() => loadCareerPack(source, new Date("2026-06-22"))).toThrow(
       /unknown required option/i,

@@ -8,6 +8,8 @@ import {
   filterSystemArtifacts,
 } from "./artifacts.js";
 import { primaryActions, systemMeta, utilityActions } from "../systems.js";
+import { WorkTaskPanel } from "./WorkTaskPanel.js";
+import type { TaskAttemptHandler } from "./shared.js";
 
 function ActionButtons({
   actions,
@@ -58,7 +60,9 @@ function ActionButtons({
       </button>
       {others.length > 0 ? (
         <details className="more-actions">
-          <summary>{others.length} other option{others.length === 1 ? "" : "s"}</summary>
+          <summary>
+            {others.length} other option{others.length === 1 ? "" : "s"}
+          </summary>
           <div className="more-actions-grid">
             {others.map((action) => (
               <button
@@ -78,6 +82,52 @@ function ActionButtons({
         </details>
       ) : null}
     </div>
+  );
+}
+
+function WorkInteraction({
+  actions,
+  view,
+  onAction,
+  onTaskAttempt,
+  highlightActionId,
+}: {
+  actions: AvailableAction[];
+  view: ClientView;
+  onAction: (action: AvailableAction, freeText?: string) => void;
+  onTaskAttempt?: TaskAttemptHandler;
+  highlightActionId?: string;
+}) {
+  const taskAction = actions.find(({ taskId }) => taskId !== undefined);
+  const task = taskAction?.taskId
+    ? view.tasks.find(
+        ({ id, eventId }) =>
+          id === taskAction.taskId && eventId === taskAction.eventId,
+      )
+    : undefined;
+  const ordinary = taskAction
+    ? actions.filter(
+        ({ id, eventId }) =>
+          id !== taskAction.id || eventId !== taskAction.eventId,
+      )
+    : actions;
+  return (
+    <>
+      {task ? (
+        <WorkTaskPanel
+          relatedArtifacts={view.artifacts.filter(({ id }) =>
+            task.relatedArtifactIds.includes(id),
+          )}
+          task={task}
+          {...(onTaskAttempt ? { onTaskAttempt } : {})}
+        />
+      ) : null}
+      <ActionButtons
+        actions={ordinary}
+        {...(highlightActionId ? { highlightActionId } : {})}
+        onAction={onAction}
+      />
+    </>
   );
 }
 
@@ -101,6 +151,7 @@ export function SystemToolPanel({
   selectedEventId,
   actions,
   onAction,
+  onTaskAttempt,
   highlightActionId,
 }: {
   view: ClientView;
@@ -108,6 +159,7 @@ export function SystemToolPanel({
   selectedEventId?: string;
   actions: AvailableAction[];
   onAction: (action: AvailableAction, freeText?: string) => void;
+  onTaskAttempt?: TaskAttemptHandler;
   highlightActionId?: string;
 }) {
   const eventArtifacts = filterSystemArtifacts(view, systemId, selectedEventId);
@@ -128,7 +180,7 @@ export function SystemToolPanel({
         <ToolChrome systemId={systemId} />
         <div className="tool-split">
           <div>
-            {searchAction ? (
+            {searchAction && !searchAction.taskId ? (
               <form
                 className="kb-search"
                 onSubmit={(event) => {
@@ -166,12 +218,15 @@ export function SystemToolPanel({
           </div>
           <ArtifactDetail artifact={selected} />
         </div>
-        <ActionButtons
+        <WorkInteraction
           actions={primaryActions(actions).filter(
-            ({ id }) => id !== "search_knowledge_base",
+            ({ id, taskId }) =>
+              id !== "search_knowledge_base" || Boolean(taskId),
           )}
           {...(highlightActionId ? { highlightActionId } : {})}
           onAction={onAction}
+          {...(onTaskAttempt ? { onTaskAttempt } : {})}
+          view={view}
         />
       </div>
     );
@@ -199,9 +254,7 @@ export function SystemToolPanel({
               label="Investigation notes"
               onSave={onAction}
               value={
-                selectedEventId
-                  ? (view.ticketNotes[selectedEventId] ?? "")
-                  : ""
+                selectedEventId ? (view.ticketNotes[selectedEventId] ?? "") : ""
               }
             />
             <NotesEditor
@@ -212,10 +265,12 @@ export function SystemToolPanel({
             />
           </div>
         </div>
-        <ActionButtons
+        <WorkInteraction
           actions={primaryActions(actions)}
           {...(highlightActionId ? { highlightActionId } : {})}
           onAction={onAction}
+          {...(onTaskAttempt ? { onTaskAttempt } : {})}
+          view={view}
         />
       </div>
     );
@@ -237,10 +292,12 @@ export function SystemToolPanel({
         </div>
         <ArtifactDetail artifact={selected} />
       </div>
-      <ActionButtons
+      <WorkInteraction
         actions={primaryActions(actions)}
         {...(highlightActionId ? { highlightActionId } : {})}
         onAction={onAction}
+        {...(onTaskAttempt ? { onTaskAttempt } : {})}
+        view={view}
       />
     </div>
   );

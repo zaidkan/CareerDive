@@ -6,23 +6,45 @@ import {
   filterSystemArtifacts,
 } from "./artifacts.js";
 import { OperationalMessages, type ModeProps } from "./shared.js";
-import {
-  WORK_SYSTEMS,
-  primaryActions,
-  utilityActions,
-} from "../systems.js";
+import { WorkTaskPanel } from "./WorkTaskPanel.js";
+import { CaseRail } from "./CaseRail.js";
+import { NotificationBanner } from "./NotificationBanner.js";
+import { WORK_SYSTEMS, primaryActions, utilityActions } from "../systems.js";
 
-export function AccessibleMode({ view, onAction }: ModeProps) {
+export function AccessibleMode({
+  view,
+  onAction,
+  onTaskAttempt,
+  onNotification,
+}: ModeProps) {
   return (
-    <section
-      className="accessible-shell"
-      aria-labelledby="structured-title"
-    >
+    <section className="accessible-shell" aria-labelledby="structured-title">
       <h2 id="structured-title">Structured workplace view</h2>
       <p className="accessible-lede">
         Location: {view.currentLocation.name}. Simulated time elapsed:{" "}
         {view.simClock} minutes.
       </p>
+      <NotificationBanner
+        notifications={view.notifications}
+        {...(onNotification
+          ? {
+              onNotification: async (notification, response) => {
+                await onNotification(notification, response);
+                if (response === "handle") {
+                  document
+                    .getElementById(`structured-event-${notification.eventId}`)
+                    ?.focus();
+                }
+              },
+            }
+          : {})}
+      />
+      <CaseRail
+        onResume={({ eventId }) => {
+          document.getElementById(`structured-event-${eventId}`)?.focus();
+        }}
+        view={view}
+      />
       {WORK_SYSTEMS.map((system) => {
         const actions = view.availableActions.filter(
           ({ systemId }) => systemId === system.id,
@@ -40,15 +62,15 @@ export function AccessibleMode({ view, onAction }: ModeProps) {
             <h3>{system.label}</h3>
             <ul>
               {events.map((event) => (
-                <li key={event.id}>
+                <li
+                  id={`structured-event-${event.id}`}
+                  key={event.id}
+                  tabIndex={-1}
+                >
                   <strong>{event.title}</strong>: {event.summary} Status:{" "}
                   {event.status.replaceAll("_", " ")}.
                   <StructuredArtifacts
-                    artifacts={filterSystemArtifacts(
-                      view,
-                      system.id,
-                      event.id,
-                    )}
+                    artifacts={filterSystemArtifacts(view, system.id, event.id)}
                   />
                   {system.id === "ticket_queue" ? (
                     <>
@@ -81,15 +103,35 @@ export function AccessibleMode({ view, onAction }: ModeProps) {
               />
             ) : null}
             <div className="accessible-actions">
-              {primary.map((action) => (
-                <StructuredActionButton
-                  action={action}
-                  key={`${action.id}:${action.eventId}`}
-                  onAction={onAction}
-                />
-              ))}
+              {primary.map((action) => {
+                const task = action.taskId
+                  ? view.tasks.find(
+                      ({ id, eventId }) =>
+                        id === action.taskId && eventId === action.eventId,
+                    )
+                  : undefined;
+                return task ? (
+                  <WorkTaskPanel
+                    key={`${action.id}:${action.eventId}`}
+                    {...(onTaskAttempt ? { onTaskAttempt } : {})}
+                    relatedArtifacts={view.artifacts.filter(({ id }) =>
+                      task.relatedArtifactIds.includes(id),
+                    )}
+                    task={task}
+                  />
+                ) : (
+                  <StructuredActionButton
+                    action={action}
+                    key={`${action.id}:${action.eventId}`}
+                    onAction={onAction}
+                  />
+                );
+              })}
               {utilities
-                .filter(({ id }) => id !== "update_ticket_notes" && id !== "update_notebook")
+                .filter(
+                  ({ id }) =>
+                    id !== "update_ticket_notes" && id !== "update_notebook",
+                )
                 .map((action) => (
                   <StructuredActionButton
                     action={action}

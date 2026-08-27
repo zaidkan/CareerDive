@@ -1,5 +1,7 @@
 import type { ActionLogEntry, WorldState } from "@sim/schemas";
+import { respondToNotification } from "./notifications.js";
 import { applyAction } from "./reducer.js";
+import { applyTaskAttempt } from "./tasks.js";
 
 export function foldActionLog(
   initialState: WorldState,
@@ -7,8 +9,14 @@ export function foldActionLog(
 ): WorldState {
   return [...entries]
     .sort((left, right) => left.sequence - right.sequence)
-    .reduce(
-      (state, entry) => applyAction(state, entry.action).state,
-      initialState,
-    );
+    .reduce((state, entry) => {
+      switch (entry.interaction.type) {
+        case "action":
+          return applyAction(state, entry.interaction.action).state;
+        case "task_attempt":
+          return applyTaskAttempt(state, entry.interaction.attempt).state;
+        case "notification_response":
+          return respondToNotification(state, entry.interaction.response);
+      }
+    }, initialState);
 }

@@ -6,12 +6,18 @@ import {
   useFullscreen,
 } from "../useFullscreen.js";
 import { DeskOs } from "./DeskOs.js";
+import type {
+  NotificationHandler,
+  TaskAttemptHandler,
+} from "../../components/shared.js";
 
 /** Real DOM laptop over the 3D canvas so clicks and typing match the pixels. */
 export function LaptopOverlay({
   phase,
   view,
   onAction,
+  onTaskAttempt,
+  onNotification,
   guided = false,
   maximized = false,
   onLoginSuccess,
@@ -23,6 +29,8 @@ export function LaptopOverlay({
   phase: "desk_login" | "seated_monitor" | "focus_desk";
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
+  onTaskAttempt?: TaskAttemptHandler;
+  onNotification?: NotificationHandler;
   guided?: boolean;
   maximized?: boolean;
   onLoginSuccess: () => void;
@@ -61,7 +69,10 @@ export function LaptopOverlay({
   useEffect(() => {
     if (!disabled) return;
     const focused = document.activeElement;
-    if (focused instanceof HTMLElement && laptopRef.current?.contains(focused)) {
+    if (
+      focused instanceof HTMLElement &&
+      laptopRef.current?.contains(focused)
+    ) {
       focused.blur();
     }
     if (document.fullscreenElement === laptopRef.current) {
@@ -84,6 +95,8 @@ export function LaptopOverlay({
           guided={guided}
           maximized={maximized}
           onAction={onAction}
+          {...(onTaskAttempt ? { onTaskAttempt } : {})}
+          {...(onNotification ? { onNotification } : {})}
           onLoginSuccess={onLoginSuccess}
           onMaximize={onMaximize}
           onMinimize={onMinimize}

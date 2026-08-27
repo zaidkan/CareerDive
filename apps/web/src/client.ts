@@ -2,8 +2,10 @@ import { createTRPCUntypedClient, httpBatchLink } from "@trpc/client";
 import {
   ClientViewSchema,
   DebriefSchema,
+  TaskAttemptOutcomeSchema,
   type ClientView,
   type Debrief,
+  type NotificationResponse,
   type SimulationActionId,
 } from "@sim/schemas";
 import { z } from "zod";
@@ -25,6 +27,22 @@ export interface SimulationClient {
     eventId: string,
     freeText?: string,
   ): Promise<ClientView>;
+  submitTaskAttempt(
+    sessionId: string,
+    taskId: string,
+    eventId: string,
+    selectedOptionIds: string[],
+  ): Promise<{
+    view: ClientView;
+    accepted: boolean;
+    completed: boolean;
+    feedback: string;
+  }>;
+  respondToNotification(
+    sessionId: string,
+    notificationId: string,
+    response: NotificationResponse["response"],
+  ): Promise<ClientView>;
   getDebrief(sessionId: string): Promise<Debrief>;
 }
 
@@ -33,6 +51,9 @@ const SessionResultSchema = z.object({
   view: ClientViewSchema,
 });
 const TurnResultSchema = z.object({ view: ClientViewSchema });
+const TaskTurnResultSchema = TaskAttemptOutcomeSchema.extend({
+  view: ClientViewSchema,
+});
 
 export class HttpSimulationClient implements SimulationClient {
   readonly #client: ReturnType<typeof createTRPCUntypedClient>;
@@ -68,6 +89,36 @@ export class HttpSimulationClient implements SimulationClient {
         actionId,
         eventId,
         ...(freeText === undefined ? {} : { freeText }),
+      }),
+    ).view;
+  }
+
+  async submitTaskAttempt(
+    sessionId: string,
+    taskId: string,
+    eventId: string,
+    selectedOptionIds: string[],
+  ) {
+    return TaskTurnResultSchema.parse(
+      await this.#client.mutation("simulation.submitTaskAttempt", {
+        sessionId,
+        taskId,
+        eventId,
+        selectedOptionIds,
+      }),
+    );
+  }
+
+  async respondToNotification(
+    sessionId: string,
+    notificationId: string,
+    response: NotificationResponse["response"],
+  ): Promise<ClientView> {
+    return TurnResultSchema.parse(
+      await this.#client.mutation("simulation.respondToNotification", {
+        sessionId,
+        notificationId,
+        response,
       }),
     ).view;
   }

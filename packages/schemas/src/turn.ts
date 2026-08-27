@@ -2,7 +2,11 @@ import { z } from "zod";
 
 import { SimulationActionIdSchema, SimulationActionSchema } from "./actions.js";
 import { WorldStateSchema } from "./world.js";
-import { TaskAttemptOutcomeSchema } from "./tasks.js";
+import {
+  NotificationResponseSchema,
+  TaskAttemptOutcomeSchema,
+  TaskAttemptSchema,
+} from "./tasks.js";
 
 export const DomainEffectSchema = z.discriminatedUnion("type", [
   z.object({
@@ -36,8 +40,24 @@ export const TaskAttemptTurnSchema = TaskAttemptOutcomeSchema.extend({
 });
 export type TaskAttemptTurn = z.infer<typeof TaskAttemptTurnSchema>;
 
+export const LoggedInteractionSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("action"),
+    action: SimulationActionSchema,
+  }),
+  z.object({
+    type: z.literal("task_attempt"),
+    attempt: TaskAttemptSchema,
+  }),
+  z.object({
+    type: z.literal("notification_response"),
+    response: NotificationResponseSchema,
+  }),
+]);
+export type LoggedInteraction = z.infer<typeof LoggedInteractionSchema>;
+
 export const ActionLogEntrySchema = z.object({
   sequence: z.number().int().positive(),
-  action: SimulationActionSchema,
+  interaction: LoggedInteractionSchema,
 });
 export type ActionLogEntry = z.infer<typeof ActionLogEntrySchema>;

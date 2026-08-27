@@ -24,6 +24,7 @@ function currentProgress(
       currentStep: 0,
       attempts: 0,
       completed: false,
+      selectedOptionIdsByStep: {},
     }
   );
 }
@@ -83,6 +84,8 @@ export function applyTaskAttempt(
     });
   }
 
+  progress.selectedOptionIdsByStep[step.id] = [...attempt.selectedOptionIds];
+
   const finalStep = progress.currentStep === task.steps.length - 1;
   if (!finalStep) {
     progress.currentStep += 1;
@@ -96,10 +99,25 @@ export function applyTaskAttempt(
   }
 
   progress.completed = true;
+  const summary =
+    task.kind === "build_summary"
+      ? task.steps
+          .flatMap((taskStep) => {
+            const selected = new Set(
+              progress.selectedOptionIdsByStep[taskStep.id] ?? [],
+            );
+            return taskStep.options
+              .filter(({ id }) => selected.has(id))
+              .map(({ label }) => label);
+          })
+          .map((label) => `- ${label}`)
+          .join("\n")
+      : undefined;
   const actionTurn = applyAction(state, {
     id: task.actionId,
     eventId: attempt.eventId,
     actorId: "user",
+    ...(summary ? { freeText: summary } : {}),
   });
   return TaskAttemptTurnSchema.parse({
     state: actionTurn.state,

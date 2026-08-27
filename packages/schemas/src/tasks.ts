@@ -90,6 +90,9 @@ export const TaskProgressSchema = z.object({
   currentStep: z.number().int().nonnegative().default(0),
   attempts: z.number().int().nonnegative().default(0),
   completed: z.boolean().default(false),
+  selectedOptionIdsByStep: z
+    .record(z.string(), z.array(z.string()))
+    .default({}),
 });
 export type TaskProgress = z.infer<typeof TaskProgressSchema>;
 
