@@ -63,6 +63,34 @@ describe("career pack governance", () => {
     ]);
   });
 
+  it.each([
+    ["zero energy maximum", "energyMax: 100", "energyMax: 0"],
+    ["negative snack stock", "fridgeSnackBars: 2", "fridgeSnackBars: -1"],
+    ["non-three snack bites", "snackBitesPerBar: 3", "snackBitesPerBar: 2"],
+  ])("rejects %s through the loader", async (_label, expected, replacement) => {
+    const source = await readCheckedInPack();
+    const broken = source.replace(expected, replacement);
+
+    expect(broken).not.toBe(source);
+    expect(() => loadCareerPack(broken, new Date("2026-06-22"))).toThrow();
+  });
+
+  it("rejects incomplete workplace defaults through the loader", async () => {
+    const source = await readCheckedInPack();
+    const broken = source.replace(
+      `  workplaceDefaults:
+    energyMax: 100
+    fridgeSnackBars: 2
+    snackBitesPerBar: 3
+    coffeeServings: 2
+`,
+      "",
+    );
+
+    expect(broken).not.toBe(source);
+    expect(() => loadCareerPack(broken, new Date("2026-06-22"))).toThrow();
+  });
+
   it("rejects packs missing scenario event templates for listed events", async () => {
     const source = await readCheckedInPack();
     const broken = source.replace(
