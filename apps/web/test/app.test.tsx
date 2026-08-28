@@ -95,6 +95,16 @@ const view: ClientView = {
   kbQuery: "",
   tasks: [],
   notifications: [],
+  workplace: {
+    energy: { current: 100, max: 100 },
+    carriedSnackBites: 0,
+    fridgeSnackBars: 2,
+    fridgeOpen: false,
+    coffeeServings: 2,
+    coffeeStage: "idle",
+    julesTopicsSeen: [],
+    emergencyRecoveryUsed: false,
+  },
 };
 
 const clientInteractionStubs = {

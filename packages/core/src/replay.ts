@@ -17,6 +17,8 @@ export function foldActionLog(
           return applyTaskAttempt(state, entry.interaction.attempt).state;
         case "notification_response":
           return respondToNotification(state, entry.interaction.response);
+        case "workplace_interaction":
+          throw new Error("Workplace interactions are not replayable yet");
       }
     }, initialState);
 }

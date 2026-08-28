@@ -79,6 +79,7 @@ export const ActionDefinitionSchema = z.object({
   label: z.string(),
   description: z.string(),
   simulatedMinutes: z.number().int().nonnegative(),
+  energyCost: z.number().int().nonnegative().default(0),
   tracksCompletion: z.boolean().default(true),
   defaultEffect: ActionEffectSchema.optional(),
 });

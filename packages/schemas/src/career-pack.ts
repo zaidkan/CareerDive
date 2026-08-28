@@ -13,6 +13,7 @@ import {
   NpcStateSchema,
   WorkArtifactSchema,
 } from "./world.js";
+import { PackWorkplaceDefaultsSchema } from "./workplace.js";
 
 export const ScenarioRhythmSchema = z.enum([
   "routine_monitoring",
@@ -54,6 +55,7 @@ export const CareerPackSchema = z
       artifacts: z.array(WorkArtifactSchema).default([]),
       tasks: z.array(PackTaskDefinitionSchema).default([]),
       notifications: z.array(PackNotificationDefinitionSchema).default([]),
+      workplaceDefaults: PackWorkplaceDefaultsSchema,
     }),
   })
   .superRefine((pack, ctx) => {

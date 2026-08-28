@@ -4,6 +4,7 @@ import { AvailableActionSchema } from "./actions.js";
 import { EventInstanceSchema } from "./events.js";
 import { PacingModeSchema, SessionKindSchema } from "./session.js";
 import { ClientNotificationSchema, ClientTaskViewSchema } from "./tasks.js";
+import { ClientWorkplaceStateSchema } from "./workplace.js";
 import { LocationSchema, WorkArtifactSchema } from "./world.js";
 
 export const ClientArtifactSchema = WorkArtifactSchema.omit({
@@ -41,5 +42,6 @@ export const ClientViewSchema = z.object({
   kbQuery: z.string(),
   tasks: z.array(ClientTaskViewSchema).default([]),
   notifications: z.array(ClientNotificationSchema).default([]),
+  workplace: ClientWorkplaceStateSchema,
 });
 export type ClientView = z.infer<typeof ClientViewSchema>;

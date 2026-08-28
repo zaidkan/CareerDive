@@ -10,6 +10,7 @@
 export * from "./session.js";
 export * from "./actions.js";
 export * from "./tasks.js";
+export * from "./workplace.js";
 export * from "./events.js";
 export * from "./world.js";
 export * from "./turn.js";

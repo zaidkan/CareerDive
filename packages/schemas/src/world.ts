@@ -13,6 +13,7 @@ import {
   PackTaskDefinitionSchema,
   TaskProgressSchema,
 } from "./tasks.js";
+import { WorkplaceStateSchema } from "./workplace.js";
 
 export const LocationSchema = z.object({
   id: z.string(),
@@ -127,6 +128,7 @@ export const WorldStateSchema = z.object({
   kbQuery: z.string().default(""),
   taskProgress: z.record(z.string(), TaskProgressSchema).default({}),
   notifications: z.array(NotificationStateSchema).default([]),
+  workplace: WorkplaceStateSchema,
   hidden: HiddenStateSchema,
 });
 export type WorldState = z.infer<typeof WorldStateSchema>;

@@ -50,6 +50,11 @@ scenario:
     use the team channel when you need context. More routine work may
     arrive while you investigate.
   initialTaskBacklog: 3
+  workplaceDefaults:
+    energyMax: 100
+    fridgeSnackBars: 2
+    snackBitesPerBar: 3
+    coffeeServings: 2
   tasks:
     - id: handoff-open-items
       eventTemplateId: incomplete_handoff

@@ -7,6 +7,10 @@ import {
   TaskAttemptOutcomeSchema,
   TaskAttemptSchema,
 } from "./tasks.js";
+import {
+  WorkplaceInteractionOutcomeSchema,
+  WorkplaceInteractionSchema,
+} from "./workplace.js";
 
 export const DomainEffectSchema = z.discriminatedUnion("type", [
   z.object({
@@ -40,6 +44,15 @@ export const TaskAttemptTurnSchema = TaskAttemptOutcomeSchema.extend({
 });
 export type TaskAttemptTurn = z.infer<typeof TaskAttemptTurnSchema>;
 
+export const WorkplaceInteractionTurnSchema =
+  WorkplaceInteractionOutcomeSchema.extend({
+    state: WorldStateSchema,
+    effects: z.array(DomainEffectSchema),
+  });
+export type WorkplaceInteractionTurn = z.infer<
+  typeof WorkplaceInteractionTurnSchema
+>;
+
 export const LoggedInteractionSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("action"),
@@ -52,6 +65,10 @@ export const LoggedInteractionSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("notification_response"),
     response: NotificationResponseSchema,
+  }),
+  z.object({
+    type: z.literal("workplace_interaction"),
+    interaction: WorkplaceInteractionSchema,
   }),
 ]);
 export type LoggedInteraction = z.infer<typeof LoggedInteractionSchema>;

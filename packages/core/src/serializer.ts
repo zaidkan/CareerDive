@@ -108,5 +108,6 @@ export function toClientView(state: WorldState): ClientView {
     kbQuery: state.kbQuery,
     tasks,
     notifications,
+    workplace: state.workplace,
   };
 }

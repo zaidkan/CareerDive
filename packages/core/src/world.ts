@@ -94,6 +94,19 @@ export function createInitialWorldState(
     kbQuery: "",
     taskProgress: {},
     notifications,
+    workplace: {
+      energy: {
+        current: pack.scenario.workplaceDefaults.energyMax,
+        max: pack.scenario.workplaceDefaults.energyMax,
+      },
+      carriedSnackBites: 0,
+      fridgeSnackBars: pack.scenario.workplaceDefaults.fridgeSnackBars,
+      fridgeOpen: false,
+      coffeeServings: pack.scenario.workplaceDefaults.coffeeServings,
+      coffeeStage: "idle",
+      julesTopicsSeen: [],
+      emergencyRecoveryUsed: false,
+    },
     hidden: {
       stress: 0,
       fatigue: 0,
