@@ -13,3 +13,8 @@ export {
 } from "./notifications.js";
 export { foldActionLog } from "./replay.js";
 export { toClientView } from "./serializer.js";
+export {
+  WorkplaceInteractionError,
+  applyWorkplaceInteraction,
+  canOpenArtifact,
+} from "./workplace.js";

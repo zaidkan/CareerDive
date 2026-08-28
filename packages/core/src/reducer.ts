@@ -43,20 +43,27 @@ export function applyAction(
   }
   if (allowedAction.taskId) {
     const progress =
-      currentState.taskProgress[`${allowedAction.eventId}:${allowedAction.taskId}`];
+      currentState.taskProgress[
+        `${allowedAction.eventId}:${allowedAction.taskId}`
+      ];
     if (!progress?.completed) {
       throw new TaskRequiredError(action.id, allowedAction.taskId);
     }
+  }
+
+  const definition = currentState.rules.actions[action.id];
+  if (!definition) {
+    throw new ActionUnavailableError(action.id);
+  }
+  if (currentState.workplace.energy.current < definition.energyCost) {
+    throw new ActionUnavailableError(action.id);
   }
 
   const state = structuredClone(currentState);
   const effects: DomainEffect[] = [
     { type: "action_applied", actionId: action.id },
   ];
-  const definition = state.rules.actions[action.id];
-  if (!definition) {
-    throw new ActionUnavailableError(action.id);
-  }
+  state.workplace.energy.current -= definition.energyCost;
   state.simClock += definition.simulatedMinutes;
   state.completedActionIds.push(action.id);
   const targetEventId = action.eventId ?? allowedAction.eventId;

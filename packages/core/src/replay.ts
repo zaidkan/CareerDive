@@ -2,6 +2,7 @@ import type { ActionLogEntry, WorldState } from "@sim/schemas";
 import { respondToNotification } from "./notifications.js";
 import { applyAction } from "./reducer.js";
 import { applyTaskAttempt } from "./tasks.js";
+import { applyWorkplaceInteraction } from "./workplace.js";
 
 export function foldActionLog(
   initialState: WorldState,
@@ -18,7 +19,8 @@ export function foldActionLog(
         case "notification_response":
           return respondToNotification(state, entry.interaction.response);
         case "workplace_interaction":
-          throw new Error("Workplace interactions are not replayable yet");
+          return applyWorkplaceInteraction(state, entry.interaction.interaction)
+            .state;
       }
     }, initialState);
 }

@@ -479,6 +479,7 @@ scenario:
       label: Read shift handoff
       description: Review the previous analyst's incomplete handoff notes.
       simulatedMinutes: 5
+      energyCost: 2
       defaultEffect:
         observeArtifactIds: [handoff-email]
     - id: acknowledge_handoff
@@ -486,6 +487,7 @@ scenario:
       label: Confirm the handoff
       description: Tell Morgan what remains open and what you will handle first.
       simulatedMinutes: 5
+      energyCost: 1
       defaultEffect:
         resolve: true
         resolution: >
@@ -498,6 +500,7 @@ scenario:
       label: Review alert
       description: Read the alert details and initial indicators.
       simulatedMinutes: 10
+      energyCost: 4
       defaultEffect:
         hidden:
           cognitiveLoad: 1
@@ -506,6 +509,7 @@ scenario:
       label: Inspect login context
       description: Check available device, location, and account context.
       simulatedMinutes: 15
+      energyCost: 5
       defaultEffect:
         observeArtifactIds: [login-context-1]
         hidden:
@@ -515,6 +519,7 @@ scenario:
       label: Compare account history
       description: Compare recent sign-ins, failures, and normal account patterns.
       simulatedMinutes: 10
+      energyCost: 4
       defaultEffect:
         observeArtifactIds: [account-history-1]
         hidden:
@@ -524,6 +529,7 @@ scenario:
       label: Check device inventory
       description: Confirm whether the device is enrolled and assigned to the employee.
       simulatedMinutes: 10
+      energyCost: 4
       defaultEffect:
         observeArtifactIds: [device-inventory-1]
         hidden:
@@ -533,6 +539,7 @@ scenario:
       label: Check response procedure
       description: Review the approved procedure and closure criteria for this event.
       simulatedMinutes: 10
+      energyCost: 3
       defaultEffect:
         setKbQueryFromFreeText: true
         observeArtifactIds: [scanner-window]
@@ -541,11 +548,13 @@ scenario:
       label: Dismiss as false positive
       description: Close the alert without further escalation.
       simulatedMinutes: 15
+      energyCost: 2
     - id: escalate_alert
       systemId: alert_dashboard
       label: Escalate with evidence
       description: Send the reviewed evidence to a senior analyst.
       simulatedMinutes: 5
+      energyCost: 1
       defaultEffect:
         resolve: true
         resolution: Escalated with reviewed context.
@@ -559,6 +568,7 @@ scenario:
       label: Document ticket
       description: Record what was reviewed and why the decision was made.
       simulatedMinutes: 20
+      energyCost: 3
       defaultEffect:
         setTicketNotesFromFreeText: true
         consequence:
@@ -569,6 +579,7 @@ scenario:
       label: Update investigation notes
       description: Edit the ticket investigation notes without closing the work.
       simulatedMinutes: 0
+      energyCost: 0
       tracksCompletion: false
       defaultEffect:
         setTicketNotesFromFreeText: true
@@ -577,6 +588,7 @@ scenario:
       label: Update case notebook
       description: Save personal investigation notes that persist across systems.
       simulatedMinutes: 0
+      energyCost: 0
       tracksCompletion: false
       defaultEffect:
         setNotebookFromFreeText: true
@@ -585,6 +597,7 @@ scenario:
       label: Open phishing report
       description: Read the employee's report without opening the suspicious link.
       simulatedMinutes: 5
+      energyCost: 2
       defaultEffect:
         observeArtifactIds: [phishing-email-1]
     - id: inspect_email_headers
@@ -592,6 +605,7 @@ scenario:
       label: Inspect email headers
       description: Check sender, reply-to, authentication, and routing details.
       simulatedMinutes: 10
+      energyCost: 4
       defaultEffect:
         observeArtifactIds: [phishing-headers-1]
         hidden:
@@ -601,6 +615,7 @@ scenario:
       label: Analyze link destination
       description: Use the approved inspection tool to examine the destination safely.
       simulatedMinutes: 10
+      energyCost: 4
       defaultEffect:
         observeArtifactIds: [phishing-link-1]
         hidden:
@@ -610,6 +625,7 @@ scenario:
       label: Quarantine matching message
       description: Contain matching copies through the approved mail-security control.
       simulatedMinutes: 5
+      energyCost: 2
       defaultEffect:
         consequence:
           description: >
@@ -619,6 +635,7 @@ scenario:
       label: Update the reporter
       description: Explain the safe next steps and confirm the report was received.
       simulatedMinutes: 5
+      energyCost: 1
       defaultEffect:
         consequence:
           description: >
@@ -628,12 +645,14 @@ scenario:
       label: Ask manager for context
       description: Request guidance without transferring responsibility.
       simulatedMinutes: 5
+      energyCost: 1
       tracksCompletion: false
     - id: complete_shift
       systemId: team_chat
       label: Complete shift
       description: Finish the current simulation shift.
       simulatedMinutes: 0
+      energyCost: 0
       tracksCompletion: false
 
   eventTemplates:

@@ -1,6 +1,7 @@
 import type { ClientView, WorldState } from "@sim/schemas";
 import { availableActions } from "./availability.js";
 import { taskProgressKey } from "./tasks.js";
+import { canOpenArtifact } from "./workplace.js";
 
 export function toClientView(state: WorldState): ClientView {
   const location = state.locations[state.currentLocationId];
@@ -16,7 +17,9 @@ export function toClientView(state: WorldState): ClientView {
     if (!action.taskId) return [];
     const task = state.rules.tasks[action.taskId];
     if (!task) return [];
-    const progress = state.taskProgress[taskProgressKey(action.eventId, task.id)] ?? {
+    const progress = state.taskProgress[
+      taskProgressKey(action.eventId, task.id)
+    ] ?? {
       currentStep: 0,
       attempts: 0,
       completed: false,
@@ -99,15 +102,37 @@ export function toClientView(state: WorldState): ClientView {
     availableActions: actions,
     operationalMessages,
     pacingMode: state.pacingMode,
-    artifacts: Object.values(state.artifacts).map((artifact) => ({
-      ...artifact,
-      observed: observed.has(artifact.id),
-    })),
+    artifacts: Object.values(state.artifacts)
+      .filter((artifact) => canOpenArtifact(state, artifact.id))
+      .map((artifact) => {
+        const isObserved = observed.has(artifact.id);
+        const eventIds = artifact.eventIds.filter((eventId) =>
+          state.events.some(
+            (event) => event.id === eventId && event.status !== "pending",
+          ),
+        );
+        return {
+          ...artifact,
+          body: isObserved ? artifact.body : "",
+          eventIds,
+          relatedArtifactIds: isObserved
+            ? artifact.relatedArtifactIds.filter((artifactId) =>
+                canOpenArtifact(state, artifactId),
+              )
+            : [],
+          searchableText:
+            isObserved || artifact.kind === "kb_document"
+              ? artifact.searchableText
+              : "",
+          metadata: isObserved ? artifact.metadata : {},
+          observed: isObserved,
+        };
+      }),
     ticketNotes: state.ticketNotes,
     notebook: state.notebook,
     kbQuery: state.kbQuery,
     tasks,
     notifications,
-    workplace: state.workplace,
+    workplace: structuredClone(state.workplace),
   };
 }

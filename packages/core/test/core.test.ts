@@ -84,6 +84,24 @@ describe("deterministic simulation core", () => {
     );
   });
 
+  it("initializes finite workplace defaults and serializes an isolated client copy", () => {
+    const state = world("session-1", 42);
+    const view = toClientView(state);
+
+    expect(state.workplace).toMatchObject({
+      energy: { current: 100, max: 100 },
+      carriedSnackBites: 0,
+      fridgeSnackBars: 2,
+      fridgeOpen: false,
+      coffeeServings: 2,
+      coffeeStage: "idle",
+      emergencyRecoveryUsed: false,
+    });
+    expect(view.workplace).toEqual(state.workplace);
+    view.workplace.energy.current = 0;
+    expect(state.workplace.energy.current).toBe(100);
+  });
+
   it("advances simulated time and fires a delayed consequence", () => {
     let state = world("session-1", 42);
 
