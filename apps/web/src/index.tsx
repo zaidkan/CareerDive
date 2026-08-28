@@ -6,6 +6,7 @@ import type {
   ClientView,
   Debrief,
   NotificationResponse,
+  WorkplaceInteraction,
 } from "@sim/schemas";
 import { defaultClient, type SimulationClient } from "./client.js";
 import { DebriefView } from "./components/DebriefView.js";
@@ -132,6 +133,23 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
     }
   }
 
+  async function performWorkplaceInteraction(
+    interaction: WorkplaceInteraction,
+  ) {
+    if (!sessionId) throw new Error("Session is not ready");
+    try {
+      const result = await client.performWorkplaceInteraction(
+        sessionId,
+        interaction,
+      );
+      setView(result.view);
+      return result;
+    } catch (cause) {
+      setError("That workplace interaction could not be completed.");
+      throw cause;
+    }
+  }
+
   const tutorialComplete =
     phase === "tutorial" && view && !getTutorialStep(view);
   const phaseLabel = phase === "tutorial" ? "Practice shift" : "Assessed shift";
@@ -215,6 +233,7 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
           onAction={(action, freeText) => void perform(action, freeText)}
           onNotification={respondToWorkNotification}
           onTaskAttempt={submitTaskAttempt}
+          onWorkplaceInteraction={performWorkplaceInteraction}
           view={view}
         />
       )}

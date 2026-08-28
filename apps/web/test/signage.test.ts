@@ -6,7 +6,8 @@ import { fitFontSize } from "../src/world/textures.js";
  * models canvas closely enough to prove signage fits its plate.
  */
 const MONO_ADVANCE = 0.6;
-const measureFor = (text: string) => (px: number) => text.length * px * MONO_ADVANCE;
+const measureFor = (text: string) => (px: number) =>
+  text.length * px * MONO_ADVANCE;
 
 /** Every world-space plate: label text, canvas width, canvas height. */
 const PLATES: [string, number, number][] = [
@@ -17,7 +18,6 @@ const PLATES: [string, number, number][] = [
   ["CABLES", 256, 64],
   ["ADAPTERS", 256, 64],
   ["COFFEE", 256, 64],
-  ["SNACKS", 256, 64],
   ["EXIT", 256, 64],
 ];
 

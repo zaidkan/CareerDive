@@ -78,6 +78,14 @@ function reachablePointsWithin(
 }
 
 describe("SOC layout reachability", () => {
+  it("keeps finite resources in the break room", () => {
+    const baseIds: readonly string[] = BASE_HOTSPOTS.map(({ id }) => id);
+    expect(baseIds).not.toContain("snack");
+    expect(BREAK_INTERIOR_HOTSPOTS.map(({ id }) => id)).toEqual(
+      expect.arrayContaining(["fridge", "coffee", "jules"]),
+    );
+  });
+
   it("spawns the player somewhere legal", () => {
     expect(
       isStandable(PLAYER_SPAWN[0], PLAYER_SPAWN[2], socColliders(false)),
@@ -146,14 +154,17 @@ describe("SOC layout reachability", () => {
     const desk = BASE_HOTSPOTS.find((h) => h.id === "desk_player");
     if (!desk) throw new Error("desk_player hotspot missing");
     const spots = reachablePointsWithin(desk, closedReachable);
-    const closest = spots.reduce((best, [x, z]) => {
-      const d = Math.hypot(x - desk.position[0], z - desk.position[2]);
-      return d < best.d ? { d, x, z } : best;
-    }, { d: Number.POSITIVE_INFINITY, x: 0, z: 0 });
+    const closest = spots.reduce(
+      (best, [x, z]) => {
+        const d = Math.hypot(x - desk.position[0], z - desk.position[2]);
+        return d < best.d ? { d, x, z } : best;
+      },
+      { d: Number.POSITIVE_INFINITY, x: 0, z: 0 },
+    );
 
     expect(closest.d).toBeLessThan(0.6);
-    expect(
-      nearestHotspot([closest.x, 1.6, closest.z], BASE_HOTSPOTS)?.id,
-    ).toBe("desk_player");
+    expect(nearestHotspot([closest.x, 1.6, closest.z], BASE_HOTSPOTS)?.id).toBe(
+      "desk_player",
+    );
   });
 });

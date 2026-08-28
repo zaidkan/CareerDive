@@ -119,17 +119,17 @@ export const BASE_HOTSPOTS: HotspotDef[] = [
     position: [0, 0, ROW.south],
     radius: 1.4,
   },
-  {
-    id: "snack",
-    label: "Snack bars",
-    position: [5.9, 0, 0.2],
-    radius: 1.15,
-  },
 ];
 
 export const BREAK_INTERIOR_HOTSPOTS: HotspotDef[] = [
   { id: "jules", label: "Jules", position: [7.6, 0, -6.05], radius: 1.3 },
-  { id: "coffee", label: "Coffee", position: [7.45, 0, -6.4], radius: 1.15 },
+  {
+    id: "coffee",
+    label: "Coffee maker",
+    position: [7.45, 0, -6.4],
+    radius: 1.15,
+  },
+  { id: "fridge", label: "Fridge", position: [9.7, 0, -6.35], radius: 1.35 },
 ];
 
 export function hotspotAnchor(

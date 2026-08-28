@@ -2007,12 +2007,18 @@ section[aria-labelledby="structured-title"],
 
 .energy-meter {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto auto minmax(5rem, 1fr);
   gap: 0.45rem;
   align-items: center;
   margin-top: 0.55rem;
   min-width: 10.5rem;
   max-width: 16rem;
+}
+
+.energy-meter-value {
+  color: #f3e6c8;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
 }
 
 .energy-meter-label {
@@ -2052,30 +2058,51 @@ section[aria-labelledby="structured-title"],
   }
 }
 
-.sleep-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 20;
-  display: grid;
-  place-content: center;
-  gap: 0.4rem;
-  padding: 1.5rem;
-  background: rgb(6 4 3 / 82%);
-  color: #f3e6c8;
-  text-align: center;
-  pointer-events: all;
-}
-
-.sleep-overlay-title {
-  margin: 0;
+.energy-recovery {
+  grid-column: 1 / -1;
   color: var(--phosphor);
-  font-family: var(--font-display);
-  font-size: 1.8rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
 }
 
-.sleep-overlay p {
+.break-room-panel {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgb(79 208 200 / 28%);
+}
+
+.break-room-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+  align-items: baseline;
+  color: var(--mute);
+  font-size: 0.76rem;
+}
+
+.break-room-status strong {
+  color: var(--signal);
+}
+
+.break-room-actions,
+.carried-snack-control {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.carried-snack-control {
+  margin-top: 0.5rem;
+  pointer-events: auto;
+}
+
+.resource-unavailable {
   margin: 0;
-  color: var(--fog);
+  color: #e8b84a;
+  font-size: 0.72rem;
 }
 
 .room-hud-controls {

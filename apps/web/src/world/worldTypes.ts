@@ -13,8 +13,8 @@ export type HotspotId =
   | "morgan_station"
   | "break_door"
   | "jules"
+  | "fridge"
   | "coffee"
-  | "snack"
   | "storage"
   | "door_exit";
 

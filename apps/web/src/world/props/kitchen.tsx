@@ -3,33 +3,90 @@
  */
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
+import type { CoffeeStage } from "@sim/schemas";
 import * as THREE from "three";
 import { makeSoftParticleTexture } from "../textures.js";
 import { STEAM_WISP_COUNT, useAmbientMotion } from "./ambient.js";
 
-export function Fridge({ position }: { position: [number, number, number] }) {
+export function Fridge({
+  position,
+  open,
+  snackBars,
+  animated = true,
+}: {
+  position: [number, number, number];
+  open: boolean;
+  snackBars: number;
+  animated?: boolean;
+}) {
+  const door = useRef<THREE.Group>(null);
+  const angle = useRef(0);
+  const live = useAmbientMotion(animated);
+
+  useFrame((_, delta) => {
+    if (!door.current) return;
+    const target = open ? -Math.PI * 0.62 : 0;
+    angle.current = live
+      ? THREE.MathUtils.damp(angle.current, target, 6, delta)
+      : target;
+    door.current.rotation.y = angle.current;
+  });
+
   return (
     <group position={position}>
       <mesh castShadow receiveShadow>
         <boxGeometry args={[0.85, 1.7, 0.7]} />
-        <meshStandardMaterial color="#c8c4bc" metalness={0.45} roughness={0.35} />
-      </mesh>
-      <mesh position={[0.38, 0.2, 0.36]}>
-        <boxGeometry args={[0.04, 0.55, 0.04]} />
-        <meshStandardMaterial color="#8a8680" metalness={0.6} />
-      </mesh>
-      <mesh position={[0, 0.35, 0.36]}>
-        <boxGeometry args={[0.7, 0.02, 0.02]} />
-        <meshStandardMaterial color="#9a9690" />
-      </mesh>
-      <mesh position={[0.28, 0.7, 0.36]}>
-        <boxGeometry args={[0.12, 0.08, 0.03]} />
         <meshStandardMaterial
-          color="#4fd0c8"
-          emissive="#4fd0c8"
-          emissiveIntensity={0.3}
+          color="#c8c4bc"
+          metalness={0.45}
+          roughness={0.35}
         />
       </mesh>
+      <mesh position={[0, 0, 0.356]}>
+        <boxGeometry args={[0.72, 1.5, 0.025]} />
+        <meshStandardMaterial color="#5a5f5b" roughness={0.7} />
+      </mesh>
+      {open && snackBars > 0
+        ? Array.from({ length: snackBars }, (_, index) => (
+            <mesh
+              key={index}
+              position={[-0.2 + index * 0.2, -0.35, 0.39]}
+              rotation={[0, 0, index % 2 === 0 ? 0.08 : -0.08]}
+            >
+              <boxGeometry args={[0.16, 0.08, 0.05]} />
+              <meshStandardMaterial
+                color={index % 2 === 0 ? "#e8b84a" : "#c45c48"}
+                roughness={0.55}
+              />
+            </mesh>
+          ))
+        : null}
+      <group ref={door} position={[-0.425, 0, 0.39]}>
+        <mesh castShadow position={[0.425, 0, 0]}>
+          <boxGeometry args={[0.82, 1.66, 0.07]} />
+          <meshStandardMaterial
+            color="#d4d0c8"
+            metalness={0.42}
+            roughness={0.36}
+          />
+        </mesh>
+        <mesh position={[0.76, 0.2, 0.05]}>
+          <boxGeometry args={[0.04, 0.55, 0.04]} />
+          <meshStandardMaterial color="#8a8680" metalness={0.6} />
+        </mesh>
+        <mesh position={[0.425, 0.35, 0.05]}>
+          <boxGeometry args={[0.7, 0.02, 0.02]} />
+          <meshStandardMaterial color="#9a9690" />
+        </mesh>
+        <mesh position={[0.7, 0.7, 0.055]}>
+          <boxGeometry args={[0.12, 0.08, 0.03]} />
+          <meshStandardMaterial
+            color="#4fd0c8"
+            emissive="#4fd0c8"
+            emissiveIntensity={0.3}
+          />
+        </mesh>
+      </group>
     </group>
   );
 }
@@ -81,7 +138,12 @@ function CoffeeSteam({ animated }: { animated: boolean }) {
       const spd = speeds[i];
       const ox = origins[i * 2];
       const oz = origins[i * 2 + 1];
-      if (y === undefined || spd === undefined || ox === undefined || oz === undefined) {
+      if (
+        y === undefined ||
+        spd === undefined ||
+        ox === undefined ||
+        oz === undefined
+      ) {
         continue;
       }
       let ny = y + spd * delta;
@@ -120,16 +182,24 @@ function CoffeeSteam({ animated }: { animated: boolean }) {
 
 export function CoffeePot({
   position,
+  stage,
   animated = true,
 }: {
   position: [number, number, number];
+  stage: CoffeeStage;
   animated?: boolean;
 }) {
+  const hot = stage !== "idle";
+  const steaming = stage === "ready" || stage === "poured";
   return (
     <group position={position}>
       <mesh castShadow>
         <cylinderGeometry args={[0.14, 0.16, 0.28, 14]} />
-        <meshStandardMaterial color="#1a130f" metalness={0.45} roughness={0.4} />
+        <meshStandardMaterial
+          color="#1a130f"
+          metalness={0.45}
+          roughness={0.4}
+        />
       </mesh>
       <mesh position={[0, 0.2, 0]}>
         <cylinderGeometry args={[0.1, 0.12, 0.1, 12]} />
@@ -145,16 +215,20 @@ export function CoffeePot({
         <meshStandardMaterial
           color="#8a3a20"
           emissive="#e8611a"
-          emissiveIntensity={0.9}
+          emissiveIntensity={hot ? 0.9 : 0.08}
           roughness={0.5}
         />
       </mesh>
-      <CoffeeSteam animated={animated} />
+      {steaming ? <CoffeeSteam animated={animated} /> : null}
     </group>
   );
 }
 
-export function SnackBasket({ position }: { position: [number, number, number] }) {
+export function SnackBasket({
+  position,
+}: {
+  position: [number, number, number];
+}) {
   const bars = [
     { x: -0.04, z: 0.02, rot: 0.18, color: "#c45c48" },
     { x: 0.05, z: -0.03, rot: -0.22, color: "#e8b84a" },

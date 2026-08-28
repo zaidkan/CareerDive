@@ -6,30 +6,22 @@ import {
   useReducer,
   useRef,
   useState,
-  useSyncExternalStore,
 } from "react";
-import type { AvailableAction, ClientView } from "@sim/schemas";
+import type {
+  AvailableAction,
+  ClientView,
+  WorkplaceInteraction,
+} from "@sim/schemas";
 import { COMPANY } from "./company.js";
+import {
+  BreakRoomPanel,
+  CarriedSnackControl,
+  EnergyMeter,
+} from "./BreakRoomPanel.js";
+import { coffeeControl, fridgeControl } from "./breakRoom.js";
 import { LaptopOverlay } from "./deskOs/LaptopOverlay.js";
 import { FloorMap } from "./FloorMap.js";
 import { getJourneyStep } from "../journey.js";
-import {
-  BAR_RESTORE,
-  COFFEE_RESTORE,
-  ENERGY_MAX,
-  MORGAN_SCOLD,
-  SLEEP_MS,
-  WAKE_ENERGY,
-  drainEnergy,
-  didCollapse,
-  energyRedirectsWayfinder,
-  energyTone,
-  getEnergy,
-  restoreEnergy,
-  setEnergySnapshot,
-  shouldPublishEnergy,
-  subscribeEnergy,
-} from "./energy.js";
 import { INITIAL_SPATIAL, reduceSpatialEvent } from "./presentation.js";
 import { nextJulesLine } from "./rooms/GlassBreakNook.js";
 import {
@@ -41,6 +33,7 @@ import type { HotspotId } from "./worldTypes.js";
 import type {
   NotificationHandler,
   TaskAttemptHandler,
+  WorkplaceInteractionHandler,
 } from "../components/shared.js";
 
 const RoomCanvas = lazy(async () => {
@@ -63,69 +56,35 @@ const INTERACT_LABEL: Partial<Record<HotspotId, string>> = {
   break_door: "Use door",
   door_exit: "Exit to map",
   jules: "Talk to Jules",
-  coffee: "Drink coffee",
-  snack: "Eat a bar",
   storage: "Open cabinets",
 };
-
-const ALREADY_FED = "You're fine. Save it for later.";
-const COFFEE_SIP = "The coffee's harsh, but you're awake again.";
-const BAR_BITE = "The bar is dry cardboard. Energy comes back anyway.";
-
-function EnergyMeter() {
-  const value = useSyncExternalStore(subscribeEnergy, getEnergy, getEnergy);
-  const tone = energyTone(value);
-  return (
-    <div
-      aria-label="Energy"
-      aria-valuemax={ENERGY_MAX}
-      aria-valuemin={0}
-      aria-valuenow={Math.round(value)}
-      className={`energy-meter energy-meter-${tone}`}
-      data-testid="energy-meter"
-      role="meter"
-    >
-      <span className="energy-meter-label">Energy</span>
-      <span className="energy-meter-track">
-        <span
-          className="energy-meter-fill"
-          style={{ width: `${String(Math.round(value))}%` }}
-        />
-      </span>
-    </div>
-  );
-}
 
 export function SpatialShell({
   view,
   onAction,
   onTaskAttempt,
   onNotification,
+  onWorkplaceInteraction,
   guided = false,
 }: {
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
   onTaskAttempt?: TaskAttemptHandler;
   onNotification?: NotificationHandler;
+  onWorkplaceInteraction?: WorkplaceInteractionHandler;
   guided?: boolean;
 }) {
   const [spatial, dispatch] = useReducer(reduceSpatialEvent, INITIAL_SPATIAL);
   const [nearbyLabel, setNearbyLabel] = useState<string>();
   const [pointerLocked, setPointerLocked] = useState(false);
-  const [energy, setEnergy] = useState(ENERGY_MAX);
-  const [sleeping, setSleeping] = useState(false);
+  const [workplacePending, setWorkplacePending] = useState(false);
+  const [closeFridgePending, setCloseFridgePending] = useState(false);
   const julesLine = useRef(0);
   const stageRef = useRef<HTMLDivElement>(null);
-  const energyRef = useRef(ENERGY_MAX);
-  const energyPublishElapsedRef = useRef(0);
-  const seatedRef = useRef(false);
-  const sleepingRef = useRef(false);
+  const workplacePendingRef = useRef(false);
+  const closeFridgePendingRef = useRef(false);
   const { active: fullscreen, toggle: toggleFullscreen } =
     useFullscreen(stageRef);
-
-  useEffect(() => {
-    setEnergySnapshot(energyRef.current);
-  }, []);
 
   useEffect(() => {
     const syncLock = () => {
@@ -162,33 +121,61 @@ export function SpatialShell({
     setNearbyLabel(label);
   }, []);
 
-  const applyEnergy = useCallback((next: number) => {
-    energyRef.current = next;
-    energyPublishElapsedRef.current = 0;
-    setEnergySnapshot(next);
-    setEnergy(next);
-  }, []);
+  const submitCloseFridge = useCallback(() => {
+    if (
+      !view.workplace.fridgeOpen ||
+      !onWorkplaceInteraction ||
+      closeFridgePendingRef.current
+    ) {
+      return;
+    }
+    closeFridgePendingRef.current = true;
+    setCloseFridgePending(true);
+    void onWorkplaceInteraction({ type: "close_fridge" })
+      .catch(() => {
+        dispatch({
+          type: "set_flavor",
+          message: "The fridge did not close. Try again.",
+        });
+      })
+      .finally(() => {
+        closeFridgePendingRef.current = false;
+        setCloseFridgePending(false);
+      });
+  }, [onWorkplaceInteraction, view.workplace.fridgeOpen]);
 
-  const sipOrSnack = useCallback(
-    (amount: number, restoredMessage: string) => {
-      if (energyRef.current >= ENERGY_MAX - 0.5) {
-        dispatch({ type: "set_flavor", message: ALREADY_FED });
+  const submitWorkplaceInteraction = useCallback(
+    (interaction: WorkplaceInteraction) => {
+      if (interaction.type === "close_fridge") {
+        submitCloseFridge();
         return;
       }
-      applyEnergy(restoreEnergy(energyRef.current, amount));
-      dispatch({ type: "set_flavor", message: restoredMessage });
+      if (!onWorkplaceInteraction || workplacePendingRef.current) return;
+      workplacePendingRef.current = true;
+      setWorkplacePending(true);
+      void onWorkplaceInteraction(interaction)
+        .catch(() => {
+          dispatch({
+            type: "set_flavor",
+            message: "That break-room action did not go through. Try again.",
+          });
+        })
+        .finally(() => {
+          workplacePendingRef.current = false;
+          setWorkplacePending(false);
+        });
     },
-    [applyEnergy],
+    [onWorkplaceInteraction, submitCloseFridge],
   );
 
   const handleInteract = useCallback(
     (id: HotspotId) => {
-      if (sleepingRef.current) return;
       switch (id) {
         case "desk_player":
           dispatch({ type: "sit_desk" });
           break;
         case "door_exit":
+          submitCloseFridge();
           dispatch({ type: "leave_room" });
           break;
         case "break_door":
@@ -204,12 +191,16 @@ export function SpatialShell({
           dispatch({ type: "set_flavor", message: `Jules: “${line}”` });
           break;
         }
-        case "coffee":
-          sipOrSnack(COFFEE_RESTORE, COFFEE_SIP);
+        case "fridge": {
+          const interaction = fridgeControl(view.workplace).interaction;
+          if (interaction) submitWorkplaceInteraction(interaction);
           break;
-        case "snack":
-          sipOrSnack(BAR_RESTORE, BAR_BITE);
+        }
+        case "coffee": {
+          const interaction = coffeeControl(view.workplace).interaction;
+          if (interaction) submitWorkplaceInteraction(interaction);
           break;
+        }
         /** The drawer sliding open is the whole feedback — no caption needed. */
         case "storage":
           window.dispatchEvent(new Event("soc-storage"));
@@ -224,7 +215,7 @@ export function SpatialShell({
           break;
       }
     },
-    [sipOrSnack],
+    [submitCloseFridge, submitWorkplaceInteraction, view.workplace],
   );
 
   const journey = getJourneyStep({
@@ -238,66 +229,6 @@ export function SpatialShell({
     spatial.phase === "desk_login" ||
     spatial.phase === "seated_monitor" ||
     spatial.phase === "focus_desk";
-  seatedRef.current = atDesk;
-  sleepingRef.current = sleeping;
-
-  useEffect(() => {
-    if (spatial.phase === "floor_map") return;
-    let last = performance.now();
-    let raf = 0;
-    const tick = (now: number) => {
-      const dt = Math.min(0.08, (now - last) / 1000);
-      last = now;
-      if (!sleepingRef.current) {
-        const previous = energyRef.current;
-        const next = drainEnergy(previous, dt, seatedRef.current);
-        if (next !== previous) {
-          energyRef.current = next;
-          energyPublishElapsedRef.current += dt;
-          const prevTone = energyTone(previous);
-          const nextTone = energyTone(next);
-          const collapsed = didCollapse(previous, next);
-          if (
-            shouldPublishEnergy(energyPublishElapsedRef.current, previous, next)
-          ) {
-            energyPublishElapsedRef.current = 0;
-            setEnergySnapshot(next);
-          }
-          if (prevTone !== nextTone) {
-            setEnergy(next);
-          }
-          if (collapsed) {
-            sleepingRef.current = true;
-            setSleeping(true);
-          }
-        }
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => {
-      cancelAnimationFrame(raf);
-    };
-  }, [spatial.phase]);
-
-  useEffect(() => {
-    if (!sleeping) return;
-    dispatch({
-      type: "set_flavor",
-      message: "You nodded off. Someone is shaking your shoulder…",
-    });
-    const id = window.setTimeout(() => {
-      energyRef.current = WAKE_ENERGY;
-      setEnergySnapshot(WAKE_ENERGY);
-      setEnergy(WAKE_ENERGY);
-      sleepingRef.current = false;
-      setSleeping(false);
-      dispatch({ type: "set_flavor", message: MORGAN_SCOLD });
-    }, SLEEP_MS);
-    return () => {
-      window.clearTimeout(id);
-    };
-  }, [sleeping]);
 
   if (spatial.phase === "floor_map") {
     return (
@@ -321,17 +252,11 @@ export function SpatialShell({
       ? "At your chair — press E or Sit to use the computer"
       : `Near: ${nearbyLabel} · press E or Interact`
     : undefined;
-  const energyBand = energyTone(energy);
-  const redirectSnack = energyRedirectsWayfinder(
-    energyBand,
-    spatial.visitedDesk === true,
-  );
-  const energyLow = energyBand !== "ok";
-  const highlightHotspotId: HotspotId | undefined = redirectSnack
-    ? "snack"
-    : journey.target?.kind === "hotspot"
-      ? journey.target.hotspotId
-      : undefined;
+  const energyLow =
+    view.workplace.energy.current / view.workplace.energy.max <= 0.28;
+  const energyEmpty = view.workplace.energy.current === 0;
+  const highlightHotspotId: HotspotId | undefined =
+    journey.target?.kind === "hotspot" ? journey.target.hotspotId : undefined;
   /** Spawning beside the exit should not bury the step the player is actually on. */
   const nearbyIsTarget =
     highlightHotspotId !== undefined &&
@@ -346,15 +271,18 @@ export function SpatialShell({
       : undefined;
   const roomLabel = "Security Operations";
   const fullscreenLabel = fullscreen ? "Exit fullscreen" : "Fullscreen";
-  const compass = sleeping
-    ? undefined
-    : redirectSnack
-      ? "Energy low · follow the gold marker to the snack bars (coffee is in the break corner)"
-      : energyLow
-        ? "Energy getting low · snack bars are in the east aisle, coffee in the break corner"
-        : highlightHotspotId === "desk_player"
-          ? "Your desk · follow the gold marker"
-          : undefined;
+  const compass = energyEmpty
+    ? "Energy empty · use a carried snack or visit the break-room fridge and coffee maker"
+    : energyLow
+      ? "Energy getting low · carry a snack or use the coffee maker in the break room"
+      : highlightHotspotId === "desk_player"
+        ? "Your desk · follow the gold marker"
+        : undefined;
+  const breakStation =
+    nearbyHotspotId === "fridge" || nearbyHotspotId === "coffee"
+      ? nearbyHotspotId
+      : undefined;
+  const resourcePending = workplacePending || closeFridgePending;
 
   return (
     <section
@@ -369,16 +297,17 @@ export function SpatialShell({
           fallback={<p className="room-loading">Entering {roomLabel}…</p>}
         >
           <RoomCanvas
-            enabled={walking && !sleeping}
+            enabled={walking}
+            onBreakRoomExit={submitCloseFridge}
             onInteract={handleInteract}
             onNearbyChange={onNearbyChange}
             seated={atDesk}
+            workplace={view.workplace}
             {...(highlightHotspotId ? { highlightHotspotId } : {})}
           />
         </Suspense>
         {atDesk && deskPhase ? (
           <LaptopOverlay
-            disabled={sleeping}
             guided={guided}
             maximized={maximized}
             onAction={onAction}
@@ -400,7 +329,7 @@ export function SpatialShell({
             view={view}
           />
         ) : null}
-        {walking && !pointerLocked && !sleeping ? (
+        {walking && !pointerLocked ? (
           <p className="room-look-hint">
             Click to look around · WASD to walk · F fullscreen · Esc to release
           </p>
@@ -419,7 +348,20 @@ export function SpatialShell({
               {!nearbyIsTarget && nearbyPrompt ? (
                 <p className="room-hud-nearby">{nearbyPrompt}</p>
               ) : null}
-              <EnergyMeter />
+              <EnergyMeter workplace={view.workplace} />
+              {breakStation ? (
+                <BreakRoomPanel
+                  onSubmit={submitWorkplaceInteraction}
+                  pending={resourcePending || !onWorkplaceInteraction}
+                  station={breakStation}
+                  workplace={view.workplace}
+                />
+              ) : null}
+              <CarriedSnackControl
+                onSubmit={submitWorkplaceInteraction}
+                pending={resourcePending || !onWorkplaceInteraction}
+                workplace={view.workplace}
+              />
               <p className="room-hud-controls">
                 Double-click to walk · E to interact · F fullscreen
               </p>
@@ -428,7 +370,7 @@ export function SpatialShell({
               ) : null}
             </div>
             <div className="room-hud-actions">
-              {nearbyHotspotId ? (
+              {nearbyHotspotId && !breakStation ? (
                 <button
                   className="start-shift"
                   onClick={() => {
@@ -452,6 +394,7 @@ export function SpatialShell({
               <button
                 className="guidance-secondary"
                 onClick={() => {
+                  submitCloseFridge();
                   dispatch({ type: "leave_room" });
                 }}
                 type="button"
@@ -474,13 +417,18 @@ export function SpatialShell({
                     ? "Maximized workstation · Fill screen for the full OS · Leave desk to stand"
                     : "Use the laptop · Maximize in the room, or Fill screen for the full OS"}
               </p>
-              {energyLow && !sleeping ? (
+              {energyLow ? (
                 <p className="room-hud-compass">
-                  Energy low · stand up and follow the gold marker to the snack
-                  bars
+                  Energy low · use a carried snack here, or stand and visit the
+                  break room
                 </p>
               ) : null}
-              <EnergyMeter />
+              <EnergyMeter workplace={view.workplace} />
+              <CarriedSnackControl
+                onSubmit={submitWorkplaceInteraction}
+                pending={resourcePending || !onWorkplaceInteraction}
+                workplace={view.workplace}
+              />
             </div>
             <button
               className="guidance-secondary room-desk-hud-fs"
@@ -491,15 +439,6 @@ export function SpatialShell({
             >
               Fill screen
             </button>
-          </div>
-        ) : null}
-        {sleeping ? (
-          <div className="sleep-overlay" role="status">
-            <p className="sleep-overlay-title">You fell asleep</p>
-            <p>
-              Morgan is shaking your shoulder. This nap does not skip the shift
-              clock.
-            </p>
           </div>
         ) : null}
       </div>

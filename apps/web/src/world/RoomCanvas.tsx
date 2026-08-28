@@ -1,5 +1,6 @@
 import { Canvas } from "@react-three/fiber";
 import { lazy, memo, Suspense, useMemo } from "react";
+import type { ClientWorkplaceState } from "@sim/schemas";
 import {
   isLowEndDevice,
   readNavigator,
@@ -42,12 +43,16 @@ export const RoomCanvas = memo(function RoomCanvas({
   enabled,
   seated = false,
   highlightHotspotId,
+  workplace,
+  onBreakRoomExit,
 }: {
   onNearbyChange: (id?: HotspotId, label?: string) => void;
   onInteract: (id: HotspotId) => void;
   enabled: boolean;
   seated?: boolean;
   highlightHotspotId?: HotspotId;
+  workplace: ClientWorkplaceState;
+  onBreakRoomExit: () => void;
 }) {
   const dpr = useMemo(() => pickDpr(seated), [seated]);
 
@@ -71,8 +76,10 @@ export const RoomCanvas = memo(function RoomCanvas({
             <SocRoom
               enabled={enabled}
               onInteract={onInteract}
+              onBreakRoomExit={onBreakRoomExit}
               onNearbyChange={onNearbyChange}
               seated={seated}
+              workplace={workplace}
               {...(highlightHotspotId ? { highlightHotspotId } : {})}
             />
           </Suspense>

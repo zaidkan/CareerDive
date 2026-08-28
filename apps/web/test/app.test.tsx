@@ -7,7 +7,13 @@ import type { ClientView, Debrief } from "@sim/schemas";
 import { App, AccessibleMode, DebriefView, WorkSurface } from "../src/index.js";
 
 vi.mock("../src/world/RoomCanvas.js", () => ({
-  RoomCanvas: ({ onInteract }: { onInteract: (id: string) => void }) => (
+  RoomCanvas: ({
+    onInteract,
+    onNearbyChange,
+  }: {
+    onInteract: (id: string) => void;
+    onNearbyChange: (id?: string, label?: string) => void;
+  }) => (
     <div>
       <button
         type="button"
@@ -24,6 +30,14 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
         }}
       >
         Exit room
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          onNearbyChange("fridge", "Fridge");
+        }}
+      >
+        Approach fridge
       </button>
     </div>
   ),
@@ -514,6 +528,58 @@ describe("tutorial and debrief", () => {
     expect(
       await screen.findByRole("heading", { name: /Day one · floor plan/i }),
     ).toBeVisible();
+  });
+
+  it("replaces the workplace view with the canonical interaction result", async () => {
+    const user = userEvent.setup();
+    const openedView: ClientView = {
+      ...view,
+      workplace: {
+        ...view.workplace,
+        energy: { current: 63, max: 100 },
+        fridgeOpen: true,
+        fridgeSnackBars: 1,
+      },
+    };
+    const performWorkplaceInteraction = vi.fn(() =>
+      Promise.resolve({
+        view: openedView,
+        sequence: 1,
+        feedback: "fridge_opened" as const,
+      }),
+    );
+    const client = {
+      ...clientInteractionStubs,
+      createSession: () => Promise.resolve({ sessionId: "session-1", view }),
+      performAction: () => Promise.resolve(view),
+      performWorkplaceInteraction,
+      getDebrief: () => Promise.reject(new Error("not needed")),
+    };
+
+    render(<App client={client} />);
+    await user.click(
+      await screen.findByRole("button", { name: /Enter the Verdaly floor/i }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: /Security Operations/i }),
+    );
+    await user.click(
+      await screen.findByRole(
+        "button",
+        { name: "Approach fridge" },
+        { timeout: 6000 },
+      ),
+    );
+    await user.click(screen.getByRole("button", { name: "Open fridge" }));
+
+    expect(performWorkplaceInteraction).toHaveBeenCalledWith("session-1", {
+      type: "open_fridge",
+    });
+    expect(await screen.findByText("1 snack bar inside")).toBeVisible();
+    expect(screen.getByTestId("energy-meter")).toHaveAttribute(
+      "aria-valuenow",
+      "63",
+    );
   });
 
   it("opens manager context after asking for guidance", async () => {

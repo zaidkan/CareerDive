@@ -5,6 +5,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import type { RefObject } from "react";
+import type { CoffeeStage } from "@sim/schemas";
 import * as THREE from "three";
 import { Figure } from "../Figure.js";
 import { NameTag } from "../NameTag.js";
@@ -128,12 +129,18 @@ export function GlassBreakNook({
   animated = true,
   lookAtRef,
   highlightJules = false,
+  fridgeOpen,
+  fridgeSnackBars,
+  coffeeStage,
 }: {
   doorOpen: boolean;
   cheapGlass?: boolean;
   animated?: boolean;
   lookAtRef?: RefObject<[number, number, number]>;
   highlightJules?: boolean;
+  fridgeOpen: boolean;
+  fridgeSnackBars: number;
+  coffeeStage: CoffeeStage;
 }) {
   const door = useRef<THREE.Group>(null);
   const angle = useRef(0);
@@ -194,15 +201,27 @@ export function GlassBreakNook({
       {/* Door jambs + sill */}
       <mesh position={[cornerX, 1.4, doorZ - halfDoor]}>
         <boxGeometry args={[0.12, 2.8, 0.1]} />
-        <meshStandardMaterial color="#6a7a80" metalness={0.55} roughness={0.35} />
+        <meshStandardMaterial
+          color="#6a7a80"
+          metalness={0.55}
+          roughness={0.35}
+        />
       </mesh>
       <mesh position={[cornerX, 1.4, doorZ + halfDoor]}>
         <boxGeometry args={[0.12, 2.8, 0.1]} />
-        <meshStandardMaterial color="#6a7a80" metalness={0.55} roughness={0.35} />
+        <meshStandardMaterial
+          color="#6a7a80"
+          metalness={0.55}
+          roughness={0.35}
+        />
       </mesh>
       <mesh position={[cornerX, 2.75, doorZ]}>
         <boxGeometry args={[0.14, 0.12, halfDoor * 2 + 0.12]} />
-        <meshStandardMaterial color="#6a7a80" metalness={0.55} roughness={0.35} />
+        <meshStandardMaterial
+          color="#6a7a80"
+          metalness={0.55}
+          roughness={0.35}
+        />
       </mesh>
       <mesh position={[cornerX - 0.02, 0.04, doorZ]} receiveShadow>
         <boxGeometry args={[0.35, 0.06, halfDoor * 2 + 0.2]} />
@@ -219,19 +238,35 @@ export function GlassBreakNook({
         {/* Frame rails only — keep glass visible */}
         <mesh position={[0.01, 1.35, 0.06]}>
           <boxGeometry args={[0.06, 2.55, 0.08]} />
-          <meshStandardMaterial color="#6a7a80" metalness={0.5} roughness={0.35} />
+          <meshStandardMaterial
+            color="#6a7a80"
+            metalness={0.5}
+            roughness={0.35}
+          />
         </mesh>
         <mesh position={[0.01, 1.35, halfDoor * 2 - 0.06]}>
           <boxGeometry args={[0.06, 2.55, 0.08]} />
-          <meshStandardMaterial color="#6a7a80" metalness={0.5} roughness={0.35} />
+          <meshStandardMaterial
+            color="#6a7a80"
+            metalness={0.5}
+            roughness={0.35}
+          />
         </mesh>
         <mesh position={[0.01, 2.58, halfDoor]}>
           <boxGeometry args={[0.06, 0.08, halfDoor * 2]} />
-          <meshStandardMaterial color="#6a7a80" metalness={0.5} roughness={0.35} />
+          <meshStandardMaterial
+            color="#6a7a80"
+            metalness={0.5}
+            roughness={0.35}
+          />
         </mesh>
         <mesh position={[0.01, 0.14, halfDoor]}>
           <boxGeometry args={[0.06, 0.08, halfDoor * 2]} />
-          <meshStandardMaterial color="#6a7a80" metalness={0.5} roughness={0.35} />
+          <meshStandardMaterial
+            color="#6a7a80"
+            metalness={0.5}
+            roughness={0.35}
+          />
         </mesh>
         <mesh position={[0.01, 1.35, halfDoor]}>
           <boxGeometry args={[0.05, 0.06, halfDoor * 2]} />
@@ -239,7 +274,11 @@ export function GlassBreakNook({
         </mesh>
         <mesh position={[0.06, 1.35, halfDoor + 0.45]}>
           <boxGeometry args={[0.05, 0.32, 0.04]} />
-          <meshStandardMaterial color="#c4a060" metalness={0.6} roughness={0.3} />
+          <meshStandardMaterial
+            color="#c4a060"
+            metalness={0.6}
+            roughness={0.3}
+          />
         </mesh>
       </group>
 
@@ -288,7 +327,11 @@ export function GlassBreakNook({
         <boxGeometry args={[2.2, 0.7, 0.03]} />
         <meshStandardMaterial color="#463629" roughness={0.65} />
       </mesh>
-      <CoffeePot position={[7.45, 1.09, -6.87]} />
+      <CoffeePot
+        animated={animated}
+        position={[7.45, 1.09, -6.87]}
+        stage={coffeeStage}
+      />
       <SnackBasket position={[8.85, 0.945, -6.72]} />
       <VentPapers animated={animated} position={[8.4, 0.96, -6.68]} />
       {/* Mug shelf on the wall above the counter */}
@@ -299,12 +342,25 @@ export function GlassBreakNook({
       {([-0.6, -0.25, 0.1, 0.45] as const).map((dx) => (
         <mesh key={dx} position={[8.15 + dx, 1.695, -7.11]} castShadow>
           <cylinderGeometry args={[0.05, 0.045, 0.1, 10]} />
-          <meshStandardMaterial color={dx > 0 ? "#4a6a88" : "#8a5038"} roughness={0.5} />
+          <meshStandardMaterial
+            color={dx > 0 ? "#4a6a88" : "#8a5038"}
+            roughness={0.5}
+          />
         </mesh>
       ))}
-      <MeshLabel text="COFFEE" position={[8.15, 2.05, -7.23]} width={0.45} height={0.11} />
+      <MeshLabel
+        text="COFFEE"
+        position={[8.15, 2.05, -7.23]}
+        width={0.45}
+        height={0.11}
+      />
 
-      <Fridge position={[10.3, 0.85, -6.85]} />
+      <Fridge
+        animated={animated}
+        open={fridgeOpen}
+        position={[10.3, 0.85, -6.85]}
+        snackBars={fridgeSnackBars}
+      />
 
       {/* Soft bench on the east wall uses the new depth */}
       <mesh position={[10.35, 0.22, -3.35]} castShadow receiveShadow>
@@ -377,7 +433,10 @@ export const JULES_LINES = [
   "Oh hey! Pour yourself one — or I can. Day one's better caffeinated.",
 ] as const;
 
-export function nextJulesLine(index: number): { line: string; nextIndex: number } {
+export function nextJulesLine(index: number): {
+  line: string;
+  nextIndex: number;
+} {
   const line = JULES_LINES[index % JULES_LINES.length] ?? JULES_LINES[0];
   return { line, nextIndex: (index + 1) % JULES_LINES.length };
 }

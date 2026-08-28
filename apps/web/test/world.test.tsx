@@ -12,11 +12,7 @@ import { FloorMap } from "../src/world/FloorMap.js";
 import { SpatialShell } from "../src/world/SpatialShell.js";
 
 vi.mock("../src/world/RoomCanvas.js", () => ({
-  RoomCanvas: ({
-    onInteract,
-  }: {
-    onInteract: (id: string) => void;
-  }) => (
+  RoomCanvas: ({ onInteract }: { onInteract: (id: string) => void }) => (
     <div>
       <button
         type="button"
@@ -25,14 +21,6 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
         }}
       >
         Sit at desk
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          onInteract("snack");
-        }}
-      >
-        Eat a bar
       </button>
       <button
         type="button"
@@ -173,20 +161,28 @@ describe("spatial presentation", () => {
       },
       { timeout: 6000 },
     );
-    expect(screen.getByRole("button", { name: /Manager Office/i })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /Manager Office/i }),
+    ).toBeDisabled();
   });
 
   it("guides the player to the room, then the desk, then the desk work", async () => {
     const user = userEvent.setup();
     render(<SpatialShell view={view} onAction={() => undefined} />);
 
-    const socRoom = screen.getByRole("button", { name: /Security Operations/i });
+    const socRoom = screen.getByRole("button", {
+      name: /Security Operations/i,
+    });
     expect(socRoom).toHaveTextContent(/go here next/i);
     expect(screen.getByText(/Head to Security Operations/i)).toBeVisible();
     expect(screen.getByText(/gold door on the plan/i)).toBeVisible();
 
     await user.click(socRoom);
-    await screen.findByRole("button", { name: /Sit at desk/i }, { timeout: 6000 });
+    await screen.findByRole(
+      "button",
+      { name: /Sit at desk/i },
+      { timeout: 6000 },
+    );
     expect(screen.getByText(/Find your desk/i)).toBeVisible();
     expect(screen.getByText(/follow the gold marker/i)).toBeVisible();
     expect(screen.getByTestId("energy-meter")).toBeVisible();
@@ -194,11 +190,11 @@ describe("spatial presentation", () => {
     expect(screen.getByRole("button", { name: /^Fullscreen$/i })).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: /Sit at desk/i }));
-    expect(
-      screen.getByText(/Sign in to your workstation/i),
-    ).toBeVisible();
+    expect(screen.getByText(/Sign in to your workstation/i)).toBeVisible();
     expect(screen.queryByText(/Click to look around/i)).not.toBeInTheDocument();
-    expect(screen.getByTestId("login-post-it")).toHaveTextContent("day1.analyst");
+    expect(screen.getByTestId("login-post-it")).toHaveTextContent(
+      "day1.analyst",
+    );
     expect(screen.getByTestId("login-post-it")).toHaveTextContent("FirstDay!");
     expect(
       screen.getAllByRole("button", { name: /^Fill screen$/i }).length,
@@ -211,7 +207,11 @@ describe("spatial presentation", () => {
     await user.click(
       screen.getByRole("button", { name: /Security Operations/i }),
     );
-    await screen.findByRole("button", { name: /Sit at desk/i }, { timeout: 6000 });
+    await screen.findByRole(
+      "button",
+      { name: /Sit at desk/i },
+      { timeout: 6000 },
+    );
     expect(screen.getByText(/Click to look around/i)).toBeVisible();
 
     const previous = Object.getOwnPropertyDescriptor(
@@ -228,7 +228,9 @@ describe("spatial presentation", () => {
     expect(document.pointerLockElement).toBe(document.body);
     document.dispatchEvent(new Event("pointerlockchange"));
     await waitFor(() => {
-      expect(screen.queryByText(/Click to look around/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Click to look around/i),
+      ).not.toBeInTheDocument();
     });
 
     if (previous) {
@@ -243,14 +245,24 @@ describe("spatial presentation", () => {
     await user.click(
       screen.getByRole("button", { name: /Security Operations/i }),
     );
-    await screen.findByRole("button", { name: /Sit at desk/i }, { timeout: 6000 });
+    await screen.findByRole(
+      "button",
+      { name: /Sit at desk/i },
+      { timeout: 6000 },
+    );
     await user.click(screen.getByRole("button", { name: /Sit at desk/i }));
-    expect(await screen.findByRole("heading", { name: /Sign in/i })).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: /Sign in/i }),
+    ).toBeVisible();
     await user.type(screen.getByLabelText(/Username/i), "day1.analyst");
     await user.type(screen.getByLabelText(/Password/i), "FirstDay!");
     await user.click(screen.getByRole("button", { name: /^Login$/i }));
     expect(
-      await screen.findByRole("heading", { name: /Your workstation/i }, { timeout: 3000 }),
+      await screen.findByRole(
+        "heading",
+        { name: /Your workstation/i },
+        { timeout: 3000 },
+      ),
     ).toBeVisible();
     expect(screen.queryByTestId("login-post-it")).not.toBeInTheDocument();
     expect(
@@ -265,16 +277,5 @@ describe("spatial presentation", () => {
     expect(
       await screen.findByRole("button", { name: /Sit at desk/i }),
     ).toBeVisible();
-  });
-
-  it("leaves snack bars for later when energy is already full", async () => {
-    const user = userEvent.setup();
-    render(<SpatialShell view={view} onAction={() => undefined} />);
-    await user.click(
-      screen.getByRole("button", { name: /Security Operations/i }),
-    );
-    await screen.findByRole("button", { name: /Eat a bar/i }, { timeout: 6000 });
-    await user.click(screen.getByRole("button", { name: /Eat a bar/i }));
-    expect(screen.getByText(/You're fine. Save it for later/i)).toBeVisible();
   });
 });

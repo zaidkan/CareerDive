@@ -1,6 +1,7 @@
 import { ContactShadows } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { ClientWorkplaceState } from "@sim/schemas";
 import * as THREE from "three";
 import { Figure } from "../Figure.js";
 import { Hotspot, nearestHotspot } from "../Hotspot.js";
@@ -8,7 +9,12 @@ import { NameTag } from "../NameTag.js";
 import { PlayerController } from "../PlayerController.js";
 import { useWorldQuality } from "../effects/useAdaptiveQuality.js";
 import { DustMotes, VentPapers } from "../props/atmosphere.js";
-import { CeilingAC, OfficeWindow, Thermostat, WallPanel } from "../props/building.js";
+import {
+  CeilingAC,
+  OfficeWindow,
+  Thermostat,
+  WallPanel,
+} from "../props/building.js";
 import {
   AccentPoster,
   FramedCertificate,
@@ -27,7 +33,6 @@ import {
 } from "../props/furniture.js";
 import { CeilingFixture } from "../props/lighting.js";
 import { MeshLabel, WallCalendar, Whiteboard } from "../props/signage.js";
-import { SnackBasket } from "../props/kitchen.js";
 import { DocumentShredder, SecurityCamera, ServerRack } from "../props/tech.js";
 import { Workstation } from "../Workstation.js";
 import { Wayfinder } from "../Wayfinder.js";
@@ -149,16 +154,21 @@ export function SocRoom({
   enabled,
   seated = false,
   highlightHotspotId,
+  workplace,
+  onBreakRoomExit,
 }: {
   onNearbyChange: (id?: HotspotId, label?: string) => void;
   onInteract: (id: HotspotId) => void;
   enabled: boolean;
   seated?: boolean;
   highlightHotspotId?: HotspotId;
+  workplace: ClientWorkplaceState;
+  onBreakRoomExit: () => void;
 }) {
   const nearbyId = useRef<HotspotId | undefined>(undefined);
   const playerPos = useRef<[number, number, number]>([...PLAYER_SPAWN]);
   const lookAtRef = useRef<[number, number, number]>([...PLAYER_SPAWN]);
+  const insideBreakRoom = useRef(false);
   const [activeHotspot, setActiveHotspot] = useState<HotspotId | undefined>();
   const [doorOpen, setDoorOpen] = useState(false);
   const [openCabinet, setOpenCabinet] = useState<string | null>(null);
@@ -215,6 +225,12 @@ export function SocRoom({
 
   function handlePosition(next: [number, number, number]) {
     playerPos.current = next;
+    const isInside =
+      next[0] > BREAK_NOOK.cornerX &&
+      next[2] < BREAK_NOOK.cornerZ &&
+      next[2] > BREAK_NOOK.wallZ;
+    if (insideBreakRoom.current && !isInside) onBreakRoomExit();
+    insideBreakRoom.current = isInside;
     const near = nearestHotspot(next, hotspots);
     if (near?.id !== nearbyId.current) {
       nearbyId.current = near?.id;
@@ -235,7 +251,10 @@ export function SocRoom({
   return (
     <>
       <color attach="background" args={["#1a1410"]} />
-      <fog attach="fog" args={["#1a1410", seated ? 14 : 20, seated ? 28 : 38]} />
+      <fog
+        attach="fog"
+        args={["#1a1410", seated ? 14 : 20, seated ? 28 : 38]}
+      />
       {/*
         Brightness comes mostly from hemisphere/ambient and emissive ceiling
         panels. Each extra point light costs per-fragment work on every
@@ -273,7 +292,11 @@ export function SocRoom({
       {!seated ? <FloorTileGrid rangeX={10} rangeZ={8} step={1.7} /> : null}
 
       {/* Parallel carpets: center aisle + matching desk pads */}
-      <CarpetRunner position={[0, 0, 0.4]} size={[2.4, floorD - 3]} color="#4a3228" />
+      <CarpetRunner
+        position={[0, 0, 0.4]}
+        size={[2.4, floorD - 3]}
+        color="#4a3228"
+      />
       <CarpetRunner
         position={[COL.east, 0, ROW.north + 0.35]}
         size={[2.8, 3.6]}
@@ -309,7 +332,11 @@ export function SocRoom({
       {/* Fixtures are emissive panels only — extra point lights multiply fill cost. */}
       <CeilingFixture light={false} lit={!seated} position={[-4, 3.2, -2]} />
       <CeilingFixture light={false} lit position={[0, 3.2, 0.5]} />
-      <CeilingFixture light={false} lit={!seated} position={[COL.east, 3.2, -1.5]} />
+      <CeilingFixture
+        light={false}
+        lit={!seated}
+        position={[COL.east, 3.2, -1.5]}
+      />
       {!seated ? (
         <>
           <CeilingFixture light={false} position={[0, 3.2, 4]} />
@@ -354,13 +381,23 @@ export function SocRoom({
       </mesh>
       <mesh position={[0, 2.7, -ROOM.halfZ + 0.2]}>
         <boxGeometry args={[floorW - 1, 0.05, 0.05]} />
-        <meshStandardMaterial color="#e8b84a" emissive="#e8b84a" emissiveIntensity={0.55} />
+        <meshStandardMaterial
+          color="#e8b84a"
+          emissive="#e8b84a"
+          emissiveIntensity={0.55}
+        />
       </mesh>
 
       {!seated ? (
         <>
-          <SecurityCamera position={[-ROOM.halfX + 1.1, 2.85, ROOM.halfZ - 1.5]} rotationY={Math.PI * 0.65} />
-          <SecurityCamera position={[ROOM.halfX - 1.1, 2.85, ROOM.halfZ - 1.5]} rotationY={-Math.PI * 0.65} />
+          <SecurityCamera
+            position={[-ROOM.halfX + 1.1, 2.85, ROOM.halfZ - 1.5]}
+            rotationY={Math.PI * 0.65}
+          />
+          <SecurityCamera
+            position={[ROOM.halfX - 1.1, 2.85, ROOM.halfZ - 1.5]}
+            rotationY={-Math.PI * 0.65}
+          />
         </>
       ) : null}
 
@@ -403,11 +440,7 @@ export function SocRoom({
       />
 
       {/* Mirrored desk row — same facing, clear east corridor to break */}
-      <Workstation
-        position={PLAYER_DESK}
-        showLoginNote
-        clutterVariant={0}
-      />
+      <Workstation position={PLAYER_DESK} showLoginNote clutterVariant={0} />
       <OfficeChair
         position={[PLAYER_DESK[0], 0, PLAYER_DESK[2] + SEAT]}
         rotationY={CHAIR_FACE_DESK}
@@ -552,8 +585,6 @@ export function SocRoom({
       <PersonalLockers position={[8.8, 0.95, ROW.south - 0.15]} />
       <TrashBin position={[6.2, 0, ROW.south - 0.15]} />
       <TrashBin position={[5.8, 0, ROW.south - 0.15]} recycling />
-      <SnackBasket position={[5.9, 0, 0.2]} />
-      <MeshLabel text="SNACKS" position={[5.9, 1.12, 0.2]} width={0.62} height={0.12} />
       <TallFloorPlant position={[-3.6, 0, ROOM.halfZ - 0.85]} scale={0.95} />
       <TallFloorPlant position={[5.15, 0, ROOM.halfZ - 0.85]} scale={0.95} />
 
@@ -561,6 +592,9 @@ export function SocRoom({
         animated={!seated}
         cheapGlass={quality.cheapGlass}
         doorOpen={doorOpen}
+        coffeeStage={workplace.coffeeStage}
+        fridgeOpen={workplace.fridgeOpen}
+        fridgeSnackBars={workplace.fridgeSnackBars}
         highlightJules={highlightHotspotId === "jules"}
         lookAtRef={lookAtRef}
       />
@@ -591,13 +625,22 @@ export function SocRoom({
         </mesh>
         <mesh position={[0.65, 1.25, 0.08]}>
           <boxGeometry args={[0.06, 0.28, 0.05]} />
-          <meshStandardMaterial color="#c4a060" metalness={0.55} roughness={0.35} />
+          <meshStandardMaterial
+            color="#c4a060"
+            metalness={0.55}
+            roughness={0.35}
+          />
         </mesh>
         <mesh position={[0, 2.35, -0.06]}>
           <boxGeometry args={[0.7, 0.18, 0.04]} />
           <meshStandardMaterial color="#1a3028" />
         </mesh>
-        <MeshLabel text="EXIT" position={[0, 2.35, -0.09]} width={0.55} height={0.12} />
+        <MeshLabel
+          text="EXIT"
+          position={[0, 2.35, -0.09]}
+          width={0.55}
+          height={0.12}
+        />
         <mesh position={[0, 0.04, -0.15]} receiveShadow>
           <boxGeometry args={[2.0, 0.06, 0.45]} />
           <meshStandardMaterial color="#4a3a2c" roughness={0.8} />
@@ -605,7 +648,14 @@ export function SocRoom({
       </group>
 
       {quality.contactShadows ? (
-        <ContactShadows opacity={0.16} scale={24} blur={2.4} far={4.5} color="#1a1008" frames={1} />
+        <ContactShadows
+          opacity={0.16}
+          scale={24}
+          blur={2.4}
+          far={4.5}
+          color="#1a1008"
+          frames={1}
+        />
       ) : null}
 
       {!seated
