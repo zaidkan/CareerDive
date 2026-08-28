@@ -3,6 +3,7 @@ import type { LlmProvider } from "@sim/ai";
 import {
   applyAction,
   applyTaskAttempt,
+  applyWorkplaceInteraction,
   createInitialWorldState,
   respondToNotification,
   toClientView,
@@ -18,6 +19,8 @@ import {
   ReflectionSchema,
   SimulationActionIdSchema,
   TaskAttemptSchema,
+  WorkplaceFeedbackCodeSchema,
+  WorkplaceInteractionSchema,
   type CareerPack,
 } from "@sim/schemas";
 import { z } from "zod";
@@ -44,6 +47,25 @@ export function createAppRouter(
   } = {},
 ) {
   const careerPack = options.careerPack ?? getDefaultCareerPack();
+  const acceptedMovementTimesBySession = new Map<string, number[]>();
+
+  function canAcceptMovement(sessionId: string, now: number): boolean {
+    const acceptedTimes = (
+      acceptedMovementTimesBySession.get(sessionId) ?? []
+    ).filter((timestamp) => timestamp > now - 1_000);
+    if (acceptedTimes.length === 0) {
+      acceptedMovementTimesBySession.delete(sessionId);
+    } else {
+      acceptedMovementTimesBySession.set(sessionId, acceptedTimes);
+    }
+    return acceptedTimes.length < 2;
+  }
+
+  function recordAcceptedMovement(sessionId: string, now: number): void {
+    const acceptedTimes = acceptedMovementTimesBySession.get(sessionId) ?? [];
+    acceptedMovementTimesBySession.set(sessionId, [...acceptedTimes, now]);
+  }
+
   return t.router({
     session: t.router({
       create: authenticatedProcedure
@@ -134,6 +156,54 @@ export function createAppRouter(
             view: toClientView(session.state),
             sequence,
             effects: turn.effects,
+          };
+        }),
+      performWorkplaceInteraction: authenticatedProcedure
+        .input(
+          SessionIdSchema.extend({
+            interaction: WorkplaceInteractionSchema,
+          }),
+        )
+        .output(
+          z.object({
+            view: ClientViewSchema,
+            sequence: z.number().int().positive(),
+            feedback: WorkplaceFeedbackCodeSchema,
+          }),
+        )
+        .mutation(async ({ ctx, input }) => {
+          const session = await repository.getSession(
+            ctx.userId,
+            input.sessionId,
+          );
+          const turn = applyWorkplaceInteraction(
+            session.state,
+            input.interaction,
+          );
+          const now = Date.now();
+          if (
+            input.interaction.type === "movement_exertion" &&
+            !canAcceptMovement(input.sessionId, now)
+          ) {
+            throw new Error("Movement submissions are temporarily limited");
+          }
+          if (input.interaction.type === "movement_exertion") {
+            recordAcceptedMovement(input.sessionId, now);
+          }
+          const sequence = session.actionLog.length + 1;
+          session.state = turn.state;
+          session.actionLog.push({
+            sequence,
+            interaction: {
+              type: "workplace_interaction",
+              interaction: input.interaction,
+            },
+          });
+          await repository.saveSession(session);
+          return {
+            view: toClientView(session.state),
+            sequence,
+            feedback: turn.feedbackCode,
           };
         }),
       submitTaskAttempt: authenticatedProcedure

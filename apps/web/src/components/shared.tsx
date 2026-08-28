@@ -4,7 +4,9 @@ import type {
   ClientTaskView,
   ClientView,
   NotificationResponse,
+  WorkplaceInteraction,
 } from "@sim/schemas";
+import type { WorkplaceInteractionResult } from "../client.js";
 
 export type TaskAttemptFeedback = {
   accepted: boolean;
@@ -19,12 +21,16 @@ export type NotificationHandler = (
   notification: ClientNotification,
   response: NotificationResponse["response"],
 ) => Promise<void>;
+export type WorkplaceInteractionHandler = (
+  interaction: WorkplaceInteraction,
+) => Promise<WorkplaceInteractionResult>;
 
 export type ModeProps = {
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
   onTaskAttempt?: TaskAttemptHandler;
   onNotification?: NotificationHandler;
+  onWorkplaceInteraction?: WorkplaceInteractionHandler;
 };
 
 export function OperationalMessages({ messages }: { messages: string[] }) {

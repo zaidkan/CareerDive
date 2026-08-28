@@ -108,6 +108,12 @@ const view: ClientView = {
 };
 
 const clientInteractionStubs = {
+  performWorkplaceInteraction: () =>
+    Promise.resolve({
+      view,
+      sequence: 1,
+      feedback: "fridge_opened" as const,
+    }),
   submitTaskAttempt: () =>
     Promise.resolve({
       view,

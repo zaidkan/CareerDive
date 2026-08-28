@@ -34,6 +34,167 @@ function setup(
 }
 
 describe("authenticated simulation API", () => {
+  describe("workplace interactions", () => {
+    it("persists an owned workplace interaction as one canonical log entry", async () => {
+      const { caller, repository } = setup();
+      const created = await caller.session.create({
+        seed: 42,
+        sessionKind: "assessed",
+        pacingMode: "standard",
+      });
+
+      const opened = await caller.simulation.performWorkplaceInteraction({
+        sessionId: created.sessionId,
+        interaction: { type: "open_fridge" },
+      });
+
+      expect(opened).toMatchObject({
+        sequence: 1,
+        feedback: "fridge_opened",
+        view: { workplace: { fridgeOpen: true } },
+      });
+      const stored = await repository.getSession("user-1", created.sessionId);
+      expect(stored.actionLog).toHaveLength(1);
+      expect(stored.actionLog[0]?.interaction).toEqual({
+        type: "workplace_interaction",
+        interaction: { type: "open_fridge" },
+      });
+    });
+
+    it("does not let another owner mutate a workplace session", async () => {
+      const { caller, otherCaller, repository } = setup();
+      const created = await caller.session.create({
+        seed: 42,
+        sessionKind: "assessed",
+        pacingMode: "standard",
+      });
+
+      await expect(
+        otherCaller.simulation.performWorkplaceInteraction({
+          sessionId: created.sessionId,
+          interaction: { type: "open_fridge" },
+        }),
+      ).rejects.toThrow("Session not found");
+
+      const stored = await repository.getSession("user-1", created.sessionId);
+      expect(stored.state.workplace.fridgeOpen).toBe(false);
+      expect(stored.actionLog).toHaveLength(0);
+    });
+
+    it("rejects invalid and unauthorized interactions without saving or logging", async () => {
+      const { caller, repository } = setup();
+      const created = await caller.session.create({
+        seed: 42,
+        sessionKind: "assessed",
+        pacingMode: "standard",
+      });
+      let saveCount = 0;
+      const saveSession = repository.saveSession.bind(repository);
+      repository.saveSession = async (session) => {
+        saveCount += 1;
+        await saveSession(session);
+      };
+
+      await expect(
+        caller.simulation.performWorkplaceInteraction({
+          sessionId: created.sessionId,
+          interaction: { type: "close_fridge" },
+        }),
+      ).rejects.toThrow("already closed");
+      await expect(
+        caller.simulation.performWorkplaceInteraction({
+          sessionId: created.sessionId,
+          interaction: { type: "open_artifact", artifactId: "restricted" },
+        }),
+      ).rejects.toThrow("not authorized");
+
+      const stored = await repository.getSession("user-1", created.sessionId);
+      expect(stored.state.workplace.fridgeOpen).toBe(false);
+      expect(stored.actionLog).toHaveLength(0);
+      expect(saveCount).toBe(0);
+    });
+
+    it("never produces evidence for workplace interactions in assessed or tutorial sessions", async () => {
+      const { caller, repository } = setup();
+      const assessed = await caller.session.create({
+        seed: 42,
+        sessionKind: "assessed",
+        pacingMode: "standard",
+      });
+      const tutorial = await caller.session.create({
+        seed: 24,
+        sessionKind: "tutorial",
+        pacingMode: "practice",
+      });
+
+      await caller.simulation.performWorkplaceInteraction({
+        sessionId: assessed.sessionId,
+        interaction: { type: "open_fridge" },
+      });
+      await caller.simulation.performWorkplaceInteraction({
+        sessionId: tutorial.sessionId,
+        interaction: { type: "talk_to_jules", topic: "first_day" },
+      });
+
+      expect(repository.evidenceFor("user-1", assessed.sessionId)).toEqual([]);
+      expect(repository.evidenceFor("user-1", tutorial.sessionId)).toEqual([]);
+    });
+
+    it("limits accepted movement without limiting other interactions", async () => {
+      const { caller, repository } = setup();
+      const created = await caller.session.create({
+        seed: 42,
+        sessionKind: "assessed",
+        pacingMode: "standard",
+      });
+      const movement = {
+        sessionId: created.sessionId,
+        interaction: { type: "movement_exertion", distanceMeters: 5 } as const,
+      };
+
+      await caller.simulation.performWorkplaceInteraction(movement);
+      await caller.simulation.performWorkplaceInteraction(movement);
+      await expect(
+        caller.simulation.performWorkplaceInteraction(movement),
+      ).rejects.toThrow("Movement submissions are temporarily limited");
+      const opened = await caller.simulation.performWorkplaceInteraction({
+        sessionId: created.sessionId,
+        interaction: { type: "open_fridge" },
+      });
+
+      expect(opened.sequence).toBe(3);
+      const stored = await repository.getSession("user-1", created.sessionId);
+      expect(stored.state.workplace.energy.current).toBe(98);
+      expect(stored.actionLog).toHaveLength(3);
+    });
+
+    it("does not consume movement capacity when the reducer rejects movement", async () => {
+      const { caller, repository } = setup();
+      const created = await caller.session.create({
+        seed: 42,
+        sessionKind: "assessed",
+        pacingMode: "standard",
+      });
+      const stored = await repository.getSession("user-1", created.sessionId);
+      stored.state.workplace.energy.current = 0;
+      const movement = {
+        sessionId: created.sessionId,
+        interaction: { type: "movement_exertion", distanceMeters: 5 } as const,
+      };
+
+      await expect(
+        caller.simulation.performWorkplaceInteraction(movement),
+      ).rejects.toThrow("requires available energy");
+      stored.state.workplace.energy.current = 2;
+
+      await caller.simulation.performWorkplaceInteraction(movement);
+      await caller.simulation.performWorkplaceInteraction(movement);
+      expect(
+        (await repository.getSession("user-1", created.sessionId)).actionLog,
+      ).toHaveLength(2);
+    });
+  });
+
   it("creates and advances an owned session without accepting an owner id", async () => {
     const { caller } = setup();
     const created = await caller.session.create({

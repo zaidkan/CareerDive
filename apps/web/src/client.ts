@@ -3,10 +3,14 @@ import {
   ClientViewSchema,
   DebriefSchema,
   TaskAttemptOutcomeSchema,
+  WorkplaceFeedbackCodeSchema,
+  WorkplaceInteractionSchema,
   type ClientView,
   type Debrief,
   type NotificationResponse,
   type SimulationActionId,
+  type WorkplaceFeedbackCode,
+  type WorkplaceInteraction,
 } from "@sim/schemas";
 import { z } from "zod";
 
@@ -27,6 +31,10 @@ export interface SimulationClient {
     eventId: string,
     freeText?: string,
   ): Promise<ClientView>;
+  performWorkplaceInteraction(
+    sessionId: string,
+    interaction: WorkplaceInteraction,
+  ): Promise<WorkplaceInteractionResult>;
   submitTaskAttempt(
     sessionId: string,
     taskId: string,
@@ -51,9 +59,20 @@ const SessionResultSchema = z.object({
   view: ClientViewSchema,
 });
 const TurnResultSchema = z.object({ view: ClientViewSchema });
+const WorkplaceInteractionResultSchema = z.object({
+  view: ClientViewSchema,
+  sequence: z.number().int().positive(),
+  feedback: WorkplaceFeedbackCodeSchema,
+});
 const TaskTurnResultSchema = TaskAttemptOutcomeSchema.extend({
   view: ClientViewSchema,
 });
+
+export type WorkplaceInteractionResult = {
+  view: ClientView;
+  sequence: number;
+  feedback: WorkplaceFeedbackCode;
+};
 
 export class HttpSimulationClient implements SimulationClient {
   readonly #client: ReturnType<typeof createTRPCUntypedClient>;
@@ -91,6 +110,18 @@ export class HttpSimulationClient implements SimulationClient {
         ...(freeText === undefined ? {} : { freeText }),
       }),
     ).view;
+  }
+
+  async performWorkplaceInteraction(
+    sessionId: string,
+    interaction: WorkplaceInteraction,
+  ): Promise<WorkplaceInteractionResult> {
+    return WorkplaceInteractionResultSchema.parse(
+      await this.#client.mutation("simulation.performWorkplaceInteraction", {
+        sessionId,
+        interaction: WorkplaceInteractionSchema.parse(interaction),
+      }),
+    );
   }
 
   async submitTaskAttempt(
