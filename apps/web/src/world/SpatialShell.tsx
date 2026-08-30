@@ -10,8 +10,13 @@ import {
 import type {
   AvailableAction,
   ClientView,
+  JulesTopic,
   WorkplaceInteraction,
 } from "@sim/schemas";
+import {
+  julesDialogueFromClientView,
+  type JulesDialogueReply,
+} from "@sim/core";
 import { COMPANY } from "./company.js";
 import {
   BreakRoomPanel,
@@ -21,9 +26,9 @@ import {
 import { coffeeControl, fridgeControl } from "./breakRoom.js";
 import { LaptopOverlay } from "./deskOs/LaptopOverlay.js";
 import { FloorMap } from "./FloorMap.js";
+import { JulesDialogue } from "./JulesDialogue.js";
 import { getJourneyStep } from "../journey.js";
 import { INITIAL_SPATIAL, reduceSpatialEvent } from "./presentation.js";
-import { nextJulesLine } from "./rooms/GlassBreakNook.js";
 import {
   isTypingTarget,
   useFullscreen,
@@ -78,7 +83,8 @@ export function SpatialShell({
   const [nearbyLabel, setNearbyLabel] = useState<string>();
   const [pointerLocked, setPointerLocked] = useState(false);
   const [workplacePending, setWorkplacePending] = useState(false);
-  const julesLine = useRef(0);
+  const [julesOpen, setJulesOpen] = useState(false);
+  const [julesReply, setJulesReply] = useState<JulesDialogueReply>();
   const stageRef = useRef<HTMLDivElement>(null);
   const workplacePendingRef = useRef(false);
   const closeFridgeIntentRef = useRef(false);
@@ -121,44 +127,65 @@ export function SpatialShell({
   }, []);
 
   const submitWorkplaceInteraction = useCallback(
-    (interaction: WorkplaceInteraction) => {
+    async (interaction: WorkplaceInteraction) => {
       if (!onWorkplaceInteraction || workplacePendingRef.current) return;
       workplacePendingRef.current = true;
       setWorkplacePending(true);
 
-      void (async () => {
-        try {
-          const result = await onWorkplaceInteraction(interaction);
-          if (closeFridgeIntentRef.current) {
-            closeFridgeIntentRef.current = false;
-            if (result.view.workplace.fridgeOpen) {
-              try {
-                await onWorkplaceInteraction({ type: "close_fridge" });
-              } catch {
-                dispatch({
-                  type: "set_flavor",
-                  message:
-                    "The fridge did not close. Return to the break room and try again.",
-                });
-              }
+      try {
+        const result = await onWorkplaceInteraction(interaction);
+        if (closeFridgeIntentRef.current) {
+          closeFridgeIntentRef.current = false;
+          if (result.view.workplace.fridgeOpen) {
+            try {
+              await onWorkplaceInteraction({ type: "close_fridge" });
+            } catch {
+              dispatch({
+                type: "set_flavor",
+                message:
+                  "The fridge did not close. Return to the break room and try again.",
+              });
             }
           }
-        } catch {
-          dispatch({
-            type: "set_flavor",
-            message:
-              interaction.type === "close_fridge"
-                ? "The fridge did not close. Try again."
-                : "That break-room action did not go through. Try again.",
-          });
-        } finally {
-          closeFridgeIntentRef.current = false;
-          workplacePendingRef.current = false;
-          setWorkplacePending(false);
         }
-      })();
+        return result;
+      } catch {
+        dispatch({
+          type: "set_flavor",
+          message:
+            interaction.type === "close_fridge"
+              ? "The fridge did not close. Try again."
+              : "That break-room action did not go through. Try again.",
+        });
+        return undefined;
+      } finally {
+        closeFridgeIntentRef.current = false;
+        workplacePendingRef.current = false;
+        setWorkplacePending(false);
+      }
     },
     [onWorkplaceInteraction],
+  );
+
+  const handleJulesTopic = useCallback(
+    (topic: JulesTopic) => {
+      const reply = julesDialogueFromClientView(view, topic);
+      void (async () => {
+        const result = await submitWorkplaceInteraction({
+          type: "talk_to_jules",
+          topic,
+        });
+        if (result) setJulesReply(reply);
+      })();
+    },
+    [submitWorkplaceInteraction, view],
+  );
+
+  const requestWorkplaceInteraction = useCallback(
+    (interaction: WorkplaceInteraction) => {
+      void submitWorkplaceInteraction(interaction);
+    },
+    [submitWorkplaceInteraction],
   );
 
   const requestFridgeCloseOnExit = useCallback(() => {
@@ -168,11 +195,11 @@ export function SpatialShell({
       return;
     }
     if (view.workplace.fridgeOpen) {
-      submitWorkplaceInteraction({ type: "close_fridge" });
+      requestWorkplaceInteraction({ type: "close_fridge" });
     }
   }, [
     onWorkplaceInteraction,
-    submitWorkplaceInteraction,
+    requestWorkplaceInteraction,
     view.workplace.fridgeOpen,
   ]);
 
@@ -180,9 +207,11 @@ export function SpatialShell({
     (id: HotspotId) => {
       switch (id) {
         case "desk_player":
+          setJulesOpen(false);
           dispatch({ type: "sit_desk" });
           break;
         case "door_exit":
+          setJulesOpen(false);
           requestFridgeCloseOnExit();
           dispatch({ type: "leave_room" });
           break;
@@ -194,19 +223,17 @@ export function SpatialShell({
           }
           break;
         case "jules": {
-          const { line, nextIndex } = nextJulesLine(julesLine.current);
-          julesLine.current = nextIndex;
-          dispatch({ type: "set_flavor", message: `Jules: “${line}”` });
+          setJulesOpen(true);
           break;
         }
         case "fridge": {
           const interaction = fridgeControl(view.workplace).interaction;
-          if (interaction) submitWorkplaceInteraction(interaction);
+          if (interaction) requestWorkplaceInteraction(interaction);
           break;
         }
         case "coffee": {
           const interaction = coffeeControl(view.workplace).interaction;
-          if (interaction) submitWorkplaceInteraction(interaction);
+          if (interaction) requestWorkplaceInteraction(interaction);
           break;
         }
         /** The drawer sliding open is the whole feedback — no caption needed. */
@@ -223,7 +250,7 @@ export function SpatialShell({
           break;
       }
     },
-    [requestFridgeCloseOnExit, submitWorkplaceInteraction, view.workplace],
+    [requestFridgeCloseOnExit, requestWorkplaceInteraction, view.workplace],
   );
 
   const journey = getJourneyStep({
@@ -342,6 +369,17 @@ export function SpatialShell({
             Click to look around · WASD to walk · F fullscreen · Esc to release
           </p>
         ) : null}
+        {walking && julesOpen ? (
+          <JulesDialogue
+            onClose={() => {
+              setJulesOpen(false);
+            }}
+            onTopic={handleJulesTopic}
+            pending={workplacePending || !onWorkplaceInteraction}
+            seenTopics={view.workplace.julesTopicsSeen}
+            {...(julesReply ? { reply: julesReply } : {})}
+          />
+        ) : null}
         {walking ? (
           <div className="room-hud">
             <div>
@@ -359,14 +397,14 @@ export function SpatialShell({
               <EnergyMeter workplace={view.workplace} />
               {breakStation ? (
                 <BreakRoomPanel
-                  onSubmit={submitWorkplaceInteraction}
+                  onSubmit={requestWorkplaceInteraction}
                   pending={resourcePending || !onWorkplaceInteraction}
                   station={breakStation}
                   workplace={view.workplace}
                 />
               ) : null}
               <CarriedSnackControl
-                onSubmit={submitWorkplaceInteraction}
+                onSubmit={requestWorkplaceInteraction}
                 pending={resourcePending || !onWorkplaceInteraction}
                 workplace={view.workplace}
               />
@@ -402,6 +440,7 @@ export function SpatialShell({
               <button
                 className="guidance-secondary"
                 onClick={() => {
+                  setJulesOpen(false);
                   requestFridgeCloseOnExit();
                   dispatch({ type: "leave_room" });
                 }}
@@ -433,7 +472,7 @@ export function SpatialShell({
               ) : null}
               <EnergyMeter workplace={view.workplace} />
               <CarriedSnackControl
-                onSubmit={submitWorkplaceInteraction}
+                onSubmit={requestWorkplaceInteraction}
                 pending={resourcePending || !onWorkplaceInteraction}
                 workplace={view.workplace}
               />

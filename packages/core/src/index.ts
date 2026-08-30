@@ -13,6 +13,8 @@ export {
 } from "./notifications.js";
 export { foldActionLog } from "./replay.js";
 export { toClientView } from "./serializer.js";
+export { julesDialogue, julesDialogueFromClientView } from "./jules.js";
+export type { JulesDialogueReply } from "./jules.js";
 export {
   WorkplaceInteractionError,
   applyWorkplaceInteraction,

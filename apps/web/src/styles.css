@@ -2137,6 +2137,134 @@ section[aria-labelledby="structured-title"],
   font-size: 0.95rem;
 }
 
+.jules-dialogue {
+  position: absolute;
+  right: 1rem;
+  bottom: 7.5rem;
+  z-index: 8;
+  width: min(31rem, calc(100% - 2rem));
+  padding: 1rem;
+  border: 1px solid rgb(79 208 200 / 55%);
+  background: linear-gradient(145deg, rgb(34 25 20 / 98%), rgb(10 16 15 / 98%));
+  box-shadow:
+    0 18px 44px rgb(0 0 0 / 52%),
+    inset 0 0 0 1px rgb(232 184 74 / 8%);
+}
+
+.jules-dialogue-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.jules-dialogue-heading .eyebrow {
+  margin: 0 0 0.1rem;
+  color: var(--signal);
+}
+
+.jules-dialogue-heading h2 {
+  margin: 0;
+  color: var(--paper);
+  font-size: 1.25rem;
+}
+
+.jules-dialogue-close {
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--line-bright);
+  background: transparent;
+  color: var(--fog);
+  cursor: pointer;
+}
+
+.jules-dialogue-close:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.jules-dialogue-reply {
+  margin: 0.75rem 0;
+  color: var(--paper);
+  line-height: 1.48;
+}
+
+.jules-dialogue-destination {
+  margin: -0.25rem 0 0.75rem;
+  color: var(--signal);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.jules-dialogue-topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.jules-dialogue-topics button {
+  padding: 0.5rem 0.68rem;
+  border: 1px solid rgb(232 184 74 / 42%);
+  background: rgb(232 184 74 / 9%);
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.jules-dialogue-topics button:hover:not(:disabled) {
+  border-color: var(--phosphor);
+  background: rgb(232 184 74 / 16%);
+}
+
+.jules-dialogue-topics button:disabled {
+  opacity: 0.48;
+  cursor: wait;
+}
+
+.jules-dialogue-discussed {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  margin-top: 0.7rem;
+  color: var(--mute);
+  font-size: 0.7rem;
+}
+
+.jules-dialogue-discussed > span {
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.jules-dialogue-discussed ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.jules-dialogue-discussed li {
+  padding: 0.08rem 0.35rem;
+  border: 1px solid rgb(79 208 200 / 24%);
+  color: var(--signal);
+}
+
+.jules-dialogue-pending {
+  margin: 0.65rem 0 0;
+  color: var(--phosphor);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 720px) {
+  .jules-dialogue {
+    right: 0.75rem;
+    bottom: 10rem;
+    width: calc(100% - 1.5rem);
+  }
+}
+
 /* —— In-sim desk OS (DOM overlay, not drei Html) —— */
 .desk-os-overlay {
   position: absolute;

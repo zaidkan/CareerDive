@@ -423,20 +423,3 @@ export function GlassBreakNook({
     </group>
   );
 }
-
-export const JULES_LINES = [
-  "Oh — you want some too? I'll make you a cup. Cream's in the fridge.",
-  "Hey, is it your first day? Have fun out there. I love this job.",
-  "Welcome to the glass box. Best five minutes of any shift.",
-  "Grab a seat if you need a breather. Desk will still be there.",
-  "First day for new hires, right? You've got this. Enjoy the coffee.",
-  "Oh hey! Pour yourself one — or I can. Day one's better caffeinated.",
-] as const;
-
-export function nextJulesLine(index: number): {
-  line: string;
-  nextIndex: number;
-} {
-  const line = JULES_LINES[index % JULES_LINES.length] ?? JULES_LINES[0];
-  return { line, nextIndex: (index + 1) % JULES_LINES.length };
-}
