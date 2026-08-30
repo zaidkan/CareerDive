@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientView } from "@sim/schemas";
@@ -62,6 +62,17 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
       >
         Cross break-room threshold
       </button>
+      <button
+        onClick={() => {
+          onInteract("coffee");
+        }}
+        onKeyDown={(event) => {
+          if (event.code === "KeyE") onInteract("coffee");
+        }}
+        type="button"
+      >
+        Coffee resource hotspot
+      </button>
     </div>
   ),
 }));
@@ -116,6 +127,16 @@ function interactionResult(
   feedback: WorkplaceInteractionResult["feedback"] = "fridge_opened",
 ): WorkplaceInteractionResult {
   return { view, feedback, sequence: 1 };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, reject, resolve };
 }
 
 async function enterSoc(user: ReturnType<typeof userEvent.setup>) {
@@ -372,8 +393,14 @@ describe("finite break-room interaction loop", () => {
     const threshold = screen.getByRole("button", {
       name: "Cross break-room threshold",
     });
+    const hotspot = screen.getByRole("button", {
+      name: "Coffee resource hotspot",
+    });
     await user.click(threshold);
     await user.click(threshold);
+    await user.click(hotspot);
+    hotspot.focus();
+    await user.keyboard("e");
     expect(onWorkplaceInteraction).toHaveBeenCalledTimes(1);
     expect(onWorkplaceInteraction).toHaveBeenCalledWith({
       type: "close_fridge",
@@ -382,5 +409,148 @@ describe("finite break-room interaction loop", () => {
     resolveClose?.(
       interactionResult(viewWith({ fridgeOpen: false }), "fridge_closed"),
     );
+  });
+
+  it("queues one close from the canonical open result when exit races the open", async () => {
+    const user = userEvent.setup();
+    const opened = deferred<WorkplaceInteractionResult>();
+    const closed = deferred<WorkplaceInteractionResult>();
+    const onWorkplaceInteraction = vi
+      .fn()
+      .mockImplementationOnce(() => opened.promise)
+      .mockImplementationOnce(() => closed.promise);
+    render(
+      <SpatialShell
+        onAction={() => undefined}
+        onWorkplaceInteraction={onWorkplaceInteraction}
+        view={baseView}
+      />,
+    );
+    await enterSoc(user);
+    await user.click(screen.getByRole("button", { name: "Approach fridge" }));
+    await user.click(screen.getByRole("button", { name: "Open fridge" }));
+
+    const threshold = screen.getByRole("button", {
+      name: "Cross break-room threshold",
+    });
+    const hotspot = screen.getByRole("button", {
+      name: "Coffee resource hotspot",
+    });
+    await user.click(threshold);
+    await user.click(threshold);
+    await user.click(hotspot);
+    hotspot.focus();
+    await user.keyboard("e");
+    expect(onWorkplaceInteraction).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      opened.resolve(
+        interactionResult(viewWith({ fridgeOpen: true }), "fridge_opened"),
+      );
+      await opened.promise;
+    });
+
+    await waitFor(() => {
+      expect(onWorkplaceInteraction).toHaveBeenCalledTimes(2);
+    });
+    expect(onWorkplaceInteraction).toHaveBeenNthCalledWith(1, {
+      type: "open_fridge",
+    });
+    expect(onWorkplaceInteraction).toHaveBeenNthCalledWith(2, {
+      type: "close_fridge",
+    });
+    await user.click(hotspot);
+    hotspot.focus();
+    await user.keyboard("e");
+    expect(onWorkplaceInteraction).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      closed.resolve(
+        interactionResult(viewWith({ fridgeOpen: false }), "fridge_closed"),
+      );
+      await closed.promise;
+    });
+    expect(onWorkplaceInteraction).toHaveBeenCalledTimes(2);
+  });
+
+  it("blocks hotspot pointer and keyboard resource calls during a pending close", async () => {
+    const user = userEvent.setup();
+    const closed = deferred<WorkplaceInteractionResult>();
+    const onWorkplaceInteraction = vi.fn(() => closed.promise);
+    render(
+      <SpatialShell
+        onAction={() => undefined}
+        onWorkplaceInteraction={onWorkplaceInteraction}
+        view={viewWith({ fridgeOpen: true })}
+      />,
+    );
+    await enterSoc(user);
+    await user.click(screen.getByRole("button", { name: "Approach fridge" }));
+    await user.click(screen.getByRole("button", { name: "Close fridge" }));
+
+    const hotspot = screen.getByRole("button", {
+      name: "Coffee resource hotspot",
+    });
+    await user.click(hotspot);
+    hotspot.focus();
+    await user.keyboard("e");
+    await user.click(
+      screen.getByRole("button", { name: "Approach coffee maker" }),
+    );
+    expect(screen.getByRole("button", { name: "Start coffee" })).toBeDisabled();
+    expect(onWorkplaceInteraction).toHaveBeenCalledTimes(1);
+    expect(onWorkplaceInteraction).toHaveBeenCalledWith({
+      type: "close_fridge",
+    });
+
+    await act(async () => {
+      closed.resolve(
+        interactionResult(viewWith({ fridgeOpen: false }), "fridge_closed"),
+      );
+      await closed.promise;
+    });
+  });
+
+  it("clears a failed queued exit without retrying in a loop", async () => {
+    const user = userEvent.setup();
+    const opened = deferred<WorkplaceInteractionResult>();
+    const closed = deferred<WorkplaceInteractionResult>();
+    const onWorkplaceInteraction = vi
+      .fn()
+      .mockImplementationOnce(() => opened.promise)
+      .mockImplementationOnce(() => closed.promise);
+    render(
+      <SpatialShell
+        onAction={() => undefined}
+        onWorkplaceInteraction={onWorkplaceInteraction}
+        view={baseView}
+      />,
+    );
+    await enterSoc(user);
+    await user.click(screen.getByRole("button", { name: "Approach fridge" }));
+    await user.click(screen.getByRole("button", { name: "Open fridge" }));
+    await user.click(
+      screen.getByRole("button", { name: "Cross break-room threshold" }),
+    );
+
+    await act(async () => {
+      opened.resolve(
+        interactionResult(viewWith({ fridgeOpen: true }), "fridge_opened"),
+      );
+      await opened.promise;
+    });
+    await waitFor(() => {
+      expect(onWorkplaceInteraction).toHaveBeenCalledTimes(2);
+    });
+
+    await act(async () => {
+      closed.reject(new Error("network unavailable"));
+      await expect(closed.promise).rejects.toThrow("network unavailable");
+    });
+
+    expect(
+      await screen.findByText(/fridge did not close.*break room.*try again/i),
+    ).toBeVisible();
+    expect(onWorkplaceInteraction).toHaveBeenCalledTimes(2);
   });
 });

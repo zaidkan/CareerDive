@@ -78,11 +78,10 @@ export function SpatialShell({
   const [nearbyLabel, setNearbyLabel] = useState<string>();
   const [pointerLocked, setPointerLocked] = useState(false);
   const [workplacePending, setWorkplacePending] = useState(false);
-  const [closeFridgePending, setCloseFridgePending] = useState(false);
   const julesLine = useRef(0);
   const stageRef = useRef<HTMLDivElement>(null);
   const workplacePendingRef = useRef(false);
-  const closeFridgePendingRef = useRef(false);
+  const closeFridgeIntentRef = useRef(false);
   const { active: fullscreen, toggle: toggleFullscreen } =
     useFullscreen(stageRef);
 
@@ -121,52 +120,61 @@ export function SpatialShell({
     setNearbyLabel(label);
   }, []);
 
-  const submitCloseFridge = useCallback(() => {
-    if (
-      !view.workplace.fridgeOpen ||
-      !onWorkplaceInteraction ||
-      closeFridgePendingRef.current
-    ) {
-      return;
-    }
-    closeFridgePendingRef.current = true;
-    setCloseFridgePending(true);
-    void onWorkplaceInteraction({ type: "close_fridge" })
-      .catch(() => {
-        dispatch({
-          type: "set_flavor",
-          message: "The fridge did not close. Try again.",
-        });
-      })
-      .finally(() => {
-        closeFridgePendingRef.current = false;
-        setCloseFridgePending(false);
-      });
-  }, [onWorkplaceInteraction, view.workplace.fridgeOpen]);
-
   const submitWorkplaceInteraction = useCallback(
     (interaction: WorkplaceInteraction) => {
-      if (interaction.type === "close_fridge") {
-        submitCloseFridge();
-        return;
-      }
       if (!onWorkplaceInteraction || workplacePendingRef.current) return;
       workplacePendingRef.current = true;
       setWorkplacePending(true);
-      void onWorkplaceInteraction(interaction)
-        .catch(() => {
+
+      void (async () => {
+        try {
+          const result = await onWorkplaceInteraction(interaction);
+          if (closeFridgeIntentRef.current) {
+            closeFridgeIntentRef.current = false;
+            if (result.view.workplace.fridgeOpen) {
+              try {
+                await onWorkplaceInteraction({ type: "close_fridge" });
+              } catch {
+                dispatch({
+                  type: "set_flavor",
+                  message:
+                    "The fridge did not close. Return to the break room and try again.",
+                });
+              }
+            }
+          }
+        } catch {
           dispatch({
             type: "set_flavor",
-            message: "That break-room action did not go through. Try again.",
+            message:
+              interaction.type === "close_fridge"
+                ? "The fridge did not close. Try again."
+                : "That break-room action did not go through. Try again.",
           });
-        })
-        .finally(() => {
+        } finally {
+          closeFridgeIntentRef.current = false;
           workplacePendingRef.current = false;
           setWorkplacePending(false);
-        });
+        }
+      })();
     },
-    [onWorkplaceInteraction, submitCloseFridge],
+    [onWorkplaceInteraction],
   );
+
+  const requestFridgeCloseOnExit = useCallback(() => {
+    if (!onWorkplaceInteraction) return;
+    if (workplacePendingRef.current) {
+      closeFridgeIntentRef.current = true;
+      return;
+    }
+    if (view.workplace.fridgeOpen) {
+      submitWorkplaceInteraction({ type: "close_fridge" });
+    }
+  }, [
+    onWorkplaceInteraction,
+    submitWorkplaceInteraction,
+    view.workplace.fridgeOpen,
+  ]);
 
   const handleInteract = useCallback(
     (id: HotspotId) => {
@@ -175,7 +183,7 @@ export function SpatialShell({
           dispatch({ type: "sit_desk" });
           break;
         case "door_exit":
-          submitCloseFridge();
+          requestFridgeCloseOnExit();
           dispatch({ type: "leave_room" });
           break;
         case "break_door":
@@ -215,7 +223,7 @@ export function SpatialShell({
           break;
       }
     },
-    [submitCloseFridge, submitWorkplaceInteraction, view.workplace],
+    [requestFridgeCloseOnExit, submitWorkplaceInteraction, view.workplace],
   );
 
   const journey = getJourneyStep({
@@ -282,7 +290,7 @@ export function SpatialShell({
     nearbyHotspotId === "fridge" || nearbyHotspotId === "coffee"
       ? nearbyHotspotId
       : undefined;
-  const resourcePending = workplacePending || closeFridgePending;
+  const resourcePending = workplacePending;
 
   return (
     <section
@@ -298,7 +306,7 @@ export function SpatialShell({
         >
           <RoomCanvas
             enabled={walking}
-            onBreakRoomExit={submitCloseFridge}
+            onBreakRoomExit={requestFridgeCloseOnExit}
             onInteract={handleInteract}
             onNearbyChange={onNearbyChange}
             seated={atDesk}
@@ -394,7 +402,7 @@ export function SpatialShell({
               <button
                 className="guidance-secondary"
                 onClick={() => {
-                  submitCloseFridge();
+                  requestFridgeCloseOnExit();
                   dispatch({ type: "leave_room" });
                 }}
                 type="button"
