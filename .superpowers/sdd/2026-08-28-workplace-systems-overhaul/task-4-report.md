@@ -68,3 +68,49 @@ Passed 24/24 tests across 2 files.
 
 - Spatial web tests continue to print the pre-existing `THREE.WARNING: Multiple instances of Three.js being imported` warning; all affected tests pass.
 - General cross-surface mutation coordination remains intentionally deferred to Task 6. Task 4 only guards its resource buttons and duplicate fridge-close submission path.
+
+## Review round 1: serialized resource mutations
+
+Fixed the confirmed exit race by replacing the independent resource and fridge-close pending paths with one Task-4-local in-flight path and a latched exit-close intent.
+
+Fix commit: `92234a7922cb5a543a1910fa11787f5bec05400a` (`fix: serialize break room interactions`)
+
+### RED
+
+Regression tests were written before the production edit. The package-local path resolved, so no root-relative fallback was required:
+
+```text
+pnpm --filter @sim/web exec vitest run test/break-room.test.tsx --reporter=dot
+```
+
+Decisive result: 2 failed and 9 passed. The open-fridge/immediate-exit case made only the opening request instead of following its returned canonical open view with `close_fridge`; a direct pending close also admitted a second coffee interaction.
+
+### GREEN and refactor
+
+- All Task-4 workplace mutations now share `workplacePendingRef`; panel actions, carried-snack controls, pointer hotspots, and keyboard `E` cannot start another request until the complete sequence releases it.
+- Exiting while a request is pending sets one boolean close intent. Once that request resolves, the code reads `result.view.workplace.fridgeOpen` and, only when needed, awaits exactly one `close_fridge` request before clearing pending state.
+- Repeated exits collapse into the same intent. Input remains blocked while the queued close is pending.
+- A failed initial mutation clears the intent through the common finalizer. A failed queued close is swallowed after a visible “return to the break room and try again” message, so it does not loop.
+- The coordinator is deliberately local to `SpatialShell` workplace-resource calls; Task 6 retains ownership of later cross-Desk-OS coordination.
+- The approved static `SnackBasket` remains untouched as noninteractive break-room décor. Canonical fridge stock meshes and actionable controls are unchanged.
+
+### Review-round verification
+
+- Focused break-room/world run: 18/18 tests passed across 2 files.
+- Full web run: 121/121 tests passed across 13 files.
+- Web typecheck: passed.
+- Web lint: passed.
+- Prettier check for both review-round files: passed.
+- `git diff --check`: passed.
+
+### Review-round files
+
+- `apps/web/src/world/SpatialShell.tsx` — unifies resource mutation serialization and queues one canonical-result-driven close on exit.
+- `apps/web/test/break-room.test.tsx` — adds deferred-response regressions for open/exit ordering, pointer and keyboard blocking during direct and queued closes, and non-looping queued-close failure feedback.
+
+### Review-round self-review and concerns
+
+- The queued-close decision does not read a stale render closure; `view.workplace.fridgeOpen` is consulted only for an idle exit, while an exit during an in-flight request is resolved from that request's returned canonical view.
+- Pending state spans the entire request plus any queued close. The close intent is cleared in all success and failure paths, preventing duplicate or looping submissions.
+- No global request coordinator, deterministic Jules dialogue, Desk OS work, navigation recovery, ledger edit, subagent, or reviewer was introduced.
+- The only remaining warning is the pre-existing duplicate-Three.js import warning emitted by spatial tests; all tests pass.
