@@ -44,7 +44,7 @@ export function JulesDialogue({
       aria-modal="false"
       className="jules-dialogue"
       onKeyDown={(event) => {
-        if (event.key === "Escape" && !pending) onClose();
+        if (event.key === "Escape") onClose();
       }}
       role="dialog"
     >
@@ -56,7 +56,6 @@ export function JulesDialogue({
         <button
           aria-label="Close"
           className="jules-dialogue-close"
-          disabled={pending}
           onClick={onClose}
           type="button"
         >

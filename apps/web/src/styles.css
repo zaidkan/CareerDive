@@ -2177,11 +2177,6 @@ section[aria-labelledby="structured-title"],
   cursor: pointer;
 }
 
-.jules-dialogue-close:disabled {
-  opacity: 0.5;
-  cursor: wait;
-}
-
 .jules-dialogue-reply {
   margin: 0.75rem 0;
   color: var(--paper);

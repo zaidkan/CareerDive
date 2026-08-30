@@ -132,22 +132,25 @@ export function SpatialShell({
       workplacePendingRef.current = true;
       setWorkplacePending(true);
 
+      const attemptQueuedClose = async (shouldAttempt: boolean) => {
+        if (!closeFridgeIntentRef.current) return;
+        closeFridgeIntentRef.current = false;
+        if (!shouldAttempt) return;
+
+        try {
+          await onWorkplaceInteraction({ type: "close_fridge" });
+        } catch {
+          dispatch({
+            type: "set_flavor",
+            message:
+              "The fridge did not close. Return to the break room and try again.",
+          });
+        }
+      };
+
       try {
         const result = await onWorkplaceInteraction(interaction);
-        if (closeFridgeIntentRef.current) {
-          closeFridgeIntentRef.current = false;
-          if (result.view.workplace.fridgeOpen) {
-            try {
-              await onWorkplaceInteraction({ type: "close_fridge" });
-            } catch {
-              dispatch({
-                type: "set_flavor",
-                message:
-                  "The fridge did not close. Return to the break room and try again.",
-              });
-            }
-          }
-        }
+        await attemptQueuedClose(result.view.workplace.fridgeOpen);
         return result;
       } catch {
         dispatch({
@@ -157,6 +160,7 @@ export function SpatialShell({
               ? "The fridge did not close. Try again."
               : "That break-room action did not go through. Try again.",
         });
+        await attemptQueuedClose(interaction.type !== "close_fridge");
         return undefined;
       } finally {
         closeFridgeIntentRef.current = false;

@@ -284,6 +284,82 @@ describe("purposeful Jules dialogue panel", () => {
     expect(within(dialog).getByText(/Back to Guides/i)).toBeVisible();
   });
 
+  it("allows Close during a pending reply and retains only the successful reply", async () => {
+    const user = userEvent.setup();
+    const talking = deferred<WorkplaceInteractionResult>();
+    const onWorkplaceInteraction = vi.fn(() => talking.promise);
+    render(
+      <SpatialShell
+        onAction={() => undefined}
+        onWorkplaceInteraction={onWorkplaceInteraction}
+        view={baseView}
+      />,
+    );
+    await enterSoc(user);
+    const dialog = await openJulesVisually(user);
+    await user.click(
+      within(dialog).getByRole("button", { name: "Current work" }),
+    );
+
+    const close = within(dialog).getByRole("button", { name: "Close" });
+    expect(close).toBeEnabled();
+    await user.click(close);
+    expect(
+      screen.queryByRole("dialog", { name: "Conversation with Jules" }),
+    ).toBeNull();
+    expect(onWorkplaceInteraction).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      talking.resolve(result(viewWith({ julesTopicsSeen: ["current_work"] })));
+      await talking.promise;
+    });
+
+    const reopened = await openJulesVisually(user);
+    expect(within(reopened).getByText(/device inventory/i)).toBeVisible();
+  });
+
+  it("allows Escape during a pending reply while the shared gate stays closed", async () => {
+    const user = userEvent.setup();
+    const talking = deferred<WorkplaceInteractionResult>();
+    const onWorkplaceInteraction = vi.fn(() => talking.promise);
+    render(
+      <SpatialShell
+        onAction={() => undefined}
+        onWorkplaceInteraction={onWorkplaceInteraction}
+        view={baseView}
+      />,
+    );
+    await enterSoc(user);
+    const dialog = await openJulesVisually(user);
+    await user.click(
+      within(dialog).getByRole("button", { name: "Current work" }),
+    );
+
+    within(dialog).getByRole("button", { name: "Close" }).focus();
+    await user.keyboard("{Escape}");
+    expect(
+      screen.queryByRole("dialog", { name: "Conversation with Jules" }),
+    ).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Approach fridge" }));
+    expect(screen.getByRole("button", { name: "Open fridge" })).toBeDisabled();
+    const coffee = screen.getByRole("button", {
+      name: "Coffee resource hotspot",
+    });
+    await user.click(coffee);
+    coffee.focus();
+    await user.keyboard("e");
+    expect(onWorkplaceInteraction).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      talking.resolve(result(viewWith({ julesTopicsSeen: ["current_work"] })));
+      await talking.promise;
+    });
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Open fridge" })).toBeEnabled();
+    });
+  });
+
   it("keeps the panel open without revealing a reply after failure", async () => {
     const user = userEvent.setup();
     const onWorkplaceInteraction = vi
@@ -367,6 +443,71 @@ describe("purposeful Jules dialogue panel", () => {
     });
     expect(onWorkplaceInteraction).toHaveBeenNthCalledWith(2, {
       type: "close_fridge",
+    });
+  });
+
+  it("attempts one queued close after a rejected reply and holds the gate until it settles", async () => {
+    const user = userEvent.setup();
+    const talking = deferred<WorkplaceInteractionResult>();
+    const closing = deferred<WorkplaceInteractionResult>();
+    const onWorkplaceInteraction = vi
+      .fn()
+      .mockImplementationOnce(() => talking.promise)
+      .mockImplementationOnce(() => closing.promise);
+    render(
+      <SpatialShell
+        onAction={() => undefined}
+        onWorkplaceInteraction={onWorkplaceInteraction}
+        view={viewWith({ fridgeOpen: true })}
+      />,
+    );
+    await enterSoc(user);
+    const dialog = await openJulesVisually(user);
+    await user.click(
+      within(dialog).getByRole("button", { name: "Current work" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Cross break-room threshold" }),
+    );
+
+    await act(async () => {
+      talking.reject(new Error("reply unavailable"));
+      await expect(talking.promise).rejects.toThrow("reply unavailable");
+    });
+
+    await waitFor(() => {
+      expect(onWorkplaceInteraction).toHaveBeenCalledTimes(2);
+    });
+    expect(onWorkplaceInteraction).toHaveBeenNthCalledWith(2, {
+      type: "close_fridge",
+    });
+
+    await user.click(screen.getByRole("button", { name: "Approach fridge" }));
+    expect(screen.getByRole("button", { name: "Close fridge" })).toBeDisabled();
+    await user.click(
+      screen.getByRole("button", { name: "Cross break-room threshold" }),
+    );
+    const coffee = screen.getByRole("button", {
+      name: "Coffee resource hotspot",
+    });
+    await user.click(coffee);
+    coffee.focus();
+    await user.keyboard("e");
+    expect(onWorkplaceInteraction).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      closing.reject(new Error("close unavailable"));
+      await expect(closing.promise).rejects.toThrow("close unavailable");
+    });
+
+    expect(
+      await screen.findByText(/fridge did not close.*break room.*try again/i),
+    ).toBeVisible();
+    expect(onWorkplaceInteraction).toHaveBeenCalledTimes(2);
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: "Close fridge" }),
+      ).toBeEnabled();
     });
   });
 });

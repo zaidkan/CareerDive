@@ -57,6 +57,38 @@ function currentWorkReply(
     };
   }
 
+  if (available.has("inspect_login_context")) {
+    return {
+      speaker: "Jules",
+      text: `${prefix}the login context in Alerts is the next useful record. Compare the visible device, network, and account context, then note what still needs checking.`,
+      nextSystemId: "alert_dashboard",
+    };
+  }
+
+  if (available.has("inspect_account_history")) {
+    return {
+      speaker: "Jules",
+      text: `${prefix}the account history in Alerts is still available. Compare the usual pattern with the visible login context and record the difference without choosing an outcome yet.`,
+      nextSystemId: "alert_dashboard",
+    };
+  }
+
+  if (available.has("review_alert")) {
+    return {
+      speaker: "Jules",
+      text: `${prefix}Alerts has the next visible record. Read the alert, note what needs checking, and avoid treating one clue as the whole answer.`,
+      nextSystemId: "alert_dashboard",
+    };
+  }
+
+  if (available.has("read_handoff")) {
+    return {
+      speaker: "Jules",
+      text: `${prefix}open Email and read the shift handoff. Note the unfinished work so it stays visible while you decide what to pick up next.`,
+      nextSystemId: "email",
+    };
+  }
+
   if (available.has("escalate_alert") || available.has("dismiss_alert")) {
     return {
       speaker: "Jules",
@@ -65,24 +97,15 @@ function currentWorkReply(
     };
   }
 
-  if (
-    available.has("review_alert") ||
-    available.has("inspect_login_context") ||
-    available.has("inspect_account_history")
-  ) {
-    return {
-      speaker: "Jules",
-      text: `${prefix}Alerts has the next visible context. Read the record, note what needs checking, and avoid treating one clue as the whole answer.`,
-      nextSystemId: "alert_dashboard",
-    };
-  }
-
   const activeWork = state.events.some(({ status }) => status === "active");
   return {
     speaker: "Jules",
-    text: activeWork
-      ? `${prefix}there isn't a new public investigation step yet. Keep your notes current and watch the queue for the next visible update.`
-      : `${prefix}the visible queue is settled. Check your notes, then ask Morgan what should happen next.`,
+    text:
+      state.availableActions.length > 0
+        ? `${prefix}public work is available, but I can't safely summarize that step here. Open the available item at your desk, read its purpose, and ask Morgan if the procedure is unclear.`
+        : activeWork
+          ? `${prefix}no new public step is showing yet. Keep your notes current and watch the queue for the next visible update.`
+          : `${prefix}the visible queue is settled. Check your notes, then ask Morgan what should happen next.`,
   };
 }
 

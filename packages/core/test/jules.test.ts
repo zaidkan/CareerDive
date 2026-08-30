@@ -68,6 +68,67 @@ describe("purposeful deterministic Jules dialogue", () => {
     expect(investigationReply.nextSystemId).toBe("ticket_queue");
   });
 
+  it("keeps required investigation ahead of an early dismiss option", () => {
+    const afterReview = withLoginContext(["review_alert"]);
+    const afterDeviceCheck = withLoginContext([
+      "review_alert",
+      "inspect_login_context",
+      "check_device_inventory",
+    ]);
+
+    const contextReply = julesDialogue(afterReview, "current_work");
+    const historyReply = julesDialogue(afterDeviceCheck, "current_work");
+    const afterReviewActions = toClientView(afterReview).availableActions.map(
+      ({ id }) => id,
+    );
+    const afterDeviceCheckActions = toClientView(
+      afterDeviceCheck,
+    ).availableActions.map(({ id }) => id);
+
+    expect(afterReviewActions).toContain("dismiss_alert");
+    expect(afterReviewActions).toContain("inspect_login_context");
+    expect(contextReply.text).toMatch(/login context|context in Alerts/i);
+    expect(contextReply.text).not.toMatch(/decision point/i);
+    expect(contextReply.nextSystemId).toBe("alert_dashboard");
+    expect(afterDeviceCheckActions).toContain("dismiss_alert");
+    expect(afterDeviceCheckActions).toContain("inspect_account_history");
+    expect(historyReply.text).toMatch(/account history/i);
+    expect(historyReply.text).not.toMatch(/decision point/i);
+    expect(historyReply.nextSystemId).toBe("alert_dashboard");
+  });
+
+  it("guides the visible shift handoff without exposing action identifiers", () => {
+    const handoffStage = world();
+    const login = handoffStage.events.find(
+      ({ id }) => id === "suspicious-login-1",
+    );
+    if (!login) throw new Error("Missing suspicious login event");
+    login.status = "resolved";
+
+    const reply = julesDialogue(handoffStage, "current_work");
+    const serialized = JSON.stringify(reply);
+
+    expect(reply.text).toMatch(/open|read/i);
+    expect(reply.text).toMatch(/shift handoff|unfinished work/i);
+    expect(reply.nextSystemId).toBe("email");
+    expect(serialized).not.toMatch(/read_handoff|action id|requiredOptionIds/i);
+  });
+
+  it("does not deny public work when an available action is unrecognized", () => {
+    const view = toClientView(world());
+    const utility = view.availableActions.find(
+      ({ id }) => id === "update_notebook",
+    );
+    if (!utility) throw new Error("Missing public utility action");
+    view.availableActions = [utility];
+
+    const reply = julesDialogueFromClientView(view, "current_work");
+
+    expect(reply.text).toMatch(/public work is available/i);
+    expect(reply.text).not.toMatch(/isn't a new|no public work/i);
+    expect(JSON.stringify(reply)).not.toContain("update_notebook");
+  });
+
   it("ignores hidden facts, hidden assessment, and task answer keys", () => {
     const publicStage = withLoginContext();
     const poisoned = structuredClone(publicStage);
