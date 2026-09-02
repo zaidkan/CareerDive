@@ -12,12 +12,13 @@ export function MutationStatus({
 
   useEffect(() => {
     if (state.error || state.success) messageRef.current?.focus();
-  }, [state.error, state.success]);
+  }, [state.error, state.requestSequence, state.success]);
 
   if (state.error) {
     return (
       <div
         className="mutation-status mutation-status-error"
+        key={state.requestSequence}
         ref={messageRef}
         role="alert"
         tabIndex={-1}

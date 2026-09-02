@@ -12,6 +12,7 @@ export type MutationState = {
   pendingKey?: string;
   error?: string;
   success?: string;
+  requestSequence?: number;
 };
 
 export type MutationOutcome<Result> = {
@@ -91,9 +92,9 @@ export function useMutationCoordinator(applyView: (view: ClientView) => void) {
 
       const sequence = ++sequenceRef.current;
       setMutationState((current) => ({
-        ...(current.error ? { error: current.error } : {}),
         ...(current.success ? { success: current.success } : {}),
         pendingKey: key,
+        requestSequence: sequence,
       }));
 
       const promise = Promise.resolve()
@@ -103,7 +104,9 @@ export function useMutationCoordinator(applyView: (view: ClientView) => void) {
             applyView(outcome.view);
             failedRef.current = undefined;
             setMutationState(
-              outcome.success ? { success: outcome.success } : {},
+              outcome.success
+                ? { requestSequence: sequence, success: outcome.success }
+                : { requestSequence: sequence },
             );
             outcome.onApplied?.();
           }
@@ -117,6 +120,7 @@ export function useMutationCoordinator(applyView: (view: ClientView) => void) {
             };
             setMutationState((current) => ({
               error: errorMessage(cause),
+              requestSequence: sequence,
               ...(current.success ? { success: current.success } : {}),
             }));
           }

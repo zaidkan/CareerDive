@@ -12,8 +12,11 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ClientTaskView, ClientView } from "@sim/schemas";
 import type { SimulationClient } from "../src/client.js";
+import { AccessibleMode } from "../src/components/AccessibleMode.js";
 import { App } from "../src/index.js";
 import { SystemToolPanel } from "../src/components/SystemToolPanel.js";
+import { WorkSurface } from "../src/components/WorkSurface.js";
+import type { NotificationHandler } from "../src/components/shared.js";
 import { DeskOs } from "../src/world/deskOs/DeskOs.js";
 import { SystemApp } from "../src/world/deskOs/SystemApp.js";
 
@@ -31,15 +34,34 @@ vi.mock("../src/world/FloorMap.js", () => ({
 }));
 
 vi.mock("../src/world/RoomCanvas.js", () => ({
-  RoomCanvas: ({ onInteract }: { onInteract: (id: string) => void }) => (
-    <button
-      onClick={() => {
-        onInteract("desk_player");
-      }}
-      type="button"
-    >
-      Sit at desk
-    </button>
+  RoomCanvas: ({
+    onBreakRoomExit,
+    onInteract,
+  }: {
+    onBreakRoomExit: () => void;
+    onInteract: (id: string) => void;
+  }) => (
+    <>
+      <button
+        onClick={() => {
+          onInteract("desk_player");
+        }}
+        type="button"
+      >
+        Sit at desk
+      </button>
+      <button
+        onClick={() => {
+          onInteract("fridge");
+        }}
+        type="button"
+      >
+        Open fridge
+      </button>
+      <button onClick={onBreakRoomExit} type="button">
+        Exit break room
+      </button>
+    </>
   ),
 }));
 
@@ -327,6 +349,97 @@ describe("Desk OS mutation coordination", () => {
     expect(screen.queryByText("Stale tutorial response")).toBeNull();
   });
 
+  it("revokes queued workplace continuations before an assessed session starts", async () => {
+    const user = userEvent.setup();
+    const tutorialOpen =
+      deferred<
+        Awaited<ReturnType<SimulationClient["performWorkplaceInteraction"]>>
+      >();
+    const tutorialView = makeView();
+    const openedTutorialView = makeView({
+      workplace: { ...tutorialView.workplace, fridgeOpen: true },
+    });
+    const staleClosedView = makeView({
+      events: [
+        {
+          ...first(tutorialView.events),
+          title: "Stale tutorial close response",
+        },
+      ],
+    });
+    const assessedView = makeView({
+      sessionId: "assessed-session",
+      sessionKind: "assessed",
+      pacingMode: "standard",
+      events: [
+        {
+          ...first(tutorialView.events),
+          title: "Current assessed case",
+        },
+      ],
+    });
+    const createSession = vi.fn(
+      (input: Parameters<SimulationClient["createSession"]>[0]) =>
+        Promise.resolve(
+          input.sessionKind === "tutorial"
+            ? { sessionId: tutorialView.sessionId, view: tutorialView }
+            : { sessionId: assessedView.sessionId, view: assessedView },
+        ),
+    );
+    const performWorkplaceInteraction = vi
+      .fn<SimulationClient["performWorkplaceInteraction"]>()
+      .mockImplementationOnce(() => tutorialOpen.promise)
+      .mockResolvedValue({
+        view: staleClosedView,
+        sequence: 2,
+        feedback: "fridge_closed",
+      });
+    render(
+      <App
+        client={makeClient(tutorialView, {
+          createSession,
+          performWorkplaceInteraction,
+        })}
+      />,
+    );
+    await user.click(
+      await screen.findByRole("button", { name: /Enter the Verdaly floor/i }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Security Operations" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Open fridge" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Exit break room" }));
+
+    await user.click(screen.getByRole("button", { name: /Skip practice/i }));
+    await screen.findByText("Assessed shift");
+
+    await act(async () => {
+      tutorialOpen.resolve({
+        view: openedTutorialView,
+        sequence: 1,
+        feedback: "fridge_opened",
+      });
+      await tutorialOpen.promise;
+    });
+
+    await waitFor(() => {
+      expect(performWorkplaceInteraction).toHaveBeenCalledTimes(1);
+    });
+    expect(performWorkplaceInteraction).toHaveBeenCalledWith("session-1", {
+      type: "open_fridge",
+    });
+
+    await enterDesk(user);
+    await user.click(screen.getByRole("tab", { name: /^Alerts/ }));
+    expect(
+      screen.getByRole("heading", { name: "Current assessed case" }),
+    ).toBeVisible();
+    expect(screen.queryByText("Stale tutorial close response")).toBeNull();
+  });
+
   it("keeps failed canonical state unchanged and retries only the failed operation", async () => {
     const user = userEvent.setup();
     const initialView = makeView();
@@ -359,6 +472,188 @@ describe("Desk OS mutation coordination", () => {
     expect(
       await within(desk).findByText("Review alert completed."),
     ).toBeVisible();
+  });
+
+  it.each([
+    ["snooze", "Snooze 15 minutes"],
+    ["continue", "Continue current case"],
+  ] as const)(
+    "does not release a failed Handle target after a successful %s response",
+    async (_response, responseLabel) => {
+      const user = userEvent.setup();
+      const base = makeView();
+      const initialView = makeView({
+        events: [
+          first(base.events),
+          {
+            ...first(base.events),
+            id: "email-1",
+            systemId: "email",
+            title: "Handle-linked email",
+          },
+        ],
+        notifications: [
+          {
+            id: "email-arrived",
+            eventId: "email-1",
+            systemId: "email",
+            title: "Email arrived",
+            body: "Review the linked message.",
+            priority: "high",
+            status: "unread",
+            canSnooze: true,
+          },
+        ],
+      });
+      const updatedView = makeView({
+        ...initialView,
+        notifications: [
+          {
+            ...first(initialView.notifications),
+            status: "acknowledged",
+          },
+        ],
+      });
+      const respondToNotification = vi
+        .fn<SimulationClient["respondToNotification"]>()
+        .mockRejectedValueOnce(new Error("network down"))
+        .mockResolvedValueOnce(updatedView);
+      render(
+        <App client={makeClient(initialView, { respondToNotification })} />,
+      );
+      await enterDesk(user);
+      await user.click(screen.getByRole("tab", { name: "Dashboard" }));
+      expect(
+        screen.getByRole("heading", { name: "Your workstation" }),
+      ).toBeVisible();
+
+      await user.click(screen.getByRole("button", { name: "Handle now" }));
+      expect(await screen.findByRole("alert")).toHaveTextContent(
+        "That notification choice could not be saved.",
+      );
+      await user.click(screen.getByRole("button", { name: responseLabel }));
+
+      await waitFor(() => {
+        expect(respondToNotification).toHaveBeenCalledTimes(2);
+      });
+      expect(
+        screen.getByRole("heading", { name: "Your workstation" }),
+      ).toBeVisible();
+      expect(screen.getByRole("tab", { name: "Email" })).toHaveAttribute(
+        "aria-selected",
+        "false",
+      );
+      expect(
+        screen.queryByRole("heading", { name: "Handle-linked email" }),
+      ).toBeNull();
+    },
+  );
+
+  it("focuses the linked work only when a failed Handle retry is applied", async () => {
+    const user = userEvent.setup();
+    const retry = deferred<ClientView>();
+    const base = makeView();
+    const initialView = makeView({
+      events: [
+        first(base.events),
+        {
+          ...first(base.events),
+          id: "email-1",
+          systemId: "email",
+          title: "Retried Handle email",
+        },
+      ],
+      notifications: [
+        {
+          id: "email-arrived",
+          eventId: "email-1",
+          systemId: "email",
+          title: "Email arrived",
+          body: "Review the linked message.",
+          priority: "high",
+          status: "unread",
+          canSnooze: true,
+        },
+      ],
+    });
+    const handledView = makeView({
+      ...initialView,
+      notifications: [
+        {
+          ...first(initialView.notifications),
+          status: "acknowledged",
+        },
+      ],
+    });
+    const respondToNotification = vi
+      .fn<SimulationClient["respondToNotification"]>()
+      .mockRejectedValueOnce(new Error("network down"))
+      .mockImplementationOnce(() => retry.promise);
+    render(<App client={makeClient(initialView, { respondToNotification })} />);
+    await enterDesk(user);
+    await user.click(screen.getByRole("tab", { name: "Dashboard" }));
+    await user.click(screen.getByRole("button", { name: "Handle now" }));
+
+    const error = await screen.findByRole("alert");
+    await user.click(within(error).getByRole("button", { name: "Retry" }));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByText("Saving change…")).toBeVisible();
+
+    await act(async () => {
+      retry.resolve(handledView);
+      await retry.promise;
+    });
+
+    const heading = await screen.findByRole("heading", {
+      name: "Retried Handle email",
+    });
+    await waitFor(() => {
+      expect(heading).toHaveFocus();
+    });
+  });
+
+  it("re-announces an identical retry failure without an unhandled rejection", async () => {
+    const user = userEvent.setup();
+    const retry = deferred<ClientView>();
+    const initialView = makeView({
+      notifications: [
+        {
+          id: "alert-arrived",
+          eventId: "alert-1",
+          systemId: "alert_dashboard",
+          title: "Alert arrived",
+          body: "Review the linked case.",
+          priority: "high",
+          status: "unread",
+          canSnooze: true,
+        },
+      ],
+    });
+    const respondToNotification = vi
+      .fn<SimulationClient["respondToNotification"]>()
+      .mockRejectedValueOnce(new Error("network down"))
+      .mockImplementationOnce(() => retry.promise);
+    render(<App client={makeClient(initialView, { respondToNotification })} />);
+    await enterDesk(user);
+    await user.click(screen.getByRole("button", { name: "Handle now" }));
+
+    const firstError = await screen.findByRole("alert");
+    await user.click(within(firstError).getByRole("button", { name: "Retry" }));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByText("Saving change…")).toBeVisible();
+
+    await act(async () => {
+      retry.reject(new Error("network down"));
+      await expect(retry.promise).rejects.toThrow("network down");
+    });
+
+    const repeatedError = await screen.findByRole("alert");
+    expect(repeatedError).not.toBe(firstError);
+    expect(repeatedError).toHaveTextContent(
+      "That notification choice could not be saved.",
+    );
+    expect(repeatedError).toHaveFocus();
+    expect(respondToNotification).toHaveBeenCalledTimes(2);
   });
 
   it("persistently confirms a successful utility save", async () => {
@@ -664,6 +959,132 @@ describe("Desk OS canonical state rendering", () => {
       "Task complete. Evidence documented.",
     );
     expect(finalFeedback).toHaveFocus();
+  });
+});
+
+describe("notification focus parity", () => {
+  function notificationView() {
+    const base = makeView();
+    return makeView({
+      events: [
+        first(base.events),
+        {
+          ...first(base.events),
+          id: "email-1",
+          systemId: "email",
+          title: "Structured Handle email",
+        },
+      ],
+      notifications: [
+        {
+          id: "email-arrived",
+          eventId: "email-1",
+          systemId: "email",
+          title: "Email arrived",
+          body: "Review the linked message.",
+          priority: "high",
+          status: "unread",
+          canSnooze: true,
+        },
+      ],
+    });
+  }
+
+  it("keeps WorkSurface and structured focus unchanged after failed Handle and alternate success", async () => {
+    const user = userEvent.setup();
+    const view = notificationView();
+    const workNotification = vi.fn<NotificationHandler>(async () => undefined);
+    const work = render(
+      <WorkSurface
+        onAction={() => undefined}
+        onNotification={workNotification}
+        view={view}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Handle now" }));
+    await user.click(screen.getByRole("button", { name: "Snooze 15 minutes" }));
+    expect(screen.getByRole("heading", { name: "Review alert" })).toBeVisible();
+    expect(
+      screen.queryByRole("heading", { name: "Structured Handle email" }),
+    ).toBeNull();
+    work.unmount();
+
+    const structuredNotification = vi.fn<NotificationHandler>(
+      async () => undefined,
+    );
+    render(
+      <AccessibleMode
+        onAction={() => undefined}
+        onNotification={structuredNotification}
+        view={view}
+      />,
+    );
+    const structuredTarget = document.getElementById(
+      "structured-event-email-1",
+    );
+    if (!structuredTarget) throw new Error("Expected structured email target");
+
+    await user.click(screen.getByRole("button", { name: "Handle now" }));
+    await user.click(
+      screen.getByRole("button", { name: "Continue current case" }),
+    );
+    expect(structuredTarget).not.toHaveFocus();
+  });
+
+  it("uses the retained Handle callback after a successful retry in both modes", async () => {
+    const user = userEvent.setup();
+    const view = notificationView();
+    let applyWorkHandle: (() => void) | undefined;
+    const workNotification = vi.fn<NotificationHandler>(
+      async (_notification, response, onApplied) => {
+        if (response === "handle") applyWorkHandle = onApplied;
+      },
+    );
+    const work = render(
+      <WorkSurface
+        onAction={() => undefined}
+        onNotification={workNotification}
+        view={view}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Handle now" }));
+    expect(screen.getByRole("heading", { name: "Review alert" })).toBeVisible();
+    act(() => {
+      applyWorkHandle?.();
+    });
+    expect(
+      screen.getByRole("heading", { name: "Structured Handle email" }),
+    ).toBeVisible();
+    work.unmount();
+
+    let applyStructuredHandle: (() => void) | undefined;
+    const structuredNotification = vi.fn<NotificationHandler>(
+      async (_notification, response, onApplied) => {
+        if (response === "handle") applyStructuredHandle = onApplied;
+      },
+    );
+    render(
+      <AccessibleMode
+        onAction={() => undefined}
+        onNotification={structuredNotification}
+        view={view}
+      />,
+    );
+    const structuredTarget = document.getElementById(
+      "structured-event-email-1",
+    );
+    if (!structuredTarget) throw new Error("Expected structured email target");
+
+    await user.click(screen.getByRole("button", { name: "Handle now" }));
+    expect(structuredTarget).not.toHaveFocus();
+    act(() => {
+      applyStructuredHandle?.();
+    });
+    await waitFor(() => {
+      expect(structuredTarget).toHaveFocus();
+    });
   });
 });
 

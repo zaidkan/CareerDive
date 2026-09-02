@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   AvailableAction,
   ClientNotification,
@@ -31,10 +31,16 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
   const [activeSurface, setActiveSurface] = useState<
     "briefing" | "dashboard" | "manager"
   >("briefing");
+  const sessionGenerationRef = useRef(0);
+  const currentSessionRef = useRef<
+    { generation: number; sessionId: string } | undefined
+  >(undefined);
   const { invalidateMutations, mutationState, retryMutation, runMutation } =
     useMutationCoordinator(setView);
 
   useEffect(() => {
+    const generation = ++sessionGenerationRef.current;
+    currentSessionRef.current = undefined;
     void client
       .createSession({
         seed: Date.now() & 0x7fffffff,
@@ -42,6 +48,11 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
         pacingMode: "practice",
       })
       .then((created) => {
+        if (generation !== sessionGenerationRef.current) return;
+        currentSessionRef.current = {
+          generation,
+          sessionId: created.sessionId,
+        };
         setSessionId(created.sessionId);
         setView(created.view);
       })
@@ -50,7 +61,27 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
       });
   }, [client]);
 
+  function currentSession() {
+    const current = currentSessionRef.current;
+    return current?.sessionId === sessionId ? current : undefined;
+  }
+
+  function assertCurrentSession(session: {
+    generation: number;
+    sessionId: string;
+  }) {
+    const current = currentSessionRef.current;
+    if (
+      current?.generation !== session.generation ||
+      current.sessionId !== session.sessionId
+    ) {
+      throw new Error("Session is no longer current.");
+    }
+  }
+
   async function startAssessedShift() {
+    const generation = ++sessionGenerationRef.current;
+    currentSessionRef.current = undefined;
     invalidateMutations();
     setError(undefined);
     setView(undefined);
@@ -61,6 +92,11 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
         sessionKind: "assessed",
         pacingMode: "standard",
       });
+      if (generation !== sessionGenerationRef.current) return;
+      currentSessionRef.current = {
+        generation,
+        sessionId: created.sessionId,
+      };
       setSessionId(created.sessionId);
       setView(created.view);
       setPhase("assessed");
@@ -71,13 +107,15 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
   }
 
   async function perform(action: AvailableAction, freeText?: string) {
-    if (!sessionId) return;
+    const session = currentSession();
+    if (!session) return;
     try {
       await runMutation(actionMutationKey(action), async () => {
+        assertCurrentSession(session);
         let nextView: ClientView;
         try {
           nextView = await client.performAction(
-            sessionId,
+            session.sessionId,
             action.id,
             action.eventId,
             freeText,
@@ -106,8 +144,9 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
             : action.id === "complete_shift"
               ? {
                   onApplied: () => {
+                    assertCurrentSession(session);
                     void client
-                      .getDebrief(sessionId)
+                      .getDebrief(session.sessionId)
                       .then(setDebrief)
                       .catch(() => {
                         setError("Debrief could not be loaded.");
@@ -126,7 +165,8 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
     task: ClientTaskView,
     selectedOptionIds: string[],
   ) {
-    if (!sessionId) {
+    const session = currentSession();
+    if (!session) {
       return {
         accepted: false,
         completed: false,
@@ -135,9 +175,10 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
     }
     try {
       const result = await runMutation(taskMutationKey(task), async () => {
+        assertCurrentSession(session);
         try {
           const outcome = await client.submitTaskAttempt(
-            sessionId,
+            session.sessionId,
             task.id,
             task.eventId,
             selectedOptionIds,
@@ -172,15 +213,18 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
   async function respondToWorkNotification(
     notification: ClientNotification,
     response: NotificationResponse["response"],
+    onApplied?: () => void,
   ) {
-    if (!sessionId) return;
+    const session = currentSession();
+    if (!session) return;
     try {
       await runMutation(
         notificationMutationKey(notification, response),
         async () => {
+          assertCurrentSession(session);
           try {
             const nextView = await client.respondToNotification(
-              sessionId,
+              session.sessionId,
               notification.id,
               response,
             );
@@ -193,6 +237,12 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
                   : response === "snooze"
                     ? "Notification snoozed."
                     : "Current case continued.",
+              ...(response === "handle" &&
+              onApplied &&
+              nextView.notifications.find(({ id }) => id === notification.id)
+                ?.status !== "unread"
+                ? { onApplied }
+                : {}),
             };
           } catch (cause) {
             throw new Error("That notification choice could not be saved.", {
@@ -209,11 +259,13 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
   async function performWorkplaceInteraction(
     interaction: WorkplaceInteraction,
   ) {
-    if (!sessionId) throw new Error("Session is not ready");
+    const session = currentSession();
+    if (!session) throw new Error("Session is not ready");
     return runMutation(workplaceMutationKey(interaction), async () => {
+      assertCurrentSession(session);
       try {
         const result = await client.performWorkplaceInteraction(
-          sessionId,
+          session.sessionId,
           interaction,
         );
         return {
@@ -315,7 +367,9 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
           onWorkplaceInteraction={performWorkplaceInteraction}
           mutationState={mutationState}
           onRetryMutation={() => {
-            void retryMutation();
+            void retryMutation().catch(() => {
+              // The coordinator exposes the repeated failure in mutationState.
+            });
           }}
           view={view}
         />

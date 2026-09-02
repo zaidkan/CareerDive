@@ -187,14 +187,17 @@ export function DeskOs({
               mutationState={mutationState}
               notifications={view.notifications}
               onNotification={async (notification, response) => {
-                await onNotification?.(notification, response);
-                if (response === "handle") {
+                if (response !== "handle") {
+                  await onNotification?.(notification, response);
+                  return;
+                }
+                await onNotification?.(notification, response, () => {
                   setPendingNotificationTarget((current) => ({
                     eventId: notification.eventId,
                     systemId: notification.systemId,
                     requestId: (current?.requestId ?? 0) + 1,
                   }));
-                }
+                });
               }}
             />
             <CaseRail

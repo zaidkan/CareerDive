@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { AvailableAction } from "@sim/schemas";
 import {
   ArtifactDetail,
@@ -23,6 +24,19 @@ export function AccessibleMode({
   onNotification,
   mutationState = EMPTY_MUTATION_STATE,
 }: ModeProps) {
+  const [notificationFocusTarget, setNotificationFocusTarget] = useState<{
+    eventId: string;
+    requestId: number;
+  }>();
+
+  useEffect(() => {
+    if (!notificationFocusTarget) return;
+    document
+      .getElementById(`structured-event-${notificationFocusTarget.eventId}`)
+      ?.focus();
+    setNotificationFocusTarget(undefined);
+  }, [notificationFocusTarget, view]);
+
   return (
     <section className="accessible-shell" aria-labelledby="structured-title">
       <h2 id="structured-title">Structured workplace view</h2>
@@ -36,12 +50,16 @@ export function AccessibleMode({
         {...(onNotification
           ? {
               onNotification: async (notification, response) => {
-                await onNotification(notification, response);
-                if (response === "handle") {
-                  document
-                    .getElementById(`structured-event-${notification.eventId}`)
-                    ?.focus();
+                if (response !== "handle") {
+                  await onNotification(notification, response);
+                  return;
                 }
+                await onNotification(notification, response, () => {
+                  setNotificationFocusTarget((current) => ({
+                    eventId: notification.eventId,
+                    requestId: (current?.requestId ?? 0) + 1,
+                  }));
+                });
               },
             }
           : {})}

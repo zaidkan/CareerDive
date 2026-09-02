@@ -69,11 +69,14 @@ export function WorkSurface({
         {...(onNotification
           ? {
               onNotification: async (notification, response) => {
-                await onNotification(notification, response);
-                if (response === "handle") {
+                if (response !== "handle") {
+                  await onNotification(notification, response);
+                  return;
+                }
+                await onNotification(notification, response, () => {
                   setSystemId(notification.systemId);
                   setSelectedEventId(notification.eventId);
-                }
+                });
               },
             }
           : {})}

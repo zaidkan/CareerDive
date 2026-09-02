@@ -21,6 +21,7 @@ export type TaskAttemptHandler = (
 export type NotificationHandler = (
   notification: ClientNotification,
   response: NotificationResponse["response"],
+  onApplied?: () => void,
 ) => Promise<void>;
 export type WorkplaceInteractionHandler = (
   interaction: WorkplaceInteraction,
