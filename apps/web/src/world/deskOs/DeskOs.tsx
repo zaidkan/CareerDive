@@ -6,11 +6,17 @@ import { LockScreen } from "./LockScreen.js";
 import { SystemApp } from "./SystemApp.js";
 import { APP_TABS, type DeskOsTab } from "./tabs.js";
 import { CaseRail } from "../../components/CaseRail.js";
+import { MutationStatus } from "../../components/MutationStatus.js";
 import { NotificationBanner } from "../../components/NotificationBanner.js";
 import type {
   NotificationHandler,
   TaskAttemptHandler,
 } from "../../components/shared.js";
+import { formatShiftClock } from "../../systems.js";
+import {
+  EMPTY_MUTATION_STATE,
+  type MutationState,
+} from "../../useMutationCoordinator.js";
 
 export function DeskOs({
   phase,
@@ -23,9 +29,9 @@ export function DeskOs({
   osFullscreen = false,
   onLoginSuccess,
   onStand,
-  onMaximize,
-  onMinimize,
   onOsFullscreen,
+  mutationState = EMPTY_MUTATION_STATE,
+  onRetryMutation,
 }: {
   phase: "desk_login" | "seated_monitor" | "focus_desk";
   view: ClientView;
@@ -37,9 +43,9 @@ export function DeskOs({
   osFullscreen?: boolean;
   onLoginSuccess: () => void;
   onStand: () => void;
-  onMaximize: () => void;
-  onMinimize: () => void;
   onOsFullscreen: () => void;
+  mutationState?: MutationState;
+  onRetryMutation?: () => void;
 }) {
   const guidance = getShiftGuidance(view);
   const initialTab: DeskOsTab =
@@ -50,7 +56,37 @@ export function DeskOs({
   const [tab, setTab] = useState<DeskOsTab>(
     phase === "desk_login" ? "home" : initialTab,
   );
-  const [focusEventId, setFocusEventId] = useState<string>();
+  const [focusTarget, setFocusTarget] = useState<{
+    eventId?: string;
+    requestId: number;
+  }>();
+  const [pendingNotificationTarget, setPendingNotificationTarget] = useState<{
+    eventId: string;
+    systemId: DeskOsTab;
+    requestId: number;
+  }>();
+
+  const openTab = (nextTab: DeskOsTab, eventId?: string) => {
+    setTab(nextTab);
+    setFocusTarget((current) => ({
+      ...(eventId ? { eventId } : {}),
+      requestId: (current?.requestId ?? 0) + 1,
+    }));
+  };
+
+  useEffect(() => {
+    if (!pendingNotificationTarget) return;
+    const notification = view.notifications.find(
+      ({ eventId }) => eventId === pendingNotificationTarget.eventId,
+    );
+    if (notification?.status === "unread") return;
+    setTab(pendingNotificationTarget.systemId);
+    setFocusTarget({
+      eventId: pendingNotificationTarget.eventId,
+      requestId: pendingNotificationTarget.requestId,
+    });
+    setPendingNotificationTarget(undefined);
+  }, [pendingNotificationTarget, view.notifications]);
 
   useEffect(() => {
     if (phase !== "desk_login" && guidance?.systemId && guided) {
@@ -68,25 +104,7 @@ export function DeskOs({
     >
       <div className="desk-os-chrome">
         <div className="desk-os-traffic" aria-hidden="true">
-          <button
-            className="desk-os-dot desk-os-dot-close"
-            onClick={onStand}
-            title="Stand up"
-            type="button"
-          />
-          <button
-            className="desk-os-dot desk-os-dot-min"
-            onClick={maximized ? onMinimize : onMaximize}
-            title={maximized ? "Restore" : "Maximize"}
-            type="button"
-          />
-          <button
-            aria-pressed={osFullscreen}
-            className="desk-os-dot desk-os-dot-max"
-            onClick={onOsFullscreen}
-            title={osFullscreen ? "Exit fill screen" : "Fill screen"}
-            type="button"
-          />
+          <span className="desk-os-dot desk-os-dot-close" />
         </div>
         <div
           className="desk-os-tabs"
@@ -103,7 +121,7 @@ export function DeskOs({
                 disabled={locked}
                 key={item.id}
                 onClick={() => {
-                  setTab(item.id);
+                  openTab(item.id);
                 }}
                 role="tab"
                 type="button"
@@ -125,17 +143,8 @@ export function DeskOs({
             onClick={onOsFullscreen}
             type="button"
           >
-            {osFullscreen ? "Exit fill screen" : "Fill screen"}
+            Expand workstation
           </button>
-          {!locked ? (
-            <button
-              className="desk-os-ghost"
-              onClick={maximized ? onMinimize : onMaximize}
-              type="button"
-            >
-              {maximized ? "Restore" : "Maximize"}
-            </button>
-          ) : null}
           <button className="desk-os-ghost" onClick={onStand} type="button">
             Leave desk
           </button>
@@ -149,23 +158,48 @@ export function DeskOs({
         </span>
       </div>
 
+      {!locked ? (
+        <section
+          aria-label="Workstation status"
+          className="desk-os-status-strip"
+        >
+          <span>
+            <small>Time</small> {formatShiftClock(view.simClock)}
+          </span>
+          <span>
+            <small>Energy</small> Energy {view.workplace.energy.current}/
+            {view.workplace.energy.max}
+          </span>
+          <span className="desk-os-status-objective">
+            <small>Objective</small> {guidance?.headline ?? "Finish the shift"}
+          </span>
+          <MutationStatus
+            state={mutationState}
+            {...(onRetryMutation ? { onRetry: onRetryMutation } : {})}
+          />
+        </section>
+      ) : null}
+
       <div className="desk-os-body">
         {!locked ? (
           <>
             <NotificationBanner
+              mutationState={mutationState}
               notifications={view.notifications}
               onNotification={async (notification, response) => {
                 await onNotification?.(notification, response);
                 if (response === "handle") {
-                  setTab(notification.systemId);
-                  setFocusEventId(notification.eventId);
+                  setPendingNotificationTarget((current) => ({
+                    eventId: notification.eventId,
+                    systemId: notification.systemId,
+                    requestId: (current?.requestId ?? 0) + 1,
+                  }));
                 }
               }}
             />
             <CaseRail
               onResume={({ eventId, systemId }) => {
-                setTab(systemId);
-                setFocusEventId(eventId);
+                openTab(systemId, eventId);
               }}
               view={view}
             />
@@ -177,13 +211,13 @@ export function DeskOs({
           <DashboardHome
             guidance={guidance}
             guided={guided}
-            onOpenTab={setTab}
+            onOpenTab={openTab}
             view={view}
           />
         ) : tab === "calendar" ? (
           <CalendarPanel
             onOpenEmail={() => {
-              setTab("email");
+              openTab("email");
             }}
           />
         ) : (
@@ -191,8 +225,12 @@ export function DeskOs({
             guidance={guidance}
             guided={guided}
             onAction={onAction}
+            mutationState={mutationState}
             {...(onTaskAttempt ? { onTaskAttempt } : {})}
-            {...(focusEventId ? { focusEventId } : {})}
+            {...(focusTarget?.eventId
+              ? { focusEventId: focusTarget.eventId }
+              : {})}
+            focusRequestId={focusTarget?.requestId ?? 0}
             systemId={tab}
             view={view}
           />

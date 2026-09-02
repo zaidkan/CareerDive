@@ -1,15 +1,26 @@
 import type { ClientNotification } from "@sim/schemas";
 import type { NotificationHandler } from "./shared.js";
+import {
+  EMPTY_MUTATION_STATE,
+  notificationMutationKey,
+  type MutationState,
+} from "../useMutationCoordinator.js";
 
 export function NotificationBanner({
   notifications,
   onNotification,
+  mutationState = EMPTY_MUTATION_STATE,
 }: {
   notifications: ClientNotification[];
   onNotification?: NotificationHandler;
+  mutationState?: MutationState;
 }) {
   const notification = notifications.find(({ status }) => status === "unread");
   if (!notification) return null;
+  const pending = Boolean(mutationState.pendingKey) || !onNotification;
+  const pendingResponse = (response: "handle" | "snooze" | "continue") =>
+    mutationState.pendingKey ===
+    notificationMutationKey(notification, response);
   return (
     <section aria-label="New work" className="work-notification" role="status">
       <div>
@@ -19,24 +30,27 @@ export function NotificationBanner({
       </div>
       <div className="work-notification-actions">
         <button
+          disabled={pending}
           onClick={() => void onNotification?.(notification, "handle")}
           type="button"
         >
-          Handle now
+          {pendingResponse("handle") ? "Opening…" : "Handle now"}
         </button>
         {notification.canSnooze ? (
           <button
+            disabled={pending}
             onClick={() => void onNotification?.(notification, "snooze")}
             type="button"
           >
-            Snooze 15 minutes
+            {pendingResponse("snooze") ? "Snoozing…" : "Snooze 15 minutes"}
           </button>
         ) : null}
         <button
+          disabled={pending}
           onClick={() => void onNotification?.(notification, "continue")}
           type="button"
         >
-          Continue current case
+          {pendingResponse("continue") ? "Saving…" : "Continue current case"}
         </button>
       </div>
     </section>

@@ -29,17 +29,17 @@ import { FloorMap } from "./FloorMap.js";
 import { JulesDialogue } from "./JulesDialogue.js";
 import { getJourneyStep } from "../journey.js";
 import { INITIAL_SPATIAL, reduceSpatialEvent } from "./presentation.js";
-import {
-  isTypingTarget,
-  useFullscreen,
-  DESK_OS_FILL_EVENT,
-} from "./useFullscreen.js";
+import { isTypingTarget, useFullscreen } from "./useFullscreen.js";
 import type { HotspotId } from "./worldTypes.js";
 import type {
   NotificationHandler,
   TaskAttemptHandler,
   WorkplaceInteractionHandler,
 } from "../components/shared.js";
+import {
+  EMPTY_MUTATION_STATE,
+  type MutationState,
+} from "../useMutationCoordinator.js";
 
 const RoomCanvas = lazy(async () => {
   const mod = await import("./RoomCanvas.js");
@@ -70,6 +70,8 @@ export function SpatialShell({
   onTaskAttempt,
   onNotification,
   onWorkplaceInteraction,
+  mutationState = EMPTY_MUTATION_STATE,
+  onRetryMutation,
   guided = false,
 }: {
   view: ClientView;
@@ -77,6 +79,8 @@ export function SpatialShell({
   onTaskAttempt?: TaskAttemptHandler;
   onNotification?: NotificationHandler;
   onWorkplaceInteraction?: WorkplaceInteractionHandler;
+  mutationState?: MutationState;
+  onRetryMutation?: () => void;
   guided?: boolean;
 }) {
   const [spatial, dispatch] = useReducer(reduceSpatialEvent, INITIAL_SPATIAL);
@@ -321,7 +325,8 @@ export function SpatialShell({
     nearbyHotspotId === "fridge" || nearbyHotspotId === "coffee"
       ? nearbyHotspotId
       : undefined;
-  const resourcePending = workplacePending;
+  const canonicalMutationPending = Boolean(mutationState.pendingKey);
+  const resourcePending = workplacePending || canonicalMutationPending;
 
   return (
     <section
@@ -350,16 +355,12 @@ export function SpatialShell({
             guided={guided}
             maximized={maximized}
             onAction={onAction}
+            mutationState={mutationState}
+            {...(onRetryMutation ? { onRetryMutation } : {})}
             {...(onTaskAttempt ? { onTaskAttempt } : {})}
             {...(onNotification ? { onNotification } : {})}
             onLoginSuccess={() => {
               dispatch({ type: "login_success" });
-            }}
-            onMaximize={() => {
-              dispatch({ type: "focus_desk" });
-            }}
-            onMinimize={() => {
-              dispatch({ type: "unfocus_desk" });
             }}
             onStand={() => {
               dispatch({ type: "stand" });
@@ -379,7 +380,11 @@ export function SpatialShell({
               setJulesOpen(false);
             }}
             onTopic={handleJulesTopic}
-            pending={workplacePending || !onWorkplaceInteraction}
+            pending={
+              workplacePending ||
+              canonicalMutationPending ||
+              !onWorkplaceInteraction
+            }
             seenTopics={view.workplace.julesTopicsSeen}
             {...(julesReply ? { reply: julesReply } : {})}
           />
@@ -464,9 +469,7 @@ export function SpatialShell({
               <p>
                 {spatial.phase === "desk_login"
                   ? "Sign in on the laptop — credentials are on the yellow note"
-                  : maximized
-                    ? "Maximized workstation · Fill screen for the full OS · Leave desk to stand"
-                    : "Use the laptop · Maximize in the room, or Fill screen for the full OS"}
+                  : "Use the laptop for the full desk view"}
               </p>
               {energyLow ? (
                 <p className="room-hud-compass">
@@ -481,15 +484,6 @@ export function SpatialShell({
                 workplace={view.workplace}
               />
             </div>
-            <button
-              className="guidance-secondary room-desk-hud-fs"
-              onClick={() => {
-                window.dispatchEvent(new Event(DESK_OS_FILL_EVENT));
-              }}
-              type="button"
-            >
-              Fill screen
-            </button>
           </div>
         ) : null}
       </div>

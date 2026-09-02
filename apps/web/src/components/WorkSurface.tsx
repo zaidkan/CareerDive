@@ -8,6 +8,7 @@ import { WORK_SYSTEMS, formatShiftClock, systemLabel } from "../systems.js";
 import {
   deriveSystemState,
   eventsForSystem,
+  remainingMinutes,
   systemOpenCounts,
 } from "../workstation.js";
 import { COMPANY } from "../world/company.js";
@@ -19,6 +20,7 @@ export function WorkSurface({
   onAction,
   onTaskAttempt,
   onNotification,
+  mutationState,
   guided = false,
 }: ModeProps & { guided?: boolean }) {
   const guidance = getShiftGuidance(view);
@@ -62,6 +64,7 @@ export function WorkSurface({
       </header>
 
       <NotificationBanner
+        {...(mutationState ? { mutationState } : {})}
         notifications={view.notifications}
         {...(onNotification
           ? {
@@ -146,7 +149,8 @@ export function WorkSurface({
                 <span className="queue-body">
                   <span>{event.title}</span>
                   <small>
-                    {event.priority} · due in {event.deadlineAt}m
+                    {event.priority} · due in{" "}
+                    {remainingMinutes(event.deadlineAt, view.simClock)}m
                   </small>
                 </span>
               </button>
@@ -161,7 +165,11 @@ export function WorkSurface({
                 <span className={`status status-${selectedEvent.status}`}>
                   {selectedEvent.status.replaceAll("_", " ")}
                 </span>
-                <span>Due in {selectedEvent.deadlineAt} minutes</span>
+                <span>
+                  Due in{" "}
+                  {remainingMinutes(selectedEvent.deadlineAt, view.simClock)}{" "}
+                  minutes
+                </span>
               </div>
               <h3>{selectedEvent.title}</h3>
               <p>{selectedEvent.summary}</p>
@@ -172,6 +180,7 @@ export function WorkSurface({
                 actions={contextualActions}
                 {...(highlightActionId ? { highlightActionId } : {})}
                 onAction={onAction}
+                {...(mutationState ? { mutationState } : {})}
                 {...(onTaskAttempt ? { onTaskAttempt } : {})}
                 selectedEventId={selectedEvent.id}
                 systemId={systemId}
@@ -190,6 +199,7 @@ export function WorkSurface({
                 actions={contextualActions}
                 {...(highlightActionId ? { highlightActionId } : {})}
                 onAction={onAction}
+                {...(mutationState ? { mutationState } : {})}
                 {...(onTaskAttempt ? { onTaskAttempt } : {})}
                 systemId={systemId}
                 view={view}

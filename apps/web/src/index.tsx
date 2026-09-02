@@ -14,6 +14,13 @@ import { getTutorialStep } from "./guidance.js";
 import { ManagerContext, ShiftBriefing } from "./components/shell.js";
 import { COMPANY } from "./world/company.js";
 import { SpatialShell } from "./world/SpatialShell.js";
+import {
+  actionMutationKey,
+  notificationMutationKey,
+  taskMutationKey,
+  useMutationCoordinator,
+  workplaceMutationKey,
+} from "./useMutationCoordinator.js";
 
 export function App({ client = defaultClient }: { client?: SimulationClient }) {
   const [view, setView] = useState<ClientView>();
@@ -24,6 +31,8 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
   const [activeSurface, setActiveSurface] = useState<
     "briefing" | "dashboard" | "manager"
   >("briefing");
+  const { invalidateMutations, mutationState, retryMutation, runMutation } =
+    useMutationCoordinator(setView);
 
   useEffect(() => {
     void client
@@ -42,6 +51,7 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
   }, [client]);
 
   async function startAssessedShift() {
+    invalidateMutations();
     setError(undefined);
     setView(undefined);
     setDebrief(undefined);
@@ -63,21 +73,52 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
   async function perform(action: AvailableAction, freeText?: string) {
     if (!sessionId) return;
     try {
-      const nextView = await client.performAction(
-        sessionId,
-        action.id,
-        action.eventId,
-        freeText,
-      );
-      setView(nextView);
-      if (action.id === "ask_manager") {
-        setActiveSurface("manager");
-      }
-      if (action.id === "complete_shift") {
-        setDebrief(await client.getDebrief(sessionId));
-      }
+      await runMutation(actionMutationKey(action), async () => {
+        let nextView: ClientView;
+        try {
+          nextView = await client.performAction(
+            sessionId,
+            action.id,
+            action.eventId,
+            freeText,
+          );
+        } catch (cause) {
+          throw new Error("That action could not be completed.", { cause });
+        }
+        const success =
+          action.id === "update_ticket_notes"
+            ? "Investigation notes saved."
+            : action.id === "update_notebook"
+              ? "Notebook saved."
+              : action.id === "search_knowledge_base"
+                ? "Guide search updated."
+                : `${action.label} completed.`;
+        return {
+          result: nextView,
+          view: nextView,
+          success,
+          ...(action.id === "ask_manager"
+            ? {
+                onApplied: () => {
+                  setActiveSurface("manager");
+                },
+              }
+            : action.id === "complete_shift"
+              ? {
+                  onApplied: () => {
+                    void client
+                      .getDebrief(sessionId)
+                      .then(setDebrief)
+                      .catch(() => {
+                        setError("Debrief could not be loaded.");
+                      });
+                  },
+                }
+              : {}),
+        };
+      });
     } catch {
-      setError("That action could not be completed.");
+      // The coordinator owns visible mutation errors and safe retry.
     }
   }
 
@@ -93,20 +134,33 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
       };
     }
     try {
-      const result = await client.submitTaskAttempt(
-        sessionId,
-        task.id,
-        task.eventId,
-        selectedOptionIds,
-      );
-      setView(result.view);
+      const result = await runMutation(taskMutationKey(task), async () => {
+        try {
+          const outcome = await client.submitTaskAttempt(
+            sessionId,
+            task.id,
+            task.eventId,
+            selectedOptionIds,
+          );
+          return {
+            result: outcome,
+            view: outcome.view,
+            success: outcome.accepted
+              ? outcome.completed
+                ? `Task complete. ${outcome.feedback}`
+                : `Step ${String(task.stepIndex + 1)} complete. ${outcome.feedback}`
+              : outcome.feedback,
+          };
+        } catch (cause) {
+          throw new Error("That work step could not be checked.", { cause });
+        }
+      });
       return {
         accepted: result.accepted,
         completed: result.completed,
         feedback: result.feedback,
       };
     } catch {
-      setError("That work step could not be checked.");
       return {
         accepted: false,
         completed: false,
@@ -121,15 +175,34 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
   ) {
     if (!sessionId) return;
     try {
-      setView(
-        await client.respondToNotification(
-          sessionId,
-          notification.id,
-          response,
-        ),
+      await runMutation(
+        notificationMutationKey(notification, response),
+        async () => {
+          try {
+            const nextView = await client.respondToNotification(
+              sessionId,
+              notification.id,
+              response,
+            );
+            return {
+              result: nextView,
+              view: nextView,
+              success:
+                response === "handle"
+                  ? "Notification opened."
+                  : response === "snooze"
+                    ? "Notification snoozed."
+                    : "Current case continued.",
+            };
+          } catch (cause) {
+            throw new Error("That notification choice could not be saved.", {
+              cause,
+            });
+          }
+        },
       );
     } catch {
-      setError("That notification choice could not be saved.");
+      // The coordinator owns visible mutation errors and safe retry.
     }
   }
 
@@ -137,17 +210,23 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
     interaction: WorkplaceInteraction,
   ) {
     if (!sessionId) throw new Error("Session is not ready");
-    try {
-      const result = await client.performWorkplaceInteraction(
-        sessionId,
-        interaction,
-      );
-      setView(result.view);
-      return result;
-    } catch (cause) {
-      setError("That workplace interaction could not be completed.");
-      throw cause;
-    }
+    return runMutation(workplaceMutationKey(interaction), async () => {
+      try {
+        const result = await client.performWorkplaceInteraction(
+          sessionId,
+          interaction,
+        );
+        return {
+          result,
+          view: result.view,
+          success: "Workplace updated.",
+        };
+      } catch (cause) {
+        throw new Error("That workplace interaction could not be completed.", {
+          cause,
+        });
+      }
+    });
   }
 
   const tutorialComplete =
@@ -234,6 +313,10 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
           onNotification={respondToWorkNotification}
           onTaskAttempt={submitTaskAttempt}
           onWorkplaceInteraction={performWorkplaceInteraction}
+          mutationState={mutationState}
+          onRetryMutation={() => {
+            void retryMutation();
+          }}
           view={view}
         />
       )}

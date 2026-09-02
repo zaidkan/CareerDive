@@ -197,8 +197,8 @@ describe("spatial presentation", () => {
     );
     expect(screen.getByTestId("login-post-it")).toHaveTextContent("FirstDay!");
     expect(
-      screen.getAllByRole("button", { name: /^Fill screen$/i }).length,
-    ).toBeGreaterThanOrEqual(1);
+      screen.getAllByRole("button", { name: "Expand workstation" }),
+    ).toHaveLength(1);
   });
 
   it("hides the look hint while the pointer is locked", async () => {
@@ -266,13 +266,8 @@ describe("spatial presentation", () => {
     ).toBeVisible();
     expect(screen.queryByTestId("login-post-it")).not.toBeInTheDocument();
     expect(
-      screen.getAllByRole("button", { name: /^Fill screen$/i }).length,
-    ).toBeGreaterThanOrEqual(1);
-    await user.click(screen.getByRole("button", { name: /^Maximize$/i }));
-    expect(screen.getByRole("button", { name: /^Restore$/i })).toBeVisible();
-    expect(
-      screen.getAllByRole("button", { name: /^Fill screen$/i }).length,
-    ).toBeGreaterThanOrEqual(1);
+      screen.getAllByRole("button", { name: "Expand workstation" }),
+    ).toHaveLength(1);
     await user.click(screen.getByRole("button", { name: /Leave desk/i }));
     expect(
       await screen.findByRole("button", { name: /Sit at desk/i }),

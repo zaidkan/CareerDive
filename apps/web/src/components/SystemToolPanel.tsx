@@ -10,15 +10,22 @@ import {
 import { primaryActions, systemMeta, utilityActions } from "../systems.js";
 import { WorkTaskPanel } from "./WorkTaskPanel.js";
 import type { TaskAttemptHandler } from "./shared.js";
+import {
+  actionMutationKey,
+  EMPTY_MUTATION_STATE,
+  type MutationState,
+} from "../useMutationCoordinator.js";
 
 function ActionButtons({
   actions,
   onAction,
   highlightActionId,
+  mutationState = EMPTY_MUTATION_STATE,
 }: {
   actions: AvailableAction[];
   onAction: (action: AvailableAction, freeText?: string) => void;
   highlightActionId?: string;
+  mutationState?: MutationState;
 }) {
   const choices = primaryActions(actions);
   if (choices.length === 0) {
@@ -39,6 +46,8 @@ function ActionButtons({
     );
   }
   const others = choices.filter(({ id }) => id !== highlighted.id);
+  const highlightedKey = actionMutationKey(highlighted);
+  const pending = Boolean(mutationState.pendingKey);
 
   return (
     <div className="context-actions" aria-label="Workplace actions">
@@ -46,13 +55,18 @@ function ActionButtons({
         className="action-primary"
         data-action-id={highlighted.id}
         data-event-id={highlighted.eventId}
+        disabled={pending}
         key={`${highlighted.id}:${highlighted.eventId}`}
         onClick={() => {
           onAction(highlighted);
         }}
         type="button"
       >
-        <span>{highlighted.label}</span>
+        <span>
+          {mutationState.pendingKey === highlightedKey
+            ? `Saving ${highlighted.label}…`
+            : highlighted.label}
+        </span>
         <small>{highlighted.description}</small>
         <small className="action-time">
           Takes about {highlighted.simulatedMinutes} minutes
@@ -68,6 +82,7 @@ function ActionButtons({
               <button
                 data-action-id={action.id}
                 data-event-id={action.eventId}
+                disabled={pending}
                 key={`${action.id}:${action.eventId}`}
                 onClick={() => {
                   onAction(action);
@@ -91,43 +106,65 @@ function WorkInteraction({
   onAction,
   onTaskAttempt,
   highlightActionId,
+  mutationState = EMPTY_MUTATION_STATE,
 }: {
   actions: AvailableAction[];
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
   onTaskAttempt?: TaskAttemptHandler;
   highlightActionId?: string;
+  mutationState?: MutationState;
 }) {
-  const taskAction = actions.find(({ taskId }) => taskId !== undefined);
-  const task = taskAction?.taskId
-    ? view.tasks.find(
-        ({ id, eventId }) =>
-          id === taskAction.taskId && eventId === taskAction.eventId,
-      )
-    : undefined;
-  const ordinary = taskAction
-    ? actions.filter(
-        ({ id, eventId }) =>
-          id !== taskAction.id || eventId !== taskAction.eventId,
-      )
-    : actions;
+  const taskActions = actions.filter(({ taskId }) => taskId !== undefined);
+  const tasks = taskActions.flatMap((action) => {
+    const task = view.tasks.find(
+      ({ id, eventId }) => id === action.taskId && eventId === action.eventId,
+    );
+    return task ? [task] : [];
+  });
+  const uniqueTasks = [
+    ...new Map(tasks.map((task) => [task.id, task])).values(),
+  ];
+  const missingTaskActions = taskActions.filter(
+    (action) =>
+      !view.tasks.some(
+        ({ id, eventId }) => id === action.taskId && eventId === action.eventId,
+      ),
+  );
+  const ordinary = actions.filter(({ taskId }) => taskId === undefined);
   return (
     <>
-      {task ? (
+      {uniqueTasks.map((task) => (
         <WorkTaskPanel
+          key={task.id}
+          mutationState={mutationState}
           relatedArtifacts={view.artifacts.filter(({ id }) =>
             task.relatedArtifactIds.includes(id),
           )}
           task={task}
           {...(onTaskAttempt ? { onTaskAttempt } : {})}
         />
+      ))}
+      {missingTaskActions.length > 0 ? (
+        <p className="empty-actions" role="status">
+          A work step is refreshing. It will be available shortly.
+        </p>
       ) : null}
       <ActionButtons
         actions={ordinary}
         {...(highlightActionId ? { highlightActionId } : {})}
         onAction={onAction}
+        mutationState={mutationState}
       />
     </>
+  );
+}
+
+function workInteractionActions(actions: AvailableAction[]): AvailableAction[] {
+  const ordinaryPrimaryActions = primaryActions(actions);
+  return actions.filter(
+    (action) =>
+      action.taskId !== undefined || ordinaryPrimaryActions.includes(action),
   );
 }
 
@@ -153,6 +190,7 @@ export function SystemToolPanel({
   onAction,
   onTaskAttempt,
   highlightActionId,
+  mutationState = EMPTY_MUTATION_STATE,
 }: {
   view: ClientView;
   systemId: ClientView["events"][number]["systemId"];
@@ -161,14 +199,26 @@ export function SystemToolPanel({
   onAction: (action: AvailableAction, freeText?: string) => void;
   onTaskAttempt?: TaskAttemptHandler;
   highlightActionId?: string;
+  mutationState?: MutationState;
 }) {
   const eventArtifacts = filterSystemArtifacts(view, systemId, selectedEventId);
-  const [selectedArtifactId, setSelectedArtifactId] = useState<string>();
+  const scopeKey = `${systemId}:${selectedEventId ?? "system"}`;
+  const [selectedArtifactIds, setSelectedArtifactIds] = useState<
+    Record<string, string>
+  >({});
+  const [focusArtifactId, setFocusArtifactId] = useState<string>();
+  const selectedArtifactId = selectedArtifactIds[scopeKey];
+  const selectArtifact = (id: string) => {
+    setSelectedArtifactIds((current) => ({ ...current, [scopeKey]: id }));
+    setFocusArtifactId(id);
+  };
   const utilities = utilityActions(actions);
   const ticketNotesAction = utilities.find(
-    ({ id }) => id === "update_ticket_notes",
+    ({ id, taskId }) => id === "update_ticket_notes" && !taskId,
   );
-  const notebookAction = utilities.find(({ id }) => id === "update_notebook");
+  const notebookAction = utilities.find(
+    ({ id, taskId }) => id === "update_notebook" && !taskId,
+  );
   const searchAction = actions.find(({ id }) => id === "search_knowledge_base");
 
   if (systemId === "knowledge_base") {
@@ -202,6 +252,7 @@ export function SystemToolPanel({
                 <button
                   data-action-id={searchAction.id}
                   data-event-id={searchAction.eventId}
+                  disabled={Boolean(mutationState.pendingKey)}
                   type="submit"
                 >
                   {searchAction.label}
@@ -213,18 +264,22 @@ export function SystemToolPanel({
             <ArtifactList
               artifacts={docs}
               selectedId={selected?.id}
-              onSelect={setSelectedArtifactId}
+              onSelect={selectArtifact}
             />
           </div>
-          <ArtifactDetail artifact={selected} />
+          <ArtifactDetail
+            artifact={selected}
+            focus={selected?.id === focusArtifactId}
+          />
         </div>
         <WorkInteraction
-          actions={primaryActions(actions).filter(
+          actions={workInteractionActions(actions).filter(
             ({ id, taskId }) =>
               id !== "search_knowledge_base" || Boolean(taskId),
           )}
           {...(highlightActionId ? { highlightActionId } : {})}
           onAction={onAction}
+          mutationState={mutationState}
           {...(onTaskAttempt ? { onTaskAttempt } : {})}
           view={view}
         />
@@ -244,15 +299,19 @@ export function SystemToolPanel({
             <ArtifactList
               artifacts={eventArtifacts}
               selectedId={selected?.id}
-              onSelect={setSelectedArtifactId}
+              onSelect={selectArtifact}
             />
           </div>
           <div>
-            <ArtifactDetail artifact={selected} />
+            <ArtifactDetail
+              artifact={selected}
+              focus={selected?.id === focusArtifactId}
+            />
             <NotesEditor
               action={ticketNotesAction}
               label="Investigation notes"
               onSave={onAction}
+              mutationState={mutationState}
               value={
                 selectedEventId ? (view.ticketNotes[selectedEventId] ?? "") : ""
               }
@@ -261,14 +320,16 @@ export function SystemToolPanel({
               action={notebookAction}
               label="Personal notebook (optional)"
               onSave={onAction}
+              mutationState={mutationState}
               value={view.notebook}
             />
           </div>
         </div>
         <WorkInteraction
-          actions={primaryActions(actions)}
+          actions={workInteractionActions(actions)}
           {...(highlightActionId ? { highlightActionId } : {})}
           onAction={onAction}
+          mutationState={mutationState}
           {...(onTaskAttempt ? { onTaskAttempt } : {})}
           view={view}
         />
@@ -287,15 +348,19 @@ export function SystemToolPanel({
           <ArtifactList
             artifacts={eventArtifacts}
             selectedId={selected?.id}
-            onSelect={setSelectedArtifactId}
+            onSelect={selectArtifact}
           />
         </div>
-        <ArtifactDetail artifact={selected} />
+        <ArtifactDetail
+          artifact={selected}
+          focus={selected?.id === focusArtifactId}
+        />
       </div>
       <WorkInteraction
-        actions={primaryActions(actions)}
+        actions={workInteractionActions(actions)}
         {...(highlightActionId ? { highlightActionId } : {})}
         onAction={onAction}
+        mutationState={mutationState}
         {...(onTaskAttempt ? { onTaskAttempt } : {})}
         view={view}
       />

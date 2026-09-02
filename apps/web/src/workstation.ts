@@ -23,6 +23,24 @@ export type WorkstationSystemState = {
   highlightActionId?: SimulationActionId;
 };
 
+export function remainingMinutes(deadlineAt: number, simClock: number): number {
+  return Math.max(0, deadlineAt - simClock);
+}
+
+export function isActiveCase(event: WorkstationEvent): boolean {
+  return event.status === "active" || event.status === "escalated";
+}
+
+export function activeCases(view: ClientView): WorkstationEvent[] {
+  return view.events.filter(isActiveCase);
+}
+
+export function closedCases(view: ClientView): WorkstationEvent[] {
+  return view.events.filter(
+    ({ status }) => status === "resolved" || status === "expired",
+  );
+}
+
 /** An event shows in a system if it lives there or an action there targets it. */
 function belongsToSystem(
   view: ClientView,
@@ -37,16 +55,11 @@ function belongsToSystem(
   );
 }
 
-/** Pending events have not surfaced to the player yet. */
-export function visibleEvents(view: ClientView): WorkstationEvent[] {
-  return view.events.filter(({ status }) => status !== "pending");
-}
-
 export function eventsForSystem(
   view: ClientView,
   systemId: WorkSystemId,
 ): WorkstationEvent[] {
-  return visibleEvents(view).filter((event) =>
+  return activeCases(view).filter((event) =>
     belongsToSystem(view, event, systemId),
   );
 }
@@ -55,7 +68,7 @@ export function eventsForSystem(
 export function systemOpenCounts(
   view: ClientView,
 ): Record<WorkSystemId, number> {
-  const visible = visibleEvents(view);
+  const visible = activeCases(view);
   const countIn = (systemId: WorkSystemId) =>
     visible.filter((event) => belongsToSystem(view, event, systemId)).length;
   return {

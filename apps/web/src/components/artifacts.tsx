@@ -1,5 +1,10 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AvailableAction, ClientArtifact, ClientView } from "@sim/schemas";
+import {
+  actionMutationKey,
+  EMPTY_MUTATION_STATE,
+  type MutationState,
+} from "../useMutationCoordinator.js";
 
 export function ArtifactList({
   artifacts,
@@ -39,16 +44,24 @@ export function ArtifactList({
 
 export function ArtifactDetail({
   artifact,
+  focus = false,
 }: {
   artifact?: ClientArtifact | undefined;
+  focus?: boolean;
 }) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (focus) headingRef.current?.focus();
+  }, [artifact?.id, focus]);
   if (!artifact) {
     return <p>Select an artifact to inspect its contents.</p>;
   }
   return (
     <article className="artifact-detail">
       <p className="eyebrow">{artifact.kind.replaceAll("_", " ")}</p>
-      <h4>{artifact.title}</h4>
+      <h4 ref={headingRef} tabIndex={focus ? -1 : undefined}>
+        {artifact.title}
+      </h4>
       <p>{artifact.summary}</p>
       <pre className="artifact-body">{artifact.body}</pre>
       {Object.keys(artifact.metadata).length > 0 ? (
@@ -70,13 +83,49 @@ export function NotesEditor({
   value,
   action,
   onSave,
+  mutationState = EMPTY_MUTATION_STATE,
 }: {
   label: string;
   value: string;
   action?: AvailableAction | undefined;
   onSave: (action: AvailableAction, freeText: string) => void;
+  mutationState?: MutationState;
 }) {
-  const [draft, setDraft] = useState(value);
+  type DraftState = { canonical: string; dirty: boolean; draft: string };
+  const actionKey = action ? actionMutationKey(action) : "notes:unavailable";
+  const [drafts, setDrafts] = useState<Record<string, DraftState>>(() => ({
+    [actionKey]: { canonical: value, dirty: false, draft: value },
+  }));
+  const entry = drafts[actionKey] ?? {
+    canonical: value,
+    dirty: false,
+    draft: value,
+  };
+
+  useEffect(() => {
+    setDrafts((current) => {
+      const existing = current[actionKey];
+      if (!existing) {
+        return {
+          ...current,
+          [actionKey]: { canonical: value, dirty: false, draft: value },
+        };
+      }
+      if (existing.dirty) {
+        if (existing.draft !== value) return current;
+        return {
+          ...current,
+          [actionKey]: { canonical: value, dirty: false, draft: value },
+        };
+      }
+      if (existing.canonical === value) return current;
+      return {
+        ...current,
+        [actionKey]: { canonical: value, dirty: false, draft: value },
+      };
+    });
+  }, [actionKey, value]);
+
   if (!action) {
     return null;
   }
@@ -85,24 +134,35 @@ export function NotesEditor({
       className="notes-editor"
       onSubmit={(event) => {
         event.preventDefault();
-        onSave(action, draft);
+        onSave(action, entry.draft);
       }}
     >
       <label htmlFor={`notes-${action.id}-${action.eventId}`}>{label}</label>
       <textarea
         id={`notes-${action.id}-${action.eventId}`}
         onChange={(event) => {
-          setDraft(event.target.value);
+          const draft = event.target.value;
+          setDrafts((current) => ({
+            ...current,
+            [actionKey]: {
+              canonical: current[actionKey]?.canonical ?? value,
+              dirty: draft !== value,
+              draft,
+            },
+          }));
         }}
         rows={4}
-        value={draft}
+        value={entry.draft}
       />
       <button
         data-action-id={action.id}
         data-event-id={action.eventId}
+        disabled={Boolean(mutationState.pendingKey)}
         type="submit"
       >
-        Save {action.label.toLowerCase()}
+        {mutationState.pendingKey === actionKey
+          ? `Saving ${action.label.toLowerCase()}…`
+          : `Save ${action.label.toLowerCase()}`}
       </button>
     </form>
   );

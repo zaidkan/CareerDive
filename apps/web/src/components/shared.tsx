@@ -7,6 +7,7 @@ import type {
   WorkplaceInteraction,
 } from "@sim/schemas";
 import type { WorkplaceInteractionResult } from "../client.js";
+import type { MutationState } from "../useMutationCoordinator.js";
 
 export type TaskAttemptFeedback = {
   accepted: boolean;
@@ -31,6 +32,8 @@ export type ModeProps = {
   onTaskAttempt?: TaskAttemptHandler;
   onNotification?: NotificationHandler;
   onWorkplaceInteraction?: WorkplaceInteractionHandler;
+  mutationState?: MutationState;
+  onRetryMutation?: () => void;
 };
 
 export function OperationalMessages({ messages }: { messages: string[] }) {

@@ -1,29 +1,44 @@
 import { useEffect, useState } from "react";
 import type { ClientArtifact, ClientTaskView } from "@sim/schemas";
 import type { TaskAttemptHandler } from "./shared.js";
+import {
+  EMPTY_MUTATION_STATE,
+  taskMutationKey,
+  type MutationState,
+} from "../useMutationCoordinator.js";
 
 export function WorkTaskPanel({
   task,
   onTaskAttempt,
   relatedArtifacts = [],
+  mutationState = EMPTY_MUTATION_STATE,
 }: {
   task: ClientTaskView;
   onTaskAttempt?: TaskAttemptHandler;
   relatedArtifacts?: ClientArtifact[];
+  mutationState?: MutationState;
 }) {
   const [selected, setSelected] = useState<string[]>([]);
-  const [feedback, setFeedback] = useState<string>();
+  const [feedback, setFeedback] = useState<{
+    accepted: boolean;
+    key: string;
+    message: string;
+    taskId: string;
+  }>();
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     setSelected([]);
-    setFeedback(undefined);
   }, [task.id, task.stepIndex]);
 
   const validCount =
     selected.length >= task.minSelections &&
     selected.length <= task.maxSelections;
   const single = task.maxSelections === 1;
+  const mutationKey = taskMutationKey(task);
+  const globallyPending = Boolean(mutationState.pendingKey);
+  const submittingThisTask =
+    submitting || mutationState.pendingKey === mutationKey;
 
   return (
     <section
@@ -99,13 +114,20 @@ export function WorkTaskPanel({
         </p>
         <button
           className="action-primary"
-          disabled={!validCount || !onTaskAttempt || submitting}
+          disabled={
+            !validCount || !onTaskAttempt || submitting || globallyPending
+          }
           onClick={() => {
             if (!onTaskAttempt) return;
             setSubmitting(true);
             void onTaskAttempt(task, selected)
               .then((result) => {
-                setFeedback(result.feedback);
+                setFeedback({
+                  accepted: result.accepted,
+                  key: mutationKey,
+                  message: result.feedback,
+                  taskId: task.id,
+                });
                 if (!result.accepted) setSelected([]);
               })
               .finally(() => {
@@ -114,12 +136,13 @@ export function WorkTaskPanel({
           }}
           type="button"
         >
-          {submitting ? "Checking…" : "Check my work"}
+          {submittingThisTask ? "Checking…" : "Check my work"}
         </button>
       </div>
-      {feedback ? (
-        <p className="work-task-feedback" aria-live="polite">
-          {feedback}
+      {feedback?.taskId === task.id &&
+      (feedback.accepted || feedback.key === mutationKey) ? (
+        <p className="work-task-feedback" aria-live="polite" key={feedback.key}>
+          {feedback.message}
         </p>
       ) : null}
     </section>

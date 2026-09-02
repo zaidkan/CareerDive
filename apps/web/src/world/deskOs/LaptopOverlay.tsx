@@ -10,6 +10,7 @@ import type {
   NotificationHandler,
   TaskAttemptHandler,
 } from "../../components/shared.js";
+import type { MutationState } from "../../useMutationCoordinator.js";
 
 /** Real DOM laptop over the 3D canvas so clicks and typing match the pixels. */
 export function LaptopOverlay({
@@ -22,8 +23,8 @@ export function LaptopOverlay({
   maximized = false,
   onLoginSuccess,
   onStand,
-  onMaximize,
-  onMinimize,
+  mutationState,
+  onRetryMutation,
   disabled = false,
 }: {
   phase: "desk_login" | "seated_monitor" | "focus_desk";
@@ -35,8 +36,8 @@ export function LaptopOverlay({
   maximized?: boolean;
   onLoginSuccess: () => void;
   onStand: () => void;
-  onMaximize: () => void;
-  onMinimize: () => void;
+  mutationState?: MutationState;
+  onRetryMutation?: () => void;
   disabled?: boolean;
 }) {
   const laptopRef = useRef<HTMLDivElement>(null);
@@ -98,8 +99,8 @@ export function LaptopOverlay({
           {...(onTaskAttempt ? { onTaskAttempt } : {})}
           {...(onNotification ? { onNotification } : {})}
           onLoginSuccess={onLoginSuccess}
-          onMaximize={onMaximize}
-          onMinimize={onMinimize}
+          {...(mutationState ? { mutationState } : {})}
+          {...(onRetryMutation ? { onRetryMutation } : {})}
           onOsFullscreen={() => {
             void toggleOsFullscreen();
           }}
