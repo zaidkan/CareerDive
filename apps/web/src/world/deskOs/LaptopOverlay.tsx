@@ -9,6 +9,7 @@ import { DeskOs } from "./DeskOs.js";
 import type {
   NotificationHandler,
   TaskAttemptHandler,
+  WorkplaceInteractionHandler,
 } from "../../components/shared.js";
 import type { MutationState } from "../../useMutationCoordinator.js";
 
@@ -19,6 +20,7 @@ export function LaptopOverlay({
   onAction,
   onTaskAttempt,
   onNotification,
+  onWorkplaceInteraction,
   guided = false,
   maximized = false,
   onLoginSuccess,
@@ -32,6 +34,7 @@ export function LaptopOverlay({
   onAction: (action: AvailableAction, freeText?: string) => void;
   onTaskAttempt?: TaskAttemptHandler;
   onNotification?: NotificationHandler;
+  onWorkplaceInteraction?: WorkplaceInteractionHandler;
   guided?: boolean;
   maximized?: boolean;
   onLoginSuccess: () => void;
@@ -98,6 +101,7 @@ export function LaptopOverlay({
           onAction={onAction}
           {...(onTaskAttempt ? { onTaskAttempt } : {})}
           {...(onNotification ? { onNotification } : {})}
+          {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
           onLoginSuccess={onLoginSuccess}
           {...(mutationState ? { mutationState } : {})}
           {...(onRetryMutation ? { onRetryMutation } : {})}

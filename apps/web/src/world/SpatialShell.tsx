@@ -359,6 +359,7 @@ export function SpatialShell({
             {...(onRetryMutation ? { onRetryMutation } : {})}
             {...(onTaskAttempt ? { onTaskAttempt } : {})}
             {...(onNotification ? { onNotification } : {})}
+            {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
             onLoginSuccess={() => {
               dispatch({ type: "login_success" });
             }}

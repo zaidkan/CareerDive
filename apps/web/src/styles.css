@@ -760,6 +760,115 @@ section[aria-labelledby="structured-title"],
   animation: reveal-panel 320ms ease both;
 }
 
+.artifact-unopened,
+.task-evidence-status {
+  margin: 0.75rem 0 0;
+  color: var(--mute);
+  font-size: 0.8rem;
+}
+
+.email-tool,
+.alert-tool {
+  display: grid;
+  grid-template-columns: minmax(11rem, 0.85fr) minmax(0, 1.4fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.email-queue,
+.alert-timeline {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.email-queue button,
+.alert-timeline button {
+  display: grid;
+  width: 100%;
+  gap: 0.2rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--fog);
+  text-align: left;
+  cursor: pointer;
+}
+
+.email-queue button[aria-pressed="true"],
+.alert-timeline button[aria-pressed="true"] {
+  border-color: var(--phosphor);
+  background: rgb(232 184 74 / 10%);
+}
+
+.email-queue strong,
+.alert-timeline strong {
+  color: var(--paper);
+  font-size: 0.82rem;
+}
+
+.email-queue small,
+.alert-timeline small {
+  color: var(--mute);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.email-message,
+.alert-record {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.email-message {
+  background: var(--paper);
+  color: var(--paper-ink);
+  border-color: #cbb892;
+  box-shadow: 6px 8px 0 rgb(0 0 0 / 25%);
+  transform: rotate(-0.4deg);
+}
+
+.email-message h4,
+.email-message p,
+.email-message .eyebrow,
+.email-message .artifact-body {
+  color: var(--paper-ink);
+}
+
+.email-message .artifact-body {
+  background: #efe0bd;
+  border: 1px dashed #b9a27a;
+}
+
+.alert-fields {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.75rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.alert-fields div {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.55fr) 1fr;
+  gap: 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line);
+  background: var(--ink-lift);
+}
+
+.alert-fields dt {
+  color: var(--mute);
+}
+
+.alert-fields dd {
+  margin: 0;
+  color: var(--fog);
+}
+
 .artifact-detail h4 {
   margin: 0.2rem 0 0.45rem;
   color: var(--paper);
@@ -3219,7 +3328,9 @@ section[aria-labelledby="structured-title"],
 
 @media (max-width: 820px) {
   .work-notification,
-  .work-task-footer {
+  .work-task-footer,
+  .email-tool,
+  .alert-tool {
     grid-template-columns: 1fr;
   }
 

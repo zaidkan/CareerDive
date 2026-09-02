@@ -111,22 +111,30 @@ export function toClientView(state: WorldState): ClientView {
             (event) => event.id === eventId && event.status !== "pending",
           ),
         );
-        return {
-          ...artifact,
-          body: isObserved ? artifact.body : "",
+        const preview = {
+          id: artifact.id,
+          systemId: artifact.systemId,
+          kind: artifact.kind,
+          title: artifact.title,
+          summary: artifact.summary,
           eventIds,
-          relatedArtifactIds: isObserved
-            ? artifact.relatedArtifactIds.filter((artifactId) =>
-                canOpenArtifact(state, artifactId),
-              )
-            : [],
-          searchableText:
-            isObserved || artifact.kind === "kb_document"
-              ? artifact.searchableText
-              : "",
-          metadata: isObserved ? artifact.metadata : {},
           observed: isObserved,
         };
+        if (isObserved) {
+          return {
+            ...preview,
+            body: artifact.body,
+            metadata: artifact.metadata,
+            relatedArtifactIds: artifact.relatedArtifactIds.filter(
+              (artifactId) => canOpenArtifact(state, artifactId),
+            ),
+            searchableText: artifact.searchableText,
+          };
+        }
+        if (artifact.kind === "kb_document") {
+          return { ...preview, searchableText: artifact.searchableText };
+        }
+        return preview;
       }),
     ticketNotes: state.ticketNotes,
     notebook: state.notebook,

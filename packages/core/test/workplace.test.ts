@@ -251,9 +251,8 @@ describe("artifact authorization", () => {
       "scanner-alert",
     );
     expect(
-      beforeOpen.artifacts.find(({ id }) => id === "suspicious-login-alert")
-        ?.body,
-    ).toBe("");
+      beforeOpen.artifacts.find(({ id }) => id === "suspicious-login-alert"),
+    ).not.toHaveProperty("body");
     expect(JSON.stringify(beforeOpen)).not.toContain(
       "Vulnerability scanner vuln-scan-03 opened connections",
     );

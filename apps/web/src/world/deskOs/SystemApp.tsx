@@ -4,7 +4,10 @@ import { SystemToolPanel } from "../../components/SystemToolPanel.js";
 import type { ShiftGuidance } from "../../guidance.js";
 import { systemLabel } from "../../systems.js";
 import { deriveSystemState } from "../../workstation.js";
-import type { TaskAttemptHandler } from "../../components/shared.js";
+import type {
+  TaskAttemptHandler,
+  WorkplaceInteractionHandler,
+} from "../../components/shared.js";
 import {
   EMPTY_MUTATION_STATE,
   type MutationState,
@@ -16,6 +19,7 @@ export function SystemApp({
   systemId,
   onAction,
   onTaskAttempt,
+  onWorkplaceInteraction,
   focusEventId,
   guidance,
   guided,
@@ -26,6 +30,7 @@ export function SystemApp({
   systemId: WorkSystemId;
   onAction: (action: AvailableAction, freeText?: string) => void;
   onTaskAttempt?: TaskAttemptHandler;
+  onWorkplaceInteraction?: WorkplaceInteractionHandler;
   focusEventId?: string;
   guidance: ShiftGuidance | null;
   guided?: boolean;
@@ -115,6 +120,7 @@ export function SystemApp({
               onAction={onAction}
               mutationState={mutationState}
               {...(onTaskAttempt ? { onTaskAttempt } : {})}
+              {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
               selectedEventId={selectedEvent.id}
               systemId={systemId}
               view={view}
@@ -136,6 +142,7 @@ export function SystemApp({
               onAction={onAction}
               mutationState={mutationState}
               {...(onTaskAttempt ? { onTaskAttempt } : {})}
+              {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
               systemId={systemId}
               view={view}
             />

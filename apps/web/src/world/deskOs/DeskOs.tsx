@@ -11,6 +11,7 @@ import { NotificationBanner } from "../../components/NotificationBanner.js";
 import type {
   NotificationHandler,
   TaskAttemptHandler,
+  WorkplaceInteractionHandler,
 } from "../../components/shared.js";
 import { formatShiftClock } from "../../systems.js";
 import {
@@ -24,6 +25,7 @@ export function DeskOs({
   onAction,
   onTaskAttempt,
   onNotification,
+  onWorkplaceInteraction,
   guided = false,
   maximized = false,
   osFullscreen = false,
@@ -38,6 +40,7 @@ export function DeskOs({
   onAction: (action: AvailableAction, freeText?: string) => void;
   onTaskAttempt?: TaskAttemptHandler;
   onNotification?: NotificationHandler;
+  onWorkplaceInteraction?: WorkplaceInteractionHandler;
   guided?: boolean;
   maximized?: boolean;
   osFullscreen?: boolean;
@@ -230,6 +233,7 @@ export function DeskOs({
             onAction={onAction}
             mutationState={mutationState}
             {...(onTaskAttempt ? { onTaskAttempt } : {})}
+            {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
             {...(focusTarget?.eventId
               ? { focusEventId: focusTarget.eventId }
               : {})}

@@ -63,10 +63,14 @@ export function ArtifactDetail({
         {artifact.title}
       </h4>
       <p>{artifact.summary}</p>
-      <pre className="artifact-body">{artifact.body}</pre>
-      {Object.keys(artifact.metadata).length > 0 ? (
+      {artifact.observed && artifact.body ? (
+        <pre className="artifact-body">{artifact.body}</pre>
+      ) : (
+        <p className="artifact-unopened">Open this item to read its details.</p>
+      )}
+      {artifact.observed && Object.keys(artifact.metadata ?? {}).length > 0 ? (
         <dl className="artifact-meta">
-          {Object.entries(artifact.metadata).map(([key, value]) => (
+          {Object.entries(artifact.metadata ?? {}).map(([key, value]) => (
             <div key={key}>
               <dt>{key}</dt>
               <dd>{value}</dd>
@@ -190,7 +194,7 @@ export function filterKnowledgeBase(
   return view.artifacts.filter((artifact) => {
     if (artifact.systemId !== "knowledge_base") return false;
     if (!normalized) return true;
-    return `${artifact.title} ${artifact.summary} ${artifact.body} ${artifact.searchableText}`
+    return `${artifact.title} ${artifact.summary} ${artifact.searchableText ?? ""}`
       .toLowerCase()
       .includes(normalized);
   });

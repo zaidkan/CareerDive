@@ -20,6 +20,7 @@ export function WorkSurface({
   onAction,
   onTaskAttempt,
   onNotification,
+  onWorkplaceInteraction,
   mutationState,
   guided = false,
 }: ModeProps & { guided?: boolean }) {
@@ -185,6 +186,7 @@ export function WorkSurface({
                 onAction={onAction}
                 {...(mutationState ? { mutationState } : {})}
                 {...(onTaskAttempt ? { onTaskAttempt } : {})}
+                {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
                 selectedEventId={selectedEvent.id}
                 systemId={systemId}
                 view={view}
@@ -204,6 +206,7 @@ export function WorkSurface({
                 onAction={onAction}
                 {...(mutationState ? { mutationState } : {})}
                 {...(onTaskAttempt ? { onTaskAttempt } : {})}
+                {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
                 systemId={systemId}
                 view={view}
               />

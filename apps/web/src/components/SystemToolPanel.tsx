@@ -1,5 +1,9 @@
 import { useState } from "react";
-import type { AvailableAction, ClientView } from "@sim/schemas";
+import type {
+  AvailableAction,
+  ClientView,
+  WorkplaceInteraction,
+} from "@sim/schemas";
 import {
   ArtifactDetail,
   ArtifactList,
@@ -7,8 +11,10 @@ import {
   filterKnowledgeBase,
   filterSystemArtifacts,
 } from "./artifacts.js";
+import { AlertTool } from "./tools/AlertTool.js";
+import { EmailTool } from "./tools/EmailTool.js";
+import { TaskInteraction } from "./tools/TaskInteraction.js";
 import { primaryActions, systemMeta, utilityActions } from "../systems.js";
-import { WorkTaskPanel } from "./WorkTaskPanel.js";
 import type { TaskAttemptHandler } from "./shared.js";
 import {
   actionMutationKey,
@@ -135,12 +141,10 @@ function WorkInteraction({
   return (
     <>
       {uniqueTasks.map((task) => (
-        <WorkTaskPanel
+        <TaskInteraction
           key={task.id}
           mutationState={mutationState}
-          relatedArtifacts={view.artifacts.filter(({ id }) =>
-            task.relatedArtifactIds.includes(id),
-          )}
+          openedArtifacts={view.artifacts.filter(({ observed }) => observed)}
           task={task}
           {...(onTaskAttempt ? { onTaskAttempt } : {})}
         />
@@ -189,6 +193,7 @@ export function SystemToolPanel({
   actions,
   onAction,
   onTaskAttempt,
+  onWorkplaceInteraction,
   highlightActionId,
   mutationState = EMPTY_MUTATION_STATE,
 }: {
@@ -198,6 +203,9 @@ export function SystemToolPanel({
   actions: AvailableAction[];
   onAction: (action: AvailableAction, freeText?: string) => void;
   onTaskAttempt?: TaskAttemptHandler;
+  onWorkplaceInteraction?: (
+    interaction: WorkplaceInteraction,
+  ) => Promise<unknown>;
   highlightActionId?: string;
   mutationState?: MutationState;
 }) {
@@ -220,6 +228,57 @@ export function SystemToolPanel({
     ({ id, taskId }) => id === "update_notebook" && !taskId,
   );
   const searchAction = actions.find(({ id }) => id === "search_knowledge_base");
+
+  const openArtifact = onWorkplaceInteraction
+    ? (artifactId: string) =>
+        onWorkplaceInteraction({ type: "open_artifact", artifactId })
+    : undefined;
+
+  if (systemId === "email") {
+    return (
+      <div className="tool-panel" data-system={systemId}>
+        <ToolChrome systemId={systemId} />
+        <EmailTool
+          artifacts={eventArtifacts}
+          onOpenArtifact={openArtifact}
+          onSelect={selectArtifact}
+          selectedId={selectedArtifactId}
+          mutationState={mutationState}
+        />
+        <WorkInteraction
+          actions={workInteractionActions(actions)}
+          {...(highlightActionId ? { highlightActionId } : {})}
+          onAction={onAction}
+          mutationState={mutationState}
+          {...(onTaskAttempt ? { onTaskAttempt } : {})}
+          view={view}
+        />
+      </div>
+    );
+  }
+
+  if (systemId === "alert_dashboard") {
+    return (
+      <div className="tool-panel" data-system={systemId}>
+        <ToolChrome systemId={systemId} />
+        <AlertTool
+          artifacts={eventArtifacts}
+          onOpenArtifact={openArtifact}
+          onSelect={selectArtifact}
+          selectedId={selectedArtifactId}
+          mutationState={mutationState}
+        />
+        <WorkInteraction
+          actions={workInteractionActions(actions)}
+          {...(highlightActionId ? { highlightActionId } : {})}
+          onAction={onAction}
+          mutationState={mutationState}
+          {...(onTaskAttempt ? { onTaskAttempt } : {})}
+          view={view}
+        />
+      </div>
+    );
+  }
 
   if (systemId === "knowledge_base") {
     const docs = filterKnowledgeBase(view, view.kbQuery);

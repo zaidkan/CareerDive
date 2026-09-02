@@ -8,8 +8,15 @@ import { ClientWorkplaceStateSchema } from "./workplace.js";
 import { LocationSchema, WorkArtifactSchema } from "./world.js";
 
 export const ClientArtifactSchema = WorkArtifactSchema.omit({
-  // all fields public for workplace tools
+  body: true,
+  metadata: true,
+  relatedArtifactIds: true,
+  searchableText: true,
 }).extend({
+  body: z.string().optional(),
+  metadata: z.record(z.string(), z.string()).optional(),
+  relatedArtifactIds: z.array(z.string()).optional(),
+  searchableText: z.string().optional(),
   observed: z.boolean(),
 });
 export type ClientArtifact = z.infer<typeof ClientArtifactSchema>;

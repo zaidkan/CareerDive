@@ -344,8 +344,9 @@ describe("parallel simulation views", () => {
       screen.getByRole("button", { name: /read shift handoff/i }),
     ).toBeVisible();
     expect(
-      screen.getByText(/Still watching the unfamiliar login thread/i),
-    ).toBeVisible();
+      screen.queryByText(/Still watching the unfamiliar login thread/i),
+    ).toBeNull();
+    expect(screen.getByRole("button", { name: /open message/i })).toBeVisible();
     expect(screen.queryByLabelText("Available actions")).toBeNull();
   });
 

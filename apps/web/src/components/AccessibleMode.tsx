@@ -7,7 +7,7 @@ import {
   filterSystemArtifacts,
 } from "./artifacts.js";
 import { OperationalMessages, type ModeProps } from "./shared.js";
-import { WorkTaskPanel } from "./WorkTaskPanel.js";
+import { TaskInteraction } from "./tools/TaskInteraction.js";
 import { CaseRail } from "./CaseRail.js";
 import { NotificationBanner } from "./NotificationBanner.js";
 import { WORK_SYSTEMS, primaryActions, utilityActions } from "../systems.js";
@@ -22,6 +22,7 @@ export function AccessibleMode({
   onAction,
   onTaskAttempt,
   onNotification,
+  onWorkplaceInteraction,
   mutationState = EMPTY_MUTATION_STATE,
 }: ModeProps) {
   const [notificationFocusTarget, setNotificationFocusTarget] = useState<{
@@ -95,6 +96,10 @@ export function AccessibleMode({
                   {event.status.replaceAll("_", " ")}.
                   <StructuredArtifacts
                     artifacts={filterSystemArtifacts(view, system.id, event.id)}
+                    {...(onWorkplaceInteraction
+                      ? { onWorkplaceInteraction }
+                      : {})}
+                    mutationState={mutationState}
                   />
                   {system.id === "ticket_queue" ? (
                     <>
@@ -128,6 +133,8 @@ export function AccessibleMode({
             {system.id === "knowledge_base" ? (
               <StructuredArtifacts
                 artifacts={filterKnowledgeBase(view, view.kbQuery)}
+                {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
+                mutationState={mutationState}
               />
             ) : null}
             <div className="accessible-actions">
@@ -139,12 +146,12 @@ export function AccessibleMode({
                     )
                   : undefined;
                 return task ? (
-                  <WorkTaskPanel
+                  <TaskInteraction
                     key={`${action.id}:${action.eventId}`}
                     mutationState={mutationState}
                     {...(onTaskAttempt ? { onTaskAttempt } : {})}
-                    relatedArtifacts={view.artifacts.filter(({ id }) =>
-                      task.relatedArtifactIds.includes(id),
+                    openedArtifacts={view.artifacts.filter(
+                      ({ observed }) => observed,
                     )}
                     task={task}
                   />
@@ -187,14 +194,36 @@ export function AccessibleMode({
 
 function StructuredArtifacts({
   artifacts,
+  onWorkplaceInteraction,
+  mutationState = EMPTY_MUTATION_STATE,
 }: {
   artifacts: ReturnType<typeof filterSystemArtifacts>;
+  onWorkplaceInteraction?: ModeProps["onWorkplaceInteraction"];
+  mutationState?: MutationState;
 }) {
   if (artifacts.length === 0) return null;
   return (
     <div className="structured-artifacts">
       {artifacts.map((artifact) => (
-        <ArtifactDetail artifact={artifact} key={artifact.id} />
+        <div key={artifact.id}>
+          <ArtifactDetail artifact={artifact} />
+          {!artifact.observed ? (
+            <button
+              disabled={
+                !onWorkplaceInteraction || Boolean(mutationState.pendingKey)
+              }
+              onClick={() => {
+                void onWorkplaceInteraction?.({
+                  type: "open_artifact",
+                  artifactId: artifact.id,
+                });
+              }}
+              type="button"
+            >
+              Open {artifact.title}
+            </button>
+          ) : null}
+        </div>
       ))}
     </div>
   );
