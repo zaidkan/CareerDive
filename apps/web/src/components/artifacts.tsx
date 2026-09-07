@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { AvailableAction, ClientArtifact, ClientView } from "@sim/schemas";
+import { ArtifactOpenButton } from "./tools/ArtifactOpenButton.js";
 import {
   actionMutationKey,
   EMPTY_MUTATION_STATE,
@@ -45,9 +46,13 @@ export function ArtifactList({
 export function ArtifactDetail({
   artifact,
   focus = false,
+  onOpenArtifact,
+  mutationState,
 }: {
   artifact?: ClientArtifact | undefined;
   focus?: boolean;
+  onOpenArtifact?: ((id: string) => Promise<unknown>) | undefined;
+  mutationState?: MutationState | undefined;
 }) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
@@ -63,6 +68,15 @@ export function ArtifactDetail({
         {artifact.title}
       </h4>
       <p>{artifact.summary}</p>
+      {!artifact.observed && onOpenArtifact ? (
+        <ArtifactOpenButton
+          key={artifact.id}
+          artifactId={artifact.id}
+          label={`Open ${artifact.title}`}
+          onOpenArtifact={onOpenArtifact}
+          {...(mutationState ? { mutationState } : {})}
+        />
+      ) : null}
       {artifact.observed && artifact.body ? (
         <pre className="artifact-body">{artifact.body}</pre>
       ) : (

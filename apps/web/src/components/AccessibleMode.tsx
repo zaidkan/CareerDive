@@ -8,6 +8,7 @@ import {
 } from "./artifacts.js";
 import { OperationalMessages, type ModeProps } from "./shared.js";
 import { TaskInteraction } from "./tools/TaskInteraction.js";
+import { ArtifactOpenButton } from "./tools/ArtifactOpenButton.js";
 import { CaseRail } from "./CaseRail.js";
 import { NotificationBanner } from "./NotificationBanner.js";
 import { WORK_SYSTEMS, primaryActions, utilityActions } from "../systems.js";
@@ -208,20 +209,20 @@ function StructuredArtifacts({
         <div key={artifact.id}>
           <ArtifactDetail artifact={artifact} />
           {!artifact.observed ? (
-            <button
-              disabled={
-                !onWorkplaceInteraction || Boolean(mutationState.pendingKey)
+            <ArtifactOpenButton
+              artifactId={artifact.id}
+              label={`Open ${artifact.title}`}
+              mutationState={mutationState}
+              onOpenArtifact={
+                onWorkplaceInteraction
+                  ? (artifactId) =>
+                      onWorkplaceInteraction({
+                        type: "open_artifact",
+                        artifactId,
+                      })
+                  : undefined
               }
-              onClick={() => {
-                void onWorkplaceInteraction?.({
-                  type: "open_artifact",
-                  artifactId: artifact.id,
-                });
-              }}
-              type="button"
-            >
-              Open {artifact.title}
-            </button>
+            />
           ) : null}
         </div>
       ))}

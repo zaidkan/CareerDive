@@ -33,6 +33,7 @@ Route by blast radius, ambiguity, and failure cost:
 - Start bounded implementation with Luna. Use Terra for broad discovery or cross-file integration. Use Sol for high-risk correctness, complex debugging, architecture, and meaningful review.
 - If a worker fails once because scope was unclear, improve the brief before escalating. Escalate repeated failures from Luna to Terra, then to Sol.
 - Run write agents sequentially unless their file ownership is explicitly disjoint. Parallelize read-only exploration, review, test analysis, and documentation when independent.
+- Keep at most two subagents open at a time. Close completed agents before dispatching replacements.
 - Keep one independent reviewer per completed implementation task. Use the high-risk reviewer before release or after security/privacy/public-contract changes.
 - The implementation worker should normally format and commit its own coherent change. Do not spawn a separate commit agent unless integration itself is the requested task.
 - Subagents must not recursively dispatch more agents.

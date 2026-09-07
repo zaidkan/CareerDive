@@ -2,8 +2,8 @@ import type { ClientArtifact } from "@sim/schemas";
 import {
   EMPTY_MUTATION_STATE,
   type MutationState,
-  workplaceMutationKey,
 } from "../../useMutationCoordinator.js";
+import { ArtifactOpenButton } from "./ArtifactOpenButton.js";
 
 function senderFor(artifact: ClientArtifact): string {
   const match = /^From (.+?)(?: ·|$)/.exec(artifact.summary);
@@ -26,9 +26,6 @@ export function EmailTool({
   const selected =
     artifacts.find(({ id }) => id === selectedId) ?? artifacts[0];
   if (!selected) return <p>No messages are available yet.</p>;
-  const opening =
-    mutationState.pendingKey ===
-    workplaceMutationKey({ type: "open_artifact", artifactId: selected.id });
 
   return (
     <div className="email-tool">
@@ -58,16 +55,13 @@ export function EmailTool({
         {selected.observed ? (
           <pre className="artifact-body">{selected.body}</pre>
         ) : (
-          <button
-            className="action-primary"
-            disabled={!onOpenArtifact || Boolean(mutationState.pendingKey)}
-            onClick={() => {
-              void onOpenArtifact?.(selected.id);
-            }}
-            type="button"
-          >
-            {opening ? "Opening message…" : "Open message"}
-          </button>
+          <ArtifactOpenButton
+            key={selected.id}
+            artifactId={selected.id}
+            label="Open message"
+            onOpenArtifact={onOpenArtifact}
+            mutationState={mutationState}
+          />
         )}
       </article>
     </div>

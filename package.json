@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "turbo build",
-    "dev": "turbo dev --parallel",
+    "dev": "turbo dev",
     "lint": "turbo lint",
     "test": "vitest run",
     "test:packages": "turbo test",

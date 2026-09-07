@@ -329,6 +329,8 @@ export function SystemToolPanel({
           <ArtifactDetail
             artifact={selected}
             focus={selected?.id === focusArtifactId}
+            onOpenArtifact={openArtifact}
+            mutationState={mutationState}
           />
         </div>
         <WorkInteraction
@@ -365,6 +367,8 @@ export function SystemToolPanel({
             <ArtifactDetail
               artifact={selected}
               focus={selected?.id === focusArtifactId}
+              onOpenArtifact={openArtifact}
+              mutationState={mutationState}
             />
             <NotesEditor
               action={ticketNotesAction}
@@ -413,6 +417,8 @@ export function SystemToolPanel({
         <ArtifactDetail
           artifact={selected}
           focus={selected?.id === focusArtifactId}
+          onOpenArtifact={openArtifact}
+          mutationState={mutationState}
         />
       </div>
       <WorkInteraction

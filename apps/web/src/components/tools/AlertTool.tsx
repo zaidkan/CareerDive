@@ -3,8 +3,8 @@ import type { ClientArtifact } from "@sim/schemas";
 import {
   EMPTY_MUTATION_STATE,
   type MutationState,
-  workplaceMutationKey,
 } from "../../useMutationCoordinator.js";
+import { ArtifactOpenButton } from "./ArtifactOpenButton.js";
 
 export function AlertTool({
   artifacts,
@@ -26,9 +26,6 @@ export function AlertTool({
     if (selectedId) headingRef.current?.focus();
   }, [selectedId]);
   if (!selected) return <p>No alerts are available yet.</p>;
-  const opening =
-    mutationState.pendingKey ===
-    workplaceMutationKey({ type: "open_artifact", artifactId: selected.id });
 
   return (
     <div className="alert-tool">
@@ -69,16 +66,13 @@ export function AlertTool({
             ) : null}
           </>
         ) : (
-          <button
-            className="action-primary"
-            disabled={!onOpenArtifact || Boolean(mutationState.pendingKey)}
-            onClick={() => {
-              void onOpenArtifact?.(selected.id);
-            }}
-            type="button"
-          >
-            {opening ? "Opening alert…" : "Open alert"}
-          </button>
+          <ArtifactOpenButton
+            key={selected.id}
+            artifactId={selected.id}
+            label="Open alert"
+            onOpenArtifact={onOpenArtifact}
+            mutationState={mutationState}
+          />
         )}
       </article>
     </div>

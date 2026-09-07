@@ -1,13 +1,17 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { useState } from "react";
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ClientTaskView, ClientView } from "@sim/schemas";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SystemToolPanel } from "../src/components/SystemToolPanel.js";
 
 const openArtifact = vi.fn();
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
 
 function emailView(): ClientView {
   return {
@@ -99,6 +103,37 @@ function EmailToolHarness() {
 }
 
 describe("work tools", () => {
+  it.each(["knowledge_base", "ticket_queue", "team_chat"] as const)(
+    "offers canonical opening for unread %s records",
+    async (systemId) => {
+      const user = userEvent.setup();
+      const view = emailView();
+      view.artifacts = view.artifacts.map((artifact) => ({
+        ...artifact,
+        systemId,
+      }));
+      const onOpen = vi.fn().mockResolvedValue(undefined);
+      render(
+        <SystemToolPanel
+          actions={[]}
+          onAction={() => undefined}
+          onWorkplaceInteraction={onOpen}
+          systemId={systemId}
+          view={view}
+        />,
+      );
+      await user.click(
+        screen.getByRole("button", { name: "Open Incomplete shift handoff" }),
+      );
+      expect(onOpen).toHaveBeenCalledWith({
+        type: "open_artifact",
+        artifactId: "handoff-email",
+      });
+      expect(
+        screen.queryByText("Did not finish device inventory check."),
+      ).toBeNull();
+    },
+  );
   it("opens an unread email canonically before rendering its body", async () => {
     const user = userEvent.setup();
     render(<EmailToolHarness />);

@@ -10,7 +10,7 @@ const packPath = resolve(
 );
 
 export function loadDefaultCybersecurityPack(
-  now = new Date("2026-06-22"),
+  now = new Date(),
 ): CareerPack {
   return loadCareerPack(readFileSync(packPath, "utf8"), now);
 }
