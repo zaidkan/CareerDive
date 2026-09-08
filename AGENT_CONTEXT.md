@@ -6,7 +6,7 @@
 **Current branch:** `feature/career-sim-beta`  
 **Current implementation directory:** `/Users/zaid/personal-projects/Careerexpo/.worktrees/career-sim-beta`
 
-**September 6 audit correction:** Historical status below predates the latest UI. Task 7 shipped artifact viewers/redaction but still maps every task type to generic selection controls. App currently exposes the spatial route only; desk/structured components exist but have no App mode switch. Use [the current audit](docs/2026-09-06-workspace-audit.md) for remaining gaps and the proposed visual/entry blueprint. Do not treat passing component tests as proof of full player-path parity.
+**September 7 implementation update:** App now exposes Walk the office, Desk only, and Simple list with shared canonical handlers. Desk/list also expose finite break-room resources and Jules. The two handoff steps now select literal passages inside an opened email; server rejects source-based answers before inspection. Other tasks still use structured choices, now with related records available beside the task. Task 7 remains partial: comparison, reference matching, and ticket composition still need dedicated interactions. Use [the current audit](docs/2026-09-06-workspace-audit.md) and [this slice's handoff](docs/2026-09-07-evidence-and-modes.md). Do not treat component tests as proof of full manual player-path parity. The arrival cutscene is future concept only, not implementation scope.
 
 This document is the shared orientation file for Codex, Cursor, and other agentic coding tools. Read it before changing the project. It distinguishes the product goal, what exists in code, what remains incomplete, and the approved implementation order.
 

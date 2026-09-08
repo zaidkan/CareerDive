@@ -18,6 +18,9 @@ export const PackTaskOptionSchema = z.object({
   detail: z.string().min(1).optional(),
   term: z.string().min(1).optional(),
   termHelp: z.string().min(1).optional(),
+  source: z
+    .object({ artifactId: z.string().min(1), quote: z.string().min(1) })
+    .optional(),
 });
 export type PackTaskOption = z.infer<typeof PackTaskOptionSchema>;
 
@@ -96,7 +99,16 @@ export const TaskProgressSchema = z.object({
 });
 export type TaskProgress = z.infer<typeof TaskProgressSchema>;
 
-export const ClientTaskOptionSchema = PackTaskOptionSchema;
+export const ClientTaskOptionSchema = PackTaskOptionSchema.omit({
+  source: true,
+}).extend({
+  source: z
+    .object({
+      artifactId: z.string().min(1),
+      quote: z.string().min(1).optional(),
+    })
+    .optional(),
+});
 export const ClientTaskViewSchema = z.object({
   id: z.string(),
   eventId: z.string(),

@@ -146,7 +146,9 @@ export const CareerPackSchema = z
           path: ["scenario", "tasks"],
         });
       }
-      const action = pack.scenario.actions.find(({ id }) => id === task.actionId);
+      const action = pack.scenario.actions.find(
+        ({ id }) => id === task.actionId,
+      );
       if (action && action.systemId !== task.systemId) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -164,6 +166,30 @@ export const CareerPackSchema = z
       }
       taskBindings.add(binding);
       for (const step of task.steps) {
+        const sourced = step.options.filter(({ source }) => source);
+        if (sourced.length && sourced.length !== step.options.length) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Source-based steps must map every option",
+            path: ["scenario", "tasks"],
+          });
+        }
+        for (const { source } of sourced) {
+          if (!source) continue;
+          const artifact = pack.scenario.artifacts.find(
+            ({ id }) => id === source.artifactId,
+          );
+          if (
+            !step.relatedArtifactIds.includes(source.artifactId) ||
+            !artifact?.body.includes(source.quote)
+          ) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Task source must quote a related artifact exactly",
+              path: ["scenario", "tasks"],
+            });
+          }
+        }
         for (const artifactId of step.relatedArtifactIds) {
           if (!artifactIds.has(artifactId)) {
             ctx.addIssue({

@@ -1,57 +1,53 @@
-import type { ReactNode } from "react";
-import type {
-  ClientArtifact,
-  ClientTaskView,
-  WorkTaskKind,
-} from "@sim/schemas";
+import type { ClientArtifact, ClientTaskView } from "@sim/schemas";
 import type { TaskAttemptHandler } from "../shared.js";
 import { WorkTaskPanel } from "../WorkTaskPanel.js";
+import { ArtifactOpenButton } from "./ArtifactOpenButton.js";
 import {
   EMPTY_MUTATION_STATE,
   type MutationState,
 } from "../../useMutationCoordinator.js";
 
-type TaskRenderer = (props: {
-  task: ClientTaskView;
-  onTaskAttempt?: TaskAttemptHandler;
-  mutationState: MutationState;
-}) => ReactNode;
-
-function StructuredTask(props: Parameters<typeof WorkTaskPanel>[0]) {
-  return <WorkTaskPanel {...props} relatedArtifacts={[]} />;
-}
-
-const taskRenderers: Record<WorkTaskKind, TaskRenderer> = {
-  compare_records: StructuredTask,
-  select_clues: StructuredTask,
-  match_reference: StructuredTask,
-  build_summary: StructuredTask,
-  choose_response: StructuredTask,
-};
-
 export function TaskInteraction({
   task,
   openedArtifacts,
+  artifacts = openedArtifacts,
+  onOpenArtifact,
   onTaskAttempt,
   mutationState = EMPTY_MUTATION_STATE,
 }: {
   task: ClientTaskView;
   openedArtifacts: ClientArtifact[];
+  artifacts?: ClientArtifact[];
+  onOpenArtifact?: ((id: string) => Promise<unknown>) | undefined;
   onTaskAttempt?: TaskAttemptHandler;
   mutationState?: MutationState;
 }) {
-  const Renderer = taskRenderers[task.kind];
   const openedRelated = openedArtifacts.filter(({ id }) =>
     task.relatedArtifactIds.includes(id),
   );
   return (
     <section className="task-interaction">
+      {artifacts
+        .filter(
+          ({ id, observed }) =>
+            !observed && task.relatedArtifactIds.includes(id),
+        )
+        .map((artifact) => (
+          <ArtifactOpenButton
+            key={artifact.id}
+            artifactId={artifact.id}
+            label={`Open source: ${artifact.title}`}
+            onOpenArtifact={onOpenArtifact}
+            mutationState={mutationState}
+          />
+        ))}
       {openedRelated.length > 0 ? (
         <p className="task-evidence-status">
           Opened evidence: {openedRelated.map(({ title }) => title).join(", ")}.
         </p>
       ) : null}
-      <Renderer
+      <WorkTaskPanel
+        relatedArtifacts={openedRelated}
         mutationState={mutationState}
         {...(onTaskAttempt ? { onTaskAttempt } : {})}
         task={task}

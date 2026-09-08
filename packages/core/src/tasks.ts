@@ -68,6 +68,14 @@ export function applyTaskAttempt(
   attempt: TaskAttempt,
 ): TaskAttemptTurn {
   const { task, step } = findAvailableTask(currentState, attempt);
+  if (
+    step.options.some(
+      ({ source }) =>
+        source && !currentState.observedArtifactIds.includes(source.artifactId),
+    )
+  ) {
+    throw new Error("Open the source records before submitting findings.");
+  }
   const state = structuredClone(currentState);
   const key = taskProgressKey(attempt.eventId, attempt.taskId);
   const progress = currentProgress(state, attempt.eventId, attempt.taskId);

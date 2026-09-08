@@ -4,6 +4,7 @@ import {
   ActionUnavailableError,
   applyAction,
   applyTaskAttempt,
+  applyWorkplaceInteraction,
   availableActions,
   createInitialWorldState,
   foldActionLog,
@@ -38,6 +39,16 @@ function perform(
         state.taskProgress[`${eventId}:${task.id}`]?.currentStep ?? 0;
       const step = task.steps[stepIndex];
       if (!step) throw new Error(`Missing task step ${String(stepIndex)}`);
+      for (const artifactId of new Set(
+        step.options.flatMap(({ source }) =>
+          source ? [source.artifactId] : [],
+        ),
+      )) {
+        if (state.observedArtifactIds.includes(artifactId)) continue;
+        const interaction = { type: "open_artifact" as const, artifactId };
+        state = applyWorkplaceInteraction(state, interaction).state;
+        interactions.push({ type: "workplace_interaction", interaction });
+      }
       const attempt = {
         taskId: task.id,
         eventId,

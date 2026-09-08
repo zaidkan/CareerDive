@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ClientArtifact, ClientTaskView } from "@sim/schemas";
 import type { TaskAttemptHandler } from "./shared.js";
+import { SourceEvidence } from "./tools/SourceEvidence.js";
 import {
   EMPTY_MUTATION_STATE,
   taskMutationKey,
@@ -35,6 +36,31 @@ export function WorkTaskPanel({
     selected.length >= task.minSelections &&
     selected.length <= task.maxSelections;
   const single = task.maxSelections === 1;
+  const sourceBased =
+    task.options.length > 0 && task.options.every(({ source }) => source);
+  const sourceReady =
+    !sourceBased ||
+    task.options.every(({ source }) => {
+      const quote = source?.quote;
+      return (
+        quote &&
+        relatedArtifacts.some(
+          ({ id, observed, body }) =>
+            id === source.artifactId && observed && body?.includes(quote),
+        )
+      );
+    });
+  function toggle(id: string) {
+    setSelected((current) =>
+      current.includes(id)
+        ? current.filter((value) => value !== id)
+        : single
+          ? [id]
+          : current.length < task.maxSelections
+            ? [...current, id]
+            : current,
+    );
+  }
   const mutationKey = taskMutationKey(task);
   const globallyPending = Boolean(mutationState.pendingKey);
   const submittingThisTask =
@@ -58,7 +84,7 @@ export function WorkTaskPanel({
       </header>
       <p className="work-task-prompt">{task.prompt}</p>
       <p className="work-task-instruction">{task.instruction}</p>
-      {relatedArtifacts.length > 0 ? (
+      {!sourceBased && relatedArtifacts.length > 0 ? (
         <details className="work-task-sources" open>
           <summary>Evidence available for this step</summary>
           {relatedArtifacts.map((artifact) => (
@@ -70,44 +96,60 @@ export function WorkTaskPanel({
           ))}
         </details>
       ) : null}
-      <fieldset className="work-task-options">
-        <legend className="visually-hidden">{task.instruction}</legend>
-        {task.options.map((option) => {
-          const checked = selected.includes(option.id);
-          return (
-            <label key={option.id} className={checked ? "selected" : undefined}>
-              <input
-                checked={checked}
-                name={`task-${task.id}`}
-                onChange={() => {
-                  if (single) {
-                    setSelected([option.id]);
-                    return;
-                  }
-                  setSelected((current) =>
-                    current.includes(option.id)
-                      ? current.filter((id) => id !== option.id)
-                      : current.length < task.maxSelections
-                        ? [...current, option.id]
-                        : current,
-                  );
-                }}
-                type={single ? "radio" : "checkbox"}
-                value={option.id}
-              />
-              <span>
-                <strong>{option.label}</strong>
-                {option.detail ? <small>{option.detail}</small> : null}
-                {option.term && option.termHelp ? (
-                  <small>
-                    <dfn>{option.term}</dfn>: {option.termHelp}
-                  </small>
-                ) : null}
-              </span>
-            </label>
-          );
-        })}
-      </fieldset>
+      {sourceBased ? (
+        <SourceEvidence
+          task={task}
+          artifacts={relatedArtifacts}
+          selected={selected}
+          onToggle={toggle}
+          disabled={submitting || globallyPending || !sourceReady}
+        />
+      ) : (
+        <fieldset
+          className="work-task-options"
+          disabled={submitting || globallyPending}
+        >
+          <legend className="visually-hidden">{task.instruction}</legend>
+          {task.options.map((option) => {
+            const checked = selected.includes(option.id);
+            return (
+              <label
+                key={option.id}
+                className={checked ? "selected" : undefined}
+              >
+                <input
+                  checked={checked}
+                  name={`task-${task.id}`}
+                  onChange={() => {
+                    if (single) {
+                      setSelected([option.id]);
+                      return;
+                    }
+                    setSelected((current) =>
+                      current.includes(option.id)
+                        ? current.filter((id) => id !== option.id)
+                        : current.length < task.maxSelections
+                          ? [...current, option.id]
+                          : current,
+                    );
+                  }}
+                  type={single ? "radio" : "checkbox"}
+                  value={option.id}
+                />
+                <span>
+                  <strong>{option.label}</strong>
+                  {option.detail ? <small>{option.detail}</small> : null}
+                  {option.term && option.termHelp ? (
+                    <small>
+                      <dfn>{option.term}</dfn>: {option.termHelp}
+                    </small>
+                  ) : null}
+                </span>
+              </label>
+            );
+          })}
+        </fieldset>
+      )}
       <div className="work-task-footer">
         <p>
           <strong>Why this matters:</strong> {task.whyItMatters}
@@ -115,7 +157,11 @@ export function WorkTaskPanel({
         <button
           className="action-primary"
           disabled={
-            !validCount || !onTaskAttempt || submitting || globallyPending
+            !validCount ||
+            !sourceReady ||
+            !onTaskAttempt ||
+            submitting ||
+            globallyPending
           }
           onClick={() => {
             if (!onTaskAttempt) return;
@@ -130,13 +176,25 @@ export function WorkTaskPanel({
                 });
                 if (!result.accepted) setSelected([]);
               })
+              .catch(() => {
+                setFeedback({
+                  accepted: false,
+                  key: mutationKey,
+                  message: "Could not submit findings. Try again.",
+                  taskId: task.id,
+                });
+              })
               .finally(() => {
                 setSubmitting(false);
               });
           }}
           type="button"
         >
-          {submittingThisTask ? "Checking…" : "Check my work"}
+          {submittingThisTask
+            ? "Checking…"
+            : sourceBased
+              ? "Submit findings"
+              : "Check my work"}
         </button>
       </div>
       {feedback?.taskId === task.id &&

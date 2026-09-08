@@ -112,6 +112,7 @@ function WorkInteraction({
   onAction,
   onTaskAttempt,
   highlightActionId,
+  onOpenArtifact,
   mutationState = EMPTY_MUTATION_STATE,
 }: {
   actions: AvailableAction[];
@@ -119,6 +120,7 @@ function WorkInteraction({
   onAction: (action: AvailableAction, freeText?: string) => void;
   onTaskAttempt?: TaskAttemptHandler;
   highlightActionId?: string;
+  onOpenArtifact?: ((id: string) => Promise<unknown>) | undefined;
   mutationState?: MutationState;
 }) {
   const taskActions = actions.filter(({ taskId }) => taskId !== undefined);
@@ -143,6 +145,8 @@ function WorkInteraction({
       {uniqueTasks.map((task) => (
         <TaskInteraction
           key={task.id}
+          artifacts={view.artifacts}
+          onOpenArtifact={onOpenArtifact}
           mutationState={mutationState}
           openedArtifacts={view.artifacts.filter(({ observed }) => observed)}
           task={task}
@@ -246,6 +250,7 @@ export function SystemToolPanel({
           mutationState={mutationState}
         />
         <WorkInteraction
+          onOpenArtifact={openArtifact}
           actions={workInteractionActions(actions)}
           {...(highlightActionId ? { highlightActionId } : {})}
           onAction={onAction}
@@ -269,6 +274,7 @@ export function SystemToolPanel({
           mutationState={mutationState}
         />
         <WorkInteraction
+          onOpenArtifact={openArtifact}
           actions={workInteractionActions(actions)}
           {...(highlightActionId ? { highlightActionId } : {})}
           onAction={onAction}
@@ -334,6 +340,7 @@ export function SystemToolPanel({
           />
         </div>
         <WorkInteraction
+          onOpenArtifact={openArtifact}
           actions={workInteractionActions(actions).filter(
             ({ id, taskId }) =>
               id !== "search_knowledge_base" || Boolean(taskId),
@@ -389,6 +396,7 @@ export function SystemToolPanel({
           </div>
         </div>
         <WorkInteraction
+          onOpenArtifact={openArtifact}
           actions={workInteractionActions(actions)}
           {...(highlightActionId ? { highlightActionId } : {})}
           onAction={onAction}
@@ -422,6 +430,7 @@ export function SystemToolPanel({
         />
       </div>
       <WorkInteraction
+        onOpenArtifact={openArtifact}
         actions={workInteractionActions(actions)}
         {...(highlightActionId ? { highlightActionId } : {})}
         onAction={onAction}

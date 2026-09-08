@@ -1,0 +1,35 @@
+.source-evidence article {
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-block: 1rem;
+}
+.source-evidence-body {
+  line-height: 2.4;
+  white-space: pre-wrap;
+}
+.source-passage {
+  display: inline;
+  font: inherit;
+  text-align: start;
+  color: inherit;
+  background: transparent;
+  border: 1px dashed currentColor;
+  border-radius: 0.2rem;
+  padding: 0.3rem;
+  cursor: pointer;
+  box-decoration-break: clone;
+}
+.source-passage[aria-pressed="true"] {
+  background: #f3d47a;
+  color: #122c2b;
+  border-style: solid;
+}
+.source-passage:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+.source-passage:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}

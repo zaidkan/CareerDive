@@ -476,7 +476,7 @@ describe("tutorial and debrief", () => {
     expect(screen.queryByText(/Check your inbox/i)).toBeNull();
   });
 
-  it("labels tutorial as practice for the structured path", async () => {
+  it("labels tutorial as practice and offers peer modes from the dashboard", async () => {
     const user = userEvent.setup();
     const client = {
       ...clientInteractionStubs,
@@ -499,6 +499,11 @@ describe("tutorial and debrief", () => {
     expect(
       screen.getByText(/Go here next — gold door on the plan/i),
     ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Walk the office" }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Desk only" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Simple list" })).toBeVisible();
   });
 
   it("welcomes the user into the shift before opening the workstation", async () => {
@@ -583,7 +588,7 @@ describe("tutorial and debrief", () => {
     );
   });
 
-  it("opens manager context after asking for guidance", async () => {
+  it("preserves the selected mode through manager guidance", async () => {
     const user = userEvent.setup();
     const askView: ClientView = {
       ...view,
@@ -631,23 +636,12 @@ describe("tutorial and debrief", () => {
     await user.click(
       await screen.findByRole("button", { name: /Enter the Verdaly floor/i }),
     );
-    await user.click(
-      screen.getByRole("button", { name: /Security Operations/i }),
-    );
-    await user.click(
-      await screen.findByRole(
-        "button",
-        { name: /Sit at desk/i },
-        { timeout: 6000 },
-      ),
-    );
-    await user.type(screen.getByLabelText(/Username/i), "day1.analyst");
-    await user.type(screen.getByLabelText(/Password/i), "FirstDay!");
-    await user.click(screen.getByRole("button", { name: /^Login$/i }));
+    await user.click(screen.getByRole("button", { name: "Simple list" }));
     expect(
-      await screen.findByRole("heading", { name: /Your workstation/i }),
+      await screen.findByRole("heading", {
+        name: /Structured workplace view/i,
+      }),
     ).toBeVisible();
-    await user.click(screen.getByRole("tab", { name: /Team/i }));
     await user.click(
       await screen.findByRole("button", { name: /ask manager for context/i }),
     );
@@ -659,6 +653,16 @@ describe("tutorial and debrief", () => {
     expect(
       screen.getByRole("button", { name: "Back to my desk" }),
     ).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Back to my desk" }));
+    expect(
+      await screen.findByRole("heading", {
+        name: /Structured workplace view/i,
+      }),
+    ).toBeVisible();
+    expect(screen.getByRole("button", { name: "Simple list" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 
   it("renders all eight debrief sections", () => {

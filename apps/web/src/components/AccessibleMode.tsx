@@ -149,6 +149,16 @@ export function AccessibleMode({
                 return task ? (
                   <TaskInteraction
                     key={`${action.id}:${action.eventId}`}
+                    artifacts={view.artifacts}
+                    onOpenArtifact={
+                      onWorkplaceInteraction
+                        ? (artifactId) =>
+                            onWorkplaceInteraction({
+                              type: "open_artifact",
+                              artifactId,
+                            })
+                        : undefined
+                    }
                     mutationState={mutationState}
                     {...(onTaskAttempt ? { onTaskAttempt } : {})}
                     openedArtifacts={view.artifacts.filter(

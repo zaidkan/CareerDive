@@ -5,6 +5,7 @@ import {
   ActionUnavailableError,
   applyAction,
   applyTaskAttempt,
+  applyWorkplaceInteraction,
   createInitialWorldState,
   respondToNotification,
   toClientView,
@@ -33,6 +34,15 @@ function performRequiredTask(
       state.taskProgress[`${eventId}:${task.id}`]?.currentStep ?? 0;
     const step = task.steps[stepIndex];
     if (!step) throw new Error(`Missing task step ${String(stepIndex)}`);
+    for (const artifactId of new Set(
+      step.options.flatMap(({ source }) => (source ? [source.artifactId] : [])),
+    )) {
+      if (!state.observedArtifactIds.includes(artifactId))
+        state = applyWorkplaceInteraction(state, {
+          type: "open_artifact",
+          artifactId,
+        }).state;
+    }
     state = applyTaskAttempt(state, {
       taskId: task.id,
       eventId,

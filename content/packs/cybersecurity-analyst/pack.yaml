@@ -74,10 +74,25 @@ scenario:
           options:
             - id: device-check
               label: The unfamiliar device was not checked in inventory
+              source:
+                {
+                  artifactId: handoff-email,
+                  quote: "Did not finish device inventory check.",
+                }
             - id: manager-online
-              label: Morgan is available in team chat
+              label: Contact Morgan if the login expands
+              source:
+                {
+                  artifactId: handoff-email,
+                  quote: "Ping Morgan if the login expands.",
+                }
             - id: login-watched
               label: The login alert is being watched
+              source:
+                {
+                  artifactId: handoff-email,
+                  quote: "Still watching the unfamiliar login thread.",
+                }
           requiredOptionIds: [device-check]
           coachOnFailure: Look for wording that says a check was not finished.
           successText: You found the unfinished device check.
@@ -91,10 +106,25 @@ scenario:
           options:
             - id: scanner-window
               label: The approved scanner schedule
+              source:
+                {
+                  artifactId: handoff-email,
+                  quote: "A routine scanner alert may appear, but I forgot to include the approved schedule reference.",
+                }
             - id: employee-password
-              label: The employee's password
+              label: The login thread is still being watched
+              source:
+                {
+                  artifactId: handoff-email,
+                  quote: "Still watching the unfamiliar login thread.",
+                }
             - id: alert-color
-              label: The alert dashboard color
+              label: Contact Morgan if the login expands
+              source:
+                {
+                  artifactId: handoff-email,
+                  quote: "Ping Morgan if the login expands.",
+                }
           requiredOptionIds: [scanner-window]
           coachOnFailure: Routine alerts need a trusted schedule or procedure before closure.
           successText: You noticed that the scanner schedule reference is missing.

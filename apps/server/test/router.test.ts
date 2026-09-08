@@ -337,6 +337,10 @@ describe("authenticated simulation API", () => {
       pacingMode: "standard",
     });
 
+    await caller.simulation.performWorkplaceInteraction({
+      sessionId: created.sessionId,
+      interaction: { type: "open_artifact", artifactId: "handoff-email" },
+    });
     await caller.simulation.submitTaskAttempt({
       sessionId: created.sessionId,
       taskId: "handoff-open-items",
@@ -392,6 +396,11 @@ describe("authenticated simulation API", () => {
       ],
     ] as const;
     for (const [taskId, eventId, selectedOptionIds] of attempts) {
+      if (taskId === "handoff-open-items")
+        await caller.simulation.performWorkplaceInteraction({
+          sessionId: created.sessionId,
+          interaction: { type: "open_artifact", artifactId: "handoff-email" },
+        });
       await caller.simulation.submitTaskAttempt({
         sessionId: created.sessionId,
         taskId,

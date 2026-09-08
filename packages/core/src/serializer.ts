@@ -40,7 +40,20 @@ export function toClientView(state: WorldState): ClientView {
         relatedArtifactIds: taskStep.relatedArtifactIds,
         stepIndex: progress.currentStep,
         stepCount: task.steps.length,
-        options: taskStep.options,
+        options: taskStep.options.map(({ source, ...option }) => ({
+          ...option,
+          ...(source
+            ? {
+                source: {
+                  artifactId: source.artifactId,
+                  ...(observed.has(source.artifactId) &&
+                  canOpenArtifact(state, source.artifactId)
+                    ? { quote: source.quote }
+                    : {}),
+                },
+              }
+            : {}),
+        })),
         minSelections: taskStep.minSelections,
         maxSelections: taskStep.maxSelections,
       },

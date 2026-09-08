@@ -127,6 +127,9 @@ importers:
         specifier: ^3.25.56
         version: 3.25.76
     devDependencies:
+      '@sim/career-packs':
+        specifier: workspace:*
+        version: link:../../packages/career-packs
       '@testing-library/jest-dom':
         specifier: ^6.6.3
         version: 6.9.1
