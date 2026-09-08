@@ -9,6 +9,52 @@ import {
 } from "../src/index.js";
 
 describe("source-bound evidence", () => {
+  it("requires both comparison records and preserves source provenance", () => {
+    let state = createInitialWorldState(
+      "comparison",
+      42,
+      {},
+      loadDefaultCybersecurityPack(),
+    );
+    for (const [taskId, selectedOptionIds] of [
+      ["login-alert-compare", ["failures-then-success"]],
+      ["login-alert-compare", ["geo-hint"]],
+      [
+        "login-context-clues",
+        ["unknown-windows-device", "new-residential-network"],
+      ],
+    ] as const) {
+      state = applyTaskAttempt(state, {
+        taskId,
+        eventId: "suspicious-login-1",
+        selectedOptionIds: [...selectedOptionIds],
+      }).state;
+    }
+    const attempt = {
+      taskId: "account-pattern-compare",
+      eventId: "suspicious-login-1",
+      selectedOptionIds: ["hq-wifi", "enrolled-macbook"],
+    };
+    const before = structuredClone(state);
+    expect(() => applyTaskAttempt(state, attempt)).toThrow(
+      "Open the source records",
+    );
+    expect(state).toEqual(before);
+    state = applyWorkplaceInteraction(state, {
+      type: "open_artifact",
+      artifactId: "account-history-1",
+    }).state;
+    const task = toClientView(state).tasks.find(
+      ({ id }) => id === attempt.taskId,
+    );
+    expect(task?.options.map(({ source }) => source?.artifactId)).toEqual([
+      "account-history-1",
+      "account-history-1",
+      "login-context-1",
+      "login-context-1",
+    ]);
+    expect(applyTaskAttempt(state, attempt).accepted).toBe(true);
+  });
   it("rejects invented, unrelated, or mixed source mappings", () => {
     for (const invalid of ["invented", "unrelated", "mixed"]) {
       const pack = structuredClone(loadDefaultCybersecurityPack());

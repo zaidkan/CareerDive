@@ -1,0 +1,42 @@
+.record-comparison .source-evidence,
+.comparison-records {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+.record-comparison .source-evidence > p {
+  grid-column: 1 / -1;
+}
+.record-comparison article {
+  min-width: 0;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+  overflow-wrap: anywhere;
+}
+.record-comparison h5 {
+  font-size: 1rem;
+  margin: 0 0 0.75rem;
+}
+.record-comparison details,
+.comparison-findings {
+  margin-top: 1rem;
+}
+.comparison-findings {
+  border-top: 1px solid currentColor;
+  padding-top: 1rem;
+}
+.comparison-findings li {
+  margin-block: 0.75rem;
+}
+.comparison-findings small {
+  display: block;
+}
+.comparison-findings button {
+  margin-top: 0.4rem;
+}
+.comparison-records p {
+  line-height: 1.7;
+}

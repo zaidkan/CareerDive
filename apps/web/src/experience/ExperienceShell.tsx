@@ -25,6 +25,7 @@ import {
 } from "../world/BreakRoomPanel.js";
 import { JulesDialogue } from "../world/JulesDialogue.js";
 import { SpatialShell } from "../world/SpatialShell.js";
+import "./experience.css";
 
 export type ExperienceMode = "walk" | "desk" | "list";
 
@@ -71,7 +72,10 @@ export function ExperienceShell({
 
   return (
     <section aria-label="Experience mode">
-      <nav aria-label="Choose how to experience the shift">
+      <nav
+        className="experience-modes"
+        aria-label="Choose how to experience the shift"
+      >
         {MODES.map(({ id, label }) => (
           <button
             aria-pressed={mode === id}

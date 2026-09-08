@@ -1,0 +1,31 @@
+.experience-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block: 1rem;
+}
+.experience-modes button {
+  min-height: 44px;
+  padding: 0.65rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  color: #dce9e4;
+  background: #17302d;
+  border: 1px solid #8aa69e;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+.experience-modes button[aria-pressed="true"] {
+  color: #152b27;
+  background: #f3d47a;
+  border-color: #f3d47a;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.experience-modes button:hover {
+  border-color: #fff;
+}
+.experience-modes button:focus-visible {
+  outline: 3px solid #f3d47a;
+  outline-offset: 3px;
+}

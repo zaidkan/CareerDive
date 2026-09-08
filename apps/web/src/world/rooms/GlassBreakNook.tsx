@@ -20,6 +20,10 @@ import {
 import { BreakTable, OfficeChair } from "../props/furniture.js";
 import { CoffeePot, Fridge, SnackBasket } from "../props/kitchen.js";
 import { MeshLabel, StickyNotes } from "../props/signage.js";
+import {
+  BreakTableSupplies,
+  CoffeeCounterSupplies,
+} from "../props/WorkplaceDetails.js";
 import type { Aabb } from "../collision.js";
 
 function GlassPane({
@@ -313,6 +317,7 @@ export function GlassBreakNook({
       <OfficeChair position={[9.35, 0, -3.1]} rotationY={Math.PI - 0.25} />
       <OfficeChair position={[7.85, 0, -4.9]} rotationY={0.2} />
       <OfficeChair position={[9.35, 0, -4.9]} rotationY={-0.2} />
+      <BreakTableSupplies position={[8.6, 0, -4.0]} />
 
       {/* Counter run flush against the north wall */}
       <mesh position={[8.15, 0.45, -6.92]} castShadow receiveShadow>
@@ -327,6 +332,7 @@ export function GlassBreakNook({
         <boxGeometry args={[2.2, 0.7, 0.03]} />
         <meshStandardMaterial color="#463629" roughness={0.65} />
       </mesh>
+      <CoffeeCounterSupplies position={[8.15, 0, -6.92]} />
       <CoffeePot
         animated={animated}
         position={[7.45, 1.09, -6.87]}

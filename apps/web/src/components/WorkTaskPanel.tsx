@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { ClientArtifact, ClientTaskView } from "@sim/schemas";
 import type { TaskAttemptHandler } from "./shared.js";
 import { SourceEvidence } from "./tools/SourceEvidence.js";
+import { RecordComparison } from "./tools/RecordComparison.js";
 import {
   EMPTY_MUTATION_STATE,
   taskMutationKey,
@@ -36,6 +37,8 @@ export function WorkTaskPanel({
     selected.length >= task.minSelections &&
     selected.length <= task.maxSelections;
   const single = task.maxSelections === 1;
+  const comparison =
+    task.kind === "compare_records" && task.relatedArtifactIds.length > 1;
   const sourceBased =
     task.options.length > 0 && task.options.every(({ source }) => source);
   const sourceReady =
@@ -84,7 +87,16 @@ export function WorkTaskPanel({
       </header>
       <p className="work-task-prompt">{task.prompt}</p>
       <p className="work-task-instruction">{task.instruction}</p>
-      {!sourceBased && relatedArtifacts.length > 0 ? (
+      {comparison ? (
+        <RecordComparison
+          task={task}
+          artifacts={relatedArtifacts}
+          selected={selected}
+          onToggle={toggle}
+          disabled={submitting || globallyPending || !sourceReady}
+        />
+      ) : null}
+      {!comparison && !sourceBased && relatedArtifacts.length > 0 ? (
         <details className="work-task-sources" open>
           <summary>Evidence available for this step</summary>
           {relatedArtifacts.map((artifact) => (
@@ -97,13 +109,15 @@ export function WorkTaskPanel({
         </details>
       ) : null}
       {sourceBased ? (
-        <SourceEvidence
-          task={task}
-          artifacts={relatedArtifacts}
-          selected={selected}
-          onToggle={toggle}
-          disabled={submitting || globallyPending || !sourceReady}
-        />
+        comparison ? null : (
+          <SourceEvidence
+            task={task}
+            artifacts={relatedArtifacts}
+            selected={selected}
+            onToggle={toggle}
+            disabled={submitting || globallyPending || !sourceReady}
+          />
+        )
       ) : (
         <fieldset
           className="work-task-options"

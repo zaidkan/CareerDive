@@ -8,11 +8,11 @@ import {
   ArtifactDetail,
   ArtifactList,
   NotesEditor,
-  filterKnowledgeBase,
   filterSystemArtifacts,
 } from "./artifacts.js";
 import { AlertTool } from "./tools/AlertTool.js";
 import { EmailTool } from "./tools/EmailTool.js";
+import { GuideSearch } from "./tools/GuideSearch.js";
 import { TaskInteraction } from "./tools/TaskInteraction.js";
 import { primaryActions, systemMeta, utilityActions } from "../systems.js";
 import type { TaskAttemptHandler } from "./shared.js";
@@ -158,12 +158,15 @@ function WorkInteraction({
           A work step is refreshing. It will be available shortly.
         </p>
       ) : null}
-      <ActionButtons
-        actions={ordinary}
-        {...(highlightActionId ? { highlightActionId } : {})}
-        onAction={onAction}
-        mutationState={mutationState}
-      />
+      {ordinary.length > 0 ||
+      (uniqueTasks.length === 0 && missingTaskActions.length === 0) ? (
+        <ActionButtons
+          actions={ordinary}
+          {...(highlightActionId ? { highlightActionId } : {})}
+          onAction={onAction}
+          mutationState={mutationState}
+        />
+      ) : null}
     </>
   );
 }
@@ -287,58 +290,21 @@ export function SystemToolPanel({
   }
 
   if (systemId === "knowledge_base") {
-    const docs = filterKnowledgeBase(view, view.kbQuery);
-    const selected =
-      docs.find(({ id }) => id === selectedArtifactId) ?? docs[0];
     return (
       <div className="tool-panel" data-system={systemId}>
         <ToolChrome systemId={systemId} />
-        <div className="tool-split">
-          <div>
-            {searchAction && !searchAction.taskId ? (
-              <form
-                className="kb-search"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  const data = new FormData(event.currentTarget);
-                  const raw = data.get("query");
-                  const query = typeof raw === "string" ? raw : "";
-                  onAction(searchAction, query);
-                }}
-              >
-                <label htmlFor="kb-query">Search guides</label>
-                <input
-                  defaultValue={view.kbQuery}
-                  id="kb-query"
-                  name="query"
-                  placeholder="e.g. login alert, phishing"
-                  type="search"
-                />
-                <button
-                  data-action-id={searchAction.id}
-                  data-event-id={searchAction.eventId}
-                  disabled={Boolean(mutationState.pendingKey)}
-                  type="submit"
-                >
-                  {searchAction.label}
-                </button>
-              </form>
-            ) : (
-              <p className="eyebrow">Browse approved guides</p>
-            )}
-            <ArtifactList
-              artifacts={docs}
-              selectedId={selected?.id}
-              onSelect={selectArtifact}
-            />
-          </div>
-          <ArtifactDetail
-            artifact={selected}
-            focus={selected?.id === focusArtifactId}
-            onOpenArtifact={openArtifact}
-            mutationState={mutationState}
-          />
-        </div>
+        <GuideSearch
+          canonicalSearchAction={
+            searchAction && !searchAction.taskId ? searchAction : undefined
+          }
+          focusArtifactId={focusArtifactId}
+          mutationState={mutationState}
+          onCanonicalSearch={onAction}
+          onOpenArtifact={openArtifact}
+          onSelect={selectArtifact}
+          selectedId={selectedArtifactId}
+          view={view}
+        />
         <WorkInteraction
           onOpenArtifact={openArtifact}
           actions={workInteractionActions(actions).filter(

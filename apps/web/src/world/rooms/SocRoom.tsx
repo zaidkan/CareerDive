@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ClientWorkplaceState } from "@sim/schemas";
 import * as THREE from "three";
 import { Figure } from "../Figure.js";
+import { SocLighting } from "./SocLighting.js";
 import { Hotspot, nearestHotspot } from "../Hotspot.js";
 import { NameTag } from "../NameTag.js";
 import { PlayerController } from "../PlayerController.js";
@@ -34,6 +35,7 @@ import {
 import { CeilingFixture } from "../props/lighting.js";
 import { MeshLabel, WallCalendar, Whiteboard } from "../props/signage.js";
 import { DocumentShredder, SecurityCamera, ServerRack } from "../props/tech.js";
+import { DeskSurfaceDetails } from "../props/WorkplaceDetails.js";
 import { Workstation } from "../Workstation.js";
 import { Wayfinder } from "../Wayfinder.js";
 import type { HotspotId } from "../worldTypes.js";
@@ -255,34 +257,9 @@ export function SocRoom({
         attach="fog"
         args={["#1a1410", seated ? 14 : 20, seated ? 28 : 38]}
       />
-      {/*
-        Brightness comes mostly from hemisphere/ambient and emissive ceiling
-        panels. Each extra point light costs per-fragment work on every
-        material in the room, so the room runs on three broad fills instead of
-        a light per fixture.
-      */}
-      <hemisphereLight args={["#ffeed4", "#4a3a2c", seated ? 1.2 : 2.05]} />
-      <ambientLight intensity={seated ? 0.95 : 1.15} />
-      <directionalLight
-        castShadow={quality.directionalShadows}
-        intensity={seated ? 1.2 : 1.9}
-        position={[5, 10, 5]}
-        color="#fff0d0"
-        shadow-mapSize-width={512}
-        shadow-mapSize-height={512}
-        shadow-bias={-0.0002}
-        shadow-camera-near={2}
-        shadow-camera-far={28}
-        shadow-camera-left={-12}
-        shadow-camera-right={12}
-        shadow-camera-top={12}
-        shadow-camera-bottom={-12}
-      />
-      <pointLight
-        intensity={seated ? 0.85 : 1.45}
-        distance={seated ? 8 : 18}
-        position={seated ? [COL.east, 2.1, ROW.north] : [0, 2.5, 0]}
-        color="#ffe8b8"
+      <SocLighting
+        seated={seated}
+        directionalShadows={quality.directionalShadows}
       />
 
       <mesh receiveShadow={!seated} rotation={[-Math.PI / 2, 0, 0]}>
@@ -441,6 +418,7 @@ export function SocRoom({
 
       {/* Mirrored desk row — same facing, clear east corridor to break */}
       <Workstation position={PLAYER_DESK} showLoginNote clutterVariant={0} />
+      <DeskSurfaceDetails position={PLAYER_DESK} variant={0} />
       <OfficeChair
         position={[PLAYER_DESK[0], 0, PLAYER_DESK[2] + SEAT]}
         rotationY={CHAIR_FACE_DESK}
@@ -462,6 +440,7 @@ export function SocRoom({
         showLamp={false}
         clutterVariant={1}
       />
+      <DeskSurfaceDetails position={MORGAN_DESK} variant={1} />
       <OfficeChair
         position={[MORGAN_DESK[0], 0, MORGAN_DESK[2] + SEAT]}
         rotationY={CHAIR_FACE_DESK}
@@ -494,6 +473,7 @@ export function SocRoom({
         deskColor="#2a221c"
         clutterVariant={2}
       />
+      <DeskSurfaceDetails position={HOT_DESK} variant={2} />
       <OfficeChair
         position={[HOT_DESK[0], 0, HOT_DESK[2] + SEAT]}
         rotationY={CHAIR_FACE_DESK}

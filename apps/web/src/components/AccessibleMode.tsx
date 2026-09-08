@@ -9,6 +9,7 @@ import {
 import { OperationalMessages, type ModeProps } from "./shared.js";
 import { TaskInteraction } from "./tools/TaskInteraction.js";
 import { ArtifactOpenButton } from "./tools/ArtifactOpenButton.js";
+import { GuideSearch } from "./tools/GuideSearch.js";
 import { CaseRail } from "./CaseRail.js";
 import { NotificationBanner } from "./NotificationBanner.js";
 import { WORK_SYSTEMS, primaryActions, utilityActions } from "../systems.js";
@@ -26,6 +27,7 @@ export function AccessibleMode({
   onWorkplaceInteraction,
   mutationState = EMPTY_MUTATION_STATE,
 }: ModeProps) {
+  const [selectedGuide, setSelectedGuide] = useState<string>();
   const [notificationFocusTarget, setNotificationFocusTarget] = useState<{
     eventId: string;
     requestId: number;
@@ -77,7 +79,15 @@ export function AccessibleMode({
           ({ systemId }) => systemId === system.id,
         );
         const events = eventsForSystem(view, system.id);
-        if (actions.length === 0 && events.length === 0) return null;
+        if (
+          actions.length === 0 &&
+          events.length === 0 &&
+          !(
+            system.id === "knowledge_base" &&
+            filterKnowledgeBase(view, "").length > 0
+          )
+        )
+          return null;
         const utilities = utilityActions(actions);
         const primary = primaryActions(actions);
         const interactionActions = actions.filter(
@@ -132,9 +142,19 @@ export function AccessibleMode({
               ))}
             </ul>
             {system.id === "knowledge_base" ? (
-              <StructuredArtifacts
-                artifacts={filterKnowledgeBase(view, view.kbQuery)}
-                {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
+              <GuideSearch
+                view={view}
+                selectedId={selectedGuide}
+                onSelect={setSelectedGuide}
+                onOpenArtifact={
+                  onWorkplaceInteraction
+                    ? (artifactId) =>
+                        onWorkplaceInteraction({
+                          type: "open_artifact",
+                          artifactId,
+                        })
+                    : undefined
+                }
                 mutationState={mutationState}
               />
             ) : null}

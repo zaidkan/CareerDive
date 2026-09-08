@@ -238,26 +238,42 @@ scenario:
         - id: usual-pattern
           title: Build the normal baseline
           prompt: Which combination describes J. Patel's usual sign-ins?
-          instruction: Select two normal-pattern details.
+          instruction: Open both records. Mark two passages that describe usual activity, not the flagged session.
           relatedArtifactIds: [account-history-1, login-context-1]
           minSelections: 2
           maxSelections: 2
           options:
             - id: hq-wifi
-              label: Headquarters Wi-Fi on weekdays
+              label: Headquarters Wi-Fi
+              source: { artifactId: account-history-1, quote: "HQ Wi-Fi" }
+              term: HQ
+              termHelp: Headquarters — the organization's main office.
             - id: enrolled-macbook
               label: An enrolled MacBook
+              source:
+                { artifactId: account-history-1, quote: "enrolled MacBook" }
+              term: Enrolled
+              termHelp: Registered with the organization so its support team can manage it.
             - id: unknown-windows
               label: An unknown Windows laptop
+              source:
+                {
+                  artifactId: login-context-1,
+                  quote: "Device name unknown-laptop-17. User agent Chrome/Windows.",
+                }
             - id: residential-asn
-              label: A new residential internet provider
+              label: A residential internet provider
+              source:
+                { artifactId: login-context-1, quote: "ASN residential ISP." }
+              term: ASN / ISP
+              termHelp: Labels for the network and internet provider used by a connection. A home provider alone does not prove a problem.
           requiredOptionIds: [hq-wifi, enrolled-macbook]
           coachOnFailure: Use the history record to find repeated, known behavior.
           successText: You built a useful baseline from the account history.
         - id: difference
           title: State the meaningful difference
           prompt: Which sentence best compares the flagged login with the baseline?
-          instruction: Pick one comparison.
+          instruction: Keep both records in view. Compare the device and network, then choose a cautious conclusion.
           relatedArtifactIds: [account-history-1, login-context-1]
           minSelections: 1
           maxSelections: 1
