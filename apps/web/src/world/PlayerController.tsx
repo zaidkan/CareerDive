@@ -3,21 +3,18 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { clampToRoom, collidesAt, type Aabb } from "./collision.js";
 import { walkBobOffset } from "./playerMotion.js";
+import { bindLookControls } from "./lookControls.js";
 
-const SPEED = 1.85;
-const SPRINT_MUL = 1.6;
+const SPEED = 2.96;
 const LOOK_SENS = 0.002;
 const VEL_DAMP = 11;
 const SEAT_DAMP = 5;
 const STAND_DAMP = 5;
 const BOB_FREQ = 8;
 const BOB_FADE = 8;
-const LEAN_MAX = 0.038;
-const LEAN_DAMP = 9;
 const POSE_DAMP = 11;
 const PITCH_MIN = -1.15;
 const PITCH_MAX = 1.15;
-const ARRIVE = 0.08;
 const SETTLE = 0.02;
 const DT_CAP = 0.05;
 
@@ -76,7 +73,10 @@ function FirstPersonHands({
     const typeSwing = Math.sin(phase.current) * 0.06;
     const swing = lerp(walkSwing, typeSwing, t);
     const bob =
-      (1 - t) * (mode === "walk" && active ? Math.abs(Math.sin(phase.current)) * 0.012 : 0);
+      (1 - t) *
+      (mode === "walk" && active
+        ? Math.abs(Math.sin(phase.current)) * 0.012
+        : 0);
 
     group.current.position.set(0, 0, 0);
     group.current.rotation.set(0, 0, 0);
@@ -167,16 +167,12 @@ export function PlayerController({
   const keys = useRef(new Set<string>());
   const yaw = useRef(0);
   const pitch = useRef(0);
-  const roll = useRef(0);
-  const walkTarget = useRef(new THREE.Vector3());
-  const hasWalkTarget = useRef(false);
   const pos = useRef(new THREE.Vector3(...spawn));
   const resumePos = useRef(new THREE.Vector3(...spawn));
   const vel = useRef(new THREE.Vector3());
   const wish = useRef(new THREE.Vector3());
   const forward = useRef(new THREE.Vector3());
   const right = useRef(new THREE.Vector3());
-  const toScratch = useRef(new THREE.Vector3());
   const seatScratch = useRef(new THREE.Vector3());
   const lookTarget = useRef(new THREE.Vector3());
   const wasSeated = useRef(false);
@@ -207,63 +203,56 @@ export function PlayerController({
     if ((!enabled || seated) && document.pointerLockElement === gl.domElement) {
       document.exitPointerLock();
     }
+    keys.current.clear();
+    if (!enabled || seated) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.target instanceof HTMLElement &&
+        (event.target.isContentEditable ||
+          /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(event.target.tagName))
+      )
+        return;
+      if (event.code.startsWith("Arrow")) event.preventDefault();
       keys.current.add(event.code);
     };
     const onKeyUp = (event: KeyboardEvent) => {
       keys.current.delete(event.code);
     };
-    const onPointerDown = (event: PointerEvent) => {
-      if (!enabled || seated) return;
-      if (event.button !== 0) return;
-      if (document.pointerLockElement === gl.domElement) return;
-      if (typeof gl.domElement.requestPointerLock !== "function") return;
-      const result: unknown = gl.domElement.requestPointerLock();
-      if (result instanceof Promise) {
-        void result.catch(() => undefined);
-      }
-    };
-    const onMouseMove = (event: MouseEvent) => {
-      if (!enabled || seated) return;
-      if (document.pointerLockElement !== gl.domElement) return;
-      yaw.current -= event.movementX * LOOK_SENS;
+    const disposeLook = bindLookControls(gl.domElement, (dx, dy) => {
+      yaw.current -= dx * LOOK_SENS;
       pitch.current = Math.max(
         PITCH_MIN,
-        Math.min(PITCH_MAX, pitch.current - event.movementY * LOOK_SENS),
+        Math.min(PITCH_MAX, pitch.current - dy * LOOK_SENS),
       );
-    };
+    });
     const onLockChange = () => {
       if (document.pointerLockElement === gl.domElement) return;
+      keys.current.clear();
       camera.rotation.order = "YXZ";
       camera.rotation.x = pitch.current;
       camera.rotation.y = yaw.current;
-      camera.rotation.z = roll.current;
+      camera.rotation.z = 0;
+    };
+    const onBlur = () => {
+      keys.current.clear();
+      vel.current.set(0, 0, 0);
     };
 
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
-    gl.domElement.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("blur", onBlur);
     document.addEventListener("pointerlockchange", onLockChange);
-
-    const onWalkTo = (event: Event) => {
-      if (seated) return;
-      const custom = event as CustomEvent<{ x: number; z: number }>;
-      walkTarget.current.set(custom.detail.x, spawn[1], custom.detail.z);
-      hasWalkTarget.current = true;
-    };
-    window.addEventListener("soc-walk-to", onWalkTo);
 
     return () => {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
-      gl.domElement.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("mousemove", onMouseMove);
+      disposeLook();
+      onBlur();
+      window.removeEventListener("blur", onBlur);
       document.removeEventListener("pointerlockchange", onLockChange);
-      window.removeEventListener("soc-walk-to", onWalkTo);
     };
-  }, [camera, enabled, gl.domElement, seated, spawn]);
+  }, [camera, enabled, gl.domElement, seated]);
 
   useEffect(() => {
     seatSettled.current = false;
@@ -277,12 +266,15 @@ export function PlayerController({
         resumePos.current.copy(pos.current);
         seatSettled.current = false;
         vel.current.set(0, 0, 0);
-        hasWalkTarget.current = false;
       }
       wasSeated.current = true;
       movingRef.current = false;
       vel.current.set(0, 0, 0);
-      seatScratch.current.set(seatPosition[0], seatPosition[1], seatPosition[2]);
+      seatScratch.current.set(
+        seatPosition[0],
+        seatPosition[1],
+        seatPosition[2],
+      );
       lookTarget.current.set(seatLookAt[0], seatLookAt[1], seatLookAt[2]);
       const seatAlpha = expAlpha(SEAT_DAMP, dt);
       if (!seatSettled.current) {
@@ -315,7 +307,6 @@ export function PlayerController({
       standSettled.current = false;
       vel.current.set(0, 0, 0);
       bobAmt.current = 0;
-      roll.current = 0;
       camera.rotation.order = "YXZ";
       camera.rotation.x = pitch.current;
       camera.rotation.y = yaw.current;
@@ -349,23 +340,8 @@ export function PlayerController({
       wish.current.add(right.current);
     }
 
-    const sprinting =
-      keys.current.has("ShiftLeft") || keys.current.has("ShiftRight");
-    const maxSpeed = SPEED * (sprinting ? SPRINT_MUL : 1);
-
     if (wish.current.lengthSq() > 0) {
-      hasWalkTarget.current = false;
-      wish.current.normalize().multiplyScalar(maxSpeed);
-    } else if (hasWalkTarget.current) {
-      toScratch.current.copy(walkTarget.current).sub(pos.current);
-      toScratch.current.y = 0;
-      const dist = toScratch.current.length();
-      if (dist < ARRIVE) {
-        hasWalkTarget.current = false;
-      } else {
-        const arriveSpeed = Math.min(maxSpeed, dist * 6);
-        wish.current.copy(toScratch.current).multiplyScalar(arriveSpeed / dist);
-      }
+      wish.current.normalize().multiplyScalar(SPEED);
     }
 
     const damp = expAlpha(VEL_DAMP, dt);
@@ -403,14 +379,10 @@ export function PlayerController({
       camera.position.copy(pos.current);
     }
 
-    const strafe = vel.current.x * right.current.x + vel.current.z * right.current.z;
-    const leanTarget = (-strafe / maxSpeed) * LEAN_MAX;
-    roll.current += (leanTarget - roll.current) * expAlpha(LEAN_DAMP, dt);
-
     camera.rotation.order = "YXZ";
     camera.rotation.x = pitch.current;
     camera.rotation.y = yaw.current;
-    camera.rotation.z = roll.current;
+    camera.rotation.z = 0;
 
     const bobTarget = reduceMotion.current ? 0 : Math.min(1, speed / SPEED);
     bobAmt.current += (bobTarget - bobAmt.current) * expAlpha(BOB_FADE, dt);

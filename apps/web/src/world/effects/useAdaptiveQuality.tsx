@@ -71,7 +71,8 @@ export function readNavigator(): NavBits | undefined {
     bits.hardwareConcurrency = navigator.hardwareConcurrency;
   }
   if ("deviceMemory" in navigator) {
-    const mem = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+    const mem = (navigator as Navigator & { deviceMemory?: number })
+      .deviceMemory;
     if (typeof mem === "number") bits.deviceMemory = mem;
   }
   return bits;
@@ -179,15 +180,18 @@ export function resolveEffects(input: {
   lowEnd: boolean;
 }): AdaptiveQuality {
   const composer = input.composerOn && !input.seated;
-  const lean = input.seated || input.lowEnd || input.reducedMotion || !input.composerOn;
+  const lean =
+    input.seated || input.lowEnd || input.reducedMotion || !input.composerOn;
   const fullScene = !input.seated && !input.lowEnd && input.composerOn;
   return {
     composer,
     grain: composer && !input.reducedMotion,
     cheapGlass: true,
-    dustMul: input.seated || input.lowEnd || !input.composerOn ? 0 : lean ? 0.5 : 1,
+    dustMul:
+      input.seated || input.lowEnd || !input.composerOn ? 0 : lean ? 0.5 : 1,
     contactShadows: fullScene,
-    dpr: fullScene ? 1.25 : 1,
+    // Avoid supersampling the dense room; quality still scales effects/shadows.
+    dpr: 1,
     directionalShadows: fullScene,
   };
 }
@@ -203,7 +207,9 @@ export function WorldQualityProvider({
 }) {
   const quality = useAdaptiveQuality(seated);
   return (
-    <QualityContext.Provider value={quality}>{children}</QualityContext.Provider>
+    <QualityContext.Provider value={quality}>
+      {children}
+    </QualityContext.Provider>
   );
 }
 
@@ -212,7 +218,10 @@ export function useWorldQuality(): AdaptiveQuality {
 }
 
 function subscribeReducedMotion(onStoreChange: () => void): () => void {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+  if (
+    typeof window === "undefined" ||
+    typeof window.matchMedia !== "function"
+  ) {
     return () => undefined;
   }
   const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -223,7 +232,10 @@ function subscribeReducedMotion(onStoreChange: () => void): () => void {
 }
 
 function getReducedMotion(): boolean {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+  if (
+    typeof window === "undefined" ||
+    typeof window.matchMedia !== "function"
+  ) {
     return false;
   }
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;

@@ -152,7 +152,7 @@ describe("resolveEffects", () => {
       cheapGlass: true,
       dustMul: 0.5,
       contactShadows: true,
-      dpr: 1.25,
+      dpr: 1,
       directionalShadows: true,
     });
   });

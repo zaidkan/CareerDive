@@ -1,9 +1,7 @@
 import { Canvas } from "@react-three/fiber";
-import { lazy, memo, Suspense, useMemo } from "react";
+import { lazy, memo, Suspense } from "react";
 import type { ClientWorkplaceState } from "@sim/schemas";
 import {
-  isLowEndDevice,
-  readNavigator,
   useWorldQuality,
   WorldQualityProvider,
 } from "./effects/useAdaptiveQuality.js";
@@ -14,13 +12,6 @@ const SceneEffects = lazy(async () => {
   const mod = await import("./effects/SceneEffects.js");
   return { default: mod.SceneEffects };
 });
-
-function pickDpr(seated: boolean): [number, number] {
-  if (typeof window === "undefined") return [1, 1.25];
-  const lowEnd = isLowEndDevice(readNavigator());
-  if (seated) return [1, 1];
-  return [1, lowEnd ? 1 : 1.25];
-}
 
 /**
  * Seated = player is reading desk OS HTML. Bloom on that overlay smears text,
@@ -54,13 +45,11 @@ export const RoomCanvas = memo(function RoomCanvas({
   workplace: ClientWorkplaceState;
   onBreakRoomExit: () => void;
 }) {
-  const dpr = useMemo(() => pickDpr(seated), [seated]);
-
   return (
     <div className="room-canvas">
       <Canvas
         camera={{ fov: 62, position: [0, 1.6, 5], near: 0.08, far: 48 }}
-        dpr={dpr}
+        dpr={1}
         gl={{
           antialias: !seated,
           alpha: false,

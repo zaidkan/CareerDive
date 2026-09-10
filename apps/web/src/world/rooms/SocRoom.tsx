@@ -123,33 +123,6 @@ function AlertWall() {
   );
 }
 
-function FloorClick({ enabled }: { enabled: boolean }) {
-  const { camera, gl } = useThree();
-  useEffect(() => {
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    const raycaster = new THREE.Raycaster();
-    const pointer = new THREE.Vector2();
-    const hit = new THREE.Vector3();
-    const onDblClick = (event: MouseEvent) => {
-      if (!enabled) return;
-      const rect = gl.domElement.getBoundingClientRect();
-      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(pointer, camera);
-      if (raycaster.ray.intersectPlane(plane, hit)) {
-        window.dispatchEvent(
-          new CustomEvent("soc-walk-to", { detail: { x: hit.x, z: hit.z } }),
-        );
-      }
-    };
-    gl.domElement.addEventListener("dblclick", onDblClick);
-    return () => {
-      gl.domElement.removeEventListener("dblclick", onDblClick);
-    };
-  }, [camera, enabled, gl.domElement]);
-  return null;
-}
-
 export function SocRoom({
   onNearbyChange,
   onInteract,
@@ -660,7 +633,6 @@ export function SocRoom({
         seated={seated}
         spawn={PLAYER_SPAWN}
       />
-      <FloorClick enabled={enabled && !seated} />
     </>
   );
 }

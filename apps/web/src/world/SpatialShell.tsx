@@ -372,7 +372,8 @@ export function SpatialShell({
         ) : null}
         {walking && !pointerLocked ? (
           <p className="room-look-hint">
-            Click to look around · WASD to walk · F fullscreen · Esc to release
+            Click to look around, or hold and drag · WASD / arrows to move · F
+            fullscreen · Esc to release
           </p>
         ) : null}
         {walking && julesOpen ? (
@@ -419,7 +420,7 @@ export function SpatialShell({
                 workplace={view.workplace}
               />
               <p className="room-hud-controls">
-                Double-click to walk · E to interact · F fullscreen
+                WASD / arrows to move · E to interact · F fullscreen
               </p>
               {spatial.flavorMessage ? (
                 <p className="room-flavor">{spatial.flavorMessage}</p>
