@@ -3,8 +3,13 @@
 **Document date:** 2026-08-06  
 **Product:** Career Expo career-simulation platform  
 **First simulation:** Junior Cybersecurity Analyst  
-**Current branch:** `feature/career-sim-beta`  
-**Current implementation directory:** `/Users/zaid/personal-projects/Careerexpo/.worktrees/career-sim-beta`
+**Development branch:** `experimental`
+
+**Stable branch:** `main`
+
+**Existing local development worktree:** `/Users/zaid/personal-projects/Careerexpo/.worktrees/experimental` (new clones use their own checkout path)
+
+**September 11 workflow update:** The full application was promoted to `main` at `2216d5d` on September 10; `experimental` is now the development branch. Earlier branch/path references below are historical. The optional paid AI workflow requires explicit opt-in, an API key, and actual evaluation files. The paid evaluation suite is still unimplemented.
 
 **September 8 update:** Account-pattern comparison now uses opened record passages, source citations, and plain-language terms. Guides have local search in both desktop and Simple list. Added surface-mounted workplace details, a modular four-light office/break-area rig, and readable mode controls. Verified 273 tests across 39 files, lint, types, and production build; the large 3D chunk warning remains. Task 7 is still partial: reference matching and ticket composition remain. See [checkpoint and limits](docs/2026-09-08-comparison-search-and-room-polish.md). No arrival cutscene implemented.
 
@@ -14,20 +19,20 @@ This document is the shared orientation file for Codex, Cursor, and other agenti
 
 ---
 
-## 1. Critical repository warning
+## 1. Current repository and branch workflow
 
-The working implementation is **not currently in the repository root checkout**.
+The working application now exists on both `main` and `experimental`. A normal GitHub clone starts on `main`; switch to `experimental` before development.
 
-- Main repository: `/Users/zaid/personal-projects/Careerexpo`
-- Active implementation worktree: `/Users/zaid/personal-projects/Careerexpo/.worktrees/career-sim-beta`
-- Active feature branch: `feature/career-sim-beta`
+- Stable local checkout: `/Users/zaid/personal-projects/Careerexpo`
+- Development worktree: `/Users/zaid/personal-projects/Careerexpo/.worktrees/experimental`
+- Historical beta worktree: `/Users/zaid/personal-projects/Careerexpo/.worktrees/career-sim-beta`
 
-An agent opened at the main repository may see only the original specification documents and mistakenly conclude that no application exists. Work in the implementation worktree unless explicitly asked to merge or move the branch.
+Orca and other IDE clones have their own paths. Inspect the current checkout instead of changing to these machine-specific paths automatically. Develop on `experimental`; promote it to `main` only when the user requests a verified stable checkpoint. Commit and push regularly. Before switching branches, commit or safely stash local work. If `main` is already checked out in another worktree, use that existing checkout to inspect the stable version. Preserve previous stable commits through history; never force-reset newer work as a routine rollback.
 
 Before editing, run:
 
 ```bash
-cd /Users/zaid/personal-projects/Careerexpo/.worktrees/career-sim-beta
+git rev-parse --show-toplevel
 git branch --show-current
 git status --short
 ```

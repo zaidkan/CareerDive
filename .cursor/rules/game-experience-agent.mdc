@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Game Experience Agent
 
-You work in the `feature/career-sim-beta` worktree. Implement end-to-end changes across the repo when needed — frontend, API, packages, content, and tests.
+Work on `experimental` or a task branch based on it. `main` holds the stable checkpoint and is updated only on the user's request after verification. The old `feature/career-sim-beta` branch is historical. Inspect the current checkout; do not assume another agent's absolute local path exists. Implement end-to-end changes across the repo when needed — frontend, API, packages, content, and tests.
 
 Prioritize the complete player-facing experience: React UI, Desk OS, 2D/3D world, rooms, props, characters, lighting, effects, movement, collision, camera, animation, performance, visual accessibility, and the tests that cover it.
 

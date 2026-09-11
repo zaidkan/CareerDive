@@ -4,6 +4,8 @@ Bounded career-exploration beta centered on ordinary Junior Cybersecurity Analys
 
 ## Local development
 
+`main` contains the stable application. Develop on `experimental`, committing and pushing coherent checkpoints. Promote verified changes to `main` when requested; this is a manual decision, not an automatic three-day schedule. `feature/career-sim-beta` is historical. In a new clone, run `git switch experimental` before editing. Read `AGENTS.md` and `AGENT_CONTEXT.md` for the shared Orca/Cursor/Codex workflow.
+
 Requires Node 24 and pnpm 11.
 
 ```bash
@@ -42,7 +44,7 @@ pnpm test
 pnpm build
 ```
 
-Paid AI reliability tests use separate config and do not run through normal test command:
+Paid AI reliability tests use a separate config and do not run through the normal test command. The evaluation suite is not implemented yet. The scheduled/manual GitHub workflow skips unless repository variable `ENABLE_PAID_AI_EVALS` is `true`, secret `ANTHROPIC_API_KEY` is present, and matching tests exist under `packages/testing/ai-evals/`. Enabling this variable authorizes paid evaluation runs. Do not enable it until the suite and its budget have been reviewed. Once those prerequisites exist, the local evaluation command is:
 
 ```bash
 pnpm vitest run --config vitest.ai.config.ts

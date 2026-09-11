@@ -1,6 +1,6 @@
 # Career Expo agent routing
 
-Read `AGENT_CONTEXT.md` and the applicable approved spec or plan before changing the project. Work in this feature worktree, preserve unrelated changes, and review `docs/coordination/REQUESTS.md` when beginning cross-cutting work.
+Read `AGENT_CONTEXT.md` and the applicable approved spec or plan before changing the project. Develop on `experimental` (or a task branch based on it), preserve unrelated changes, and review `docs/coordination/REQUESTS.md` when beginning cross-cutting work. `main` is the stable checkpoint: promote changes only when the user requests it, after appropriate verification. Commit and push coherent checkpoints; do not force-reset work to switch back to a stable version. The old `feature/career-sim-beta` branch is historical.
 
 ## Non-negotiable product boundaries
 
