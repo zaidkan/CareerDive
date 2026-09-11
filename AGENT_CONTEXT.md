@@ -1067,10 +1067,10 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.zshrc"
 source "$HOME/.zshrc"
 ```
 
-Then run:
+For the existing local development worktree, run the commands below. For a new Orca clone, use that clone's folder instead and select `experimental` after saving any local edits.
 
 ```bash
-cd /Users/zaid/personal-projects/Careerexpo/.worktrees/career-sim-beta
+cd /Users/zaid/personal-projects/Careerexpo/.worktrees/experimental
 cp .env.example .env
 pnpm install
 pnpm dev
@@ -1233,7 +1233,7 @@ When taking over:
 
 Suggested initial prompt for a new agent:
 
-> Work in `/Users/zaid/personal-projects/Careerexpo/.worktrees/career-sim-beta` on the existing feature branch. Read `AGENT_CONTEXT.md`, then `career-sim-build-spec.md`, then the progression design and deep-shift plan. Inspect the current code and tests before proposing changes. Preserve deterministic server authority, hidden-state isolation, accessibility parity, privacy boundaries, and bounded AI. Clearly distinguish what currently works from what remains planned. Use test-driven development and do not start 2D/3D until the pack-driven deep-work-system milestone is complete.
+> Inspect this checkout's location and Git status. Work on `experimental` or a task branch based on it; preserve local changes. Treat `main` as the stable checkpoint and promote changes only when requested after verification. Read `AGENTS.md`, `AGENT_CONTEXT.md`, `career-sim-build-spec.md`, and the applicable approved plan. Inspect current code and tests before proposing changes. Preserve deterministic server authority, hidden-state isolation, accessibility parity, privacy boundaries, and bounded AI. The existing 3D office is presentation over public simulation state. Distinguish current implementation from historical plans and unfinished milestones. Commit and push coherent checkpoints.
 
 ---
 
