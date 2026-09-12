@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { makeCubicleFabricTexture, makeWoodTexture } from "../textures.js";
 import { ARM_SCREEN_INTENSITY, screenIntensity, useAmbientMotion } from "./ambient.js";
 import { MeshLabel } from "./signage.js";
+import { ChairBase } from "./ChairBase.js";
 
 /** Slab center and thicknesses — `DESK_SURFACE_Y` is the finished top. */
 export const DESK_SLAB_Y = 0.78;
@@ -92,21 +93,7 @@ export function OfficeChair({
         <cylinderGeometry args={[0.035, 0.04, 0.42, 10]} />
         <meshStandardMaterial color="#2a2a2a" metalness={0.7} roughness={0.3} />
       </mesh>
-      {[0, 1, 2, 3, 4].map((i) => {
-        const a = (i / 5) * Math.PI * 2;
-        return (
-          <group key={i} rotation={[0, a, 0]}>
-            <mesh position={[0.3, 0.08, 0]} rotation={[0, 0, Math.PI / 2]}>
-              <cylinderGeometry args={[0.025, 0.025, 0.28, 8]} />
-              <meshStandardMaterial color="#333" metalness={0.6} />
-            </mesh>
-            <mesh position={[0.42, 0.06, 0]}>
-              <sphereGeometry args={[0.055, 8, 6]} />
-              <meshStandardMaterial color="#0d0d0d" metalness={0.5} />
-            </mesh>
-          </group>
-        );
-      })}
+      <ChairBase />
       {/* Armrests */}
       <mesh position={[-0.28, 0.62, 0.02]}>
         <boxGeometry args={[0.05, 0.08, 0.28]} />
