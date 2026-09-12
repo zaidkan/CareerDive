@@ -3,7 +3,7 @@
  * cameras and shredders.
  */
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { makeMonitorGlowTexture } from "../textures.js";
 import {
@@ -62,6 +62,19 @@ export function DualMonitor({
     () => makeMonitorGlowTexture(rightEmissive).clone(),
     [rightEmissive],
   );
+  // Clones are owned by this monitor; leave the shared source cache intact.
+  useEffect(
+    () => () => {
+      leftTex.dispose();
+    },
+    [leftTex],
+  );
+  useEffect(
+    () => () => {
+      rightTex.dispose();
+    },
+    [rightTex],
+  );
   const leftPane = useRef<THREE.MeshStandardMaterial>(null);
   const rightPane = useRef<THREE.MeshStandardMaterial>(null);
   const leftBar = useRef<THREE.MeshStandardMaterial>(null);
@@ -89,8 +102,18 @@ export function DualMonitor({
     const burst = nextBurst.current;
     applyScreenLife(left, t, leftBase, 0.48, burst, true);
     applyScreenLife(right, t, DUAL_SCREEN_INTENSITY, 0.37, burst + 3.4, true);
-    barL.emissiveIntensity = screenIntensity(t, DUAL_BAR_INTENSITY, 0.22, burst);
-    barR.emissiveIntensity = screenIntensity(t, DUAL_BAR_INTENSITY, 0.19, burst + 3.4);
+    barL.emissiveIntensity = screenIntensity(
+      t,
+      DUAL_BAR_INTENSITY,
+      0.22,
+      burst,
+    );
+    barR.emissiveIntensity = screenIntensity(
+      t,
+      DUAL_BAR_INTENSITY,
+      0.19,
+      burst + 3.4,
+    );
   });
 
   return (
@@ -99,7 +122,11 @@ export function DualMonitor({
         <group key={x} position={[x, 0, 0]}>
           <mesh position={[0, 0.02, 0]}>
             <boxGeometry args={[0.22, 0.04, 0.18]} />
-            <meshStandardMaterial color="#111" metalness={0.5} roughness={0.4} />
+            <meshStandardMaterial
+              color="#111"
+              metalness={0.5}
+              roughness={0.4}
+            />
           </mesh>
           <mesh position={[0, 0.16, 0]}>
             <cylinderGeometry args={[0.03, 0.04, 0.28, 10]} />
@@ -134,7 +161,11 @@ export function DualMonitor({
   );
 }
 
-export function KeyboardMouse({ position }: { position: [number, number, number] }) {
+export function KeyboardMouse({
+  position,
+}: {
+  position: [number, number, number];
+}) {
   return (
     <group position={position}>
       <mesh position={[0, 0.013, 0]} castShadow>
@@ -159,17 +190,116 @@ const BAY_PULSE = [0.9, 1.35, 0.55, 1.1, 0.72] as const;
 
 /** Extra status LEDs. phase = π/2 so every lamp is on at t=0. */
 const RACK_LEDS = [
-  { x: 0.22, y: 0.85, r: 0.025, color: "#7dba6a", on: RACK_STATUS_LED_INTENSITY, off: 0.12, speed: 1.15, thresh: 0.62 },
-  { x: -0.22, y: -0.55, r: 0.016, color: "#7dba6a", on: 0.85, off: 0.08, speed: 2.4, thresh: 0.2 },
-  { x: 0.18, y: -0.55, r: 0.016, color: "#e8b84a", on: 0.7, off: 0.06, speed: 3.1, thresh: 0.45 },
-  { x: -0.22, y: -0.25, r: 0.016, color: "#7dba6a", on: 0.9, off: 0.1, speed: 0.85, thresh: 0.55 },
-  { x: 0.18, y: -0.25, r: 0.016, color: "#c45c48", on: 0.75, off: 0.05, speed: 4.2, thresh: 0.7 },
-  { x: -0.22, y: 0.05, r: 0.016, color: "#4fd0c8", on: 0.8, off: 0.08, speed: 1.9, thresh: 0.15 },
-  { x: 0.18, y: 0.05, r: 0.016, color: "#7dba6a", on: 0.88, off: 0.1, speed: 2.8, thresh: 0.38 },
-  { x: -0.22, y: 0.35, r: 0.016, color: "#e8b84a", on: 0.72, off: 0.07, speed: 1.4, thresh: 0.5 },
-  { x: 0.18, y: 0.35, r: 0.016, color: "#7dba6a", on: 0.82, off: 0.09, speed: 3.6, thresh: 0.25 },
-  { x: -0.22, y: 0.65, r: 0.016, color: "#7dba6a", on: 0.9, off: 0.08, speed: 0.7, thresh: 0.4 },
-  { x: 0.18, y: 0.65, r: 0.016, color: "#4fd0c8", on: 0.78, off: 0.06, speed: 2.15, thresh: 0.33 },
+  {
+    x: 0.22,
+    y: 0.85,
+    r: 0.025,
+    color: "#7dba6a",
+    on: RACK_STATUS_LED_INTENSITY,
+    off: 0.12,
+    speed: 1.15,
+    thresh: 0.62,
+  },
+  {
+    x: -0.22,
+    y: -0.55,
+    r: 0.016,
+    color: "#7dba6a",
+    on: 0.85,
+    off: 0.08,
+    speed: 2.4,
+    thresh: 0.2,
+  },
+  {
+    x: 0.18,
+    y: -0.55,
+    r: 0.016,
+    color: "#e8b84a",
+    on: 0.7,
+    off: 0.06,
+    speed: 3.1,
+    thresh: 0.45,
+  },
+  {
+    x: -0.22,
+    y: -0.25,
+    r: 0.016,
+    color: "#7dba6a",
+    on: 0.9,
+    off: 0.1,
+    speed: 0.85,
+    thresh: 0.55,
+  },
+  {
+    x: 0.18,
+    y: -0.25,
+    r: 0.016,
+    color: "#c45c48",
+    on: 0.75,
+    off: 0.05,
+    speed: 4.2,
+    thresh: 0.7,
+  },
+  {
+    x: -0.22,
+    y: 0.05,
+    r: 0.016,
+    color: "#4fd0c8",
+    on: 0.8,
+    off: 0.08,
+    speed: 1.9,
+    thresh: 0.15,
+  },
+  {
+    x: 0.18,
+    y: 0.05,
+    r: 0.016,
+    color: "#7dba6a",
+    on: 0.88,
+    off: 0.1,
+    speed: 2.8,
+    thresh: 0.38,
+  },
+  {
+    x: -0.22,
+    y: 0.35,
+    r: 0.016,
+    color: "#e8b84a",
+    on: 0.72,
+    off: 0.07,
+    speed: 1.4,
+    thresh: 0.5,
+  },
+  {
+    x: 0.18,
+    y: 0.35,
+    r: 0.016,
+    color: "#7dba6a",
+    on: 0.82,
+    off: 0.09,
+    speed: 3.6,
+    thresh: 0.25,
+  },
+  {
+    x: -0.22,
+    y: 0.65,
+    r: 0.016,
+    color: "#7dba6a",
+    on: 0.9,
+    off: 0.08,
+    speed: 0.7,
+    thresh: 0.4,
+  },
+  {
+    x: 0.18,
+    y: 0.65,
+    r: 0.016,
+    color: "#4fd0c8",
+    on: 0.78,
+    off: 0.06,
+    speed: 2.15,
+    thresh: 0.33,
+  },
 ] as const;
 
 const LED_PHASE = Math.PI / 2;
@@ -182,7 +312,13 @@ export function ServerRack({
   animated?: boolean;
 }) {
   const live = useAmbientMotion(animated);
-  const bays = useRef<(THREE.MeshStandardMaterial | null)[]>([null, null, null, null, null]);
+  const bays = useRef<(THREE.MeshStandardMaterial | null)[]>([
+    null,
+    null,
+    null,
+    null,
+    null,
+  ]);
   const leds = useRef<(THREE.MeshStandardMaterial | null)[]>(
     Array.from({ length: RACK_LEDS.length }, () => null),
   );
@@ -214,7 +350,11 @@ export function ServerRack({
     <group position={position}>
       <mesh castShadow receiveShadow>
         <boxGeometry args={[0.7, 1.8, 0.55]} />
-        <meshStandardMaterial color="#12161a" metalness={0.35} roughness={0.45} />
+        <meshStandardMaterial
+          color="#12161a"
+          metalness={0.35}
+          roughness={0.45}
+        />
       </mesh>
       {BAY_Y.map((y, i) => (
         <mesh key={y} position={[0, y, 0.28]}>
@@ -230,7 +370,10 @@ export function ServerRack({
         </mesh>
       ))}
       {RACK_LEDS.map((spec, i) => (
-        <mesh key={`${spec.color}-${String(spec.y)}-${String(spec.x)}`} position={[spec.x, spec.y, 0.29]}>
+        <mesh
+          key={`${spec.color}-${String(spec.y)}-${String(spec.x)}`}
+          position={[spec.x, spec.y, 0.29]}
+        >
           <sphereGeometry args={[spec.r, 8, 8]} />
           <meshStandardMaterial
             ref={(node) => {
@@ -264,7 +407,10 @@ export function DeskClutter({
           color={v === 0 ? "#4a6a88" : v === 1 ? "#8a5038" : "#2a4840"}
         />
       </mesh>
-      <mesh position={[mugX + 0.05, 0.05, -0.02]} rotation={[0, 0, Math.PI / 2]}>
+      <mesh
+        position={[mugX + 0.05, 0.05, -0.02]}
+        rotation={[0, 0, Math.PI / 2]}
+      >
         <torusGeometry args={[0.028, 0.007, 8, 16]} />
         <meshStandardMaterial color="#3a3a3a" />
       </mesh>
@@ -352,7 +498,11 @@ export function SecurityCamera({
     <group position={position} rotation={[0, rotationY, 0]}>
       <mesh position={[0, 0.08, 0]} castShadow>
         <boxGeometry args={[0.22, 0.12, 0.28]} />
-        <meshStandardMaterial color="#2a2a2a" metalness={0.4} roughness={0.45} />
+        <meshStandardMaterial
+          color="#2a2a2a"
+          metalness={0.4}
+          roughness={0.45}
+        />
       </mesh>
       <mesh position={[0, 0, 0.18]} rotation={[0.35, 0, 0]}>
         <cylinderGeometry args={[0.07, 0.08, 0.16, 12]} />
@@ -386,7 +536,11 @@ export function DocumentShredder({
     <group position={position} rotation={[0, rotationY, 0]}>
       <mesh castShadow receiveShadow position={[0, 0.45, 0]}>
         <boxGeometry args={[0.55, 0.9, 0.4]} />
-        <meshStandardMaterial color="#3a3a3a" metalness={0.35} roughness={0.5} />
+        <meshStandardMaterial
+          color="#3a3a3a"
+          metalness={0.35}
+          roughness={0.5}
+        />
       </mesh>
       <mesh position={[0, 0.92, 0.05]}>
         <boxGeometry args={[0.42, 0.04, 0.12]} />
@@ -398,7 +552,11 @@ export function DocumentShredder({
       </mesh>
       <mesh position={[0.18, 0.55, 0.21]}>
         <sphereGeometry args={[0.03, 8, 8]} />
-        <meshStandardMaterial color="#4fd0c8" emissive="#4fd0c8" emissiveIntensity={0.5} />
+        <meshStandardMaterial
+          color="#4fd0c8"
+          emissive="#4fd0c8"
+          emissiveIntensity={0.5}
+        />
       </mesh>
     </group>
   );

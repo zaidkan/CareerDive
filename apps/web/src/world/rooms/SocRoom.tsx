@@ -225,10 +225,10 @@ export function SocRoom({
 
   return (
     <>
-      <color attach="background" args={["#1a1410"]} />
+      <color attach="background" args={["#454f50"]} />
       <fog
         attach="fog"
-        args={["#1a1410", seated ? 14 : 20, seated ? 28 : 38]}
+        args={["#454f50", seated ? 14 : 20, seated ? 28 : 38]}
       />
       <SocLighting
         seated={seated}
@@ -237,7 +237,7 @@ export function SocRoom({
 
       <mesh receiveShadow={!seated} rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[floorW, floorD]} />
-        <meshStandardMaterial color="#2e261f" roughness={0.92} />
+        <meshStandardMaterial color="#636c69" roughness={0.92} />
       </mesh>
       {!seated ? <FloorTileGrid rangeX={10} rangeZ={8} step={1.7} /> : null}
 
@@ -245,22 +245,22 @@ export function SocRoom({
       <CarpetRunner
         position={[0, 0, 0.4]}
         size={[2.4, floorD - 3]}
-        color="#4a3228"
+        color="#365b59"
       />
       <CarpetRunner
         position={[COL.east, 0, ROW.north + 0.35]}
         size={[2.8, 3.6]}
-        color="#5a3a2e"
+        color="#46585b"
       />
       <CarpetRunner
         position={[COL.west, 0, ROW.north + 0.35]}
         size={[2.8, 3.6]}
-        color="#5a3a2e"
+        color="#46585b"
       />
       <CarpetRunner
         position={[COL.west, 0, ROW.mid + 0.35]}
         size={[2.8, 3.6]}
-        color="#5a3a2e"
+        color="#46585b"
       />
       <CarpetRunner
         position={[
@@ -272,12 +272,12 @@ export function SocRoom({
           BREAK_NOOK.wallX - BREAK_NOOK.cornerX - 0.35,
           BREAK_NOOK.cornerZ - BREAK_NOOK.wallZ - 0.35,
         ]}
-        color="#4a3a32"
+        color="#86694e"
       />
 
       <mesh position={[0, 3.35, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <planeGeometry args={[floorW, floorD]} />
-        <meshStandardMaterial color="#241c16" />
+        <meshStandardMaterial color="#b9bdb3" roughness={0.95} />
       </mesh>
       {/* Fixtures are emissive panels only — extra point lights multiply fill cost. */}
       <CeilingFixture light={false} lit={!seated} position={[-4, 3.2, -2]} />
@@ -312,17 +312,17 @@ export function SocRoom({
       <WallPanel
         position={[-(floorW / 4 + 0.55), 1.65, ROOM.halfZ]}
         size={[floorW / 2 - 1.1, 3.3, 0.3]}
-        color="#26201a"
+        color="#87938e"
       />
       <WallPanel
         position={[floorW / 4 + 0.55, 1.65, ROOM.halfZ]}
         size={[floorW / 2 - 1.1, 3.3, 0.3]}
-        color="#26201a"
+        color="#87938e"
       />
       {/* Lintel over exit */}
       <mesh position={[0, 2.85, ROOM.halfZ]} castShadow>
         <boxGeometry args={[2.2, 0.9, 0.32]} />
-        <meshStandardMaterial color="#26201a" roughness={0.85} />
+        <meshStandardMaterial color="#87938e" roughness={0.85} />
       </mesh>
 
       <mesh position={[0, 0.1, -ROOM.halfZ + 0.2]}>

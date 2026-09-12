@@ -10,6 +10,7 @@ function lights(seated: boolean) {
       intensity?: number;
       color?: string;
       castShadow?: boolean;
+      args?: [string, string, number];
     }>,
   );
 }
@@ -23,8 +24,11 @@ describe("SOC lighting budget", () => {
       "pointLight",
     ]);
     expect(result.filter(({ props }) => props.castShadow)).toHaveLength(1);
+    expect(
+      result.find(({ type }) => type === "hemisphereLight")?.props.args,
+    ).toEqual(["#c9d9e8", "#4b4037", 1.28]);
     expect(result.find(({ type }) => type === "pointLight")?.props.color).toBe(
-      "#ffd49b",
+      "#ffc07c",
     );
   });
   it("reduces direct lighting while seated and honors the quality shadow switch", () => {

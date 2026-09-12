@@ -1,7 +1,7 @@
 /**
  * Ground surfaces — tiled floor plane and carpet runners.
  */
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { makeCarpetTexture, makeFloorTileTexture } from "../textures.js";
 
 /**
@@ -28,9 +28,19 @@ export function FloorTileGrid({
     tex.repeat.set(repeatX, repeatZ);
     return tex;
   }, [repeatX, repeatZ]);
+  useEffect(
+    () => () => {
+      tile.dispose();
+    },
+    [tile],
+  );
 
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]} receiveShadow>
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, 0.005, 0]}
+      receiveShadow
+    >
       <planeGeometry args={[width, depth]} />
       <meshStandardMaterial map={tile} roughness={0.92} />
     </mesh>
@@ -58,15 +68,21 @@ export function CarpetRunner({
     tex.repeat.set(sizeX * 0.55, sizeZ * 0.55);
     return tex;
   }, [color, sizeX, sizeZ]);
+  useEffect(
+    () => () => {
+      carpet.dispose();
+    },
+    [carpet],
+  );
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
-      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.014, 0]}>
+      <mesh
+        receiveShadow
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, 0.014, 0]}
+      >
         <planeGeometry args={size} />
-        <meshStandardMaterial map={carpet} color={color} roughness={0.96} />
-      </mesh>
-      <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.017, 0]}>
-        <planeGeometry args={[size[0] * 0.86, size[1] * 0.9]} />
-        <meshStandardMaterial color="#6b4a3a" roughness={0.94} />
+        <meshStandardMaterial map={carpet} roughness={0.96} />
       </mesh>
     </group>
   );

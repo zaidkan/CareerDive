@@ -11,13 +11,13 @@ export function SocLighting({
 }): ReactElement<{ children: ReactNode }> {
   return (
     <>
-      <hemisphereLight args={["#e6f1ff", "#5e5346", seated ? 1.2 : 2.05]} />
-      <ambientLight color="#f2f5ff" intensity={seated ? 0.95 : 1.15} />
+      <hemisphereLight args={["#c9d9e8", "#4b4037", seated ? 0.9 : 1.28]} />
+      <ambientLight color="#d9e5f3" intensity={seated ? 0.28 : 0.38} />
       <directionalLight
         castShadow={directionalShadows}
-        intensity={seated ? 1.2 : 1.9}
+        intensity={seated ? 0.72 : 1.08}
         position={[5, 10, 5]}
-        color="#fff1da"
+        color="#ffe6c5"
         shadow-mapSize-width={512}
         shadow-mapSize-height={512}
         shadow-bias={-0.0002}
@@ -29,10 +29,10 @@ export function SocLighting({
         shadow-camera-bottom={-12}
       />
       <pointLight
-        intensity={seated ? 0.85 : 1.45}
-        distance={seated ? 8 : 18}
+        intensity={seated ? 0.48 : 0.78}
+        distance={seated ? 7 : 14}
         position={seated ? [COL.east, 2.1, ROW.north] : [7, 2.5, -4.5]}
-        color="#ffd49b"
+        color="#ffc07c"
       />
     </>
   );

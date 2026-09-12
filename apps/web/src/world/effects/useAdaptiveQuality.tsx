@@ -45,7 +45,7 @@ export type AdaptiveQuality = {
   cheapGlass: boolean;
   dustMul: number;
   contactShadows: boolean;
-  dpr: 1 | 1.25;
+  dpr: 0.85 | 1;
   directionalShadows: boolean;
 };
 
@@ -124,8 +124,9 @@ export function smoothedFps(sampler: FpsSampler): number {
  * Hysteresis: drop below 45 fps for 1.5s to disable, then require ~58 fps for
  * 4s to come back. Restore (not a one-way latch) so a shader-compile hitch
  * after warmup does not permanently strip the look; the 45/58 gap plus long
- * holds stop a noisy 50 fps line from flickering. Large deltas and hidden
- * documents are ignored so an alt-tab does not count as a GPU failure.
+ * holds stop a noisy 50 fps line from flickering. Hidden documents are ignored;
+ * large deltas are capped so one hitch cannot switch quality, but sustained
+ * severe stalls still trigger the fallback.
  * Low-end devices start off and `allowRestore` is false, so they never pay
  * for the postprocessing chunk.
  */
@@ -134,7 +135,8 @@ export function stepQuality(
   delta: number,
   hidden: boolean,
 ): boolean {
-  if (hidden || delta <= 0 || delta > QUALITY.maxDeltaSeconds) return false;
+  if (hidden || !Number.isFinite(delta) || delta <= 0) return false;
+  delta = Math.min(delta, QUALITY.maxDeltaSeconds);
   pushDelta(machine.sampler, delta);
   if (machine.warmed < QUALITY.warmupSeconds) {
     machine.warmed += delta;
@@ -190,8 +192,9 @@ export function resolveEffects(input: {
     dustMul:
       input.seated || input.lowEnd || !input.composerOn ? 0 : lean ? 0.5 : 1,
     contactShadows: fullScene,
-    // Avoid supersampling the dense room; quality still scales effects/shadows.
-    dpr: 1,
+    // Scale only WebGL, never the DOM desktop or accessibility controls.
+    // 0.85 DPR shades about 28% fewer pixels than 1 DPR.
+    dpr: fullScene ? 1 : 0.85,
     directionalShadows: fullScene,
   };
 }
@@ -259,6 +262,8 @@ export function useAdaptiveQuality(seated: boolean): AdaptiveQuality {
   }
 
   useFrame((_, delta) => {
+    // The lighter seated scene is not evidence the full room can run effects.
+    if (seated) return;
     const machine = machineRef.current;
     if (machine === undefined) return;
     const hidden = typeof document !== "undefined" && document.hidden;

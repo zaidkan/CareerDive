@@ -57,6 +57,18 @@ describe("isLowEndDevice", () => {
 });
 
 describe("quality machine", () => {
+  it("reduces quality during sustained severe stalls instead of ignoring them", () => {
+    const machine = createQualityMachine({ startOn: true, allowRestore: true });
+    drive(machine, 1 / 5, 8);
+    expect(machine.composerOn).toBe(false);
+  });
+
+  it("ignores non-finite samples", () => {
+    const machine = createQualityMachine({ startOn: true, allowRestore: true });
+    stepQuality(machine, Number.NaN, false);
+    stepQuality(machine, Number.POSITIVE_INFINITY, false);
+    expect(machine.sampler.count).toBe(0);
+  });
   it("uses a fixed-size ring buffer", () => {
     const machine = createQualityMachine({ startOn: true, allowRestore: true });
     drive(machine, FPS_60, 3);
@@ -104,7 +116,11 @@ describe("quality machine", () => {
 
   it("restores after smoothed fps holds near 58 for several seconds", () => {
     const machine = createQualityMachine({ startOn: true, allowRestore: true });
-    drive(machine, FPS_30, QUALITY.warmupSeconds + QUALITY.disableHoldSeconds + 0.3);
+    drive(
+      machine,
+      FPS_30,
+      QUALITY.warmupSeconds + QUALITY.disableHoldSeconds + 0.3,
+    );
     expect(machine.composerOn).toBe(false);
     drive(machine, FPS_58, 2);
     expect(machine.composerOn).toBe(false);
@@ -114,16 +130,27 @@ describe("quality machine", () => {
 
   it("does not restore on a noisy 50 fps line", () => {
     const machine = createQualityMachine({ startOn: true, allowRestore: true });
-    drive(machine, FPS_44, QUALITY.warmupSeconds + QUALITY.disableHoldSeconds + 0.3);
+    drive(
+      machine,
+      FPS_44,
+      QUALITY.warmupSeconds + QUALITY.disableHoldSeconds + 0.3,
+    );
     expect(machine.composerOn).toBe(false);
     drive(machine, 1 / 50, QUALITY.restoreHoldSeconds + 1);
     expect(machine.composerOn).toBe(false);
   });
 
   it("never turns on when the device started low-end", () => {
-    const machine = createQualityMachine({ startOn: false, allowRestore: false });
+    const machine = createQualityMachine({
+      startOn: false,
+      allowRestore: false,
+    });
     expect(machine.composerOn).toBe(false);
-    drive(machine, FPS_60, QUALITY.warmupSeconds + QUALITY.restoreHoldSeconds + 1);
+    drive(
+      machine,
+      FPS_60,
+      QUALITY.warmupSeconds + QUALITY.restoreHoldSeconds + 1,
+    );
     expect(machine.composerOn).toBe(false);
   });
 
@@ -171,7 +198,7 @@ describe("resolveEffects", () => {
       cheapGlass: true,
       dustMul: 0,
       contactShadows: false,
-      dpr: 1,
+      dpr: 0.85,
       directionalShadows: false,
     });
   });
@@ -190,7 +217,7 @@ describe("resolveEffects", () => {
       cheapGlass: true,
       dustMul: 0,
       contactShadows: false,
-      dpr: 1,
+      dpr: 0.85,
       directionalShadows: false,
     });
   });
@@ -207,7 +234,7 @@ describe("resolveEffects", () => {
       composer: false,
       dustMul: 0,
       contactShadows: false,
-      dpr: 1,
+      dpr: 0.85,
       directionalShadows: false,
     });
   });

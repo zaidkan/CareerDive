@@ -1,9 +1,14 @@
-import { Bloom, EffectComposer, Noise, Vignette } from "@react-three/postprocessing";
+import {
+  Bloom,
+  EffectComposer,
+  Noise,
+  Vignette,
+} from "@react-three/postprocessing";
 import { BlendFunction } from "postprocessing";
 import { HalfFloatType } from "three";
 
 /**
- * Night-shift stack: bloom only the bright emissive fixtures/screens, a light
+ * Night-shift stack: restrained bloom only on bright fixtures/screens, a light
  * corner vignette, and optional film grain. No DoF / SSAO / motion blur.
  */
 export function SceneEffects({ grain }: { grain: boolean }) {
@@ -15,18 +20,18 @@ export function SceneEffects({ grain }: { grain: boolean }) {
       stencilBuffer={false}
     >
       <Bloom
-        intensity={0.32}
-        levels={4}
-        luminanceSmoothing={0.22}
-        luminanceThreshold={0.9}
+        intensity={0.16}
+        levels={3}
+        luminanceSmoothing={0.16}
+        luminanceThreshold={1.18}
         mipmapBlur
-        radius={0.32}
+        radius={0.22}
       />
-      <Vignette darkness={0.38} eskil={false} offset={0.42} />
+      <Vignette darkness={0.16} eskil={false} offset={0.55} />
       {grain ? (
         <Noise
           blendFunction={BlendFunction.SOFT_LIGHT}
-          opacity={0.035}
+          opacity={0.02}
           premultiply
         />
       ) : null}
