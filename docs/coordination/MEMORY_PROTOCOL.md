@@ -115,9 +115,9 @@ All Career Expo agents use the same project-memory namespace:
 Current stable agent identities:
 
 - `KIRO-LEAD`
-- `CODEX-1-AUDIT`
-- `CODEX-2-CODE`
-- `CODEX-3-CODE`
+- `CODEX-1`
+- `CODEX-2`
+- `CODEX-3`
 
 Future examples:
 

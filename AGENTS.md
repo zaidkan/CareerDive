@@ -56,11 +56,11 @@ Current standard roster:
 
 - Kiro = technical lead, planner, coordinator, integration owner
 
-- Codex 2 = primary implementation worker
+- Codex 2 = general-purpose implementation, investigation, or review worker
 
-- Codex 3 = primary implementation worker
+- Codex 3 = general-purpose implementation, investigation, or review worker
 
-- Codex 1 = independent audit/review worker when available
+- Codex 1 = general-purpose implementation, investigation, or review worker
 
 - Additional Cursor, Codex, or Gemini workers may be added later
 
@@ -572,7 +572,7 @@ Kiro owns final task acceptance.
 
 ## Audit policy
 
-Codex 1 is the current independent audit worker when usage is available.
+Codex 1, Codex 2, and Codex 3 may all perform independent review. Prefer a reviewer that did not implement the work being reviewed.
 
 Audits should occur at meaningful checkpoints rather than after every trivial edit.
 

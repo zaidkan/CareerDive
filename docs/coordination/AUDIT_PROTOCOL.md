@@ -10,7 +10,7 @@ It supplements:
 
 The current primary audit worker is:
 
-`CODEX-1-AUDIT`
+`CODEX-1`
 
 Future dedicated audit workers may include Gemini or other agents, but the authority model remains the same.
 
@@ -693,7 +693,7 @@ Do not waste the audit account on:
 - routine setup
 - repeated review of unchanged code
 
-When `CODEX-1-AUDIT` is unavailable due to usage limits, Kiro may defer non-urgent audits until capacity returns.
+When `CODEX-1` is unavailable due to usage limits, Kiro may defer non-urgent audits until capacity returns.
 
 Do not silently eliminate required high-risk review solely because the preferred auditor is unavailable.
 

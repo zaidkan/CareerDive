@@ -110,17 +110,17 @@ Role:
 - verification adjudication
 - audit adjudication
 
-### CODEX-2-CODE
+### CODEX-2
 
 Role:
 - primary implementation
 
-### CODEX-3-CODE
+### CODEX-3
 
 Role:
 - primary implementation
 
-### CODEX-1-AUDIT
+### CODEX-1
 
 Role:
 - independent audit/review when available
@@ -264,13 +264,13 @@ Current default:
 
 ```text
 normal implementation
-→ CODEX-2-CODE or CODEX-3-CODE
+→ CODEX-2 or CODEX-3
 
 second independent implementation task
 → other available CODE worker
 
 independent audit
-→ CODEX-1-AUDIT
+→ CODEX-1
 ```
 
 Do not assign the auditor as the normal implementation worker merely because coding capacity is exhausted unless Kiro explicitly decides the role change is worth losing audit independence.
