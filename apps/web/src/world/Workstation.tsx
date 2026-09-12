@@ -8,7 +8,7 @@ import { DeskClutter, DualMonitor, KeyboardMouse } from "./props/tech.js";
 export function Workstation({
   position,
   rotationY = 0,
-  deskColor = "#2e251c",
+  deskColor = "#987651",
   leftEmissive,
   rightEmissive,
   showLamp = true,

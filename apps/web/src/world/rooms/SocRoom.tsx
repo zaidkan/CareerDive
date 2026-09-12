@@ -407,7 +407,7 @@ export function SocRoom({
 
       <Workstation
         position={MORGAN_DESK}
-        deskColor="#26201a"
+        deskColor="#887354"
         leftEmissive="#e8b84a"
         rightEmissive="#4fd0c8"
         showLamp={false}
@@ -443,7 +443,7 @@ export function SocRoom({
       <Workstation
         position={HOT_DESK}
         showLamp={false}
-        deskColor="#2a221c"
+        deskColor="#a0805e"
         clutterVariant={2}
       />
       <DeskSurfaceDetails position={HOT_DESK} variant={2} />

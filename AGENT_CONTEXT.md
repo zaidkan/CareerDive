@@ -7,6 +7,8 @@
 
 **Stable branch:** `main`
 
+**September 12 graphics checkpoint:** Experimental includes the September 11 adaptive rendering/texture-lifecycle pass and September 12 furniture refinement. Desks and cubicles no longer double-tint textures; matte rails and lighter furniture improve material separation. Wheel geometry saves 920 triangles per OfficeChair, not a measured FPS gain. Verified 283 tests, web lint/build, and an entrance-view browser check. Whole-scene frame-time profiling and close-up checks remain. See `docs/2026-09-12-furniture-refinement.md`.
+
 **Existing local development worktree:** `/Users/zaid/personal-projects/Careerexpo/.worktrees/experimental` (new clones use their own checkout path)
 
 **September 11 workflow update:** The full application was promoted to `main` at `2216d5d` on September 10; `experimental` is now the development branch. Earlier branch/path references below are historical. The optional paid AI workflow requires explicit opt-in, an API key, and actual evaluation files. The paid evaluation suite is still unimplemented.

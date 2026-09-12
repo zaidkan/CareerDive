@@ -113,12 +113,12 @@ export function makeWallTexture(base = "#2a221c"): THREE.CanvasTexture {
 export const makeCubicleFabricTexture = memoizeTexture(
   (): THREE.CanvasTexture =>
     canvasTexture(128, 128, (ctx, w, h) => {
-      ctx.fillStyle = "#3d342a";
+      ctx.fillStyle = "#687b79";
       ctx.fillRect(0, 0, w, h);
       for (let y = 0; y < h; y += 2) {
         for (let x = 0; x < w; x += 2) {
           if ((x + y) % 4 === 0) {
-            ctx.fillStyle = "rgba(55,48,40,0.55)";
+            ctx.fillStyle = "rgba(39,58,57,0.25)";
             ctx.fillRect(x, y, 2, 2);
           }
         }
