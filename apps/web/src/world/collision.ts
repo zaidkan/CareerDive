@@ -35,7 +35,16 @@ export function collidesAt(
 }
 
 /** True when the player can occupy this spot: inside the clamps and unblocked. */
-export function isStandable(x: number, z: number, boxes: Aabb[]): boolean {
+export function isStandable(x: number, z: number, boxes: Aabb[]): boolean;
+export function isStandable(point: { x: number; z: number }, boxes: Aabb[]): boolean;
+export function isStandable(
+  xOrPoint: number | { x: number; z: number },
+  zOrBoxes: number | Aabb[],
+  maybeBoxes?: Aabb[],
+): boolean {
+  const x = typeof xOrPoint === "number" ? xOrPoint : xOrPoint.x;
+  const z = typeof xOrPoint === "number" ? (zOrBoxes as number) : xOrPoint.z;
+  const boxes = typeof xOrPoint === "number" ? maybeBoxes ?? [] : (zOrBoxes as Aabb[]);
   if (Math.abs(x) > CLAMP.x || Math.abs(z) > CLAMP.z) return false;
   return !collidesAt(x, z, boxes);
 }
