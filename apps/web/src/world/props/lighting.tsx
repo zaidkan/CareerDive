@@ -51,14 +51,14 @@ export function CeilingFixture({
     <group position={position}>
       <mesh>
         <boxGeometry args={[1.9, 0.06, 0.6]} />
-        <meshStandardMaterial color="#3a3228" roughness={0.65} />
+        <meshStandardMaterial color="#566268" metalness={0.45} roughness={0.42} />
       </mesh>
       <mesh position={[0, -0.05, 0]}>
         <boxGeometry args={[1.7, 0.05, 0.42]} />
         <meshStandardMaterial
           ref={panel}
-          color="#fff6dc"
-          emissive="#ffe2a0"
+          color="#f5f3e9"
+          emissive="#fff0ce"
           emissiveIntensity={lit ? 1.7 : 0.35}
           roughness={0.35}
         />
@@ -87,11 +87,11 @@ export function TaskLamp({
     <group position={position}>
       <mesh>
         <cylinderGeometry args={[0.08, 0.1, 0.04, 12]} />
-        <meshStandardMaterial color="#3a2c22" metalness={0.4} />
+        <meshStandardMaterial color="#303d43" metalness={0.5} roughness={0.38} />
       </mesh>
       <mesh position={[0, 0.28, 0]} rotation={[0.3, 0, 0.2]}>
         <cylinderGeometry args={[0.02, 0.025, 0.55, 8]} />
-        <meshStandardMaterial color="#5c4634" metalness={0.5} />
+        <meshStandardMaterial color="#78878a" metalness={0.65} roughness={0.3} />
       </mesh>
       <mesh position={[0.08, 0.52, 0.12]}>
         <sphereGeometry args={[0.09, 14, 14]} />

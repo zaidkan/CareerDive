@@ -10,7 +10,7 @@ import { useAmbientMotion } from "./ambient.js";
 export function WallPanel({
   position,
   size,
-  color = "#2a221c",
+  color = "#454a47",
 }: {
   position: [number, number, number];
   size: [number, number, number];
@@ -24,9 +24,46 @@ export function WallPanel({
   return (
     <mesh position={position} castShadow receiveShadow>
       <boxGeometry args={size} />
-      <meshStandardMaterial map={wall} color={color} roughness={0.86} />
+      <meshStandardMaterial map={wall} roughness={0.9} />
     </mesh>
   );
+}
+
+let skylineTexture: THREE.CanvasTexture | undefined;
+
+/** One shared, static city backdrop; no downloads or per-frame work. */
+function makeSkylineTexture(): THREE.CanvasTexture {
+  if (skylineTexture) return skylineTexture;
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 192;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("OfficeWindow requires a 2D canvas context");
+  const sky = ctx.createLinearGradient(0, 0, 0, 192);
+  sky.addColorStop(0, "#172b40");
+  sky.addColorStop(0.65, "#60808d");
+  sky.addColorStop(1, "#b4a78c");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, 256, 192);
+  for (let layer = 0; layer < 2; layer += 1) {
+    const step = layer === 0 ? 22 : 30;
+    for (let i = 0; i < 13; i += 1) {
+      const x = i * step - 12;
+      const top = 82 + ((i * 31 + layer * 19) % 65);
+      ctx.fillStyle = layer === 0 ? "#425e70" : "#263e50";
+      ctx.fillRect(x, top, step - 4, 192 - top);
+      if (layer === 0) continue;
+      for (let y = top + 8; y < 190; y += 12) {
+        for (let col = 0; col < 3; col += 1) {
+          ctx.fillStyle = (i + col + y) % 3 === 0 ? "#cfb887" : "#526c7a";
+          ctx.fillRect(x + 4 + col * 7, y, 3, 5);
+        }
+      }
+    }
+  }
+  skylineTexture = new THREE.CanvasTexture(canvas);
+  skylineTexture.colorSpace = THREE.SRGBColorSpace;
+  return skylineTexture;
 }
 
 export function OfficeWindow({
@@ -40,6 +77,7 @@ export function OfficeWindow({
   width?: number;
   height?: number;
 }) {
+  const skyline = useMemo(() => makeSkylineTexture(), []);
   /** Blinds are raised to the header, so the view stays readable. */
   const slatCount = 5;
   const blinds = Array.from({ length: slatCount }, (_, i) => (
@@ -58,17 +96,12 @@ export function OfficeWindow({
       </mesh>
       <mesh position={[0, 0, 0.01]}>
         <planeGeometry args={[width, height]} />
-        <meshStandardMaterial
-          color="#7fb8d4"
-          emissive="#4f86a8"
-          emissiveIntensity={0.5}
-          roughness={0.25}
-        />
+        <meshBasicMaterial map={skyline} toneMapped={false} />
       </mesh>
       {/* City band at the horizon reads as an outside view */}
       <mesh position={[0, -height * 0.22, 0.02]}>
         <planeGeometry args={[width, height * 0.3]} />
-        <meshStandardMaterial color="#2c4655" emissive="#20323d" emissiveIntensity={0.3} />
+        <meshStandardMaterial color="#243a48" roughness={0.8} />
       </mesh>
       {/* Outer casing, built as four sides so glass is never buried */}
       {(
@@ -79,7 +112,7 @@ export function OfficeWindow({
       ).map(([x, y, w, hh]) => (
         <mesh key={`h${String(y)}`} position={[x, y, 0.02]} castShadow>
           <boxGeometry args={[w, hh, 0.12]} />
-          <meshStandardMaterial color="#3a2c22" roughness={0.6} />
+          <meshStandardMaterial color="#54636a" metalness={0.55} roughness={0.38} />
         </mesh>
       ))}
       {([-1, 1] as const).map((side) => (
@@ -89,17 +122,17 @@ export function OfficeWindow({
           castShadow
         >
           <boxGeometry args={[0.11, height + 0.14, 0.12]} />
-          <meshStandardMaterial color="#3a2c22" roughness={0.6} />
+          <meshStandardMaterial color="#54636a" metalness={0.55} roughness={0.38} />
         </mesh>
       ))}
       {/* Mullions */}
       <mesh position={[0, 0, 0.03]}>
         <boxGeometry args={[0.05, height, 0.04]} />
-        <meshStandardMaterial color="#4a3a2c" roughness={0.55} />
+        <meshStandardMaterial color="#829093" metalness={0.55} roughness={0.34} />
       </mesh>
       <mesh position={[0, height * 0.12, 0.03]}>
         <boxGeometry args={[width, 0.045, 0.04]} />
-        <meshStandardMaterial color="#4a3a2c" roughness={0.55} />
+        <meshStandardMaterial color="#829093" metalness={0.55} roughness={0.34} />
       </mesh>
       {/* Blind header + raised stack, then sill */}
       <mesh position={[0, height / 2 - 0.07, 0.06]}>
@@ -109,7 +142,7 @@ export function OfficeWindow({
       {blinds}
       <mesh position={[0, -height / 2 - 0.09, 0.08]} castShadow receiveShadow>
         <boxGeometry args={[width + 0.2, 0.06, 0.22]} />
-        <meshStandardMaterial color="#4a3a2c" roughness={0.7} />
+        <meshStandardMaterial color="#a3aaa6" roughness={0.48} />
       </mesh>
     </group>
   );
@@ -141,7 +174,7 @@ export function CeilingAC({
       {/* Large cassette / inverter housing */}
       <mesh castShadow>
         <boxGeometry args={[3.4, 0.28, 1.35]} />
-        <meshStandardMaterial color="#e4e0d8" metalness={0.3} roughness={0.4} />
+        <meshStandardMaterial color="#d6dcd9" metalness={0.12} roughness={0.58} />
       </mesh>
       {/* Recessed face */}
       <mesh position={[0, -0.16, 0]}>
@@ -151,7 +184,7 @@ export function CeilingAC({
       {/* Center intake grille */}
       <mesh position={[0, -0.2, 0]}>
         <boxGeometry args={[1.1, 0.04, 0.7]} />
-        <meshStandardMaterial color="#8a8880" />
+        <meshStandardMaterial color="#455157" roughness={0.78} />
       </mesh>
       <group ref={fan} position={[0, -0.232, 0]}>
         <mesh>
