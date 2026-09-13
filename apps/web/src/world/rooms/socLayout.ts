@@ -9,6 +9,9 @@ import type { Aabb } from "../collision.js";
 import type { HotspotDef } from "../Hotspot.js";
 import type { HotspotId } from "../worldTypes.js";
 import { BREAK_NOOK, breakNookColliders } from "./GlassBreakNook.js";
+import { SAFE_ANCHORS } from "../navigation.js";
+
+export { SAFE_ANCHORS };
 
 export const ROOM = { halfX: 10.9, halfZ: 7.4 } as const;
 
