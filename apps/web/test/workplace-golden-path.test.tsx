@@ -1,137 +1,254 @@
-import { describe, expect, it } from "vitest";
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
+import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, describe, expect, it } from "vitest";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
-import type { SimulationActionId, WorldState } from "@sim/schemas";
-import {
-  applyAction,
-  applyTaskAttempt,
-  applyWorkplaceInteraction,
-  availableActions,
-  createInitialWorldState,
-  toClientView,
-} from "@sim/core";
+import type { AvailableAction, ClientTaskView, ClientView, SimulationActionId, WorkplaceInteraction } from "@sim/schemas";
+import { createInitialWorldState, foldActionLog, toClientView } from "@sim/core";
+import { InMemoryRepository, createAppRouter, type StoredSession } from "../../server/src/index.js";
+import { ExperienceShell } from "../src/experience/ExperienceShell.js";
+import { DeskOs } from "../src/world/deskOs/DeskOs.js";
+import { APP_TABS } from "../src/world/deskOs/tabs.js";
+import { WORK_SYSTEMS } from "../src/systems.js";
+import type { NotificationHandler } from "../src/components/shared.js";
+import { BreakRoomPanel, CarriedSnackControl } from "../src/world/BreakRoomPanel.js";
+import { JulesDialogue } from "../src/world/JulesDialogue.js";
 
+afterEach(cleanup);
 const pack = loadDefaultCybersecurityPack();
+type Mode = "desk" | "list" | "os";
+const outcomes = new Map<Mode, StoredSession>();
+const traces = new Map<Mode, unknown[]>();
+const suspicious = "suspicious-login-1";
+const routine = "routine-alert-1";
 
-function world(sessionKind: "assessed" | "tutorial" = "assessed") {
-  return createInitialWorldState(
-    `golden-path-${sessionKind}`,
-    24,
-    { sessionKind },
-    pack,
-  );
+function required<T>(value: T | null | undefined, description: string): T {
+  if (value === null || value === undefined) throw new Error(`Missing ${description}`);
+  return value;
 }
 
-function action(state: WorldState, id: SimulationActionId, eventId: string) {
-  const candidate = availableActions(state).find(
-    (entry) => entry.id === id && entry.eventId === eventId,
-  );
-  if (!candidate) throw new Error(`Expected ${id}:${eventId} to be available`);
-  if (candidate.taskId) {
-    const task = state.rules.tasks[candidate.taskId];
-    if (!task) throw new Error(`Missing task ${candidate.taskId}`);
-    let next = state;
-    while (!next.taskProgress[`${eventId}:${task.id}`]?.completed) {
-      const index = next.taskProgress[`${eventId}:${task.id}`]?.currentStep ?? 0;
-      const step = task.steps[index];
-      if (!step) throw new Error(`Missing step ${index} for ${task.id}`);
-      for (const source of step.options.flatMap((option) =>
-        option.source ? [option.source.artifactId] : [],
-      )) {
-        if (!next.observedArtifactIds.includes(source)) {
-          next = applyWorkplaceInteraction(next, {
-            type: "open_artifact",
-            artifactId: source,
-          }).state;
-        }
-      }
-      next = applyTaskAttempt(next, {
-        taskId: task.id,
-        eventId,
-        selectedOptionIds: step.requiredOptionIds,
-      }).state;
-    }
-    return next;
+function assertPublicView(view: ClientView) {
+  for (const key of ["hidden", "rules", "evidence", "reflections"]) expect(view).not.toHaveProperty(key);
+  expect(JSON.stringify(view)).not.toMatch(/requiredOptionIds|coachOnFailure|successText|notKnownBy/);
+  for (const artifact of view.artifacts.filter(({ observed }) => !observed)) {
+    expect(artifact).not.toHaveProperty("body");
+    expect(artifact).not.toHaveProperty("metadata");
   }
-  return applyAction(state, { id, eventId, actorId: "user" }).state;
+  for (const task of view.tasks) for (const option of task.options) {
+    if (option.source && !view.artifacts.find(({ id }) => id === option.source?.artifactId)?.observed)
+      expect(option.source).not.toHaveProperty("quote");
+  }
 }
 
-describe("assessed workplace golden path", () => {
-  it("completes onboarding, investigation, break, ticket, escalation, and debrief readiness", () => {
-    let state = world();
-    const suspicious = "suspicious-login-1";
-    const handoff = "handoff-1";
-
-    // Onboarding / desk login is renderer-owned; canonical work begins at handoff.
-    state = action(state, "read_handoff", handoff);
-    state = action(state, "acknowledge_handoff", handoff);
-    state = action(state, "review_alert", suspicious);
-    state = action(state, "inspect_login_context", suspicious);
-    state = action(state, "inspect_account_history", suspicious);
-    state = action(state, "check_device_inventory", suspicious);
-
-    // One finite break-room cycle: open fridge, snack, coffee, then Jules.
-    for (const interaction of [
-      { type: "open_fridge" as const },
-      { type: "take_snack" as const },
-      { type: "eat_snack_bite" as const },
-      { type: "start_coffee" as const },
-      { type: "finish_coffee" as const },
-      { type: "pour_coffee" as const },
-      { type: "drink_coffee" as const },
-      { type: "close_fridge" as const },
-      { type: "talk_to_jules" as const, topic: "current_work" as const },
-    ]) {
-      state = applyWorkplaceInteraction(state, interaction).state;
-      expect(state.workplace.energy.current).toBeGreaterThan(0);
+describe("rendered workplace golden path", () => {
+  it.each(["desk", "list", "os"] as const)("completes the same assessed shift through %s controls", async (mode) => {
+    const user = userEvent.setup();
+    let state = createInitialWorldState("golden", 24, {}, pack);
+    const initial = structuredClone(state);
+    const repository = new InMemoryRepository();
+    await repository.createSession("user-1", state);
+    const caller = createAppRouter(repository).createCaller({ userId: "user-1" });
+    const trace: unknown[] = [];
+    const update = async () => { state = (await repository.getSession("user-1", "golden")).state; rerender(tree()); };
+    const onAction = async (action: AvailableAction, freeText?: string) => {
+      trace.push({ type: "action", id: action.id, eventId: action.eventId, freeText });
+      await caller.simulation.performAction({ sessionId: "golden", actionId: action.id, eventId: action.eventId, ...(freeText ? { freeText } : {}) });
+      await update();
+    };
+    const onTaskAttempt = async (task: ClientTaskView, selectedOptionIds: string[]) => {
+      trace.push({ type: "task", taskId: task.id, eventId: task.eventId, selectedOptionIds });
+      const result = await caller.simulation.submitTaskAttempt({ sessionId: "golden", taskId: task.id, eventId: task.eventId, selectedOptionIds });
+      expect(result.accepted).toBe(true);
+      await update();
+      return result;
+    };
+    const onWorkplaceInteraction = async (interaction: WorkplaceInteraction) => {
+      trace.push(interaction);
+      const result = await caller.simulation.performWorkplaceInteraction({ sessionId: "golden", interaction });
+      await update();
+      return result;
+    };
+    const onNotification: NotificationHandler = async (notification, response, onApplied) => {
+      trace.push({ type: "notification", id: notification.id, response });
+      await caller.simulation.respondToNotification({ sessionId: "golden", notificationId: notification.id, response });
+      await update();
+      onApplied?.();
+    };
+    const tree = () => {
+      const view = toClientView(state);
+      assertPublicView(view);
+      const props = { view, onAction, onTaskAttempt, onWorkplaceInteraction, onNotification };
+      return mode === "os" ? <>
+        <DeskOs {...props} phase="seated_monitor" onLoginSuccess={() => undefined} onStand={() => undefined} onOsFullscreen={() => undefined} />
+        {/* Actual spatial HUD components, without a WebGL canvas. */}
+        <BreakRoomPanel workplace={view.workplace} station="fridge" onSubmit={(interaction) => { void onWorkplaceInteraction(interaction); }} />
+        <BreakRoomPanel workplace={view.workplace} station="coffee" onSubmit={(interaction) => { void onWorkplaceInteraction(interaction); }} />
+        <CarriedSnackControl workplace={view.workplace} onSubmit={(interaction) => { void onWorkplaceInteraction(interaction); }} />
+        <JulesDialogue seenTopics={view.workplace.julesTopicsSeen} pending={false} onClose={() => undefined} onTopic={(topic) => { void onWorkplaceInteraction({ type: "talk_to_jules", topic }); }} />
+      </> : <ExperienceShell {...props} mode={mode} onModeChange={() => undefined} />;
+    };
+    const { container, rerender } = render(tree());
+    async function activate(element: HTMLElement) {
+      expect(element).toBeEnabled();
+      if (mode === "list") {
+        element.focus();
+        await user.keyboard(element.tagName === "INPUT" ? " " : "{Enter}");
+      } else await user.click(element);
     }
-
-    state = action(state, "document_ticket", suspicious);
-    state = action(state, "escalate_alert", suspicious);
-    // Resolve the scheduled routine scanner interruption before wrap-up.
-    state = action(state, "review_alert", "routine-alert-1");
-    state = action(state, "search_knowledge_base", "routine-alert-1");
-    state = action(state, "document_ticket", "routine-alert-1");
-    state = action(state, "dismiss_alert", "routine-alert-1");
-    expect(availableActions(state).map(({ id }) => id)).toContain("complete_shift");
-    state = action(state, "complete_shift", "shift");
-
+    async function openSystem(systemId: AvailableAction["systemId"]) {
+      if (mode === "list") return;
+      if (mode === "os") {
+        const tab = required(APP_TABS.find(({ id }) => id === systemId), `Desk OS tab ${systemId}`);
+        await user.click(screen.getByRole("tab", { name: new RegExp(`^${tab.label}( suggested next)?$`) }));
+      } else {
+        const system = required(WORK_SYSTEMS.find(({ id }) => id === systemId), `work system ${systemId}`);
+        await user.click(within(screen.getByRole("navigation", { name: "Work systems" })).getByRole("button", { name: new RegExp(`^${system.label}`) }));
+      }
+    }
+    async function verifyAvailableTargets() {
+      const found = new Set<string>();
+      const foundTasks = new Set<string>();
+      const collect = () => {
+        container.querySelectorAll<HTMLElement>("[data-action-id]").forEach((node) => {
+          const actionId = required(node.dataset.actionId, "rendered action ID");
+          const eventId = required(node.dataset.eventId, "rendered action event ID");
+          found.add(`${actionId}:${eventId}`);
+        });
+        container.querySelectorAll<HTMLElement>("[data-task-id]").forEach((node) => {
+          const taskId = required(node.dataset.taskId, "rendered task ID");
+          const eventId = required(node.dataset.eventId, "rendered task event ID");
+          const stepIndex = required(node.dataset.stepIndex, "rendered task step index");
+          foundTasks.add(`${taskId}:${eventId}:${stepIndex}`);
+        });
+      };
+      for (const system of WORK_SYSTEMS) {
+        await openSystem(system.id);
+        collect();
+        const queue = container.querySelector(mode === "os" ? ".desk-os-queue" : ".work-queue");
+        for (const button of Array.from(queue?.querySelectorAll<HTMLButtonElement>("button") ?? [])) { await user.click(button); collect(); }
+      }
+      const view = toClientView(state);
+      expect([...found].sort()).toEqual([...new Set(view.availableActions.map(({ id, eventId }) => `${id}:${eventId}`))].sort());
+      expect([...foundTasks].sort()).toEqual(view.tasks.map(({ id, eventId, stepIndex }) => `${id}:${eventId}:${String(stepIndex)}`).sort());
+    }
+    async function perform(id: SimulationActionId, eventId: string) {
+      const action = toClientView(state).availableActions.find((entry) => entry.id === id && entry.eventId === eventId);
+      if (!action) throw new Error(`Unavailable ${id}:${eventId}`);
+      await openSystem(action.systemId);
+      const queue = container.querySelector(mode === "os" ? ".desk-os-queue" : ".work-queue");
+      const eventTitle = state.events.find(({ id }) => id === eventId)?.title;
+      const item = Array.from(queue?.querySelectorAll<HTMLButtonElement>("button") ?? []).find((button) => eventTitle && button.textContent.includes(eventTitle));
+      if (item) await user.click(item);
+      if (!action.taskId) {
+        await activate(required(container.querySelector<HTMLElement>(`button[data-action-id="${id}"][data-event-id="${eventId}"]`), `${id} action button`));
+        return;
+      }
+      const taskId = action.taskId;
+      while (!state.taskProgress[`${eventId}:${taskId}`]?.completed) {
+        const stepIndex = state.taskProgress[`${eventId}:${taskId}`]?.currentStep ?? 0;
+        // Answer fixtures stay in tests; only toClientView(state) enters the renderer.
+        const taskRule = required(state.rules.tasks[taskId], `task rule ${taskId}`);
+        const step = required(taskRule.steps[stepIndex], `task step ${taskId}:${String(stepIndex)}`);
+        const panel = () => required(container.querySelector<HTMLElement>(`[data-task-id="${taskId}"][data-event-id="${eventId}"]`), `${taskId} task panel`);
+        for (const artifactId of step.relatedArtifactIds) {
+          if (!state.observedArtifactIds.includes(artifactId)) {
+            const taskContainer = required(panel().parentElement, `${taskId} task container`);
+            await activate(required(taskContainer.querySelector<HTMLElement>(`[data-interaction-id="open_artifact"][data-artifact-id="${artifactId}"]`), `${artifactId} artifact open button`));
+          }
+        }
+        expect(panel().dataset.stepIndex).toBe(String(stepIndex));
+        for (const optionId of step.requiredOptionIds) await activate(required(panel().querySelector<HTMLElement>(`[data-option-id="${optionId}"]`), `${optionId} task option`));
+        await activate(within(panel()).getByRole("button", { name: /Submit findings|Check my work/ }));
+      }
+    }
+    await verifyAvailableTargets();
+    await perform("read_handoff", "handoff-1");
+    await perform("acknowledge_handoff", "handoff-1");
+    await perform("review_alert", suspicious);
+    await perform("inspect_login_context", suspicious);
+    await verifyAvailableTargets();
+    await activate(screen.getByRole("button", { name: "Handle now" }));
+    await perform("review_alert", routine);
+    await perform("search_knowledge_base", routine);
+    await perform("document_ticket", routine);
+    await perform("dismiss_alert", routine);
+    await perform("inspect_account_history", suspicious);
+    await perform("check_device_inventory", suspicious);
+    await verifyAvailableTargets();
+    for (const label of ["Open fridge", "Take one snack bar", "Eat snack — 3 bites remaining", "Start coffee", "Finish brewing", "Pour coffee", "Drink coffee", "Close fridge"]) await activate(screen.getByRole("button", { name: label }));
+    if (mode !== "os") await activate(screen.getByRole("button", { name: "Talk to Jules" }));
+    await activate(screen.getByRole("button", { name: "Current work" }));
+    if (mode !== "os") await activate(screen.getByRole("button", { name: /^Close$/ }));
+    await perform("ask_manager", suspicious);
+    expect(screen.getByRole("complementary", { name: "Morgan guidance" })).toBeVisible();
+    await perform("document_ticket", suspicious);
+    expect(state.ticketNotes[suspicious]).toContain("unknown-laptop-17 is not enrolled");
+    expect(state.ticketNotes[suspicious]).toContain("suspected, not yet proven");
+    await perform("escalate_alert", suspicious);
+    await verifyAvailableTargets();
+    await perform("complete_shift", "shift");
     expect(state.workplace.energy.current).toBeGreaterThan(0);
-    expect(state.workplace.julesTopicsSeen).toContain("current_work");
+    expect(state.workplace).toMatchObject({ fridgeSnackBars: 1, carriedSnackBites: 2, coffeeServings: 1, julesTopicsSeen: ["current_work"] });
     expect(state.events.find(({ id }) => id === suspicious)?.status).toBe("resolved");
-    expect(state.ledger.some((entry) => entry.actionId === "escalate_alert")).toBe(true);
-    expect(state.ledger.every((entry) => entry.actionId !== "talk_to_jules")).toBe(true);
-    expect(state.hidden).toBeDefined();
-  });
-});
+    expect(state.events.find(({ id }) => id === routine)?.status).toBe("resolved");
+    const stored = await repository.getSession("user-1", "golden");
+    expect(stored.evidence.length).toBeGreaterThan(0);
+    expect(foldActionLog(initial, stored.actionLog)).toEqual(state);
+    const debrief = await caller.debrief.get({ sessionId: "golden" });
+    expect(debrief.confidence).toBe("early_signal");
+    expect(Object.keys(debrief.sections)).toHaveLength(8);
+    outcomes.set(mode, stored);
+    traces.set(mode, trace);
+  }, 30000);
 
-describe("visual and structured mode parity", () => {
-  it("exposes the same canonical actions, task options, and workplace interaction IDs", () => {
-    const view = toClientView(world());
-    const visual = toClientView(world());
-    const structured = toClientView(world());
-    const ids = (candidate: typeof view) => ({
-      actions: candidate.availableActions.map(({ id, eventId, systemId }) =>
-        `${id}:${eventId}:${systemId}`,
-      ),
-      tasks: candidate.tasks.flatMap((task) =>
-        task.options.map((option) => `${task.id}:${option.id}`),
-      ),
-      workplace: [
-        "open_fridge",
-        "close_fridge",
-        "take_snack",
-        "eat_snack_bite",
-        "start_coffee",
-        "finish_coffee",
-        "pour_coffee",
-        "drink_coffee",
-        "talk_to_jules:current_work",
-      ],
-    });
-    expect(ids(visual)).toEqual(ids(structured));
-    expect(ids(view).actions).toContain("read_handoff:handoff-1:email");
-    expect(ids(view).tasks.length).toBeGreaterThan(0);
-    expect(JSON.stringify(view)).not.toMatch(/pointer|navigation speed|walk speed/i);
-    expect(view.sessionKind).toBe("assessed");
+  it("produces identical actions, task/option IDs, resource interactions, evidence and outcomes across renderers", () => {
+    expect(outcomes.size).toBe(3);
+    expect(traces.get("list")).toEqual(traces.get("desk"));
+    expect(traces.get("os")).toEqual(traces.get("desk"));
+    const comparable = (mode: Mode) => {
+      const stored = required(outcomes.get(mode), `${mode} stored outcome`);
+      return { ...stored, evidence: stored.evidence.map((signal) => {
+        // Repository UUIDs and wall-clock audit timestamps are not assessment content.
+        const { id, occurredAt, ...behavior } = signal;
+        expect(id).toBeTruthy();
+        expect(occurredAt).toBeTruthy();
+        return behavior;
+      }) };
+    };
+    expect(comparable("list")).toEqual(comparable("desk"));
+    expect(comparable("os")).toEqual(comparable("desk"));
+  });
+
+  it("keeps tutorial tasks and breaks free of assessment evidence", async () => {
+    let state = createInitialWorldState("tutorial-golden", 24, { sessionKind: "tutorial" }, pack);
+    const repository = new InMemoryRepository();
+    await repository.createSession("user-1", state);
+    const caller = createAppRouter(repository).createCaller({ userId: "user-1" });
+    const sessionId = state.sessionId;
+    for (let index = 0; index < 80; index += 1) {
+      const view = toClientView(state);
+      assertPublicView(view);
+      const task = view.tasks[0];
+      if (task) {
+        const taskRule = required(state.rules.tasks[task.id], `tutorial task rule ${task.id}`);
+        const step = required(taskRule.steps[task.stepIndex], `tutorial task step ${task.id}:${String(task.stepIndex)}`);
+        for (const artifactId of step.relatedArtifactIds) if (!state.observedArtifactIds.includes(artifactId)) await caller.simulation.performWorkplaceInteraction({ sessionId, interaction: { type: "open_artifact", artifactId } });
+        await caller.simulation.submitTaskAttempt({ sessionId, taskId: task.id, eventId: task.eventId, selectedOptionIds: step.requiredOptionIds });
+      } else {
+        const action = view.availableActions.find(({ id }) => id === "escalate_alert" || id === "dismiss_alert" || id === "complete_shift");
+        if (!action) break;
+        await caller.simulation.performAction({ sessionId, actionId: action.id, eventId: action.eventId });
+        state = (await repository.getSession("user-1", sessionId)).state;
+        if (action.id === "complete_shift") break;
+      }
+      state = (await repository.getSession("user-1", sessionId)).state;
+      expect(repository.evidenceFor("user-1", sessionId)).toEqual([]);
+    }
+    for (const interaction of [{ type: "open_fridge" }, { type: "take_snack" }, { type: "eat_snack_bite" }, { type: "close_fridge" }, { type: "talk_to_jules", topic: "first_day" }] satisfies WorkplaceInteraction[]) await caller.simulation.performWorkplaceInteraction({ sessionId, interaction });
+    state = (await repository.getSession("user-1", sessionId)).state;
+    expect(state.completedActionIds).toContain("complete_shift");
+    expect(repository.evidenceFor("user-1", sessionId)).toEqual([]);
+    expect(state.workplace.energy.current).toBeGreaterThan(0);
   });
 });

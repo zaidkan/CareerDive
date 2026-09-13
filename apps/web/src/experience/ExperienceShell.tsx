@@ -10,7 +10,6 @@ import {
   type JulesDialogueReply,
 } from "@sim/core";
 import { AccessibleMode } from "../components/AccessibleMode.js";
-import { MutationStatus } from "../components/MutationStatus.js";
 import type {
   NotificationHandler,
   TaskAttemptHandler,
@@ -21,6 +20,7 @@ import type { MutationState } from "../useMutationCoordinator.js";
 import {
   BreakRoomPanel,
   CarriedSnackControl,
+  EmergencyRecoveryControl,
   EnergyMeter,
 } from "../world/BreakRoomPanel.js";
 import { JulesDialogue } from "../world/JulesDialogue.js";
@@ -68,6 +68,7 @@ export function ExperienceShell({
     ...(onNotification ? { onNotification } : {}),
     ...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {}),
     ...(mutationState ? { mutationState } : {}),
+    ...(onRetryMutation ? { onRetryMutation } : {}),
   };
 
   return (
@@ -110,10 +111,6 @@ export function ExperienceShell({
         </SpatialModeBoundary>
       ) : (
         <>
-          <MutationStatus
-            state={mutationState ?? {}}
-            {...(onRetryMutation ? { onRetry: onRetryMutation } : {})}
-          />
           <NonspatialResources
             {...(mutationState ? { mutationState } : {})}
             {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
@@ -187,17 +184,7 @@ function NonspatialResources({
         station="coffee"
         workplace={view.workplace}
       />
-      {canUseEmergencyRecovery(view) ? (
-        <button
-          disabled={pending}
-          onClick={() => {
-            submit({ type: "emergency_recovery" });
-          }}
-          type="button"
-        >
-          Use emergency recovery
-        </button>
-      ) : null}
+      <EmergencyRecoveryControl workplace={view.workplace} onSubmit={submit} pending={pending} />
       <button
         disabled={pending}
         onClick={() => {
@@ -219,18 +206,6 @@ function NonspatialResources({
         />
       ) : null}
     </aside>
-  );
-}
-
-function canUseEmergencyRecovery(view: ClientView) {
-  const workplace = view.workplace;
-  return (
-    workplace.energy.current === 0 &&
-    !workplace.emergencyRecoveryUsed &&
-    workplace.carriedSnackBites === 0 &&
-    workplace.fridgeSnackBars === 0 &&
-    workplace.coffeeServings === 0 &&
-    workplace.coffeeStage === "idle"
   );
 }
 

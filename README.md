@@ -31,6 +31,21 @@ Events arrive as simulated time advances. Earlier dismissal choices can create
 delayed consequences while later work is underway. Actions are deterministic
 and replayable; manager guidance cannot change canonical outcomes.
 
+The break-room loop is also deterministic: the fridge has finite snack bars,
+each carried bar has three bites, and coffee follows start, finish, pour, and
+drink controls. Energy changes only through canonical work and these finite
+resources; it never drains while idle and there is no automatic collapse or
+refill loop.
+
+## Manual acceptance route
+
+After `pnpm dev`, open the Web URL above and start an assessed shift. Complete
+onboarding and desk login, read and acknowledge the handoff, investigate the
+suspicious login, handle the optional routine scanner interruption, take one
+break (snack or coffee and Jules), document the ticket, escalate, and wrap up.
+Repeat the same route with **Simple list** using the keyboard; it exposes the
+same canonical actions and outcomes as **Desk only** and **Walk the office**.
+
 Without `DATABASE_URL`, server uses in-memory repository for local development. Production requires Supabase URL, anon key, and Postgres connection string.
 
 ## Verification

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { WorkSystemId } from "@sim/schemas";
 import { SystemToolPanel } from "./SystemToolPanel.js";
 import { GuidancePanel } from "./GuidancePanel.js";
@@ -14,6 +14,7 @@ import {
 import { COMPANY } from "../world/company.js";
 import { CaseRail } from "./CaseRail.js";
 import { NotificationBanner } from "./NotificationBanner.js";
+import { MutationStatus } from "./MutationStatus.js";
 
 export function WorkSurface({
   view,
@@ -22,6 +23,7 @@ export function WorkSurface({
   onNotification,
   onWorkplaceInteraction,
   mutationState,
+  onRetryMutation,
   guided = false,
 }: ModeProps & { guided?: boolean }) {
   const guidance = getShiftGuidance(view);
@@ -35,6 +37,16 @@ export function WorkSurface({
       : (view.events[0]?.systemId ?? "alert_dashboard"));
   const [systemId, setSystemId] = useState<WorkSystemId>(initialSystem);
   const [selectedEventId, setSelectedEventId] = useState<string>();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const [focusRequest, setFocusRequest] = useState(0);
+  function openSystem(target: WorkSystemId, eventId?: string) {
+    setSystemId(target);
+    setSelectedEventId(eventId);
+    setFocusRequest((value) => value + 1);
+  }
+  useEffect(() => {
+    if (focusRequest > 0) headingRef.current?.focus();
+  }, [focusRequest]);
 
   useEffect(() => {
     if (recommendedSystemId && guided) {
@@ -63,6 +75,7 @@ export function WorkSurface({
           <span>{view.simClock} minutes in</span>
         </time>
       </header>
+      <MutationStatus state={mutationState ?? {}} {...(onRetryMutation ? { onRetry: onRetryMutation } : {})} />
 
       <NotificationBanner
         {...(mutationState ? { mutationState } : {})}
@@ -75,8 +88,7 @@ export function WorkSurface({
                   return;
                 }
                 await onNotification(notification, response, () => {
-                  setSystemId(notification.systemId);
-                  setSelectedEventId(notification.eventId);
+                  openSystem(notification.systemId, notification.eventId);
                 });
               },
             }
@@ -85,8 +97,7 @@ export function WorkSurface({
 
       <CaseRail
         onResume={({ eventId, systemId: targetSystem }) => {
-          setSystemId(targetSystem);
-          setSelectedEventId(eventId);
+          openSystem(targetSystem, eventId);
         }}
         view={view}
       />
@@ -94,7 +105,7 @@ export function WorkSurface({
       <GuidancePanel
         body="Pick a tab below to open a tool. Read what is there, then take one action at a time."
         guidance={guidance}
-        onGoToSystem={setSystemId}
+        onGoToSystem={openSystem}
         currentSystemId={systemId}
         title={guided ? "Practice · what to do next" : "What to do next"}
       />
@@ -115,8 +126,7 @@ export function WorkSurface({
               data-recommended={recommended ? "true" : "false"}
               key={system.id}
               onClick={() => {
-                setSystemId(system.id);
-                setSelectedEventId(undefined);
+                openSystem(system.id);
               }}
               type="button"
             >
@@ -145,7 +155,7 @@ export function WorkSurface({
                 data-priority={event.priority}
                 key={event.id}
                 onClick={() => {
-                  setSelectedEventId(event.id);
+                  openSystem(systemId, event.id);
                 }}
                 type="button"
               >
@@ -175,7 +185,7 @@ export function WorkSurface({
                   minutes
                 </span>
               </div>
-              <h3>{selectedEvent.title}</h3>
+              <h3 ref={headingRef} tabIndex={-1}>{selectedEvent.title}</h3>
               <p>{selectedEvent.summary}</p>
               {selectedEvent.resolution ? (
                 <p className="resolution-note">{selectedEvent.resolution}</p>
@@ -194,7 +204,7 @@ export function WorkSurface({
             </>
           ) : (
             <>
-              <h3>{systemLabel(systemId)}</h3>
+              <h3 ref={headingRef} tabIndex={-1}>{systemLabel(systemId)}</h3>
               <p>
                 {contextualActions.length > 0
                   ? "Select an item on the left, or use the suggested action above."
