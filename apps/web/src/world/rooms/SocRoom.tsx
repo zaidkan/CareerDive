@@ -597,8 +597,9 @@ export function SocRoom({
         <MeshLabel
           text="EXIT"
           position={[0, 2.35, -0.09]}
-          width={0.55}
-          height={0.12}
+          rotationY={Math.PI}
+          width={0.65}
+          height={0.14}
         />
         <mesh position={[0, 0.04, -0.15]} receiveShadow>
           <boxGeometry args={[2.0, 0.06, 0.45]} />
