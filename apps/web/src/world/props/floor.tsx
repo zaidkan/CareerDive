@@ -32,7 +32,7 @@ export function FloorTileGrid({
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]} receiveShadow>
       <planeGeometry args={[width, depth]} />
-      <meshStandardMaterial map={tile} roughness={0.92} />
+      <meshStandardMaterial map={tile} roughness={0.68} metalness={0.03} />
     </mesh>
   );
 }
@@ -62,11 +62,11 @@ export function CarpetRunner({
     <group position={position} rotation={[0, rotationY, 0]}>
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.014, 0]}>
         <planeGeometry args={size} />
-        <meshStandardMaterial map={carpet} color={color} roughness={0.96} />
+        <meshStandardMaterial map={carpet} roughness={0.98} />
       </mesh>
       <mesh receiveShadow rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.017, 0]}>
         <planeGeometry args={[size[0] * 0.86, size[1] * 0.9]} />
-        <meshStandardMaterial color="#6b4a3a" roughness={0.94} />
+        <meshStandardMaterial map={carpet} color="#c5c0b8" roughness={0.98} />
       </mesh>
     </group>
   );

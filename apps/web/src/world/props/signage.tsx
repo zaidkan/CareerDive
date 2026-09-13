@@ -24,10 +24,10 @@ export function makeLabelTexture(text: string, w = 256, h = 64): THREE.CanvasTex
   canvas.height = h;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("2D canvas unavailable");
-  ctx.fillStyle = "#1a3028";
+  ctx.fillStyle = "#10272b";
   ctx.fillRect(0, 0, w, h);
   ctx.strokeStyle = "#4fd0c8";
-  ctx.lineWidth = 4;
+  ctx.lineWidth = 2;
   ctx.strokeRect(4, 4, w - 8, h - 8);
 
   const inset = Math.max(10, w * 0.07);
@@ -41,13 +41,14 @@ export function makeLabelTexture(text: string, w = 256, h = 64): THREE.CanvasTex
   });
   ctx.font = labelFont(size);
 
-  ctx.fillStyle = "#9fe8e0";
+  ctx.fillStyle = "#f2faf7";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(text, w / 2, h / 2);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
   tex.needsUpdate = true;
   labelCache.set(key, tex);
   return tex;
@@ -74,7 +75,6 @@ export function MeshLabel({
         map={texture}
         toneMapped={false}
         side={THREE.DoubleSide}
-        transparent
       />
     </mesh>
   );
