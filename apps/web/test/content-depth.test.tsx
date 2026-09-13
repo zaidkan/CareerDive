@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { createInitialWorldState, toClientView } from "@sim/core";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import { EmailTool } from "../src/components/tools/EmailTool.js";
+import { TeamChatTool } from "../src/components/tools/TeamChatTool.js";
 import { SystemToolPanel } from "../src/components/SystemToolPanel.js";
 import { AccessibleMode } from "../src/components/AccessibleMode.js";
 import { CaseRail } from "../src/components/CaseRail.js";
@@ -140,3 +141,28 @@ it.each(["desk", "structured"] as const)(
     expect(review).toHaveTextContent(/more evidence/i);
   },
 );
+
+it("keeps Morgan procedure reminders behind opening the thread and follows the public task stage", () => {
+  const current = view();
+  const { rerender } = render(<TeamChatTool view={current} />);
+  expect(screen.queryByLabelText("Morgan procedure reminders")).toBeNull();
+  current.artifacts = current.artifacts.map((artifact) =>
+    artifact.systemId === "team_chat"
+      ? { ...artifact, observed: true }
+      : artifact,
+  );
+  rerender(<TeamChatTool view={current} />);
+  expect(screen.getByLabelText("Morgan procedure reminders")).toHaveTextContent(
+    /record|source/i,
+  );
+  current.tasks = current.tasks
+    .slice(0, 1)
+    .map((task) => ({ ...task, kind: "build_summary" }));
+  rerender(<TeamChatTool view={current} />);
+  expect(screen.getByLabelText("Morgan procedure reminders")).toHaveTextContent(
+    /verified observations, uncertainty, and the next step/i,
+  );
+  expect(
+    screen.getByLabelText("Morgan procedure reminders"),
+  ).not.toHaveTextContent(/unknown-laptop|J. Patel|escalate-evidence/);
+});
