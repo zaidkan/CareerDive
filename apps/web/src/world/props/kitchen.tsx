@@ -37,14 +37,30 @@ export function Fridge({
       <mesh castShadow receiveShadow>
         <boxGeometry args={[0.85, 1.7, 0.7]} />
         <meshStandardMaterial
-          color="#c8c4bc"
-          metalness={0.45}
-          roughness={0.35}
+          color="#aeb9bc"
+          metalness={0.55}
+          roughness={0.42}
         />
       </mesh>
       <mesh position={[0, 0, 0.356]}>
         <boxGeometry args={[0.72, 1.5, 0.025]} />
-        <meshStandardMaterial color="#5a5f5b" roughness={0.7} />
+        <meshStandardMaterial color="#d9e5df" roughness={0.78} />
+      </mesh>
+      {/* Thin shelf edges and a recessed toe kick give the appliance depth
+          without extra lights, textures, or animation. */}
+      {[-0.44, 0.12].map((height) => (
+        <mesh key={height} position={[0, height, 0.39]}>
+          <boxGeometry args={[0.7, 0.025, 0.055]} />
+          <meshStandardMaterial
+            color="#829895"
+            metalness={0.3}
+            roughness={0.5}
+          />
+        </mesh>
+      ))}
+      <mesh position={[0, -0.79, 0.36]}>
+        <boxGeometry args={[0.73, 0.09, 0.025]} />
+        <meshStandardMaterial color="#28383b" roughness={0.8} />
       </mesh>
       {open && snackBars > 0
         ? Array.from({ length: snackBars }, (_, index) => (
@@ -65,14 +81,18 @@ export function Fridge({
         <mesh castShadow position={[0.425, 0, 0]}>
           <boxGeometry args={[0.82, 1.66, 0.07]} />
           <meshStandardMaterial
-            color="#d4d0c8"
-            metalness={0.42}
-            roughness={0.36}
+            color="#d5dedb"
+            metalness={0.5}
+            roughness={0.4}
           />
         </mesh>
         <mesh position={[0.76, 0.2, 0.05]}>
           <boxGeometry args={[0.04, 0.55, 0.04]} />
-          <meshStandardMaterial color="#8a8680" metalness={0.6} />
+          <meshStandardMaterial
+            color="#283b40"
+            metalness={0.5}
+            roughness={0.32}
+          />
         </mesh>
         <mesh position={[0.425, 0.35, 0.05]}>
           <boxGeometry args={[0.7, 0.02, 0.02]} />
@@ -193,13 +213,21 @@ export function CoffeePot({
   const steaming = stage === "ready" || stage === "poured";
   return (
     <group position={position}>
+      <mesh position={[0, -0.175, 0]} receiveShadow>
+        <boxGeometry args={[0.43, 0.04, 0.36]} />
+        <meshStandardMaterial color="#26363c" metalness={0.3} roughness={0.6} />
+      </mesh>
       <mesh castShadow>
         <cylinderGeometry args={[0.14, 0.16, 0.28, 14]} />
         <meshStandardMaterial
-          color="#1a130f"
-          metalness={0.45}
-          roughness={0.4}
+          color="#71868b"
+          metalness={0.72}
+          roughness={0.28}
         />
+      </mesh>
+      <mesh position={[0, 0.145, 0]}>
+        <cylinderGeometry args={[0.145, 0.145, 0.025, 14]} />
+        <meshStandardMaterial color="#26363c" metalness={0.4} roughness={0.4} />
       </mesh>
       <mesh position={[0, 0.2, 0]}>
         <cylinderGeometry args={[0.1, 0.12, 0.1, 12]} />
