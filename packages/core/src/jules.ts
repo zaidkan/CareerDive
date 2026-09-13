@@ -36,7 +36,7 @@ function currentWorkReply(
   if (available.has("check_device_inventory")) {
     return {
       speaker: "Jules",
-      text: `${prefix}the device inventory is the useful public reference now. Open Guides, compare the device record, and keep your conclusion in your notes.`,
+      text: `${prefix}the device inventory is the useful public reference now. Open Guides and compare the exact device name, not just the account owner. Keep the record reference and what it actually says in your notes; a missing entry is not a person's identity.`,
       nextSystemId: "knowledge_base",
     };
   }
@@ -44,7 +44,7 @@ function currentWorkReply(
   if (available.has("search_knowledge_base")) {
     return {
       speaker: "Jules",
-      text: `${prefix}the next safe step is to compare the visible alert with the approved reference in Guides, then record what matched in your notes.`,
+      text: `${prefix}the next safe step is to compare the visible alert with the approved reference in Guides. Check source, event time, and scope together, then record what matched in your notes. A familiar-looking alert still needs its own reference.`,
       nextSystemId: "knowledge_base",
     };
   }
@@ -52,7 +52,7 @@ function currentWorkReply(
   if (available.has("document_ticket")) {
     return {
       speaker: "Jules",
-      text: `${prefix}the public context is ready to document. Open Tickets and separate what you observed from what is still uncertain.`,
+      text: `${prefix}the public context is ready to document. Open Tickets and separate what you observed from what is still uncertain. Imagine the next analyst reading your note without you beside them: name the source and leave a concrete next step, not just "looked into it".`,
       nextSystemId: "ticket_queue",
     };
   }
@@ -120,8 +120,8 @@ function resolveDialogue(
       return {
         speaker: "Jules",
         text: repeated
-          ? "Quick recap: monitor the queue, keep short notes, and expect interruptions. When a decision needs procedural guidance, ask Morgan."
-          : "The first-day rhythm is monitoring the queue, keeping short notes, and handling interruptions without losing your next step. Ask Morgan when a decision needs procedural guidance.",
+          ? "Quick recap: monitor the queue, keep short notes, and expect interruptions. Before switching items, write what you checked and what remains open. Asking Morgan a specific procedure question is part of owning the work, not giving up on it."
+          : "The first-day rhythm is monitoring the queue, keeping short notes, and handling interruptions without losing your next step. Much of the job is careful comparison and communication, not dramatic discoveries. You do not need to know every term already; open the record, use its explanations, and ask Morgan when the procedure is unclear.",
       };
     case "current_work":
       return currentWorkReply(state, repeated);
@@ -131,18 +131,18 @@ function resolveDialogue(
       return {
         speaker: "Jules",
         text: repeated
-          ? "Same break-room rule: write one next step, take a short break, then return to that step."
+          ? "Same break-room rule: write one next step, take a short break, then return to that step. I like a note that says where to resume so I do not have to hold the whole investigation in my head. Breaks are not work evidence."
           : needsEnergy
-            ? "A short break can help when energy is low. Write one next step first, use an available snack or coffee if you need it, then return to that step."
-            : "A short break works best when you write one next step first. Step away briefly, then return to that specific step instead of restarting the whole case.",
+            ? "A short break can help when energy is low. Write one next step first, use an available snack or coffee if you need it, then return to that step. The room shows what is left; you do not need to rush, and waiting or reading does not use energy."
+            : "A short break works best when you write one next step first. Step away briefly, then return to that specific step instead of restarting the whole case. Leave the record reference with the note so the next check is easy to find.",
       };
     }
     case "team_context":
       return {
         speaker: "Jules",
         text: repeated
-          ? "Peer view only: I can help you frame what you noticed, but send procedural decisions to Morgan."
-          : "I can offer a peer perspective on the work you can see, but Morgan owns procedural guidance. Send decision questions to Morgan in Team Chat.",
+          ? "Peer view only: I can help you frame what you noticed, but send procedural decisions to Morgan. Try a short handoff: the record you checked, the detail that needs context, and the question you want reviewed. Leave room for another explanation."
+          : "I can offer a peer perspective on the work you can see, but Morgan owns procedural guidance. Send decision questions to Morgan in Team Chat. The team needs both careful investigation and clear handoffs; sounding certain is less useful than explaining what you know and what you still need to check.",
       };
   }
 }

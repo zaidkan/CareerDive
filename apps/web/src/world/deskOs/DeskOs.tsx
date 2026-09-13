@@ -222,6 +222,7 @@ export function DeskOs({
           />
         ) : tab === "calendar" ? (
           <CalendarPanel
+            view={view}
             onOpenEmail={() => {
               openTab("email");
             }}
