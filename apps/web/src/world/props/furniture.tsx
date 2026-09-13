@@ -2,12 +2,13 @@
  * Office furniture — desks, chairs, tables, partitions, cabinets, lockers.
  */
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { makeCubicleFabricTexture, makeWoodTexture } from "../textures.js";
 import { ARM_SCREEN_INTENSITY, screenIntensity, useAmbientMotion } from "./ambient.js";
 import { MeshLabel } from "./signage.js";
 import { ChairBase } from "./ChairBase.js";
+import { writeCubicleInstances } from "./cubicleInstances.js";
 
 /** Slab center and thicknesses — `DESK_SURFACE_Y` is the finished top. */
 export const DESK_SLAB_Y = 0.78;
@@ -121,43 +122,23 @@ export function CubicleWalls({
   height?: number;
 }) {
   const fabric = useMemo(() => makeCubicleFabricTexture(), []);
-  const t = 0.08;
+  const panels = useRef<THREE.InstancedMesh>(null);
+  const rails = useRef<THREE.InstancedMesh>(null);
+  useLayoutEffect(() => {
+    if (panels.current) writeCubicleInstances(panels.current, width, depth, height, false);
+    if (rails.current) writeCubicleInstances(rails.current, width, depth, height, true);
+  }, [width, depth, height]);
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
-      <mesh position={[0, height / 2, -depth / 2]} castShadow>
-        <boxGeometry args={[width, height, t]} />
+      <instancedMesh ref={panels} args={[undefined, undefined, 3]} castShadow>
+        <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial map={fabric} roughness={0.92} />
-      </mesh>
-      <mesh position={[-width / 2, height / 2, 0]} castShadow>
-        <boxGeometry args={[t, height, depth]} />
-        <meshStandardMaterial map={fabric} roughness={0.92} />
-      </mesh>
-      <mesh position={[width / 2, height / 2, 0]} castShadow>
-        <boxGeometry args={[t, height, depth]} />
-        <meshStandardMaterial map={fabric} roughness={0.92} />
-      </mesh>
-      {/* Top rail */}
-      <mesh position={[0, height + 0.03, -depth / 2]}>
-        <boxGeometry args={[width + 0.05, 0.06, 0.1]} />
-        <meshStandardMaterial
-          color="#638b87"
-          roughness={0.72}
-        />
-      </mesh>
-      <mesh position={[-width / 2, height + 0.03, 0]}>
-        <boxGeometry args={[0.1, 0.06, depth]} />
-        <meshStandardMaterial
-          color="#638b87"
-          roughness={0.72}
-        />
-      </mesh>
-      <mesh position={[width / 2, height + 0.03, 0]}>
-        <boxGeometry args={[0.1, 0.06, depth]} />
-        <meshStandardMaterial
-          color="#638b87"
-          roughness={0.72}
-        />
-      </mesh>
+      </instancedMesh>
+      {/* Separate batch retains the rails' non-shadow-casting material. */}
+      <instancedMesh ref={rails} args={[undefined, undefined, 3]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#638b87" roughness={0.72} />
+      </instancedMesh>
     </group>
   );
 }

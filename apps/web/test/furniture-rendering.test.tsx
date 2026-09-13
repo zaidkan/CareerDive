@@ -72,6 +72,14 @@ it("does not multiply the authored cubicle fabric color again", () => {
   const fabric = nodes(result.current).filter(
     ({ props }) => props.map instanceof Texture,
   );
-  expect(fabric).toHaveLength(3);
+  expect(fabric).toHaveLength(1);
+  const batches = nodes(result.current).filter(
+    ({ type }) => type === "instancedMesh",
+  );
+  expect(batches).toHaveLength(2);
+  expect(batches.every(({ props }) => (props.args as unknown[])[2] === 3)).toBe(
+    true,
+  );
+  expect(batches.filter(({ props }) => props.castShadow)).toHaveLength(1);
   expect(fabric.every(({ props }) => props.color === undefined)).toBe(true);
 });

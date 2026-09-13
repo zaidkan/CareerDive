@@ -7,6 +7,8 @@
 
 **Stable branch:** `main`
 
+**Latest September 12 checkpoint:** Added opt-in development graphics diagnostics (`?graphics=1`), batched chair bases and cubicle panels/rails. Chair entrance samples decreased from 824 to 776 calls at DPR 1/effects on; no meaningful FPS gain established. Cubicle run used reduced quality and cannot be compared to that baseline. Verified 290 tests plus web lint/build. See `docs/2026-09-12-render-diagnostics.md`, `docs/2026-09-12-chair-batching.md`, and `docs/2026-09-12-cubicle-batching.md`. Next: matching-quality performance comparison and close-up checks, not more unmeasured batching.
+
 **September 12 graphics checkpoint:** Experimental includes the September 11 adaptive rendering/texture-lifecycle pass and September 12 furniture refinement. Desks and cubicles no longer double-tint textures; matte rails and lighter furniture improve material separation. Wheel geometry saves 920 triangles per OfficeChair, not a measured FPS gain. Verified 283 tests, web lint/build, and an entrance-view browser check. Whole-scene frame-time profiling and close-up checks remain. See `docs/2026-09-12-furniture-refinement.md`.
 
 **Existing local development worktree:** `/Users/zaid/personal-projects/Careerexpo/.worktrees/experimental` (new clones use their own checkout path)
