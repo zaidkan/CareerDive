@@ -48,18 +48,35 @@ export function ShiftBriefing({ onOpen }: { onOpen: () => void }) {
         <h2 id="briefing-title">
           Welcome to day one as a {COMPANY.role} at {COMPANY.name}
         </h2>
-        <p className="manager-name">Morgan · your manager · showing you the ropes</p>
+        <p className="manager-name">
+          Morgan · your manager · showing you the ropes
+        </p>
         <p>
-          Badge in, walk the floor, meet the team. Your desk is in Security
-          Operations. The glass break corner has coffee if you need a breath.
-          Read the handoff, ask questions, and take your time — real work is not
-          a race.
+          Welcome. You do not need cybersecurity experience to begin. Your job
+          is to help the team understand unusual computer activity: read the
+          records, compare what they say, and leave clear notes about what still
+          needs checking. You can ask for guidance as you go.
         </p>
         <ul className="briefing-beats">
-          <li>Walk the floor map into Security Operations</li>
-          <li>Sit at your desk and sign in</li>
-          <li>Work alerts, email, and tickets one step at a time</li>
+          <li>
+            Start with the handoff in Email — the previous analyst’s note about
+            unfinished work.
+          </li>
+          <li>
+            Use Alerts to inspect warnings, Guides to check references, and
+            Tickets to save your investigation notes.
+          </li>
+          <li>
+            Expect an interruption. Leave yourself a next step before switching
+            work, and ask Morgan in Team Chat when a procedure is unclear.
+          </li>
         </ul>
+        <p>
+          Walk the office, stay at your desk, or use Simple list: each mode
+          offers the same work and outcomes. Take time to read; moving quickly
+          is not part of the career evidence. At the end, you will review your
+          choices and consider how the work felt to you.
+        </p>
         <button className="start-shift" onClick={onOpen} type="button">
           Enter the {COMPANY.name} floor
         </button>
@@ -91,10 +108,7 @@ export function Tutorial(props: { view?: ClientView } = {}) {
         ) : null}
       </div>
       {view && step ? (
-        <div
-          className="tutorial-track"
-          aria-hidden="true"
-        >
+        <div className="tutorial-track" aria-hidden="true">
           {TUTORIAL_STEPS.map((item, index) => (
             <span
               className={
@@ -107,13 +121,18 @@ export function Tutorial(props: { view?: ClientView } = {}) {
           ))}
         </div>
       ) : null}
+      <p>
+        This is a practice shift. Try the controls and ask questions without
+        generating career evidence. A handoff is a note from the previous
+        analyst; an alert is a warning to investigate, not a conclusion.
+      </p>
       <h2 id="tutorial-title">
-        {step ? step.title : "You are ready for the real shift"}
+        {step ? step.title : "You have tried the starting steps"}
       </h2>
       <p>
         {step
           ? step.body
-          : "You tried the basics. Start the assessed shift when you want a full run — it records how you work."}
+          : "You can keep exploring practice or start the assessed shift when you are ready. That shift records your workplace actions for a debrief; it does not decide whether this career is right for you."}
       </p>
       {!view ? (
         <p className="tutorial-loading">Loading your practice desk…</p>
