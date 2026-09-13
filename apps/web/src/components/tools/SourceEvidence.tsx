@@ -47,6 +47,7 @@ export function SourceEvidence({
                       {before}
                       <button
                         type="button"
+                        data-option-id={passage.id}
                         className="source-passage"
                         aria-pressed={selected.includes(passage.id)}
                         disabled={disabled}

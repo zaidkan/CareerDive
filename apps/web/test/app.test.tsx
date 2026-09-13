@@ -648,7 +648,7 @@ describe("tutorial and debrief", () => {
 
     // Guidance now stays inline inside the workplace OS instead of routing to a
     // separate App-level manager surface, and the selected mode is preserved.
-    expect(await screen.findByText(/Morgan recommends reviewing/i)).toBeVisible();
+    expect(await screen.findByRole("complementary", { name: "Morgan guidance" })).toHaveTextContent(/Morgan recommends reviewing/i);
     expect(
       screen.queryByRole("heading", { name: "Morgan is here to help" }),
     ).toBeNull();

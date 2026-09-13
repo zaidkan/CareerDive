@@ -55,16 +55,19 @@ export function ArtifactDetail({
   mutationState?: MutationState | undefined;
 }) {
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const previousArtifact = useRef({ id: artifact?.id, observed: artifact?.observed });
   useEffect(() => {
-    if (focus) headingRef.current?.focus();
-  }, [artifact?.id, focus]);
+    const justOpened = previousArtifact.current.id === artifact?.id && !previousArtifact.current.observed && artifact?.observed;
+    if (focus || justOpened) headingRef.current?.focus();
+    previousArtifact.current = { id: artifact?.id, observed: artifact?.observed };
+  }, [artifact?.id, artifact?.observed, focus]);
   if (!artifact) {
     return <p>Select an artifact to inspect its contents.</p>;
   }
   return (
     <article className="artifact-detail">
       <p className="eyebrow">{artifact.kind.replaceAll("_", " ")}</p>
-      <h4 ref={headingRef} tabIndex={focus ? -1 : undefined}>
+      <h4 ref={headingRef} tabIndex={-1}>
         {artifact.title}
       </h4>
       <p>{artifact.summary}</p>
