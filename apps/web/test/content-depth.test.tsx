@@ -5,6 +5,10 @@ import { afterEach, expect, it, vi } from "vitest";
 import { createInitialWorldState, toClientView } from "@sim/core";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import { EmailTool } from "../src/components/tools/EmailTool.js";
+import { TeamChatTool } from "../src/components/tools/TeamChatTool.js";
+import { SystemToolPanel } from "../src/components/SystemToolPanel.js";
+import { AccessibleMode } from "../src/components/AccessibleMode.js";
+import { CaseRail } from "../src/components/CaseRail.js";
 import { CalendarPanel } from "../src/world/deskOs/DashboardHome.js";
 
 afterEach(cleanup);
@@ -56,4 +60,110 @@ it("derives calendar checkpoints from current visible work, not static future me
   expect(screen.queryByText("Shift handoff")).toBeNull();
   expect(screen.queryByText(/Buddy check|Optional break/)).toBeNull();
   expect(screen.getByText(/No current work checkpoints/)).toBeVisible();
+});
+
+it.each(["resolved", "escalated"] as const)(
+  "keeps the canonical %s resolution visible in the shared case rail",
+  (status) => {
+    const current = view();
+    const resolution =
+      "Review requested; the identity of the session owner remains unverified.";
+    current.events = current.events.map((event) => ({
+      ...event,
+      status,
+      resolution,
+    }));
+    render(<CaseRail view={current} onResume={vi.fn()} />);
+    expect(screen.getAllByText(resolution)).toHaveLength(current.events.length);
+  },
+);
+
+it.each(["desk", "structured"] as const)(
+  "carries only opened case evidence and saved notes into the %s decision",
+  (mode) => {
+    const current = view();
+    const event = current.events.find(({ id }) => id === "suspicious-login-1");
+    if (!event) throw new Error("Missing login case");
+    current.events = [event];
+    current.tasks = [];
+    current.availableActions = [
+      {
+        id: "dismiss_alert",
+        eventId: event.id,
+        systemId: "alert_dashboard",
+        label: "Dismiss as false positive",
+        description: "Close the item.",
+        simulatedMinutes: 15,
+      },
+    ];
+    current.ticketNotes[event.id] =
+      "Saved review: compare the device reference before deciding.";
+    current.artifacts = [
+      {
+        id: "opened",
+        title: "Earlier login record",
+        summary: "Record preview",
+        kind: "alert",
+        systemId: "alert_dashboard",
+        eventIds: [event.id],
+        observed: true,
+        body: "Previously opened comparison passage.",
+      },
+      {
+        id: "unopened",
+        title: "Unopened record",
+        summary: "Preview only",
+        kind: "email",
+        systemId: "email",
+        eventIds: [event.id],
+        observed: false,
+        body: "UNOPENED BODY MUST NOT APPEAR",
+      },
+    ];
+    const { container } = render(
+      mode === "desk" ? (
+        <SystemToolPanel
+          view={current}
+          systemId="alert_dashboard"
+          selectedEventId={event.id}
+          actions={current.availableActions}
+          onAction={vi.fn()}
+        />
+      ) : (
+        <AccessibleMode view={current} onAction={vi.fn()} />
+      ),
+    );
+    const review = container.querySelector(
+      '[aria-label="Case review before decision"]',
+    );
+    expect(review).toHaveTextContent("Previously opened comparison passage.");
+    expect(review).toHaveTextContent(current.ticketNotes[event.id] ?? "");
+    expect(review).not.toHaveTextContent("UNOPENED BODY MUST NOT APPEAR");
+    expect(review).toHaveTextContent(/more evidence/i);
+  },
+);
+
+it("keeps Morgan procedure reminders behind opening the thread and follows the public task stage", () => {
+  const current = view();
+  const { rerender } = render(<TeamChatTool view={current} />);
+  expect(screen.queryByLabelText("Morgan procedure reminders")).toBeNull();
+  current.artifacts = current.artifacts.map((artifact) =>
+    artifact.systemId === "team_chat"
+      ? { ...artifact, observed: true }
+      : artifact,
+  );
+  rerender(<TeamChatTool view={current} />);
+  expect(screen.getByLabelText("Morgan procedure reminders")).toHaveTextContent(
+    /record|source/i,
+  );
+  current.tasks = current.tasks
+    .slice(0, 1)
+    .map((task) => ({ ...task, kind: "build_summary" }));
+  rerender(<TeamChatTool view={current} />);
+  expect(screen.getByLabelText("Morgan procedure reminders")).toHaveTextContent(
+    /verified observations, uncertainty, and the next step/i,
+  );
+  expect(
+    screen.getByLabelText("Morgan procedure reminders"),
+  ).not.toHaveTextContent(/unknown-laptop|J. Patel|escalate-evidence/);
 });
