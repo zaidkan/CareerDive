@@ -298,7 +298,7 @@ scenario:
       steps:
         - id: inventory-match
           title: Check device ownership
-          prompt: What does inventory say about unknown-laptop-17?
+          prompt: Review the exact unknown-laptop-17 record and capture its enrollment status.
           instruction: Match the alert device to the inventory record.
           relatedArtifactIds: [device-inventory-1, login-context-1]
           minSelections: 1
@@ -341,8 +341,8 @@ scenario:
       steps:
         - id: summary-evidence
           title: Choose evidence
-          prompt: Which two facts belong in the ticket?
-          instruction: Select exactly two verified facts.
+          prompt: Add the two verified observations to the ticket evidence section.
+          instruction: Choose two verified facts from the records you opened.
           relatedArtifactIds: [suspicious-login-alert, device-inventory-1]
           minSelections: 2
           maxSelections: 2
@@ -360,8 +360,8 @@ scenario:
           successText: Your note now contains two verified facts.
         - id: summary-uncertainty
           title: Record uncertainty and confirmation
-          prompt: Which statement accurately adds the employee response?
-          instruction: Select one careful statement.
+          prompt: Record the employee response with appropriate uncertainty.
+          instruction: Choose one careful statement.
           relatedArtifactIds: [employee-login-reply]
           minSelections: 1
           maxSelections: 1
@@ -377,8 +377,8 @@ scenario:
           successText: Your note separates confirmed information from the working conclusion.
         - id: summary-next-step
           title: Add the next step
-          prompt: What should the ticket request next?
-          instruction: Select one professional next step.
+          prompt: Add a reversible professional next step to the ticket.
+          instruction: Choose one professional next step.
           relatedArtifactIds: [ticket-suspicious-login]
           minSelections: 1
           maxSelections: 1
@@ -457,7 +457,7 @@ scenario:
       steps:
         - id: scanner-evidence
           title: Record the match
-          prompt: Which evidence supports expected activity?
+          prompt: Record the evidence that supports expected activity.
           instruction: Select two matching facts.
           relatedArtifactIds: [scanner-alert, scanner-window]
           minSelections: 2
@@ -476,7 +476,7 @@ scenario:
           successText: Your note records the trusted schedule match.
         - id: scanner-decision
           title: State the closure reason
-          prompt: Which conclusion fits the evidence?
+          prompt: State the conclusion that fits the evidence.
           instruction: Select one closure note.
           relatedArtifactIds: [scanner-alert, scanner-window]
           minSelections: 1

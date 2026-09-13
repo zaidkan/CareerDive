@@ -68,6 +68,9 @@ export function WorkTaskPanel({
   const globallyPending = Boolean(mutationState.pendingKey);
   const submittingThisTask =
     submitting || mutationState.pendingKey === mutationKey;
+  const summaryGroup = task.kind === "build_summary"
+    ? task.id.includes("evidence") ? "Verified evidence" : task.id.includes("uncertainty") ? "Uncertainty" : task.id.includes("next") ? "Next step" : task.title
+    : undefined;
 
   return (
     <section
@@ -87,6 +90,7 @@ export function WorkTaskPanel({
       </header>
       <p className="work-task-prompt">{task.prompt}</p>
       <p className="work-task-instruction">{task.instruction}</p>
+      {summaryGroup ? <h5 className="ticket-composer-group">{summaryGroup}</h5> : null}
       {comparison ? (
         <RecordComparison
           task={task}
@@ -165,6 +169,12 @@ export function WorkTaskPanel({
         </fieldset>
       )}
       <div className="work-task-footer">
+        {task.kind === "build_summary" && selected.length > 0 ? (
+          <section aria-label="Generated ticket preview" className="ticket-preview">
+            <strong>Generated ticket preview</strong>
+            <ul>{task.options.filter((option) => selected.includes(option.id)).map((option) => <li key={option.id}>{option.label}</li>)}</ul>
+          </section>
+        ) : null}
         <p>
           <strong>Why this matters:</strong> {task.whyItMatters}
         </p>
