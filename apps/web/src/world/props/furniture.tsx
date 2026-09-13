@@ -69,9 +69,14 @@ export function DeskFrame({
 export function OfficeChair({
   position,
   rotationY = 0,
+  highlighted = false,
+  occupied = false,
 }: {
   position: [number, number, number];
   rotationY?: number;
+  /** Presentation focus only; never implies a canonical action is legal. */
+  highlighted?: boolean;
+  occupied?: boolean;
 }) {
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
@@ -86,7 +91,12 @@ export function OfficeChair({
       {/* Lumbar accent */}
       <mesh position={[0, 0.62, -0.1]}>
         <boxGeometry args={[0.38, 0.12, 0.04]} />
-        <meshStandardMaterial color="#507c79" roughness={0.85} />
+        <meshStandardMaterial
+          color={occupied ? "#a8c4be" : highlighted ? "#e8b84a" : "#507c79"}
+          emissive={highlighted && !occupied ? "#e8b84a" : "#000000"}
+          emissiveIntensity={0.3}
+          roughness={0.85}
+        />
       </mesh>
       <mesh position={[0, 0.28, 0]}>
         <cylinderGeometry args={[0.035, 0.04, 0.42, 10]} />
