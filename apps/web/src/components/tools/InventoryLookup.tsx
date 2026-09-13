@@ -21,7 +21,7 @@ export function InventoryLookup({
     <section aria-label="Device inventory lookup" className="inventory-lookup">
       <h3>Device inventory</h3>
       <label htmlFor="inventory-device-query">Find an exact device</label>
-      <input id="inventory-device-query" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="e.g. unknown-laptop-17" />
+      <input id="inventory-device-query" type="search" value={query} onChange={(event) => { setQuery(event.target.value); }} placeholder="e.g. unknown-laptop-17" />
       {query.trim() && matches.length === 0 ? <p role="status">No inventory records match that device.</p> : null}
       {matches.map((record: ClientArtifact) => (
         <article key={record.id}>

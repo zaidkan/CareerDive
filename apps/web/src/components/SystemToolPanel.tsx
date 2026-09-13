@@ -341,7 +341,8 @@ export function SystemToolPanel({
     );
   }
 
-  if (systemId === "ticket_queue") {
+  // systemId is exhausted to "ticket_queue" here; render the ticket queue tools.
+  {
     const selected =
       eventArtifacts.find(({ id }) => id === selectedArtifactId) ??
       eventArtifacts[0];
@@ -393,37 +394,4 @@ export function SystemToolPanel({
       </div>
     );
   }
-
-  const selected =
-    eventArtifacts.find(({ id }) => id === selectedArtifactId) ??
-    eventArtifacts[0];
-  return (
-    <div className="tool-panel" data-system={systemId}>
-      <ToolChrome systemId={systemId} />
-      <div className="tool-split">
-        <div>
-          <ArtifactList
-            artifacts={eventArtifacts}
-            selectedId={selected?.id}
-            onSelect={selectArtifact}
-          />
-        </div>
-        <ArtifactDetail
-          artifact={selected}
-          focus={selected?.id === focusArtifactId}
-          onOpenArtifact={openArtifact}
-          mutationState={mutationState}
-        />
-      </div>
-      <WorkInteraction
-        onOpenArtifact={openArtifact}
-        actions={workInteractionActions(actions)}
-        {...(highlightActionId ? { highlightActionId } : {})}
-        onAction={onAction}
-        mutationState={mutationState}
-        {...(onTaskAttempt ? { onTaskAttempt } : {})}
-        view={view}
-      />
-    </div>
-  );
 }

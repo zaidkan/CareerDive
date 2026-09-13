@@ -249,7 +249,6 @@ export function PlayerController({
       vel.current.set(0, 0, 0);
     };
     const onDoubleClick = (event: MouseEvent) => {
-      if (!enabled || seated) return;
       const rect = gl.domElement.getBoundingClientRect();
       pointer.current.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
       raycaster.current.setFromCamera(pointer.current, camera);
@@ -458,7 +457,7 @@ export function PlayerController({
       onRecover([pos.current.x, pos.current.y, pos.current.z]);
     };
     window.addEventListener("soc-recover-aisle", recover);
-    return () => window.removeEventListener("soc-recover-aisle", recover);
+    return () => { window.removeEventListener("soc-recover-aisle", recover); };
   }, [colliders, onRecover, spawn]);
 
   return (
