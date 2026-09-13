@@ -21,6 +21,7 @@ import { COMPANY } from "./company.js";
 import {
   BreakRoomPanel,
   CarriedSnackControl,
+  EmergencyRecoveryControl,
   EnergyMeter,
 } from "./BreakRoomPanel.js";
 import { coffeeControl, fridgeControl } from "./breakRoom.js";
@@ -410,6 +411,7 @@ export function SpatialShell({
                 <p className="room-hud-nearby">{nearbyPrompt}</p>
               ) : null}
               <EnergyMeter workplace={view.workplace} />
+              <EmergencyRecoveryControl workplace={view.workplace} onSubmit={requestWorkplaceInteraction} pending={resourcePending || !onWorkplaceInteraction} />
               {breakStation ? (
                 <BreakRoomPanel
                   onSubmit={requestWorkplaceInteraction}
@@ -493,6 +495,7 @@ export function SpatialShell({
                 </p>
               ) : null}
               <EnergyMeter workplace={view.workplace} />
+              <EmergencyRecoveryControl workplace={view.workplace} onSubmit={requestWorkplaceInteraction} pending={resourcePending || !onWorkplaceInteraction} />
               <CarriedSnackControl
                 onSubmit={requestWorkplaceInteraction}
                 pending={resourcePending || !onWorkplaceInteraction}

@@ -946,9 +946,8 @@ describe("Desk OS canonical state rendering", () => {
     await user.click(screen.getByLabelText("Device identity"));
     await user.click(screen.getByRole("button", { name: "Check my work" }));
 
-    const stepFeedback = await screen.findByText(
-      "Step 1 complete. Evidence selected.",
-    );
+    await screen.findByText("Step 1 complete. Evidence selected.");
+    const stepFeedback = screen.getByText("Evidence selected.");
     expect(screen.getByText("Work step 2 of 2")).toBeVisible();
     expect(stepFeedback).toHaveFocus();
 
