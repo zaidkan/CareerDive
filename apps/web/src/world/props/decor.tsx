@@ -89,7 +89,7 @@ export function PlantPot({
     <group position={position} scale={scale}>
       <mesh castShadow>
         <cylinderGeometry args={[0.12, 0.1, 0.18, 12]} />
-        <meshStandardMaterial color="#5c4634" roughness={0.8} />
+        <meshStandardMaterial color="#ad8970" roughness={0.48} />
       </mesh>
       <mesh position={[0, 0.12, 0]}>
         <cylinderGeometry args={[0.11, 0.11, 0.04, 12]} />
@@ -101,7 +101,7 @@ export function PlantPot({
       </mesh>
       <mesh position={[0.07, 0.36, 0.04]}>
         <sphereGeometry args={[0.1, 8, 8]} />
-        <meshStandardMaterial color="#3a7a4a" />
+        <meshStandardMaterial color="#527c4b" roughness={0.72} />
       </mesh>
       <mesh position={[-0.06, 0.34, -0.05]}>
         <sphereGeometry args={[0.09, 8, 8]} />
@@ -123,7 +123,7 @@ export function TallFloorPlant({
     <group position={position} scale={scale}>
       <mesh castShadow receiveShadow position={[0, 0.28, 0]}>
         <cylinderGeometry args={[0.32, 0.28, 0.56, 16]} />
-        <meshStandardMaterial color="#3a3228" roughness={0.7} metalness={0.08} />
+        <meshStandardMaterial color="#8c9690" roughness={0.82} metalness={0} />
       </mesh>
       <mesh position={[0, 0.58, 0]}>
         <cylinderGeometry args={[0.3, 0.3, 0.05, 16]} />
@@ -146,7 +146,7 @@ export function TallFloorPlant({
         <mesh key={i} position={[x, y, z]} castShadow>
           <sphereGeometry args={[r, 12, 12]} />
           <meshStandardMaterial
-            color={i % 2 === 0 ? "#245536" : "#2f6a40"}
+            color={i % 2 === 0 ? "#315b43" : "#5a7850"}
             roughness={0.9}
           />
         </mesh>
@@ -197,11 +197,11 @@ export function WallArt({
     <group position={position} rotation={[0, rotationY, 0]}>
       <mesh castShadow>
         <boxGeometry args={[width, height, 0.05]} />
-        <meshStandardMaterial color="#4a3728" roughness={0.5} />
+        <meshStandardMaterial color="#786049" roughness={0.38} />
       </mesh>
       <mesh position={[0, 0, 0.028]}>
         <boxGeometry args={[width - 0.09, height - 0.09, 0.01]} />
-        <meshStandardMaterial color="#171310" />
+        <meshStandardMaterial color="#dad6c9" roughness={0.92} />
       </mesh>
       <mesh position={[0, 0, 0.042]}>
         <planeGeometry args={[width - 0.14, height - 0.14]} />

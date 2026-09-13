@@ -10,7 +10,7 @@ import { useAmbientMotion } from "./ambient.js";
 export function WallPanel({
   position,
   size,
-  color = "#2a221c",
+  color = "#454a47",
 }: {
   position: [number, number, number];
   size: [number, number, number];
@@ -24,7 +24,7 @@ export function WallPanel({
   return (
     <mesh position={position} castShadow receiveShadow>
       <boxGeometry args={size} />
-      <meshStandardMaterial map={wall} color={color} roughness={0.86} />
+      <meshStandardMaterial map={wall} roughness={0.9} />
     </mesh>
   );
 }
@@ -79,7 +79,7 @@ export function OfficeWindow({
       ).map(([x, y, w, hh]) => (
         <mesh key={`h${String(y)}`} position={[x, y, 0.02]} castShadow>
           <boxGeometry args={[w, hh, 0.12]} />
-          <meshStandardMaterial color="#3a2c22" roughness={0.6} />
+          <meshStandardMaterial color="#54636a" metalness={0.55} roughness={0.38} />
         </mesh>
       ))}
       {([-1, 1] as const).map((side) => (
@@ -89,17 +89,17 @@ export function OfficeWindow({
           castShadow
         >
           <boxGeometry args={[0.11, height + 0.14, 0.12]} />
-          <meshStandardMaterial color="#3a2c22" roughness={0.6} />
+          <meshStandardMaterial color="#54636a" metalness={0.55} roughness={0.38} />
         </mesh>
       ))}
       {/* Mullions */}
       <mesh position={[0, 0, 0.03]}>
         <boxGeometry args={[0.05, height, 0.04]} />
-        <meshStandardMaterial color="#4a3a2c" roughness={0.55} />
+        <meshStandardMaterial color="#829093" metalness={0.55} roughness={0.34} />
       </mesh>
       <mesh position={[0, height * 0.12, 0.03]}>
         <boxGeometry args={[width, 0.045, 0.04]} />
-        <meshStandardMaterial color="#4a3a2c" roughness={0.55} />
+        <meshStandardMaterial color="#829093" metalness={0.55} roughness={0.34} />
       </mesh>
       {/* Blind header + raised stack, then sill */}
       <mesh position={[0, height / 2 - 0.07, 0.06]}>
@@ -109,7 +109,7 @@ export function OfficeWindow({
       {blinds}
       <mesh position={[0, -height / 2 - 0.09, 0.08]} castShadow receiveShadow>
         <boxGeometry args={[width + 0.2, 0.06, 0.22]} />
-        <meshStandardMaterial color="#4a3a2c" roughness={0.7} />
+        <meshStandardMaterial color="#a3aaa6" roughness={0.48} />
       </mesh>
     </group>
   );
@@ -141,7 +141,7 @@ export function CeilingAC({
       {/* Large cassette / inverter housing */}
       <mesh castShadow>
         <boxGeometry args={[3.4, 0.28, 1.35]} />
-        <meshStandardMaterial color="#e4e0d8" metalness={0.3} roughness={0.4} />
+        <meshStandardMaterial color="#d6dcd9" metalness={0.12} roughness={0.58} />
       </mesh>
       {/* Recessed face */}
       <mesh position={[0, -0.16, 0]}>
@@ -151,7 +151,7 @@ export function CeilingAC({
       {/* Center intake grille */}
       <mesh position={[0, -0.2, 0]}>
         <boxGeometry args={[1.1, 0.04, 0.7]} />
-        <meshStandardMaterial color="#8a8880" />
+        <meshStandardMaterial color="#455157" roughness={0.78} />
       </mesh>
       <group ref={fan} position={[0, -0.232, 0]}>
         <mesh>
