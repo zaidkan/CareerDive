@@ -45,10 +45,13 @@ scenario:
       - team-chat
   maxAiCostUsd: 0.05
   briefing: >
-    Morning. The previous analyst left a handoff in your inbox. An alert
-    also arrived as you signed in. Read what is available, keep notes, and
-    use the team channel when you need context. More routine work may
-    arrive while you investigate.
+    Welcome to your shift. The previous analyst left a handoff — a note about
+    unfinished work — in your inbox. An alert also arrived: a warning to check,
+    not proof that something is wrong. Read the available records, save what you
+    observed and what still needs checking, and ask in the team channel when a
+    procedure is unclear. Routine work may interrupt your investigation; leave
+    yourself a next step before switching. You do not need to know every term
+    already to begin.
   initialTaskBacklog: 3
   workplaceDefaults:
     energyMax: 100
