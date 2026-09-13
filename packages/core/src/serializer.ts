@@ -1,4 +1,5 @@
 import type { ClientView, WorldState } from "@sim/schemas";
+import { InventoryLookupKeysSchema } from "@sim/schemas";
 import { availableActions } from "./availability.js";
 import { taskProgressKey } from "./tasks.js";
 import { canOpenArtifact } from "./workplace.js";
@@ -119,6 +120,15 @@ export function toClientView(state: WorldState): ClientView {
       .filter((artifact) => canOpenArtifact(state, artifact.id))
       .map((artifact) => {
         const isObserved = observed.has(artifact.id);
+        // Pack authors explicitly approve this comma-separated identifier index
+        // for public lookup. Do not infer identifiers from body/searchableText,
+        // or copy the surrounding private metadata into an unopened preview.
+        const lookupKeys = InventoryLookupKeysSchema.safeParse(
+          artifact.kind === "device_record" &&
+            artifact.systemId === "knowledge_base"
+            ? artifact.metadata.lookupKeys?.split(",").map((key) => key.trim())
+            : undefined,
+        );
         const eventIds = artifact.eventIds.filter((eventId) =>
           state.events.some(
             (event) => event.id === eventId && event.status !== "pending",
@@ -132,6 +142,7 @@ export function toClientView(state: WorldState): ClientView {
           summary: artifact.summary,
           eventIds,
           observed: isObserved,
+          ...(lookupKeys.success ? { lookupKeys: lookupKeys.data } : {}),
         };
         if (isObserved) {
           return {

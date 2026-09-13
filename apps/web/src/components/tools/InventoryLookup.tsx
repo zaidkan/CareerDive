@@ -1,7 +1,10 @@
 import { useState } from "react";
 import type { ClientArtifact, ClientView } from "@sim/schemas";
 import { ArtifactOpenButton } from "./ArtifactOpenButton.js";
-import { EMPTY_MUTATION_STATE, type MutationState } from "../../useMutationCoordinator.js";
+import {
+  EMPTY_MUTATION_STATE,
+  type MutationState,
+} from "../../useMutationCoordinator.js";
 
 export function InventoryLookup({
   view,
@@ -13,21 +16,43 @@ export function InventoryLookup({
   mutationState?: MutationState;
 }) {
   const [query, setQuery] = useState("");
-  const records = view.artifacts.filter((artifact) => artifact.kind === "device_record");
-  const matches = query.trim()
-    ? records.filter((record) => `${record.title} ${record.summary} ${record.searchableText ?? ""}`.toLowerCase().includes(query.trim().toLowerCase()))
+  const records = view.artifacts.filter(
+    (artifact) => artifact.kind === "device_record",
+  );
+  const exactQuery = query.trim().toLowerCase();
+  const matches = exactQuery
+    ? records.filter((record) =>
+        record.lookupKeys?.some((key) => key.toLowerCase() === exactQuery),
+      )
     : [];
   return (
     <section aria-label="Device inventory lookup" className="inventory-lookup">
       <h3>Device inventory</h3>
       <label htmlFor="inventory-device-query">Find an exact device</label>
-      <input id="inventory-device-query" type="search" value={query} onChange={(event) => { setQuery(event.target.value); }} placeholder="e.g. unknown-laptop-17" />
-      {query.trim() && matches.length === 0 ? <p role="status">No inventory records match that device.</p> : null}
+      <input
+        id="inventory-device-query"
+        type="search"
+        value={query}
+        onChange={(event) => {
+          setQuery(event.target.value);
+        }}
+        placeholder="e.g. unknown-laptop-17"
+      />
+      {query.trim() && matches.length === 0 ? (
+        <p role="status">No inventory records match that device.</p>
+      ) : null}
       {matches.map((record: ClientArtifact) => (
         <article key={record.id}>
           <h4>{record.title}</h4>
           <p>{record.summary}</p>
-          {onOpenArtifact ? <ArtifactOpenButton artifactId={record.id} label={`Open ${record.title}`} onOpenArtifact={onOpenArtifact} mutationState={mutationState} /> : null}
+          {onOpenArtifact ? (
+            <ArtifactOpenButton
+              artifactId={record.id}
+              label={`Open ${record.title}`}
+              onOpenArtifact={onOpenArtifact}
+              mutationState={mutationState}
+            />
+          ) : null}
         </article>
       ))}
     </section>

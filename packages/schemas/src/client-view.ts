@@ -7,6 +7,12 @@ import { ClientNotificationSchema, ClientTaskViewSchema } from "./tasks.js";
 import { ClientWorkplaceStateSchema } from "./workplace.js";
 import { LocationSchema, WorkArtifactSchema } from "./world.js";
 
+/** Reviewed exact identifiers only, never record prose or enrollment status. */
+export const InventoryLookupKeysSchema = z
+  .array(z.string().regex(/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$/))
+  .min(1)
+  .max(32);
+
 export const ClientArtifactSchema = WorkArtifactSchema.omit({
   body: true,
   metadata: true,
@@ -18,6 +24,7 @@ export const ClientArtifactSchema = WorkArtifactSchema.omit({
   relatedArtifactIds: z.array(z.string()).optional(),
   searchableText: z.string().optional(),
   observed: z.boolean(),
+  lookupKeys: InventoryLookupKeysSchema.optional(),
 });
 export type ClientArtifact = z.infer<typeof ClientArtifactSchema>;
 
