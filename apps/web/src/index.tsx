@@ -15,7 +15,7 @@ import {
   type ExperienceMode,
 } from "./experience/ExperienceShell.js";
 import { getTutorialStep } from "./guidance.js";
-import { ManagerContext, ShiftBriefing } from "./components/shell.js";
+import { ShiftBriefing } from "./components/shell.js";
 import { COMPANY } from "./world/company.js";
 import {
   actionMutationKey,
@@ -139,13 +139,7 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
           result: nextView,
           view: nextView,
           success,
-          ...(action.id === "ask_manager"
-            ? {
-                onApplied: () => {
-                  setActiveSurface("manager");
-                },
-              }
-            : action.id === "complete_shift"
+          ...(action.id === "complete_shift"
               ? {
                   onApplied: () => {
                     assertCurrentSession(session);
@@ -350,18 +344,6 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
             setActiveSurface("dashboard");
           }}
         />
-      ) : activeSurface === "manager" ? (
-        <ManagerContext
-          message={
-            [...view.operationalMessages]
-              .reverse()
-              .find((message) => message.startsWith("Morgan ")) ??
-            "Morgan has no additional context available."
-          }
-          onReturn={() => {
-            setActiveSurface("dashboard");
-          }}
-        />
       ) : (
         <ExperienceShell
           guided={phase === "tutorial"}
@@ -391,6 +373,6 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
 export { AccessibleMode } from "./components/AccessibleMode.js";
 export { DebriefView } from "./components/DebriefView.js";
 export { WorkSurface } from "./components/WorkSurface.js";
-export { ManagerContext, ShiftBriefing, Tutorial } from "./components/shell.js";
+export { ShiftBriefing, Tutorial } from "./components/shell.js";
 export type { SimulationClient } from "./client.js";
 export { HttpSimulationClient } from "./client.js";

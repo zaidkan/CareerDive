@@ -95,7 +95,7 @@ export function CalendarPanel({ onOpenEmail }: { onOpenEmail: () => void }) {
       <ul>
         <li>
           <strong>09:15</strong>
-          <span>New-hire SOC walkthrough — conference (locked)</span>
+          <span>New-hire SOC walkthrough</span>
         </li>
         <li>
           <strong>11:00</strong>
@@ -106,10 +106,7 @@ export function CalendarPanel({ onOpenEmail }: { onOpenEmail: () => void }) {
           <span>Optional: coffee with Jules in the glass break corner</span>
         </li>
       </ul>
-      <p className="desk-os-hint">
-        Meeting links land in email when Morgan or Priya send them. No scoring
-        from this panel.
-      </p>
+      <p className="desk-os-hint">Current shift events only. This calendar does not affect your work evidence.</p>
       <button className="desk-os-primary" onClick={onOpenEmail} type="button">
         Open Email
       </button>
