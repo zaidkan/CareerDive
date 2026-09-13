@@ -195,11 +195,11 @@ export function GlassBreakNook({
       </mesh>
       <mesh position={[cornerX, 2.82, westMidZ]}>
         <boxGeometry args={[0.12, 0.1, westLen]} />
-        <meshStandardMaterial color="#7a8a90" metalness={0.55} />
+        <meshStandardMaterial color="#7a8a90" metalness={0.55} roughness={0.34} />
       </mesh>
       <mesh position={[southMidX, 2.82, cornerZ]}>
         <boxGeometry args={[southLen, 0.1, 0.12]} />
-        <meshStandardMaterial color="#7a8a90" metalness={0.55} />
+        <meshStandardMaterial color="#7a8a90" metalness={0.55} roughness={0.34} />
       </mesh>
 
       {/* Door jambs + sill */}
@@ -322,15 +322,15 @@ export function GlassBreakNook({
       {/* Counter run flush against the north wall */}
       <mesh position={[8.15, 0.45, -6.92]} castShadow receiveShadow>
         <boxGeometry args={[2.3, 0.9, 0.6]} />
-        <meshStandardMaterial color="#3a2c22" roughness={0.7} />
+        <meshStandardMaterial color="#344d4e" roughness={0.78} />
       </mesh>
       <mesh position={[8.15, 0.92, -6.92]} receiveShadow>
         <boxGeometry args={[2.4, 0.05, 0.66]} />
-        <meshStandardMaterial color="#5a4a3a" roughness={0.5} />
+        <meshStandardMaterial color="#c0b6a1" roughness={0.36} />
       </mesh>
       <mesh position={[8.15, 0.5, -6.6]}>
         <boxGeometry args={[2.2, 0.7, 0.03]} />
-        <meshStandardMaterial color="#463629" roughness={0.65} />
+        <meshStandardMaterial color="#486465" roughness={0.62} />
       </mesh>
       <CoffeeCounterSupplies position={[8.15, 0, -6.92]} />
       <CoffeePot
@@ -343,7 +343,7 @@ export function GlassBreakNook({
       {/* Mug shelf on the wall above the counter */}
       <mesh position={[8.15, 1.62, -7.11]} castShadow>
         <boxGeometry args={[2.0, 0.05, 0.28]} />
-        <meshStandardMaterial color="#4a3a2c" roughness={0.6} />
+        <meshStandardMaterial color="#8b7055" roughness={0.48} />
       </mesh>
       {([-0.6, -0.25, 0.1, 0.45] as const).map((dx) => (
         <mesh key={dx} position={[8.15 + dx, 1.695, -7.11]} castShadow>
@@ -371,16 +371,16 @@ export function GlassBreakNook({
       {/* Soft bench on the east wall uses the new depth */}
       <mesh position={[10.35, 0.22, -3.35]} castShadow receiveShadow>
         <boxGeometry args={[0.7, 0.44, 1.9]} />
-        <meshStandardMaterial color="#3f5450" roughness={0.85} />
+        <meshStandardMaterial color="#34494d" roughness={0.96} />
       </mesh>
       <mesh position={[10.6, 0.62, -3.35]} castShadow>
         <boxGeometry args={[0.2, 0.5, 1.9]} />
-        <meshStandardMaterial color="#48605b" roughness={0.85} />
+        <meshStandardMaterial color="#4a6566" roughness={0.94} />
       </mesh>
       {([-0.55, 0.55] as const).map((dz) => (
         <mesh key={dz} position={[10.3, 0.5, -3.35 + dz]} castShadow>
           <boxGeometry args={[0.34, 0.14, 0.34]} />
-          <meshStandardMaterial color="#e8b84a" roughness={0.8} />
+          <meshStandardMaterial color="#bb975d" roughness={0.96} />
         </mesh>
       ))}
 

@@ -116,11 +116,11 @@ export function DustMotes({
     <points position={position} geometry={geometry}>
       <pointsMaterial
         map={sprite}
-        color="#d8d0c4"
+        color="#c7d8df"
         size={0.02}
         sizeAttenuation
         transparent
-        opacity={0.18}
+        opacity={0.14}
         depthWrite={false}
         blending={THREE.AdditiveBlending}
         toneMapped={false}
