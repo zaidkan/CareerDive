@@ -52,7 +52,7 @@ function currentWorkReply(
   if (available.has("document_ticket")) {
     return {
       speaker: "Jules",
-      text: `${prefix}the public context is ready to document. Open Tickets and separate what you observed from what is still uncertain. Imagine the next analyst reading your note without you beside them: name the source and leave a concrete next step, not just "looked into it".`,
+      text: `${prefix}a documentation step is available. Open Tickets and separate what you observed from what is still uncertain. Imagine the next analyst reading your note without you beside them: name the source and leave a concrete next step, not just "looked into it".`,
       nextSystemId: "ticket_queue",
     };
   }
@@ -60,7 +60,7 @@ function currentWorkReply(
   if (available.has("inspect_login_context")) {
     return {
       speaker: "Jules",
-      text: `${prefix}the login context in Alerts is the next useful record. Compare the visible device, network, and account context, then note what still needs checking.`,
+      text: `${prefix}the login context in Alerts is the next useful record. Compare the visible device, network, and account context, then note what still needs checking. I leave a short question beside the record reference so an interruption does not turn an unfinished check into an assumed fact.`,
       nextSystemId: "alert_dashboard",
     };
   }
@@ -68,7 +68,7 @@ function currentWorkReply(
   if (available.has("inspect_account_history")) {
     return {
       speaker: "Jules",
-      text: `${prefix}the account history in Alerts is still available. Compare the usual pattern with the visible login context and record the difference without choosing an outcome yet.`,
+      text: `${prefix}the account history in Alerts is still available. Compare the usual pattern with the visible login context and record the difference without choosing an outcome yet. An earlier pattern is a comparison point, not proof about this session.`,
       nextSystemId: "alert_dashboard",
     };
   }
@@ -92,7 +92,7 @@ function currentWorkReply(
   if (available.has("escalate_alert") || available.has("dismiss_alert")) {
     return {
       speaker: "Jules",
-      text: `${prefix}the case is at a decision point. Review your notes in Tickets and send the decision to Morgan; I won't choose the outcome for you.`,
+      text: `${prefix}the case is at a decision point. Review your saved notes in Tickets before choosing an available action. A review request, a closure, and an unfinished check mean different things to the next analyst. If you need procedural guidance, ask Morgan; I cannot confirm who signed in or choose the outcome for you.`,
       nextSystemId: "ticket_queue",
     };
   }

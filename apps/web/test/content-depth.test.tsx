@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { createInitialWorldState, toClientView } from "@sim/core";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import { EmailTool } from "../src/components/tools/EmailTool.js";
+import { CaseRail } from "../src/components/CaseRail.js";
 import { CalendarPanel } from "../src/world/deskOs/DashboardHome.js";
 
 afterEach(cleanup);
@@ -57,3 +58,19 @@ it("derives calendar checkpoints from current visible work, not static future me
   expect(screen.queryByText(/Buddy check|Optional break/)).toBeNull();
   expect(screen.getByText(/No current work checkpoints/)).toBeVisible();
 });
+
+it.each(["resolved", "escalated"] as const)(
+  "keeps the canonical %s resolution visible in the shared case rail",
+  (status) => {
+    const current = view();
+    const resolution =
+      "Review requested; the identity of the session owner remains unverified.";
+    current.events = current.events.map((event) => ({
+      ...event,
+      status,
+      resolution,
+    }));
+    render(<CaseRail view={current} onResume={vi.fn()} />);
+    expect(screen.getAllByText(resolution)).toHaveLength(current.events.length);
+  },
+);

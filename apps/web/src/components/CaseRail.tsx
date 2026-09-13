@@ -53,6 +53,7 @@ export function CaseRail({
                   <small>
                     {task?.title ?? event.status.replaceAll("_", " ")}
                   </small>
+                  {event.resolution ? <small>{event.resolution}</small> : null}
                   <span className="visually-hidden">Resume {event.title}</span>
                 </button>
               );
@@ -68,6 +69,7 @@ export function CaseRail({
               <li key={event.id}>
                 <strong>{event.title}</strong>
                 <small>{event.status}</small>
+                {event.resolution ? <p>{event.resolution}</p> : null}
               </li>
             ))}
           </ul>

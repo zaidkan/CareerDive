@@ -356,7 +356,7 @@ scenario:
             - id: montreal-proof
               label: The city estimate is enough to confirm misuse
           requiredOptionIds: [failed-then-success, unmanaged-device]
-          coachOnFailure: Include verified records, not guesses or conclusions stated as facts.
+          coachOnFailure: More evidence is needed to support this note. Reopen the records and compare the observations with your wording; the ticket remains at this step and no decision has been applied.
           successText: Your note now contains two verified facts.
         - id: summary-uncertainty
           title: Record uncertainty and confirmation
@@ -373,7 +373,7 @@ scenario:
             - id: ignore-reply
               label: Omit the employee reply until another record confirms it.
           requiredOptionIds: [employee-denial]
-          coachOnFailure: Record what the employee said and keep the conclusion appropriately uncertain.
+          coachOnFailure: The note needs a clearer boundary between the employee report and your conclusion. Review the opened reply; this attempt has not closed or escalated the alert.
           successText: Your note separates confirmed information from the working conclusion.
         - id: summary-next-step
           title: Add the next step
@@ -390,7 +390,7 @@ scenario:
             - id: close-no-reason
               label: Close the alert using the location estimate as the explanation
           requiredOptionIds: [escalate-evidence]
-          coachOnFailure: Choose a reversible next step that gives a senior analyst the reviewed evidence.
+          coachOnFailure: The proposed next step needs review. Compare it with the approved procedure and preserve unresolved questions; this attempt has not changed the alert outcome.
           successText: Ticket is ready for evidence-based escalation.
 
     - id: scanner-alert-compare
@@ -592,18 +592,18 @@ scenario:
     - id: dismiss_alert
       systemId: alert_dashboard
       label: Dismiss as false positive
-      description: Close the alert without further escalation.
+      description: Close the queue item using your documented reason; closure alone does not verify who signed in.
       simulatedMinutes: 15
       energyCost: 2
     - id: escalate_alert
       systemId: alert_dashboard
       label: Escalate with evidence
-      description: Send the reviewed evidence to a senior analyst.
+      description: Request senior review with the saved evidence and uncertainty; this does not confirm account misuse.
       simulatedMinutes: 5
       energyCost: 1
       defaultEffect:
         resolve: true
-        resolution: Escalated with reviewed context; the evidence and remaining uncertainty are ready for senior review.
+        resolution: Escalated with reviewed context; the evidence and remaining uncertainty are ready for senior review. The session owner is still unverified.
         emitEventResolved: true
         consequence:
           description: >
@@ -622,7 +622,7 @@ scenario:
         setTicketNotesFromFreeText: true
         consequence:
           description: >
-            The {{eventTitle}} ticket now records the evidence, reasoning, and next step.
+            The {{eventTitle}} ticket now records the evidence, reasoning, and next step. Documentation preserves the review trail; it does not close the alert or verify an identity.
     - id: update_ticket_notes
       systemId: ticket_queue
       label: Update investigation notes
@@ -723,6 +723,8 @@ scenario:
         Morgan recommends reviewing the alert details, checking device and location
         context, and documenting uncertainty before deciding. Start with the sequence in
         Alerts, compare the account history, and use Guides for the exact device record.
+        If you need more evidence, leave the item open while you use the available checks.
+        Save the record to revisit and the question it must answer; a saved note is not a decision.
         At the decision point, put observed facts, the employee's report, and unresolved
         questions in separate sentences. Ask for a review of the next step; do not promise
         that an account is safe or compromised before the evidence supports it.
@@ -768,7 +770,7 @@ scenario:
           resolve: true
           resolution: >
             Dismissed without an escalation review. Closing the queue item does not verify
-            the session's owner; preserve the notes so the case can be reopened if needed.
+            the session's owner or establish expected activity; preserve the notes so the case can be reopened if needed.
           consequence:
             description: >
               The dismissed login alert needs renewed attention after related activity.
@@ -814,7 +816,8 @@ scenario:
         the alert can be closed. Compare the recorded event time, scanner name, and target
         network with the approved entry; the delivery time and dashboard color are not
         enough. If a detail does not line up, keep the mismatch visible in the ticket
-        and ask for guidance instead of stretching the reference to fit.
+        and ask for guidance instead of stretching the reference to fit. When you return to the
+        main case, use your saved note to resume the unfinished check, not to assume it was done.
       progression:
         kind: linear
         allowManager: true
