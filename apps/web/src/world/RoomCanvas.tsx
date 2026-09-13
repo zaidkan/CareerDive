@@ -36,6 +36,8 @@ export const RoomCanvas = memo(function RoomCanvas({
   highlightHotspotId,
   workplace,
   onBreakRoomExit,
+  onWalkBlocked,
+  onRecover,
 }: {
   onNearbyChange: (id?: HotspotId, label?: string) => void;
   onInteract: (id: HotspotId) => void;
@@ -44,6 +46,8 @@ export const RoomCanvas = memo(function RoomCanvas({
   highlightHotspotId?: HotspotId;
   workplace: ClientWorkplaceState;
   onBreakRoomExit: () => void;
+  onWalkBlocked?: () => void;
+  onRecover?: (position: [number, number, number]) => void;
 }) {
   return (
     <div className="room-canvas">
@@ -68,7 +72,11 @@ export const RoomCanvas = memo(function RoomCanvas({
               onBreakRoomExit={onBreakRoomExit}
               onNearbyChange={onNearbyChange}
               seated={seated}
-              workplace={workplace}
+            workplace={workplace}
+            {...(onWalkBlocked ? { onWalkBlocked } : {})}
+            {...(onRecover ? { onRecover } : {})}
+            {...(onWalkBlocked ? { onWalkBlocked } : {})}
+            {...(onRecover ? { onRecover } : {})}
               {...(highlightHotspotId ? { highlightHotspotId } : {})}
             />
           </Suspense>

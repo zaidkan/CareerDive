@@ -89,6 +89,7 @@ export function SpatialShell({
   const [workplacePending, setWorkplacePending] = useState(false);
   const [julesOpen, setJulesOpen] = useState(false);
   const [julesReply, setJulesReply] = useState<JulesDialogueReply>();
+  const [walkBlocked, setWalkBlocked] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
   const workplacePendingRef = useRef(false);
   const closeFridgeIntentRef = useRef(false);
@@ -347,6 +348,9 @@ export function SpatialShell({
             onNearbyChange={onNearbyChange}
             seated={atDesk}
             workplace={view.workplace}
+            onWalkBlocked={() => {
+              setWalkBlocked(true);
+            }}
             {...(highlightHotspotId ? { highlightHotspotId } : {})}
           />
         </Suspense>
@@ -424,6 +428,15 @@ export function SpatialShell({
               </p>
               {spatial.flavorMessage ? (
                 <p className="room-flavor">{spatial.flavorMessage}</p>
+              ) : null}
+              {walkBlocked ? (
+                <div role="status" className="room-flavor">
+                  Route blocked. Return to the aisle to continue safely.
+                  <button className="guidance-secondary" type="button" onClick={() => {
+                    window.dispatchEvent(new Event("soc-recover-aisle"));
+                    setWalkBlocked(false);
+                  }}>Return to aisle</button>
+                </div>
               ) : null}
             </div>
             <div className="room-hud-actions">
