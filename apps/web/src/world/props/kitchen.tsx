@@ -7,6 +7,7 @@ import type { CoffeeStage } from "@sim/schemas";
 import * as THREE from "three";
 import { makeSoftParticleTexture } from "../textures.js";
 import { STEAM_WISP_COUNT, useAmbientMotion } from "./ambient.js";
+import { MeshLabel } from "./signage.js";
 
 export function Fridge({
   position,
@@ -44,8 +45,21 @@ export function Fridge({
       </mesh>
       <mesh position={[0, 0, 0.356]}>
         <boxGeometry args={[0.72, 1.5, 0.025]} />
-        <meshStandardMaterial color="#d9e5df" roughness={0.78} />
+        <meshStandardMaterial
+          color="#d9e5df"
+          emissive="#d9e5df"
+          emissiveIntensity={open ? 0.18 : 0}
+          roughness={0.78}
+        />
       </mesh>
+      {open ? (
+        <MeshLabel
+          text={snackBars > 0 ? `${String(snackBars)} BARS` : "EMPTY"}
+          position={[0, 0.56, 0.375]}
+          width={0.48}
+          height={0.12}
+        />
+      ) : null}
       {/* Thin shelf edges and a recessed toe kick give the appliance depth
           without extra lights, textures, or animation. */}
       {[-0.44, 0.12].map((height) => (
@@ -247,6 +261,13 @@ export function CoffeePot({
           roughness={0.5}
         />
       </mesh>
+      {/* Literal public stage stays readable without motion or color perception. */}
+      <MeshLabel
+        text={stage.toUpperCase()}
+        position={[0, -0.06, 0.164]}
+        width={0.27}
+        height={0.065}
+      />
       {steaming ? <CoffeeSteam animated={animated} /> : null}
     </group>
   );

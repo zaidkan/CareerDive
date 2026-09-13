@@ -401,6 +401,8 @@ export function SocRoom({
       <OfficeChair
         position={[PLAYER_DESK[0], 0, PLAYER_DESK[2] + SEAT]}
         rotationY={CHAIR_FACE_DESK}
+        occupied={seated}
+        highlighted={!seated && (activeHotspot === "desk_player" || highlightHotspotId === "desk_player")}
       />
       <NameTag
         visible={!seated}
@@ -438,7 +440,7 @@ export function SocRoom({
         seed={1}
       />
       <NameTag
-        visible={!seated && highlightHotspotId === "morgan_station"}
+        visible={!seated && (highlightHotspotId === "morgan_station" || activeHotspot === "morgan_station")}
         name="Morgan"
         role="Manager"
         position={[MORGAN_DESK[0], 2.25, MORGAN_DESK[2] + SEAT - 0.05]}
