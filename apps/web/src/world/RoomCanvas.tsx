@@ -38,6 +38,7 @@ export const RoomCanvas = memo(function RoomCanvas({
   onBreakRoomExit,
   onWalkBlocked,
   onRecover,
+  onAcceptedDistance,
 }: {
   onNearbyChange: (id?: HotspotId, label?: string) => void;
   onInteract: (id: HotspotId) => void;
@@ -48,9 +49,10 @@ export const RoomCanvas = memo(function RoomCanvas({
   onBreakRoomExit: () => void;
   onWalkBlocked?: () => void;
   onRecover?: (position: [number, number, number]) => void;
+  onAcceptedDistance?: (meters: number) => void;
 }) {
   return (
-    <div className="room-canvas">
+    <div className="room-canvas" data-interaction-id="movement_exertion">
       <Canvas
         camera={{ fov: 62, position: [0, 1.6, 5], near: 0.08, far: 48 }}
         dpr={1}
@@ -72,11 +74,10 @@ export const RoomCanvas = memo(function RoomCanvas({
               onBreakRoomExit={onBreakRoomExit}
               onNearbyChange={onNearbyChange}
               seated={seated}
-            workplace={workplace}
-            {...(onWalkBlocked ? { onWalkBlocked } : {})}
-            {...(onRecover ? { onRecover } : {})}
-            {...(onWalkBlocked ? { onWalkBlocked } : {})}
-            {...(onRecover ? { onRecover } : {})}
+              workplace={workplace}
+              {...(onWalkBlocked ? { onWalkBlocked } : {})}
+              {...(onRecover ? { onRecover } : {})}
+              {...(onAcceptedDistance ? { onAcceptedDistance } : {})}
               {...(highlightHotspotId ? { highlightHotspotId } : {})}
             />
           </Suspense>

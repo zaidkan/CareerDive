@@ -157,6 +157,7 @@ export function PlayerController({
   seatLookAt = [3.2, 1.25, -3.4],
   onWalkBlocked,
   onRecover,
+  onAcceptedDistance,
 }: {
   colliders: Aabb[];
   onPosition: (position: [number, number, number]) => void;
@@ -167,6 +168,7 @@ export function PlayerController({
   seatLookAt?: [number, number, number];
   onWalkBlocked?: () => void;
   onRecover?: (position: [number, number, number]) => void;
+  onAcceptedDistance?: (meters: number) => void;
 }) {
   const { camera, gl } = useThree();
   const keys = useRef(new Set<string>());
@@ -399,6 +401,7 @@ export function PlayerController({
       pos.current.x = clampToRoom(pos.current.x, "x");
       pos.current.z = clampToRoom(pos.current.z, "z");
       const acceptedDistance = before.distanceTo(pos.current);
+      if (acceptedDistance > 0) onAcceptedDistance?.(acceptedDistance);
       if (target.current && acceptedDistance < 0.0001) blockedFrames.current += 1;
       else if (acceptedDistance > 0) blockedFrames.current = 0;
       if (target.current && blockedWalkDetector(blockedFrames.current).status === "stuck") {

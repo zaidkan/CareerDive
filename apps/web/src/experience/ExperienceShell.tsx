@@ -25,6 +25,7 @@ import {
 } from "../world/BreakRoomPanel.js";
 import { JulesDialogue } from "../world/JulesDialogue.js";
 import { SpatialShell } from "../world/SpatialShell.js";
+import { useMovementExertion } from "../world/useMovementExertion.js";
 import "./experience.css";
 
 export type ExperienceMode = "walk" | "desk" | "list";
@@ -61,6 +62,11 @@ export function ExperienceShell({
   guided = false,
   view,
 }: ExperienceShellProps) {
+  const movement = useMovementExertion(
+    view,
+    onWorkplaceInteraction,
+    mutationState ?? {},
+  );
   const sharedProps = {
     view,
     onAction,
@@ -83,6 +89,7 @@ export function ExperienceShell({
             key={id}
             onClick={() => {
               onModeChange(id);
+              movement.resetDistance();
             }}
             type="button"
           >
@@ -99,6 +106,9 @@ export function ExperienceShell({
           }}
         >
           <SpatialShell
+            onAcceptedDistance={movement.addDistance}
+            onRoomExit={movement.resetDistance}
+            movementQueued={movement.queued}
             guided={guided}
             onAction={onAction}
             {...(onTaskAttempt ? { onTaskAttempt } : {})}
@@ -112,6 +122,10 @@ export function ExperienceShell({
       ) : (
         <>
           <NonspatialResources
+            onWalk={() => {
+              movement.addDistance(5);
+            }}
+            movementQueued={movement.queued}
             {...(mutationState ? { mutationState } : {})}
             {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
             view={view}
@@ -131,10 +145,12 @@ function NonspatialResources({
   view,
   onWorkplaceInteraction,
   mutationState,
+  onWalk,
+  movementQueued,
 }: Pick<
   ExperienceShellProps,
   "view" | "onWorkplaceInteraction" | "mutationState"
->) {
+> & { onWalk: () => void; movementQueued: boolean }) {
   const [julesOpen, setJulesOpen] = useState(false);
   const [julesReply, setJulesReply] = useState<JulesDialogueReply>();
   const pending = Boolean(mutationState?.pendingKey) || !onWorkplaceInteraction;
@@ -167,6 +183,15 @@ function NonspatialResources({
   return (
     <aside aria-label="Break room and coworker">
       <EnergyMeter workplace={view.workplace} />
+      <button
+        type="button"
+        data-interaction-id="movement_exertion"
+        disabled={pending || movementQueued || Boolean(mutationState?.error) || view.workplace.energy.current === 0}
+        onClick={onWalk}
+      >
+        Walk 5 meters
+      </button>
+      <p>Optional office movement uses energy, not career evidence.</p>
       <CarriedSnackControl
         onSubmit={submit}
         pending={pending}
