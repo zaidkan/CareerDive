@@ -46,6 +46,8 @@ export function ArtifactOpenButton({
       <button
         className="action-primary"
         type="button"
+        data-interaction-id="open_artifact"
+        data-artifact-id={artifactId}
         disabled={
           !onOpenArtifact || pending || Boolean(mutationState.pendingKey)
         }

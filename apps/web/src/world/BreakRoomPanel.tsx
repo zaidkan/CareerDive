@@ -10,6 +10,18 @@ import {
 
 type SubmitInteraction = (interaction: WorkplaceInteraction) => void;
 
+export function EmergencyRecoveryControl({ workplace, onSubmit, pending = false }: {
+  workplace: ClientWorkplaceState;
+  onSubmit: SubmitInteraction;
+  pending?: boolean;
+}) {
+  if (workplace.energy.current !== 0 || workplace.emergencyRecoveryUsed ||
+    workplace.carriedSnackBites !== 0 || workplace.fridgeSnackBars !== 0 ||
+    workplace.coffeeServings !== 0 || workplace.coffeeStage !== "idle") return null;
+  return <button type="button" disabled={pending} data-interaction-id="emergency_recovery"
+    onClick={() => { onSubmit({ type: "emergency_recovery" }); }}>Use emergency recovery</button>;
+}
+
 export function EnergyMeter({
   workplace,
 }: {
@@ -62,6 +74,7 @@ export function CarriedSnackControl({
     <div className="carried-snack-control">
       <button
         className="guidance-secondary"
+        data-interaction-id="eat_snack_bite"
         disabled={pending || !control.interaction}
         onClick={() => {
           if (control.interaction) onSubmit(control.interaction);
@@ -120,6 +133,7 @@ export function BreakRoomPanel({
       <div className="break-room-actions">
         <button
           className="start-shift"
+          data-interaction-id={control.interaction?.type}
           disabled={pending || !control.interaction}
           onClick={() => {
             if (control.interaction) onSubmit(control.interaction);
@@ -133,6 +147,7 @@ export function BreakRoomPanel({
         control.interaction?.type === "take_snack" ? (
           <button
             className="guidance-secondary"
+            data-interaction-id="close_fridge"
             disabled={pending}
             onClick={() => {
               onSubmit({ type: "close_fridge" });

@@ -15,7 +15,7 @@ import { EmailTool } from "./tools/EmailTool.js";
 import { GuideSearch } from "./tools/GuideSearch.js";
 import { InventoryLookup } from "./tools/InventoryLookup.js";
 import { TaskInteraction } from "./tools/TaskInteraction.js";
-import { ArtifactOpenButton } from "./tools/ArtifactOpenButton.js";
+import { TeamChatTool } from "./tools/TeamChatTool.js";
 import { primaryActions, systemMeta, utilityActions } from "../systems.js";
 import type { TaskAttemptHandler } from "./shared.js";
 import {
@@ -325,17 +325,10 @@ export function SystemToolPanel({
   }
 
   if (systemId === "team_chat") {
-    const thread = eventArtifacts.find(({ kind }) => kind === "chat_thread") ?? view.artifacts.find(({ kind }) => kind === "chat_thread") ?? eventArtifacts[0];
-    const guidance = [...view.operationalMessages].reverse().find((message) => message.startsWith("Morgan "));
     return (
       <div className="tool-panel" data-system={systemId}>
         <ToolChrome systemId={systemId} />
-        {thread ? <article className="team-chat-thread" aria-label="Morgan message thread">
-          <h3>{thread.title}</h3>
-          <p>{thread.observed ? thread.body : thread.summary}</p>
-          {!thread.observed ? <ArtifactOpenButton artifactId={thread.id} label={`Open ${thread.title}`} onOpenArtifact={openArtifact} mutationState={mutationState} /> : null}
-        </article> : null}
-        {guidance ? <aside className="manager-guidance" aria-label="Morgan guidance"><strong>Morgan’s guidance</strong><p>{guidance}</p></aside> : null}
+        <TeamChatTool view={view} onOpenArtifact={openArtifact} mutationState={mutationState} />
         <WorkInteraction onOpenArtifact={openArtifact} actions={workInteractionActions(actions)} onAction={onAction} mutationState={mutationState} {...(onTaskAttempt ? { onTaskAttempt } : {})} view={view} />
       </div>
     );

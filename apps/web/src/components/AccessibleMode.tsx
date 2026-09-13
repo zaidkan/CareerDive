@@ -8,8 +8,10 @@ import {
 } from "./artifacts.js";
 import { OperationalMessages, type ModeProps } from "./shared.js";
 import { TaskInteraction } from "./tools/TaskInteraction.js";
-import { ArtifactOpenButton } from "./tools/ArtifactOpenButton.js";
 import { GuideSearch } from "./tools/GuideSearch.js";
+import { InventoryLookup } from "./tools/InventoryLookup.js";
+import { TeamChatTool } from "./tools/TeamChatTool.js";
+import { MutationStatus } from "./MutationStatus.js";
 import { CaseRail } from "./CaseRail.js";
 import { NotificationBanner } from "./NotificationBanner.js";
 import { WORK_SYSTEMS, primaryActions, utilityActions } from "../systems.js";
@@ -26,6 +28,7 @@ export function AccessibleMode({
   onNotification,
   onWorkplaceInteraction,
   mutationState = EMPTY_MUTATION_STATE,
+  onRetryMutation,
 }: ModeProps) {
   const [selectedGuide, setSelectedGuide] = useState<string>();
   const [notificationFocusTarget, setNotificationFocusTarget] = useState<{
@@ -44,6 +47,7 @@ export function AccessibleMode({
   return (
     <section className="accessible-shell" aria-labelledby="structured-title">
       <h2 id="structured-title">Structured workplace view</h2>
+      <MutationStatus state={mutationState} {...(onRetryMutation ? { onRetry: onRetryMutation } : {})} />
       <p className="accessible-lede">
         Location: {view.currentLocation.name}. Simulated time elapsed:{" "}
         {view.simClock} minutes.
@@ -79,9 +83,15 @@ export function AccessibleMode({
           ({ systemId }) => systemId === system.id,
         );
         const events = eventsForSystem(view, system.id);
+        const artifacts = filterSystemArtifacts(view, system.id);
+        const openArtifact = onWorkplaceInteraction
+          ? (artifactId: string) => onWorkplaceInteraction({ type: "open_artifact", artifactId })
+          : undefined;
         if (
           actions.length === 0 &&
           events.length === 0 &&
+          artifacts.length === 0 &&
+          !(system.id === "team_chat" && view.operationalMessages.some((message) => message.startsWith("Morgan "))) &&
           !(
             system.id === "knowledge_base" &&
             filterKnowledgeBase(view, "").length > 0
@@ -91,7 +101,7 @@ export function AccessibleMode({
         const utilities = utilityActions(actions);
         const primary = primaryActions(actions);
         const interactionActions = actions.filter(
-          (action) => action.taskId !== undefined || primary.includes(action),
+          (action) => action.taskId !== undefined || (primary.includes(action) && action.id !== "search_knowledge_base"),
         );
         return (
           <section className="structured-system" key={system.id}>
@@ -105,13 +115,6 @@ export function AccessibleMode({
                 >
                   <strong>{event.title}</strong>: {event.summary} Status:{" "}
                   {event.status.replaceAll("_", " ")}.
-                  <StructuredArtifacts
-                    artifacts={filterSystemArtifacts(view, system.id, event.id)}
-                    {...(onWorkplaceInteraction
-                      ? { onWorkplaceInteraction }
-                      : {})}
-                    mutationState={mutationState}
-                  />
                   {system.id === "ticket_queue" ? (
                     <>
                       <NotesEditor
@@ -141,11 +144,16 @@ export function AccessibleMode({
                 </li>
               ))}
             </ul>
+            {system.id === "team_chat" ? <TeamChatTool view={view} onOpenArtifact={openArtifact} mutationState={mutationState} /> : system.id !== "knowledge_base" ? <StructuredArtifacts artifacts={artifacts} {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})} mutationState={mutationState} /> : null}
             {system.id === "knowledge_base" ? (
+              <>
               <GuideSearch
                 view={view}
                 selectedId={selectedGuide}
                 onSelect={setSelectedGuide}
+                focusArtifactId={selectedGuide}
+                canonicalSearchAction={actions.find(({ id, taskId }) => id === "search_knowledge_base" && !taskId)}
+                onCanonicalSearch={onAction}
                 onOpenArtifact={
                   onWorkplaceInteraction
                     ? (artifactId) =>
@@ -157,6 +165,8 @@ export function AccessibleMode({
                 }
                 mutationState={mutationState}
               />
+              {openArtifact ? <InventoryLookup view={view} onOpenArtifact={openArtifact} mutationState={mutationState} /> : null}
+              </>
             ) : null}
             <div className="accessible-actions">
               {interactionActions.map((action) => {
@@ -237,11 +247,8 @@ function StructuredArtifacts({
     <div className="structured-artifacts">
       {artifacts.map((artifact) => (
         <div key={artifact.id}>
-          <ArtifactDetail artifact={artifact} />
-          {!artifact.observed ? (
-            <ArtifactOpenButton
-              artifactId={artifact.id}
-              label={`Open ${artifact.title}`}
+          <ArtifactDetail
+              artifact={artifact}
               mutationState={mutationState}
               onOpenArtifact={
                 onWorkplaceInteraction
@@ -253,7 +260,6 @@ function StructuredArtifacts({
                   : undefined
               }
             />
-          ) : null}
         </div>
       ))}
     </div>

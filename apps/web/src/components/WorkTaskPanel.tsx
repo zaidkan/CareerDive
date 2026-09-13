@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ClientArtifact, ClientTaskView } from "@sim/schemas";
 import type { TaskAttemptHandler } from "./shared.js";
 import { SourceEvidence } from "./tools/SourceEvidence.js";
@@ -28,6 +28,8 @@ export function WorkTaskPanel({
     taskId: string;
   }>();
   const [submitting, setSubmitting] = useState(false);
+  const feedbackRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => { if (feedback) feedbackRef.current?.focus(); }, [feedback]);
 
   useEffect(() => {
     setSelected([]);
@@ -69,7 +71,7 @@ export function WorkTaskPanel({
   const submittingThisTask =
     submitting || mutationState.pendingKey === mutationKey;
   const summaryGroup = task.kind === "build_summary"
-    ? task.id.includes("evidence") ? "Verified evidence" : task.id.includes("uncertainty") ? "Uncertainty" : task.id.includes("next") ? "Next step" : task.title
+    ? task.stepIndex === 0 ? "Verified evidence" : task.stepIndex === task.stepCount - 1 ? "Next step" : "Uncertainty"
     : undefined;
 
   return (
@@ -78,6 +80,8 @@ export function WorkTaskPanel({
       className="work-task"
       data-action-id={task.actionId}
       data-event-id={task.eventId}
+      data-task-id={task.id}
+      data-step-index={task.stepIndex}
     >
       <header className="work-task-header">
         <div>
@@ -127,7 +131,7 @@ export function WorkTaskPanel({
           className="work-task-options"
           disabled={submitting || globallyPending}
         >
-          <legend className="visually-hidden">{task.instruction}</legend>
+          <legend className="visually-hidden">{summaryGroup ?? task.instruction}</legend>
           {task.options.map((option) => {
             const checked = selected.includes(option.id);
             return (
@@ -153,6 +157,7 @@ export function WorkTaskPanel({
                   }}
                   type={single ? "radio" : "checkbox"}
                   value={option.id}
+                  data-option-id={option.id}
                 />
                 <span>
                   <strong>{option.label}</strong>
@@ -223,7 +228,7 @@ export function WorkTaskPanel({
       </div>
       {feedback?.taskId === task.id &&
       (feedback.accepted || feedback.key === mutationKey) ? (
-        <p className="work-task-feedback" aria-live="polite" key={feedback.key}>
+        <p ref={feedbackRef} tabIndex={-1} className="work-task-feedback" aria-live="polite" key={feedback.key}>
           {feedback.message}
         </p>
       ) : null}

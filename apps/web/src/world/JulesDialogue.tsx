@@ -1,4 +1,5 @@
 import type { JulesTopic, WorkSystemId } from "@sim/schemas";
+import { useEffect, useRef } from "react";
 import type { JulesDialogueReply } from "@sim/core";
 
 const TOPICS: ReadonlyArray<{ id: JulesTopic; label: string }> = [
@@ -33,6 +34,10 @@ export function JulesDialogue({
   reply?: JulesDialogueReply;
   seenTopics: JulesTopic[];
 }) {
+  const returnFocus = useRef(document.activeElement);
+  useEffect(() => () => {
+    if (returnFocus.current instanceof HTMLElement && returnFocus.current.isConnected) returnFocus.current.focus();
+  }, []);
   const destination = reply?.nextSystemId
     ? DESTINATION_LABELS[reply.nextSystemId]
     : undefined;
@@ -73,12 +78,15 @@ export function JulesDialogue({
         </p>
       ) : null}
 
-      <div aria-label="Topics" className="jules-dialogue-topics" role="group">
+      <fieldset className="jules-dialogue-topics" disabled={pending}>
+        <legend className="visually-hidden">Topics</legend>
         {topicChoices(seenTopics).map(({ id, label }, index) => (
           <button
             autoFocus={index === 0}
             disabled={pending}
             key={id}
+            data-interaction-id="talk_to_jules"
+            data-topic-id={id}
             onClick={() => {
               onTopic(id);
             }}
@@ -87,7 +95,7 @@ export function JulesDialogue({
             {label}
           </button>
         ))}
-      </div>
+      </fieldset>
 
       {discussed.length > 0 ? (
         <div className="jules-dialogue-discussed">
