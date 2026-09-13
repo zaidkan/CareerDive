@@ -172,7 +172,7 @@ export function SocRoom({
 
   useEffect(() => {
     gl.toneMapping = THREE.ACESFilmicToneMapping;
-    gl.toneMappingExposure = 1.55;
+    gl.toneMappingExposure = 1.45;
   }, [gl]);
 
   useEffect(() => {
@@ -231,10 +231,10 @@ export function SocRoom({
 
   return (
     <>
-      <color attach="background" args={["#1a1410"]} />
+      <color attach="background" args={["#20282b"]} />
       <fog
         attach="fog"
-        args={["#1a1410", seated ? 14 : 20, seated ? 28 : 38]}
+        args={["#20282b", seated ? 14 : 20, seated ? 28 : 38]}
       />
       <SocLighting
         seated={seated}
@@ -283,7 +283,7 @@ export function SocRoom({
 
       <mesh position={[0, 3.35, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <planeGeometry args={[floorW, floorD]} />
-        <meshStandardMaterial color="#241c16" />
+        <meshStandardMaterial color="#454744" roughness={0.95} />
       </mesh>
       {/* Fixtures are emissive panels only — extra point lights multiply fill cost. */}
       <CeilingFixture light={false} lit={!seated} position={[-4, 3.2, -2]} />
@@ -597,8 +597,9 @@ export function SocRoom({
         <MeshLabel
           text="EXIT"
           position={[0, 2.35, -0.09]}
-          width={0.55}
-          height={0.12}
+          rotationY={Math.PI}
+          width={0.65}
+          height={0.14}
         />
         <mesh position={[0, 0.04, -0.15]} receiveShadow>
           <boxGeometry args={[2.0, 0.06, 0.45]} />
@@ -608,7 +609,7 @@ export function SocRoom({
 
       {quality.contactShadows ? (
         <ContactShadows
-          opacity={0.16}
+          opacity={0.23}
           scale={24}
           blur={2.4}
           far={4.5}

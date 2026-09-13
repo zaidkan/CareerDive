@@ -35,15 +35,14 @@ export function DeskFrame({
       <mesh position={[0, DESK_SLAB_Y, 0]} castShadow receiveShadow>
         <boxGeometry args={[width, DESK_SLAB_THICKNESS, depth]} />
         <meshStandardMaterial
-          map={wood}
           color={color}
-          roughness={0.52}
-          metalness={0.08}
+          roughness={0.65}
+          metalness={0}
         />
       </mesh>
-      <mesh position={[0, DESK_VENEER_Y, 0]}>
+      <mesh position={[0, DESK_VENEER_Y, 0]} receiveShadow>
         <boxGeometry args={[width + 0.02, DESK_VENEER_THICKNESS, depth + 0.02]} />
-        <meshStandardMaterial color="#3a2c22" roughness={0.6} />
+        <meshStandardMaterial map={wood} roughness={0.42} metalness={0} />
       </mesh>
       {(
         [
@@ -55,7 +54,7 @@ export function DeskFrame({
       ).map(([x, z], i) => (
         <mesh key={i} position={[x, 0.39, z]}>
           <boxGeometry args={[leg, 0.78, leg]} />
-          <meshStandardMaterial color="#16110e" metalness={0.25} />
+          <meshStandardMaterial color="#30373c" metalness={0.45} roughness={0.42} />
         </mesh>
       ))}
       {/* Modesty panel */}
@@ -78,16 +77,16 @@ export function OfficeChair({
     <group position={position} rotation={[0, rotationY, 0]}>
       <mesh position={[0, 0.5, 0]} castShadow>
         <cylinderGeometry args={[0.3, 0.32, 0.07, 20]} />
-        <meshStandardMaterial color="#1e1712" roughness={0.65} />
+        <meshStandardMaterial color="#29383c" roughness={0.94} />
       </mesh>
       <mesh position={[0, 0.78, -0.14]} castShadow>
         <boxGeometry args={[0.46, 0.58, 0.09]} />
-        <meshStandardMaterial color="#3d3126" roughness={0.7} />
+        <meshStandardMaterial color="#3c5054" roughness={0.92} />
       </mesh>
       {/* Lumbar accent */}
       <mesh position={[0, 0.62, -0.1]}>
         <boxGeometry args={[0.38, 0.12, 0.04]} />
-        <meshStandardMaterial color="#4fd0c8" emissive="#4fd0c8" emissiveIntensity={0.15} />
+        <meshStandardMaterial color="#507c79" roughness={0.85} />
       </mesh>
       <mesh position={[0, 0.28, 0]}>
         <cylinderGeometry args={[0.035, 0.04, 0.42, 10]} />
@@ -103,7 +102,7 @@ export function OfficeChair({
             </mesh>
             <mesh position={[0.42, 0.06, 0]}>
               <sphereGeometry args={[0.055, 12, 12]} />
-              <meshStandardMaterial color="#0d0d0d" metalness={0.5} />
+              <meshStandardMaterial color="#191d20" roughness={0.88} />
             </mesh>
           </group>
         );
@@ -140,15 +139,15 @@ export function CubicleWalls({
     <group position={position} rotation={[0, rotationY, 0]}>
       <mesh position={[0, height / 2, -depth / 2]} castShadow>
         <boxGeometry args={[width, height, t]} />
-        <meshStandardMaterial map={fabric} color="#3d342a" roughness={0.82} />
+        <meshStandardMaterial map={fabric} color="#817e73" roughness={0.95} />
       </mesh>
       <mesh position={[-width / 2, height / 2, 0]} castShadow>
         <boxGeometry args={[t, height, depth]} />
-        <meshStandardMaterial map={fabric} color="#3d342a" roughness={0.82} />
+        <meshStandardMaterial map={fabric} color="#817e73" roughness={0.95} />
       </mesh>
       <mesh position={[width / 2, height / 2, 0]} castShadow>
         <boxGeometry args={[t, height, depth]} />
-        <meshStandardMaterial map={fabric} color="#3d342a" roughness={0.82} />
+        <meshStandardMaterial map={fabric} color="#817e73" roughness={0.95} />
       </mesh>
       {/* Top rail */}
       <mesh position={[0, height + 0.03, -depth / 2]}>

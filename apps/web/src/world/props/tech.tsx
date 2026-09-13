@@ -99,21 +99,22 @@ export function DualMonitor({
         <group key={x} position={[x, 0, 0]}>
           <mesh position={[0, 0.02, 0]}>
             <boxGeometry args={[0.22, 0.04, 0.18]} />
-            <meshStandardMaterial color="#111" metalness={0.5} roughness={0.4} />
+            <meshStandardMaterial color="#38444d" metalness={0.65} roughness={0.32} />
           </mesh>
           <mesh position={[0, 0.16, 0]}>
             <cylinderGeometry args={[0.03, 0.04, 0.28, 10]} />
-            <meshStandardMaterial color="#1a1a1a" metalness={0.6} />
+            <meshStandardMaterial color="#56616a" metalness={0.7} roughness={0.3} />
           </mesh>
           <mesh position={[0, 0.42, 0.02]} castShadow>
             <boxGeometry args={[0.78, 0.52, 0.06]} />
-            <meshStandardMaterial color="#0a0a0a" roughness={0.35} />
+            <meshStandardMaterial color="#20292f" roughness={0.48} />
           </mesh>
           <mesh position={[0, 0.42, 0.055]}>
             <boxGeometry args={[0.7, 0.44, 0.02]} />
             <meshStandardMaterial
               ref={i === 0 ? leftPane : rightPane}
               map={i === 0 ? leftTex : rightTex}
+              emissiveMap={i === 0 ? leftTex : rightTex}
               emissive={i === 0 ? leftEmissive : rightEmissive}
               emissiveIntensity={0.55}
               roughness={0.25}
@@ -139,11 +140,11 @@ export function KeyboardMouse({ position }: { position: [number, number, number]
     <group position={position}>
       <mesh position={[0, 0.013, 0]} castShadow>
         <boxGeometry args={[0.52, 0.025, 0.18]} />
-        <meshStandardMaterial color="#141414" roughness={0.5} />
+        <meshStandardMaterial color="#262f35" roughness={0.64} />
       </mesh>
       <mesh position={[0, 0.027, 0]}>
         <boxGeometry args={[0.48, 0.01, 0.14]} />
-        <meshStandardMaterial color="#1c1c1c" />
+        <meshStandardMaterial color="#495158" roughness={0.82} />
       </mesh>
       <mesh position={[0.38, 0.016, 0.06]} castShadow>
         <boxGeometry args={[0.07, 0.02, 0.11]} />
@@ -214,7 +215,7 @@ export function ServerRack({
     <group position={position}>
       <mesh castShadow receiveShadow>
         <boxGeometry args={[0.7, 1.8, 0.55]} />
-        <meshStandardMaterial color="#12161a" metalness={0.35} roughness={0.45} />
+        <meshStandardMaterial color="#2c3841" metalness={0.5} roughness={0.38} />
       </mesh>
       {BAY_Y.map((y, i) => (
         <mesh key={y} position={[0, y, 0.28]}>
