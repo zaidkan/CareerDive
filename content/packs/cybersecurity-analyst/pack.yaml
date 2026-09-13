@@ -66,8 +66,8 @@ scenario:
       steps:
         - id: unfinished-check
           title: Find the unfinished investigation step
-          prompt: Which item still needs someone to check it?
-          instruction: Select one clue from the handoff message.
+          prompt: Carry the unfinished work into your shift notes so it has an owner.
+          instruction: Mark the passage describing a check that is still open.
           relatedArtifactIds: [handoff-email]
           minSelections: 1
           maxSelections: 1
@@ -98,8 +98,8 @@ scenario:
           successText: You found the unfinished device check.
         - id: missing-reference
           title: Spot the missing routine-work detail
-          prompt: What information did the handoff fail to include?
-          instruction: Select one missing reference.
+          prompt: Identify the missing reference you will need before closing routine work.
+          instruction: Mark the passage about information the next analyst still needs.
           relatedArtifactIds: [handoff-email]
           minSelections: 1
           maxSelections: 1
@@ -139,8 +139,8 @@ scenario:
       steps:
         - id: choose-priority
           title: Choose a clear handoff reply
-          prompt: Which message keeps ownership and starts with the highest-risk work?
-          instruction: Pick one reply to send Morgan.
+          prompt: Send Morgan a starting plan that names your priority and the work you will keep watching.
+          instruction: Send a reply that makes your ownership and priority clear.
           relatedArtifactIds: [handoff-email, chat-morgan]
           minSelections: 1
           maxSelections: 1
@@ -165,7 +165,7 @@ scenario:
       steps:
         - id: alert-sequence
           title: Reconstruct what happened
-          prompt: Which sequence made this alert worth investigating?
+          prompt: Reconstruct the sign-in sequence before deciding what needs investigation.
           instruction: Select the event sequence shown in the alert.
           relatedArtifactIds: [suspicious-login-alert]
           minSelections: 1
@@ -182,8 +182,8 @@ scenario:
           successText: You identified the unusual failed-then-successful sequence.
         - id: alert-uncertainty
           title: Separate signal from proof
-          prompt: Which detail needs more context before it can support a decision?
-          instruction: Select one uncertain detail.
+          prompt: Keep estimates separate from confirmed observations in your notes.
+          instruction: Mark the detail that needs another source of context.
           relatedArtifactIds: [suspicious-login-alert]
           minSelections: 1
           maxSelections: 1
@@ -209,8 +209,8 @@ scenario:
       steps:
         - id: context-clues
           title: Mark details that need follow-up
-          prompt: Which two details make this session different from known activity?
-          instruction: Select exactly two clues.
+          prompt: Compare this session with the account's known activity to plan your follow-up.
+          instruction: Mark the device and network observations that need checking.
           relatedArtifactIds: [login-context-1, suspicious-login-alert]
           minSelections: 2
           maxSelections: 2
@@ -237,8 +237,8 @@ scenario:
       steps:
         - id: usual-pattern
           title: Build the normal baseline
-          prompt: Which combination describes J. Patel's usual sign-ins?
-          instruction: Open both records. Mark two passages that describe usual activity, not the flagged session.
+          prompt: Establish the account's usual sign-in pattern before comparing the flagged session.
+          instruction: Open both records and mark the passages describing usual activity.
           relatedArtifactIds: [account-history-1, login-context-1]
           minSelections: 2
           maxSelections: 2
@@ -272,7 +272,7 @@ scenario:
           successText: You built a useful baseline from the account history.
         - id: difference
           title: State the meaningful difference
-          prompt: Which sentence best compares the flagged login with the baseline?
+          prompt: Write a comparison that another analyst could check against these records.
           instruction: Keep both records in view. Compare the device and network, then choose a cautious conclusion.
           relatedArtifactIds: [account-history-1, login-context-1]
           minSelections: 1
@@ -281,7 +281,7 @@ scenario:
             - id: device-and-network-differ
               label: Both the device and network differ from the usual pattern.
             - id: browser-proves-attack
-              label: Chrome proves the login was an attack.
+              label: The browser alone is enough to classify this session as misuse.
             - id: city-matches-office
               label: Montreal matches the Toronto office pattern.
           requiredOptionIds: [device-and-network-differ]
@@ -315,7 +315,7 @@ scenario:
           successText: You confirmed the alert came from an unmanaged device.
         - id: owner-reply
           title: Use the employee's reply
-          prompt: What new fact strengthens the reason to escalate?
+          prompt: Add the account owner's report to your investigation without treating it as independent proof.
           instruction: Select what the employee confirmed.
           relatedArtifactIds: [employee-login-reply]
           minSelections: 1
@@ -341,8 +341,8 @@ scenario:
       steps:
         - id: summary-evidence
           title: Choose evidence
-          prompt: Add the two verified observations to the ticket evidence section.
-          instruction: Choose two verified facts from the records you opened.
+          prompt: Record the sign-in sequence and device check so a reviewer can trace your reasoning.
+          instruction: Add verified observations from the records you opened.
           relatedArtifactIds: [suspicious-login-alert, device-inventory-1]
           minSelections: 2
           maxSelections: 2
@@ -352,16 +352,16 @@ scenario:
             - id: unmanaged-device
               label: unknown-laptop-17 is not enrolled
             - id: definite-attacker
-              label: A hacker definitely owns the account
+              label: Account takeover is confirmed from the alert alone
             - id: montreal-proof
-              label: Montreal alone proves misuse
+              label: The city estimate is enough to confirm misuse
           requiredOptionIds: [failed-then-success, unmanaged-device]
           coachOnFailure: Include verified records, not guesses or conclusions stated as facts.
           successText: Your note now contains two verified facts.
         - id: summary-uncertainty
           title: Record uncertainty and confirmation
           prompt: Record the employee response with appropriate uncertainty.
-          instruction: Choose one careful statement.
+          instruction: Separate the employee's report from what remains unverified.
           relatedArtifactIds: [employee-login-reply]
           minSelections: 1
           maxSelections: 1
@@ -369,16 +369,16 @@ scenario:
             - id: employee-denial
               label: J. Patel reports no travel and no use of a Windows laptop; identity misuse is suspected, not yet proven.
             - id: employee-proves-attacker
-              label: J. Patel's reply proves who performed the login.
+              label: The employee reply identifies the person who signed in.
             - id: ignore-reply
-              label: Employee confirmation should not be included.
+              label: Omit the employee reply until another record confirms it.
           requiredOptionIds: [employee-denial]
           coachOnFailure: Record what the employee said and keep the conclusion appropriately uncertain.
           successText: Your note separates confirmed information from the working conclusion.
         - id: summary-next-step
           title: Add the next step
           prompt: Add a reversible professional next step to the ticket.
-          instruction: Choose one professional next step.
+          instruction: Give the reviewer a bounded next step and preserve the evidence.
           relatedArtifactIds: [ticket-suspicious-login]
           minSelections: 1
           maxSelections: 1
@@ -386,9 +386,9 @@ scenario:
             - id: escalate-evidence
               label: Escalate for account containment review with the evidence attached
             - id: delete-account
-              label: Delete the employee account immediately
+              label: Request account removal before a containment review
             - id: close-no-reason
-              label: Close the alert without further action
+              label: Close the alert using the location estimate as the explanation
           requiredOptionIds: [escalate-evidence]
           coachOnFailure: Choose a reversible next step that gives a senior analyst the reviewed evidence.
           successText: Ticket is ready for evidence-based escalation.
@@ -403,7 +403,7 @@ scenario:
       steps:
         - id: scanner-identity
           title: Identify the source and target
-          prompt: Which two details should be checked against the approved schedule?
+          prompt: Capture the source and scope you need to compare with the approved maintenance record.
           instruction: Select the scanner name and affected network.
           relatedArtifactIds: [scanner-alert]
           minSelections: 2
@@ -431,8 +431,8 @@ scenario:
       steps:
         - id: schedule-match
           title: Match alert to change calendar
-          prompt: Which approved record matches this alert?
-          instruction: Select one schedule entry.
+          prompt: Find the approved maintenance entry covering this scanner, time, and network.
+          instruction: Match the recorded activity to the schedule entry.
           relatedArtifactIds: [scanner-alert, scanner-window]
           minSelections: 1
           maxSelections: 1
@@ -458,7 +458,7 @@ scenario:
         - id: scanner-evidence
           title: Record the match
           prompt: Record the evidence that supports expected activity.
-          instruction: Select two matching facts.
+          instruction: Record the source, time, and scope match.
           relatedArtifactIds: [scanner-alert, scanner-window]
           minSelections: 2
           maxSelections: 2
@@ -477,7 +477,7 @@ scenario:
         - id: scanner-decision
           title: State the closure reason
           prompt: State the conclusion that fits the evidence.
-          instruction: Select one closure note.
+          instruction: Write a closure reason another analyst can verify.
           relatedArtifactIds: [scanner-alert, scanner-window]
           minSelections: 1
           maxSelections: 1
@@ -485,9 +485,9 @@ scenario:
             - id: expected-close
               label: Activity matches the approved scan; close as expected and return to the login case.
             - id: attack-close
-              label: This was an attack, but close it anyway.
+              label: Record suspected misuse and close without a review handoff.
             - id: unexplained-close
-              label: Cause is unknown; close without recording why.
+              label: Record the cause as unknown and close based on low priority.
           requiredOptionIds: [expected-close]
           coachOnFailure: Closure should say what matched and avoid unsupported claims.
           successText: Routine alert is documented and ready to close.
@@ -603,10 +603,13 @@ scenario:
       energyCost: 1
       defaultEffect:
         resolve: true
-        resolution: Escalated with reviewed context.
+        resolution: Escalated with reviewed context; the evidence and remaining uncertainty are ready for senior review.
         emitEventResolved: true
         consequence:
-          description: A senior analyst received the alert with supporting context.
+          description: >
+            A senior analyst received the alert with the reviewed records, employee report,
+            and documented uncertainty. They can review containment without reconstructing
+            the investigation. Escalation requests a review; it does not establish who signed in.
         hidden:
           taskBacklog: -1
     - id: document_ticket
@@ -718,7 +721,11 @@ scenario:
         - silent_safety_bypass
       managerGuidance: >
         Morgan recommends reviewing the alert details, checking device and location
-        context, and documenting uncertainty before deciding.
+        context, and documenting uncertainty before deciding. Start with the sequence in
+        Alerts, compare the account history, and use Guides for the exact device record.
+        At the decision point, put observed facts, the employee's report, and unresolved
+        questions in separate sentences. Ask for a review of the next step; do not promise
+        that an account is safe or compromised before the evidence supports it.
       progression:
         kind: stages
         allowManager: true
@@ -759,13 +766,18 @@ scenario:
             description: J. Patel replied that they were not traveling and did not use a Windows laptop.
         dismiss_alert:
           resolve: true
-          resolution: Dismissed before the available evidence was fully developed.
+          resolution: >
+            Dismissed without an escalation review. Closing the queue item does not verify
+            the session's owner; preserve the notes so the case can be reopened if needed.
           consequence:
             description: >
-              The dismissed login alert may require renewed attention if related activity appears.
+              The dismissed login alert needs renewed attention after related activity.
+              The next analyst must reconstruct the decision from the saved notes and
+              identify any checks still missing. The new activity warrants review, not
+              a claim that an attacker has been identified.
             delayMinutes: 40
             escalateOnApply: true
-            escalateResolution: Related activity appeared after the alert was dismissed.
+            escalateResolution: Related activity appeared after dismissal; reopen the review and reconstruct any missing checks from the records.
           hidden:
             riskExposure: 1
 
@@ -780,7 +792,9 @@ scenario:
       initialStatus: active
       managerGuidance: >
         Morgan asks you to read the handoff, identify unfinished work, and confirm
-        what you will prioritize first.
+        what you will prioritize first. A useful reply names what you own and what you
+        will watch for, rather than promising everything is resolved. Keep the missing
+        reference in your notes so an interruption does not erase it.
       progression:
         kind: linear
         allowManager: true
@@ -797,7 +811,10 @@ scenario:
       initialStatus: pending
       managerGuidance: >
         Morgan recommends checking the approved activity window and documenting why
-        the alert can be closed.
+        the alert can be closed. Compare the recorded event time, scanner name, and target
+        network with the approved entry; the delivery time and dashboard color are not
+        enough. If a detail does not line up, keep the mismatch visible in the ticket
+        and ask for guidance instead of stretching the reference to fit.
       progression:
         kind: linear
         allowManager: true
@@ -816,7 +833,11 @@ scenario:
           resolve: true
           resolution: Reviewed, documented, and closed as expected activity.
           consequence:
-            description: The reviewed routine alert was documented and closed as expected activity.
+            description: >
+              The reviewed routine alert was documented and closed as expected activity.
+              Your source, time, and scope reference lets the next analyst understand
+              the closure without repeating the schedule check. Return to the login
+              notes and continue from the next step you left there.
           hidden:
             taskBacklog: -1
 
@@ -826,9 +847,19 @@ scenario:
       kind: alert
       title: Unfamiliar successful login
       summary: Alert A-1042 · high priority
-      body: >
-        Source IP 203.0.113.44 reported 6 failed MFA challenges followed by one successful
-        password login for j.patel@example.com at 07:41. Geo hint: Montreal metro.
+      body: |
+        Review purpose: reconstruct the sequence, then compare it with the account's usual activity.
+
+        Alert A-1042 · sign-in monitoring · office-local record times
+        07:38–07:40: Source IP 203.0.113.44 reported 6 failed MFA challenges.
+        07:41: One successful password login for j.patel@example.com from the same source.
+        MFA means an extra identity check beyond a password. This summary does not establish who completed the sign-in.
+
+        Device label: unknown-laptop-17 · reported browser/platform: Chrome/Windows.
+        Network: residential internet provider. Geo hint: Montreal metro.
+        Location is an estimate associated with a network address, not verified travel or a person's identity.
+
+        Keep the alert reference with your notes. A high-priority label asks for attention; it is not a finding of compromise.
       eventIds: [suspicious-login-1]
       relatedArtifactIds:
         [login-context-1, account-history-1, device-inventory-1]
@@ -841,9 +872,16 @@ scenario:
       kind: login_record
       title: Login context · j.patel
       summary: Device, network, and MFA context for the flagged session
-      body: >
+      body: |
         Device name unknown-laptop-17. User agent Chrome/Windows. ASN residential ISP.
         No prior successful sessions from this ASN in 90 days. Travel calendar empty.
+
+        Read alongside A-1042, not as a second independent confirmation of the same sign-in.
+        A user agent is the browser and operating-system description a connection reports; it is not device ownership proof.
+        ASN identifies a network operator; ISP means internet service provider. A residential network can have ordinary uses.
+
+        The 90-day lookback covers successful sessions in this record, not every possible use of the account.
+        An empty travel calendar means no entry is shown here. Compare account history and the employee's report before concluding why the pattern changed.
       eventIds: [suspicious-login-1]
       relatedArtifactIds: [suspicious-login-alert]
       searchableText: unknown laptop residential ISP
@@ -852,9 +890,15 @@ scenario:
       kind: account_history
       title: Account history · j.patel
       summary: Recent authentication pattern
-      body: >
-        Typical weekday logins from HQ Wi-Fi and enrolled MacBook. Two VPN sessions last
-        week from Toronto office. No password resets in 30 days.
+      body: |
+        Typical weekday logins from HQ Wi-Fi and enrolled MacBook.
+        Two VPN sessions last week from Toronto office. No password resets in 30 days.
+
+        Baseline means the repeated pattern used for comparison, not a guarantee that every different sign-in is unsafe.
+        HQ is headquarters. An enrolled device is registered for organizational support and management.
+        VPN is an organization-provided private connection; compare its use with the recorded context rather than treating the label as proof of safety.
+
+        Keep the lookback limits in your notes: this is recent account history, not a complete record of the employee's movements or intentions.
       eventIds: [suspicious-login-1]
       searchableText: HQ Wi-Fi MacBook Toronto VPN
     - id: device-inventory-1
@@ -862,9 +906,18 @@ scenario:
       kind: device_record
       title: Device inventory · j.patel
       summary: Enrolled devices for the account owner
-      body: >
+      body: |
         Enrolled: corp-macbook-patel (active), corp-phone-patel (active).
         unknown-laptop-17 is not enrolled and has never checked into MDM.
+
+        Account owner: J. Patel · lookup scope: organization-managed devices assigned to this account.
+        corp-macbook-patel — corporate MacBook, active assignment.
+        corp-phone-patel — corporate phone, active assignment.
+        unknown-laptop-17 — exact identifier from the flagged session; no enrollment or check-in record in this inventory.
+
+        MDM means mobile device management, the system used to register and manage work devices.
+        A device label is not a person's identity. A missing record is a follow-up observation, not proof of who used the device.
+        Preserve the exact identifier and the inventory result for the reviewer; do not substitute a similar device name.
       eventIds: [suspicious-login-1]
       searchableText: MDM enrolled macbook phone
       # Approved public lookup index; enrollment findings remain in the body.
@@ -874,21 +927,31 @@ scenario:
       systemId: email
       kind: email
       title: Incomplete shift handoff
-      summary: From night analyst · inbox
-      body: >
+      summary: From night analyst · 07:55 · office local · inbox
+      body: |
         Still watching the unfamiliar login thread. Did not finish device inventory check.
-        A routine scanner alert may appear, but I forgot to include the approved schedule
-        reference. Ping Morgan if the login expands.
+        A routine scanner alert may appear, but I forgot to include the approved schedule reference. Ping Morgan if the login expands.
+
+        For the next analyst: A-1042 is the open sign-in item. The location estimate is only a lead; I have not confirmed who signed in.
+        Please reply in the team channel with what you are picking up first, and leave a short next step in the ticket before switching tools.
+        The scanner notice may be a delayed monitoring delivery. Compare the event time in that record with the approved window, not just the time it reaches our queue.
+
+        Thanks for taking ownership. Keep anything I did not finish visible rather than assuming silence means it was checked.
       eventIds: [handoff-1]
       searchableText: handoff incomplete login routine
     - id: employee-login-reply
       systemId: email
       kind: email
       title: "Re: Was this login yours?"
-      summary: Reply from J. Patel
-      body: >
+      summary: From J. Patel · 08:05 · office local · reply
+      body: |
         No. I am not traveling, and I did not use a Windows laptop this morning.
         My work MacBook and phone are both with me.
+
+        I recognize those as my work devices, but I do not recognize the laptop name in your message.
+        Please let me know the next step through our usual work channel. I have not shared a password or approval code in this reply.
+
+        Analyst note: record this as the account owner's report. It adds context but does not independently identify the person behind the session.
       eventIds: [suspicious-login-1]
       searchableText: employee reply no travel windows laptop
     - id: scanner-alert
@@ -896,9 +959,14 @@ scenario:
       kind: alert
       title: Scanner connection alert
       summary: Alert A-1180 · low priority
-      body: >
-        Vulnerability scanner vuln-scan-03 opened connections across the finance VLAN
-        during the published scanning window.
+      body: |
+        Alert A-1180 · connection monitoring · delayed delivery to this shift
+        Recorded activity: most recent completed Monday window, 10:18 office local; compare this event time, not the notification arrival time.
+        Vulnerability scanner vuln-scan-03 opened connections across the finance VLAN during the published scanning window.
+
+        A vulnerability scanner checks systems for weaknesses. VLAN means a separately managed network segment; here the target is the finance network.
+        This alert summarizes connection activity, not confirmed exploitation or data access.
+        Before closing, compare source, time, and target scope with the approved reference and leave that match in the ticket.
       eventIds: [routine-alert-1]
       relatedArtifactIds: [scanner-window]
       searchableText: vuln-scan finance VLAN
@@ -907,9 +975,18 @@ scenario:
       kind: kb_document
       title: Approved scanner window
       summary: Change calendar · weekly
-      body: >
+      body: |
         vuln-scan-03 is approved Mondays 10:00–12:00 for finance VLAN discovery.
         Close matching alerts after documenting the window reference.
+
+        Reference: SCAN-FIN-MON · recurring maintenance entry · times are office local.
+        Purpose: let the team distinguish scheduled discovery from unexplained connection activity.
+        In scope: scanner vuln-scan-03, finance network, and the stated Monday window.
+        Out of scope: a different source, a different network, or activity outside that window. Do not extend this approval to another alert just because it looks routine.
+
+        Record the scanner, event time, target network, and reference in the closure note.
+        Compare the alert's recorded event time even when monitoring delivers the notice later.
+        If a detail does not match, keep the uncertainty visible and ask Morgan for procedural guidance.
       eventIds: [routine-alert-1]
       searchableText: approved scanner window finance
     - id: chat-morgan
@@ -917,9 +994,12 @@ scenario:
       kind: chat_thread
       title: "#soc-day · Morgan"
       summary: Manager channel
-      body: >
-        Morgan is available for bounded guidance. Ask for context, then keep ownership
-        of the decision.
+      body: |
+        Morgan · shift start: Welcome. Start with the handoff and tell me what you will own first. An unfinished check is useful information, not something to hide.
+
+        Morgan · investigation guidance: Separate what a record shows from what you think it means. When asking for help, name the record, the mismatch, and the question you need answered. Do not paste passwords or approval codes.
+
+        Morgan · handoff guidance: Keep verified evidence, uncertainty, and the next step distinct. A reviewer should be able to follow your note without guessing what you opened. I can guide the procedure, but your tools and records remain the basis for the decision.
       eventIds: [handoff-1, suspicious-login-1]
       searchableText: Morgan team chat guidance
 
@@ -928,6 +1008,14 @@ scenario:
       kind: ticket
       title: "Ticket · unfamiliar login"
       summary: Investigation notes
-      body: Capture evidence, uncertainty, and the decision path before escalation or dismissal.
+      body: |
+        Capture evidence, uncertainty, and the decision path before escalation or dismissal.
+
+        Verified evidence: cite the alert and exact device record you checked. Keep the employee's account in their own terms.
+        Uncertainty: distinguish the location estimate and working explanation from what is independently supported.
+        Next step: name the review you are requesting and the question it should resolve.
+
+        Investigation notes are your separate working draft. Save them before switching work; the structured summary records the selected findings for handoff.
+        Do not include passwords, approval codes, or claims about the employee's intentions.
       eventIds: [suspicious-login-1]
       searchableText: ticket investigation notes

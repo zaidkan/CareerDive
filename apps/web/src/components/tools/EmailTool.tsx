@@ -10,6 +10,20 @@ function senderFor(artifact: ClientArtifact): string {
   return match?.[1] ?? "Workplace message";
 }
 
+function MessageTime({ artifact }: { artifact: ClientArtifact }) {
+  // The authored summary is already an approved public preview. Never read
+  // unopened metadata or invent a wall-clock arrival time for an old session.
+  const time = /(?:^| · )((?:[01]\d|2[0-3]):[0-5]\d)(?: ·|$)/.exec(
+    artifact.summary,
+  );
+  const label = time?.[1];
+  return label ? (
+    <time dateTime={label}>{label}</time>
+  ) : (
+    <span>Time not recorded</span>
+  );
+}
+
 export function EmailTool({
   artifacts,
   selectedId,
@@ -42,14 +56,17 @@ export function EmailTool({
               <span>{senderFor(artifact)}</span>
               <strong>{artifact.title}</strong>
               <small>
-                This shift · {artifact.observed ? "read" : "unread"}
+                <MessageTime artifact={artifact} /> ·{" "}
+                {artifact.observed ? "read" : "unread"}
               </small>
             </button>
           </li>
         ))}
       </ul>
       <article className="email-message">
-        <p className="eyebrow">From {senderFor(selected)} · This shift</p>
+        <p className="eyebrow">
+          From {senderFor(selected)} · <MessageTime artifact={selected} />
+        </p>
         <h4>{selected.title}</h4>
         <p>{selected.summary}</p>
         {selected.observed ? (

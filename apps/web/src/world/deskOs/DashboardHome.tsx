@@ -80,33 +80,71 @@ export function DashboardHome({
           type="button"
         >
           <strong>Meetings</strong>
-          <span>Standups &amp; links</span>
+          <span>Current shift checkpoints</span>
         </button>
       </div>
     </div>
   );
 }
 
-export function CalendarPanel({ onOpenEmail }: { onOpenEmail: () => void }) {
+export function CalendarPanel({
+  view,
+  onOpenEmail,
+}: {
+  view: ClientView;
+  onOpenEmail: () => void;
+}) {
+  const active = view.events.filter(
+    ({ status }) => status === "active" || status === "escalated",
+  );
+  const handoffs = active.filter(({ systemId }) => systemId === "email");
+  const guidanceAvailable = view.availableActions.some(
+    ({ id }) => id === "ask_manager",
+  );
+  const breakAvailable =
+    active.length > 0 &&
+    (view.workplace.carriedSnackBites > 0 ||
+      view.workplace.fridgeSnackBars > 0 ||
+      view.workplace.coffeeServings > 0 ||
+      view.workplace.coffeeStage !== "idle");
   return (
     <div className="desk-os-calendar">
-      <p className="eyebrow">Calendar · today</p>
-      <h3>Day-one standups</h3>
+      <p className="eyebrow">
+        Calendar · current shift · {formatShiftClock(view.simClock)}
+      </p>
+      <h3>Current shift checkpoints</h3>
       <ul>
-        <li>
-          <strong>09:15</strong>
-          <span>New-hire SOC walkthrough</span>
-        </li>
-        <li>
-          <strong>11:00</strong>
-          <span>Alert triage buddy check with Priya</span>
-        </li>
-        <li>
-          <strong>14:30</strong>
-          <span>Optional: coffee with Jules in the glass break corner</span>
-        </li>
+        {handoffs.map((event) => (
+          <li key={event.id}>
+            <strong>Open work</strong>
+            <span>{event.title}</span>
+          </li>
+        ))}
+        {guidanceAvailable ? (
+          <li>
+            <strong>As needed</strong>
+            <span>
+              Buddy check with Morgan · ask in Team chat about your current work
+            </span>
+          </li>
+        ) : null}
+        {breakAvailable ? (
+          <li>
+            <strong>Optional</strong>
+            <span>
+              Optional break with Jules · leave a next step in your notes first
+            </span>
+          </li>
+        ) : null}
       </ul>
-      <p className="desk-os-hint">Current shift events only. This calendar does not affect your work evidence.</p>
+      {handoffs.length === 0 && !guidanceAvailable && !breakAvailable ? (
+        <p>No current work checkpoints.</p>
+      ) : null}
+      <p className="desk-os-hint">
+        These checkpoints reflect your visible queue and available guidance, not
+        scheduled meetings. They do not gate progress or affect your work
+        evidence.
+      </p>
       <button className="desk-os-primary" onClick={onOpenEmail} type="button">
         Open Email
       </button>

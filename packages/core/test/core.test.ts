@@ -183,7 +183,7 @@ describe("deterministic simulation core", () => {
 
     expect(view.simClock).toBe(5);
     expect(view.operationalMessages).toContain(
-      "Morgan recommends reviewing the alert details, checking device and location context, and documenting uncertainty before deciding.",
+      pack.scenario.eventTemplates.suspicious_login?.managerGuidance.trim(),
     );
   });
 
