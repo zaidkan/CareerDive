@@ -136,7 +136,7 @@ it.each(["desk", "structured"] as const)(
       '[aria-label="Case review before decision"]',
     );
     expect(review).toHaveTextContent("Previously opened comparison passage.");
-    expect(review).toHaveTextContent(current.ticketNotes[event.id]!);
+    expect(review).toHaveTextContent(current.ticketNotes[event.id] ?? "");
     expect(review).not.toHaveTextContent("UNOPENED BODY MUST NOT APPEAR");
     expect(review).toHaveTextContent(/more evidence/i);
   },
