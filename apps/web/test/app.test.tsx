@@ -646,18 +646,14 @@ describe("tutorial and debrief", () => {
       await screen.findByRole("button", { name: /ask manager for context/i }),
     );
 
+    // Guidance now stays inline inside the workplace OS instead of routing to a
+    // separate App-level manager surface, and the selected mode is preserved.
+    expect(await screen.findByText(/Morgan recommends reviewing/i)).toBeVisible();
     expect(
-      await screen.findByRole("heading", { name: "Morgan is here to help" }),
-    ).toBeVisible();
-    expect(screen.getByText(/Morgan recommends reviewing/i)).toBeVisible();
+      screen.queryByRole("heading", { name: "Morgan is here to help" }),
+    ).toBeNull();
     expect(
-      screen.getByRole("button", { name: "Back to my desk" }),
-    ).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Back to my desk" }));
-    expect(
-      await screen.findByRole("heading", {
-        name: /Structured workplace view/i,
-      }),
+      screen.getByRole("heading", { name: /Structured workplace view/i }),
     ).toBeVisible();
     expect(screen.getByRole("button", { name: "Simple list" })).toHaveAttribute(
       "aria-pressed",
