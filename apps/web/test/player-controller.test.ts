@@ -29,7 +29,7 @@ afterEach(() => {
   harness.cleanups = [];
   harness.frames = [];
 });
-function setup() {
+function setup(props: Partial<Parameters<typeof PlayerController>[0]> = {}) {
   const camera = new PerspectiveCamera();
   harness.scene = {
     camera,
@@ -39,6 +39,7 @@ function setup() {
     colliders: [],
     enabled: true,
     onPosition: () => undefined,
+    ...props,
   });
   return camera;
 }
@@ -46,6 +47,40 @@ function tick() {
   for (let i = 0; i < 60; i++) harness.frames[0]?.({}, 1 / 60);
 }
 describe("office movement", () => {
+  it("reports actual accepted displacement, not blocked effort, bobbing or idle time", () => {
+    let meters = 0;
+    const onPosition = vi.fn();
+    setup({
+      onPosition,
+      onAcceptedDistance: (distance) => {
+        meters += distance;
+      },
+      colliders: [{ minX: 1, maxX: 2, minZ: -6, maxZ: 6 }],
+    });
+    window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyD" }));
+    tick();
+    const end = onPosition.mock.lastCall?.[0] as
+      | [number, number, number]
+      | undefined;
+    expect(meters).toBeCloseTo(end?.[0] ?? -1);
+    expect(meters).toBeLessThan(1);
+    const accepted = meters;
+    tick();
+    expect(meters).toBe(accepted);
+    window.dispatchEvent(new Event("blur"));
+    tick();
+    expect(meters).toBe(accepted);
+  });
+  it("does not count aisle recovery or seated camera animation as walking", () => {
+    const onAcceptedDistance = vi.fn();
+    const onRecover = vi.fn();
+    setup({ seated: true, onAcceptedDistance, onRecover });
+    tick();
+    window.dispatchEvent(new Event("soc-recover-aisle"));
+    tick();
+    expect(onRecover).toHaveBeenCalledOnce();
+    expect(onAcceptedDistance).not.toHaveBeenCalled();
+  });
   it("uses the fast pace without Shift and keeps the horizon level while strafing", () => {
     const camera = setup();
     window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyD" }));

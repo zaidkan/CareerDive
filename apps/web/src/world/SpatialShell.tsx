@@ -18,6 +18,7 @@ import {
   type JulesDialogueReply,
 } from "@sim/core";
 import { COMPANY } from "./company.js";
+import { MutationStatus } from "../components/MutationStatus.js";
 import {
   BreakRoomPanel,
   CarriedSnackControl,
@@ -74,6 +75,9 @@ export function SpatialShell({
   mutationState = EMPTY_MUTATION_STATE,
   onRetryMutation,
   guided = false,
+  onAcceptedDistance,
+  onRoomExit,
+  movementQueued = false,
 }: {
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
@@ -83,6 +87,9 @@ export function SpatialShell({
   mutationState?: MutationState;
   onRetryMutation?: () => void;
   guided?: boolean;
+  onAcceptedDistance?: (meters: number) => void;
+  onRoomExit?: () => void;
+  movementQueued?: boolean;
 }) {
   const [spatial, dispatch] = useReducer(reduceSpatialEvent, INITIAL_SPATIAL);
   const [nearbyLabel, setNearbyLabel] = useState<string>();
@@ -96,6 +103,13 @@ export function SpatialShell({
   const closeFridgeIntentRef = useRef(false);
   const { active: fullscreen, toggle: toggleFullscreen } =
     useFullscreen(stageRef);
+
+  useEffect(() => {
+    if (spatial.phase === "floor_map") onRoomExit?.();
+    return () => {
+      onRoomExit?.();
+    };
+  }, [spatial.phase === "floor_map", onRoomExit]);
 
   useEffect(() => {
     const syncLock = () => {
@@ -343,7 +357,8 @@ export function SpatialShell({
           fallback={<p className="room-loading">Entering {roomLabel}…</p>}
         >
           <RoomCanvas
-            enabled={walking}
+            enabled={walking && !movementQueued && !resourcePending}
+            {...(onAcceptedDistance ? { onAcceptedDistance } : {})}
             onBreakRoomExit={requestFridgeCloseOnExit}
             onInteract={handleInteract}
             onNearbyChange={onNearbyChange}
@@ -351,6 +366,9 @@ export function SpatialShell({
             workplace={view.workplace}
             onWalkBlocked={() => {
               setWalkBlocked(true);
+            }}
+            onRecover={() => {
+              setWalkBlocked(false);
             }}
             {...(highlightHotspotId ? { highlightHotspotId } : {})}
           />
@@ -399,6 +417,10 @@ export function SpatialShell({
         {walking ? (
           <div className="room-hud">
             <div>
+              <MutationStatus
+                state={mutationState}
+                {...(onRetryMutation ? { onRetry: onRetryMutation } : {})}
+              />
               <p className="eyebrow">
                 {COMPANY.name} · {roomLabel} · {stepLabel}
               </p>

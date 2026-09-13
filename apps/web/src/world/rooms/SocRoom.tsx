@@ -133,6 +133,7 @@ export function SocRoom({
   onBreakRoomExit,
   onWalkBlocked,
   onRecover,
+  onAcceptedDistance,
 }: {
   onNearbyChange: (id?: HotspotId, label?: string) => void;
   onInteract: (id: HotspotId) => void;
@@ -143,6 +144,7 @@ export function SocRoom({
   onBreakRoomExit: () => void;
   onWalkBlocked?: () => void;
   onRecover?: (position: [number, number, number]) => void;
+  onAcceptedDistance?: (meters: number) => void;
 }) {
   const nearbyId = useRef<HotspotId | undefined>(undefined);
   const playerPos = useRef<[number, number, number]>([...PLAYER_SPAWN]);
@@ -637,7 +639,11 @@ export function SocRoom({
         seated={seated}
         spawn={PLAYER_SPAWN}
         {...(onWalkBlocked ? { onWalkBlocked } : {})}
-        {...(onRecover ? { onRecover } : {})}
+        onRecover={(position) => {
+          handlePosition(position);
+          onRecover?.(position);
+        }}
+        {...(onAcceptedDistance ? { onAcceptedDistance } : {})}
       />
     </>
   );
