@@ -29,6 +29,43 @@ export function WallPanel({
   );
 }
 
+let skylineTexture: THREE.CanvasTexture | undefined;
+
+/** One shared, static city backdrop; no downloads or per-frame work. */
+function makeSkylineTexture(): THREE.CanvasTexture {
+  if (skylineTexture) return skylineTexture;
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 192;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("OfficeWindow requires a 2D canvas context");
+  const sky = ctx.createLinearGradient(0, 0, 0, 192);
+  sky.addColorStop(0, "#172b40");
+  sky.addColorStop(0.65, "#60808d");
+  sky.addColorStop(1, "#b4a78c");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, 256, 192);
+  for (let layer = 0; layer < 2; layer += 1) {
+    const step = layer === 0 ? 22 : 30;
+    for (let i = 0; i < 13; i += 1) {
+      const x = i * step - 12;
+      const top = 82 + ((i * 31 + layer * 19) % 65);
+      ctx.fillStyle = layer === 0 ? "#425e70" : "#263e50";
+      ctx.fillRect(x, top, step - 4, 192 - top);
+      if (layer === 0) continue;
+      for (let y = top + 8; y < 190; y += 12) {
+        for (let col = 0; col < 3; col += 1) {
+          ctx.fillStyle = (i + col + y) % 3 === 0 ? "#cfb887" : "#526c7a";
+          ctx.fillRect(x + 4 + col * 7, y, 3, 5);
+        }
+      }
+    }
+  }
+  skylineTexture = new THREE.CanvasTexture(canvas);
+  skylineTexture.colorSpace = THREE.SRGBColorSpace;
+  return skylineTexture;
+}
+
 export function OfficeWindow({
   position,
   rotationY = 0,
@@ -40,6 +77,7 @@ export function OfficeWindow({
   width?: number;
   height?: number;
 }) {
+  const skyline = useMemo(() => makeSkylineTexture(), []);
   /** Blinds are raised to the header, so the view stays readable. */
   const slatCount = 5;
   const blinds = Array.from({ length: slatCount }, (_, i) => (
@@ -58,17 +96,12 @@ export function OfficeWindow({
       </mesh>
       <mesh position={[0, 0, 0.01]}>
         <planeGeometry args={[width, height]} />
-        <meshStandardMaterial
-          color="#7fb8d4"
-          emissive="#4f86a8"
-          emissiveIntensity={0.5}
-          roughness={0.25}
-        />
+        <meshBasicMaterial map={skyline} toneMapped={false} />
       </mesh>
       {/* City band at the horizon reads as an outside view */}
       <mesh position={[0, -height * 0.22, 0.02]}>
         <planeGeometry args={[width, height * 0.3]} />
-        <meshStandardMaterial color="#2c4655" emissive="#20323d" emissiveIntensity={0.3} />
+        <meshStandardMaterial color="#243a48" roughness={0.8} />
       </mesh>
       {/* Outer casing, built as four sides so glass is never buried */}
       {(
