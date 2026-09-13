@@ -82,7 +82,8 @@ it.each(["desk", "structured"] as const)(
   "carries only opened case evidence and saved notes into the %s decision",
   (mode) => {
     const current = view();
-    const event = current.events.find(({ id }) => id === "suspicious-login-1")!;
+    const event = current.events.find(({ id }) => id === "suspicious-login-1");
+    if (!event) throw new Error("Missing login case");
     current.events = [event];
     current.tasks = [];
     current.availableActions = [
