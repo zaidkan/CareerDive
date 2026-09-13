@@ -5,6 +5,8 @@ import { afterEach, expect, it, vi } from "vitest";
 import { createInitialWorldState, toClientView } from "@sim/core";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import { EmailTool } from "../src/components/tools/EmailTool.js";
+import { SystemToolPanel } from "../src/components/SystemToolPanel.js";
+import { AccessibleMode } from "../src/components/AccessibleMode.js";
 import { CaseRail } from "../src/components/CaseRail.js";
 import { CalendarPanel } from "../src/world/deskOs/DashboardHome.js";
 
@@ -72,5 +74,69 @@ it.each(["resolved", "escalated"] as const)(
     }));
     render(<CaseRail view={current} onResume={vi.fn()} />);
     expect(screen.getAllByText(resolution)).toHaveLength(current.events.length);
+  },
+);
+
+it.each(["desk", "structured"] as const)(
+  "carries only opened case evidence and saved notes into the %s decision",
+  (mode) => {
+    const current = view();
+    const event = current.events.find(({ id }) => id === "suspicious-login-1")!;
+    current.events = [event];
+    current.tasks = [];
+    current.availableActions = [
+      {
+        id: "dismiss_alert",
+        eventId: event.id,
+        systemId: "alert_dashboard",
+        label: "Dismiss as false positive",
+        description: "Close the item.",
+        simulatedMinutes: 15,
+      },
+    ];
+    current.ticketNotes[event.id] =
+      "Saved review: compare the device reference before deciding.";
+    current.artifacts = [
+      {
+        id: "opened",
+        title: "Earlier login record",
+        summary: "Record preview",
+        kind: "alert",
+        systemId: "alert_dashboard",
+        eventIds: [event.id],
+        observed: true,
+        body: "Previously opened comparison passage.",
+      },
+      {
+        id: "unopened",
+        title: "Unopened record",
+        summary: "Preview only",
+        kind: "email",
+        systemId: "email",
+        eventIds: [event.id],
+        observed: false,
+        body: "UNOPENED BODY MUST NOT APPEAR",
+      },
+    ];
+    const { container } = render(
+      mode === "desk" ? (
+        <SystemToolPanel
+          view={current}
+          systemId="alert_dashboard"
+          selectedEventId={event.id}
+          actions={current.availableActions}
+          onAction={vi.fn()}
+        />
+      ) : (
+        <AccessibleMode view={current} onAction={vi.fn()} />
+      ),
+    );
+    const review = container.querySelector(
+      '[aria-label="Case review before decision"]',
+    );
+    expect(review).toHaveTextContent("Previously opened comparison passage.");
+    expect(review).toHaveTextContent(current.ticketNotes[event.id]!);
+    expect(review).not.toHaveTextContent("UNOPENED BODY MUST NOT APPEAR");
+    expect(review).toHaveTextContent(/more evidence/i);
   },
 );

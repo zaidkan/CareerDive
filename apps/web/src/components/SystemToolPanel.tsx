@@ -15,6 +15,7 @@ import { EmailTool } from "./tools/EmailTool.js";
 import { GuideSearch } from "./tools/GuideSearch.js";
 import { InventoryLookup } from "./tools/InventoryLookup.js";
 import { TaskInteraction } from "./tools/TaskInteraction.js";
+import { CaseReview } from "./tools/CaseReview.js";
 import { TeamChatTool } from "./tools/TeamChatTool.js";
 import { primaryActions, systemMeta, utilityActions } from "../systems.js";
 import type { TaskAttemptHandler } from "./shared.js";
@@ -144,6 +145,7 @@ function WorkInteraction({
   const ordinary = actions.filter(({ taskId }) => taskId === undefined);
   return (
     <>
+      <CaseReview view={view} actions={actions} />
       {uniqueTasks.map((task) => (
         <TaskInteraction
           key={task.id}

@@ -10,6 +10,7 @@ import { OperationalMessages, type ModeProps } from "./shared.js";
 import { TaskInteraction } from "./tools/TaskInteraction.js";
 import { GuideSearch } from "./tools/GuideSearch.js";
 import { InventoryLookup } from "./tools/InventoryLookup.js";
+import { CaseReview } from "./tools/CaseReview.js";
 import { TeamChatTool } from "./tools/TeamChatTool.js";
 import { MutationStatus } from "./MutationStatus.js";
 import { CaseRail } from "./CaseRail.js";
@@ -168,6 +169,7 @@ export function AccessibleMode({
               {openArtifact ? <InventoryLookup view={view} onOpenArtifact={openArtifact} mutationState={mutationState} /> : null}
               </>
             ) : null}
+            <CaseReview view={view} actions={interactionActions} />
             <div className="accessible-actions">
               {interactionActions.map((action) => {
                 const task = action.taskId
