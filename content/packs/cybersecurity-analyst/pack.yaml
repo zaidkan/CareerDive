@@ -867,6 +867,9 @@ scenario:
         unknown-laptop-17 is not enrolled and has never checked into MDM.
       eventIds: [suspicious-login-1]
       searchableText: MDM enrolled macbook phone
+      # Approved public lookup index; enrollment findings remain in the body.
+      metadata:
+        lookupKeys: unknown-laptop-17
     - id: handoff-email
       systemId: email
       kind: email
