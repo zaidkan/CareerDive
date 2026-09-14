@@ -43,7 +43,7 @@ export function TaskInteraction({
         ))}
       {openedRelated.length > 0 ? (
         <p className="task-evidence-status">
-          Opened evidence: {openedRelated.map(({ title }) => title).join(", ")}.
+          Records you have opened: {openedRelated.map(({ title }) => title).join(", ")}.
         </p>
       ) : null}
       <WorkTaskPanel

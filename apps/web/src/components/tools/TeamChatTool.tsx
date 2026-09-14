@@ -28,10 +28,10 @@ export function TeamChatTool({
               title: event.title,
               text:
                 task.kind === "build_summary"
-                  ? "Keep verified observations, uncertainty, and the next step separate. Revisit the opened records beside your note; make it possible for a reviewer to trace each statement."
+                  ? "Keep verified observations, uncertainty, and the next step separate. Use the records beside your note to show what you checked, what remains unclear, and what should happen next."
                   : task.kind === "compare_records"
-                    ? "Compare each record with its own source and time. Describe the mismatch before explaining it, and leave room for an alternative explanation."
-                    : "Read the source before making a claim. Keep unfinished checks visible and name the question you need answered before switching work.",
+                    ? "Check where each record came from and when it was recorded. Describe what differs before explaining why; more than one explanation may fit."
+                    : "Read the record before drawing a conclusion. Before switching work, save what you still need to check and the question it should answer.",
             },
           ];
         const decision = view.availableActions.some(
@@ -44,7 +44,7 @@ export function TeamChatTool({
               {
                 eventId: event.id,
                 title: event.title,
-                text: "Review the saved note before acting. A request for senior review does not confirm who signed in, and a closure needs a documented basis. If evidence is still missing, preserve the open question and seek procedural guidance.",
+                text: "Review your saved note before deciding. Asking a senior analyst to review the case does not confirm who signed in, and closing it needs a written reason supported by records. If evidence is missing, save the open question and ask Morgan which check to make next.",
               },
             ]
           : [];

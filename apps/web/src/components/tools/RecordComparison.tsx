@@ -34,12 +34,12 @@ export function RecordComparison({
   return (
     <section className="record-comparison" aria-label="Compare source records">
       <p>
-        Compare what usually happens with the session being investigated. A
-        difference is a reason to check, not proof of an attack.
+        Compare the records to see what matches and what needs another check.
+        Note where each detail came from; a difference alone does not prove an attack.
       </p>
       {records.length < task.relatedArtifactIds.length ? (
         <p role="status">
-          Open the remaining source above to compare both records.
+          Open the remaining records using the buttons above, then compare their details.
         </p>
       ) : null}
       {sourced ? (
@@ -102,8 +102,8 @@ export function RecordComparison({
             </ul>
           ) : (
             <p>
-              No passages marked yet. Start with the record describing usual
-              activity.
+              No passages marked yet. Read the records, then select the highlighted
+              text that supports your comparison.
             </p>
           )}
         </section>
