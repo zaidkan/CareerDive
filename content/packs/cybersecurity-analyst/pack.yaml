@@ -854,6 +854,7 @@ scenario:
             alsoOffer: [dismiss_alert, search_knowledge_base]
       actionEffects:
         search_knowledge_base:
+          setKbQueryFromFreeText: true
           observeArtifactIds: [login-follow-up-guide]
           consequence:
             description: >
@@ -951,6 +952,7 @@ scenario:
           - dismiss_alert
       actionEffects:
         search_knowledge_base:
+          setKbQueryFromFreeText: true
           observeArtifactIds: [scanner-window]
         review_alert:
           observeArtifactIds: [scanner-alert]

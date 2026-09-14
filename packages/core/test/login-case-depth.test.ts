@@ -141,7 +141,13 @@ describe("cross-referenced login case", () => {
         "document_ticket",
       ] as const)
         state = complete(state, action);
-      state = complete(state, "search_knowledge_base");
+      state = applyAction(state, {
+        id: "search_knowledge_base",
+        eventId,
+        actorId: "user",
+        freeText: "route context",
+      }).state;
+      expect(state.kbQuery).toBe("route context");
       expect(state.events.find((e) => e.id === eventId)?.status).toBe("active");
       expect(toClientView(state).operationalMessages.join(" ")).toMatch(
         /more evidence/i,
