@@ -181,8 +181,8 @@ describe("cross-referenced login case", () => {
     const delayed = required(
       state.ledger.find((entry) => entry.actionId === "dismiss_alert"),
     );
-    expect(delayed?.applied).toBe(false);
-    expect(delayed?.description).toMatch(/session identifiers/i);
+    expect(delayed.applied).toBe(false);
+    expect(delayed.description).toMatch(/session identifiers/i);
     // Existing zero-assessment note action advances no clock; the regular scheduler
     // applies the consequence on the next work action at its deterministic due time.
     state = { ...state, simClock: required(delayed.dueAt) };
