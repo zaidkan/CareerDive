@@ -265,8 +265,8 @@ export function CoffeePot({
       <MeshLabel
         text={stage.toUpperCase()}
         position={[0, -0.06, 0.164]}
-        width={0.27}
-        height={0.065}
+        width={0.36}
+        height={0.09}
       />
       {steaming ? <CoffeeSteam animated={animated} /> : null}
     </group>
