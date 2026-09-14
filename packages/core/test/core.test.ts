@@ -301,6 +301,7 @@ describe("deterministic simulation core", () => {
       ["inspect_account_history", "suspicious-login-1"],
       ["check_device_inventory", "suspicious-login-1"],
       ["document_ticket", "suspicious-login-1"],
+      ["search_knowledge_base", "suspicious-login-1"],
       ["escalate_alert", "suspicious-login-1"],
       ["review_alert", "routine-alert-1"],
       ["search_knowledge_base", "routine-alert-1"],

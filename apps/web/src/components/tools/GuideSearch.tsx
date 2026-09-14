@@ -35,6 +35,11 @@ export function GuideSearch({
   }, [view.sessionId, view.kbQuery]);
   const docs = filterKnowledgeBase(view, query);
   const selected = docs.find(({ id }) => id === selectedId) ?? docs[0];
+  const isLoginFollowUp = view.events.some(
+    (event) =>
+      event.id === canonicalSearchAction?.eventId &&
+      event.templateId === "suspicious_login",
+  );
 
   return (
     <div className="tool-split">
@@ -94,8 +99,17 @@ export function GuideSearch({
               disabled={Boolean(mutationState.pendingKey)}
               type="submit"
             >
-              {canonicalSearchAction.label}
+              {isLoginFollowUp
+                ? `Need more evidence? ${canonicalSearchAction.label}`
+                : canonicalSearchAction.label}
             </button>
+            {isLoginFollowUp ? (
+              <p>
+                Review the follow-up procedure and keep this case open. Save the
+                remaining question in Tickets; this check does not contact a
+                reviewer or contain an account.
+              </p>
+            ) : null}
           </form>
         ) : null}
         {docs.length === 0 && query.trim() ? (

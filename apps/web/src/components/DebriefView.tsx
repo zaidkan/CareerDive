@@ -27,6 +27,23 @@ export function DebriefView({ debrief }: { debrief: Debrief }) {
           <article key={key}>
             <h3>{label}</h3>
             <p>{debrief.sections[key]}</p>
+            {key === "consequences" ? (
+              <details>
+                <summary>Reflect on the investigation</summary>
+                <p>
+                  Consider the path you took: requesting review with evidence,
+                  closing the item, or keeping it open to check a gap. Which
+                  comparison supported that choice, and what did it leave
+                  unknown? A location estimate, an employee report, and an
+                  administrative record each have different limits.
+                </p>
+                <p>
+                  What could the next analyst verify from your note without
+                  repeating your work? There is no need to turn uncertainty into
+                  certainty to write a useful handoff.
+                </p>
+              </details>
+            ) : null}
           </article>
         ))}
       </div>

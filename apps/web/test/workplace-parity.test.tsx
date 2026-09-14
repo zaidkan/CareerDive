@@ -104,6 +104,8 @@ describe("structured workplace acceptance", () => {
     rerender(renderStep(1));
     expect(screen.getByRole("group", { name: "Uncertainty" })).toBeVisible();
     rerender(renderStep(2));
+    expect(screen.getByRole("group", { name: "Uncertainty" })).toBeVisible();
+    rerender(renderStep(summary.steps.length - 1));
     expect(screen.getByRole("group", { name: "Next step" })).toBeVisible();
   });
 
