@@ -287,6 +287,47 @@ scenario:
           requiredOptionIds: [device-and-network-differ]
           coachOnFailure: Compare device and network facts without claiming they prove an attack.
           successText: You explained the difference without overstating the evidence.
+        - id: vpn-cross-check
+          title: Test the VPN explanation
+          prompt: Check whether the known private connection explains the flagged session, using session identifiers and route records together.
+          instruction: Carry the earlier session's route, the approved exit address, and the flagged session's source into your comparison.
+          relatedArtifactIds:
+            [prior-session-1, vpn-context-1, login-session-timeline]
+          minSelections: 3
+          maxSelections: 3
+          options:
+            - id: baseline-vpn-route
+              label: Earlier session route
+              source:
+                {
+                  artifactId: prior-session-1,
+                  quote: "S-0731 used corp-macbook-patel through VPN connection V-218, exiting at 198.51.100.20.",
+                }
+            - id: approved-vpn-exit
+              label: Approved route record
+              source:
+                {
+                  artifactId: vpn-context-1,
+                  quote: "V-218 maps to exit 198.51.100.20; this office's only approved VPN exit in this snapshot.",
+                }
+            - id: flagged-direct-route
+              label: Flagged session source
+              source:
+                {
+                  artifactId: login-session-timeline,
+                  quote: "S-0741: source 203.0.113.44; VPN connection ID absent; device label unknown-laptop-17.",
+                }
+            - id: vpn-display-city
+              label: Earlier session city estimate
+              source:
+                {
+                  artifactId: prior-session-1,
+                  quote: "Displayed city: Montreal (network estimate).",
+                }
+          requiredOptionIds:
+            [baseline-vpn-route, approved-vpn-exit, flagged-direct-route]
+          coachOnFailure: Compare the route identifiers and addresses across all three records. A shared city estimate does not link two sessions to the same private connection.
+          successText: You preserved the route comparison. The shared city estimate does not explain the different source; missing route data still limits certainty.
 
     - id: device-owner-match
       eventTemplateId: suspicious_login
@@ -330,6 +371,38 @@ scenario:
           requiredOptionIds: [denied-login]
           coachOnFailure: Read the reply for what the account owner directly confirmed.
           successText: You added the account owner's denial to the evidence.
+        - id: travel-record-limits
+          title: Check what the travel record can establish
+          prompt: Compare the employee's account with the administrative travel record before writing a conclusion about location.
+          instruction: Preserve the employee's report and the coverage limit of the travel record.
+          relatedArtifactIds: [employee-login-reply, travel-status-1]
+          minSelections: 2
+          maxSelections: 2
+          options:
+            - id: reported-no-travel
+              label: Employee account
+              source:
+                {
+                  artifactId: employee-login-reply,
+                  quote: "No. I am not traveling, and I did not use a Windows laptop this morning.",
+                }
+            - id: travel-coverage-limit
+              label: Administrative record coverage
+              source:
+                {
+                  artifactId: travel-status-1,
+                  quote: "This register covers approved work trips only; it does not record personal travel, live location, or requests awaiting approval.",
+                }
+            - id: office-assignment
+              label: Assigned office
+              source:
+                {
+                  artifactId: travel-status-1,
+                  quote: "Assigned office: Toronto.",
+                }
+          requiredOptionIds: [reported-no-travel, travel-coverage-limit]
+          coachOnFailure: An assigned office is not a live location. Compare the employee's report with what the register includes and leaves out.
+          successText: You kept reported activity separate from administrative coverage; neither record identifies who used the session.
 
     - id: login-ticket-summary
       eventTemplateId: suspicious_login
@@ -348,9 +421,9 @@ scenario:
           maxSelections: 2
           options:
             - id: failed-then-success
-              label: Six failed challenges were followed by a successful login
+              label: A-1042 / S-0741 — Six failed challenges were followed by a successful login; the timeline does not record a successful extra identity check.
             - id: unmanaged-device
-              label: unknown-laptop-17 is not enrolled
+              label: Inventory lookup — unknown-laptop-17 is not enrolled; no managed-device check-in was found for that exact label.
             - id: definite-attacker
               label: Account takeover is confirmed from the alert alone
             - id: montreal-proof
@@ -367,7 +440,7 @@ scenario:
           maxSelections: 1
           options:
             - id: employee-denial
-              label: J. Patel reports no travel and no use of a Windows laptop; identity misuse is suspected, not yet proven.
+              label: J. Patel reports no travel and no use of a Windows laptop; HR lists approved work trips only, so identity misuse is suspected, not yet proven.
             - id: employee-proves-attacker
               label: The employee reply identifies the person who signed in.
             - id: ignore-reply
@@ -375,6 +448,29 @@ scenario:
           requiredOptionIds: [employee-denial]
           coachOnFailure: The note needs a clearer boundary between the employee report and your conclusion. Review the opened reply; this attempt has not closed or escalated the alert.
           successText: Your note separates confirmed information from the working conclusion.
+        - id: summary-route-comparison
+          title: Preserve the alternative explanation
+          prompt: Leave the next analyst a traceable comparison of the VPN explanation and its limits.
+          instruction: Include the session references, route mismatch, and remaining uncertainty.
+          relatedArtifactIds:
+            [
+              prior-session-1,
+              vpn-context-1,
+              login-session-timeline,
+              travel-status-1,
+            ]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: route-mismatch-with-limits
+              label: S-0731 matches VPN V-218 at 198.51.100.20; S-0741 uses 203.0.113.44 without a VPN connection ID. The shared Montreal estimate does not establish a shared route, and absent route data does not identify the user.
+            - id: shared-city-explanation
+              label: S-0731 and S-0741 both show Montreal, so carry the earlier VPN explanation forward to this session.
+            - id: travel-register-explanation
+              label: HR shows no approved trip, so record Toronto as the verified physical location of the flagged session.
+          requiredOptionIds: [route-mismatch-with-limits]
+          coachOnFailure: Compare the session and connection identifiers, then check the HR record's coverage. Preserve the explanation you tested without turning a missing field into proof.
+          successText: The ticket now carries the competing explanation and the records that limit it.
         - id: summary-next-step
           title: Add the next step
           prompt: Add a reversible professional next step to the ticket.
@@ -588,7 +684,6 @@ scenario:
       energyCost: 3
       defaultEffect:
         setKbQueryFromFreeText: true
-        observeArtifactIds: [scanner-window]
     - id: dismiss_alert
       systemId: alert_dashboard
       label: Dismiss as false positive
@@ -756,8 +851,32 @@ scenario:
               - check_device_inventory
               - document_ticket
             offer: [escalate_alert]
-            alsoOffer: [dismiss_alert]
+            alsoOffer: [dismiss_alert, search_knowledge_base]
       actionEffects:
+        search_knowledge_base:
+          observeArtifactIds: [login-follow-up-guide]
+          consequence:
+            description: >
+              You chose to review the procedure because more evidence may be needed.
+              The login case remains open: no dismissal, containment, or identity finding
+              follows from this check. Save the unanswered question, compare the available
+              session and route records, and use Morgan for procedural help if the gap remains.
+              The team still needs your documented decision; a procedure lookup does not complete the investigation.
+        escalate_alert:
+          resolve: true
+          emitEventResolved: true
+          resolution: >
+            Escalated with reviewed context and session identifiers. The route comparison,
+            device lookup, employee report, and HR coverage limit are available for senior
+            review; identity misuse remains suspected, not proven.
+          consequence:
+            description: >
+              A senior analyst received the ticket with session identifiers and the comparison
+              between the earlier VPN route and the flagged source. The device lookup and
+              the limits of the employee and HR records make the remaining question clear:
+              who controlled the flagged session, and whether containment is warranted.
+              The reviewer can start with that question instead of rebuilding the comparison.
+              No containment or confirmed identity finding has been recorded by this escalation.
         review_alert:
           observeArtifactIds: [suspicious-login-alert]
           hidden:
@@ -770,12 +889,15 @@ scenario:
           resolve: true
           resolution: >
             Dismissed without an escalation review. Closing the queue item does not verify
-            the session's owner or establish expected activity; preserve the notes so the case can be reopened if needed.
+            the session's owner or establish expected activity. A VPN explanation needs a
+            matching session route, not just a city estimate; preserve any completed comparisons and unfinished checks.
           consequence:
             description: >
               The dismissed login alert needs renewed attention after related activity.
-              The next analyst must reconstruct the decision from the saved notes and
-              identify any checks still missing. The new activity warrants review, not
+              The next analyst must recover the session identifiers from the saved notes,
+              check whether a VPN route was actually matched, and separate the employee's
+              report from the HR record's limited coverage. Completed checks remain useful;
+              missing comparisons must be reconstructed. The new activity warrants review, not
               a claim that an attacker has been identified.
             delayMinutes: 40
             escalateOnApply: true
@@ -828,6 +950,8 @@ scenario:
           - document_ticket
           - dismiss_alert
       actionEffects:
+        search_knowledge_base:
+          observeArtifactIds: [scanner-window]
         review_alert:
           observeArtifactIds: [scanner-alert]
           hidden:
@@ -845,6 +969,103 @@ scenario:
             taskBacklog: -1
 
   artifacts:
+    - id: login-session-timeline
+      systemId: alert_dashboard
+      kind: login_record
+      title: Sign-in timeline · A-1042
+      summary: Session sequence and collection limits · office-local times
+      body: |
+        Purpose: separate the earlier session from the one that triggered A-1042. Session identifiers distinguish connections even when the account or displayed city is the same.
+
+        07:31 · S-0731 · successful sign-in through V-218; source 198.51.100.20; corp-macbook-patel. See the prior-session record for the route and extra identity check.
+        07:38:02–07:40:51 · six failed extra identity checks associated with source 203.0.113.44. The summary groups attempts by account and source; it does not identify a person.
+        07:41:09 · S-0741 · password accepted; successful session created. Extra-check result: not present in this export. Do not translate password success into successful MFA.
+        S-0741: source 203.0.113.44; VPN connection ID absent; device label unknown-laptop-17.
+        07:43 · S-0741 · account portal session refresh. A refresh continues a session; it does not independently verify who controls it.
+
+        Collection ends at 07:45. This export has no file-access or mailbox activity and cannot establish what was accessed. Missing fields may require a fuller record from the reviewer.
+        A-1042 and login-context-1 summarize this same source; counting them separately does not create independent corroboration.
+      eventIds: [suspicious-login-1]
+      relatedArtifactIds:
+        [suspicious-login-alert, prior-session-1, vpn-context-1]
+      searchableText: login timeline session source route MFA
+    - id: prior-session-1
+      systemId: alert_dashboard
+      kind: login_record
+      title: Earlier session · S-0731
+      summary: A prior sign-in for comparison · 07:31 office local
+      body: |
+        Purpose: test an ordinary explanation for a surprising location estimate against a known connection.
+
+        Account: j.patel@example.com · session S-0731 · 07:31 office local.
+        S-0731 used corp-macbook-patel through VPN connection V-218, exiting at 198.51.100.20.
+        Password accepted; extra identity check completed. Managed-device certificate matched the inventory record at sign-in.
+        Displayed city: Montreal (network estimate).
+
+        The route record, not the city label, links this session to the approved private connection. This is one comparison session; it does not certify other sessions on the account.
+        Match V-218 against the route catalogue, then compare S-0741 in the timeline. A shared browser, account, or city does not make the session identifiers interchangeable.
+      eventIds: [suspicious-login-1]
+      relatedArtifactIds:
+        [
+          account-history-1,
+          device-inventory-1,
+          vpn-context-1,
+          login-session-timeline,
+        ]
+      searchableText: earlier session baseline private connection
+    - id: vpn-context-1
+      systemId: knowledge_base
+      kind: kb_document
+      title: Office VPN route catalogue
+      summary: Approved private connection reference · current morning snapshot
+      body: |
+        Purpose: check whether a sign-in used the organization's private connection. A VPN routes traffic through an exit address, so a location estimate may describe that exit rather than the employee.
+
+        Route catalogue NET-VPN-04 · snapshot 07:45 office local.
+        V-218 maps to exit 198.51.100.20; this office's only approved VPN exit in this snapshot.
+        Exit hosting location: Montreal. Assigned office: Toronto. The earlier S-0731 session carries V-218 in its connection record.
+        203.0.113.44 is not an approved exit in this snapshot. An absent connection ID alone does not establish a route; compare both the identifier and address.
+
+        Coverage: organization-provided VPN only. This catalogue does not enumerate personal connections or prove where a person was physically located.
+        If a session cannot be matched, preserve the mismatch and request route verification through the case review. Do not invent a VPN match to reconcile two city labels.
+      eventIds: [suspicious-login-1]
+      relatedArtifactIds: [prior-session-1, login-session-timeline]
+      searchableText: VPN private connection route exit location estimate
+    - id: travel-status-1
+      systemId: email
+      kind: email
+      title: Work-travel register · case reference
+      summary: HR administrative extract · 08:00 · office local
+      body: |
+        Purpose: clarify what the work-travel register can contribute to this investigation. This is an administrative extract, not a live location check.
+
+        Reference HR-TR-08 · account j.patel@example.com · current shift date · extract 08:00 office local.
+        Assigned office: Toronto.
+        Approved work trips for this date: no entry found.
+        This register covers approved work trips only; it does not record personal travel, live location, or requests awaiting approval.
+
+        Compare this limited result with the employee's own response and the network records. No entry is not proof of no travel, and neither record identifies the user of S-0741.
+        Keep only the case-relevant coverage and result in the ticket; there is no need to request personal itinerary details.
+      eventIds: [suspicious-login-1]
+      relatedArtifactIds: [employee-login-reply]
+      searchableText: work travel register coverage HR
+    - id: login-follow-up-guide
+      systemId: knowledge_base
+      kind: kb_document
+      title: Uncertain sign-in · follow-up procedure
+      summary: Approved case-handling reference · evidence gaps and review
+      body: |
+        Purpose: keep an uncertain sign-in under review while making the next check specific. Looking up this procedure leaves the case open; it does not contact a reviewer or contain an account.
+
+        If the route is unclear: compare the flagged session identifier and source with the earlier-session record and office VPN catalogue. Record a mismatch or a missing field without inventing its cause.
+        If device ownership is unclear: use the exact inventory identifier, note the inventory coverage, and compare the employee's report. A browser/platform label is self-reported, not an ownership certificate.
+        If travel is being used as an explanation: check what the administrative register covers. An empty entry and a city estimate cannot establish physical location.
+
+        Save the unanswered question and the next record to check in the ticket before switching work. Morgan can clarify procedure; asking for guidance does not transfer ownership or supply missing technical facts.
+        Escalation: hand the reviewer the session references, verified comparisons, and remaining gaps for a containment decision. Do not claim containment happened merely because it was requested.
+        Closure: document evidence supporting expected activity. If a proposed explanation does not cover the session under review, keep the gap visible rather than treating closure as confirmation.
+      eventIds: [suspicious-login-1]
+      searchableText: uncertain login evidence gap follow up procedure
     - id: suspicious-login-alert
       systemId: alert_dashboard
       kind: alert
@@ -863,9 +1084,15 @@ scenario:
         Location is an estimate associated with a network address, not verified travel or a person's identity.
 
         Keep the alert reference with your notes. A high-priority label asks for attention; it is not a finding of compromise.
+        The expanded timeline separates earlier S-0731 from flagged S-0741. Compare those session identifiers before carrying an explanation from one sign-in to the other.
       eventIds: [suspicious-login-1]
       relatedArtifactIds:
-        [login-context-1, account-history-1, device-inventory-1]
+        [
+          login-context-1,
+          account-history-1,
+          device-inventory-1,
+          login-session-timeline,
+        ]
       searchableText: unfamiliar login montreal failures MFA
       metadata:
         severity: high
@@ -885,6 +1112,7 @@ scenario:
 
         The 90-day lookback covers successful sessions in this record, not every possible use of the account.
         An empty travel calendar means no entry is shown here. Compare account history and the employee's report before concluding why the pattern changed.
+        Flagged session reference: S-0741. See the sign-in timeline for collection limits and the earlier-session record for a route comparison.
       eventIds: [suspicious-login-1]
       relatedArtifactIds: [suspicious-login-alert]
       searchableText: unknown laptop residential ISP
@@ -902,6 +1130,7 @@ scenario:
         VPN is an organization-provided private connection; compare its use with the recorded context rather than treating the label as proof of safety.
 
         Keep the lookback limits in your notes: this is recent account history, not a complete record of the employee's movements or intentions.
+        Today's earlier session S-0731 is available separately. Its route identifiers let you test whether the same explanation fits the flagged session; the usual pattern alone cannot answer that.
       eventIds: [suspicious-login-1]
       searchableText: HQ Wi-Fi MacBook Toronto VPN
     - id: device-inventory-1
@@ -921,6 +1150,8 @@ scenario:
         MDM means mobile device management, the system used to register and manage work devices.
         A device label is not a person's identity. A missing record is a follow-up observation, not proof of who used the device.
         Preserve the exact identifier and the inventory result for the reviewer; do not substitute a similar device name.
+        Inventory snapshot: 07:45 office local. corp-macbook-patel last checked in at 07:30; the managed-device certificate used by S-0731 matches this record.
+        Inventory covers registered work devices, not every device an employee may own. The absence of unknown-laptop-17 does not identify its owner or establish what data was accessed.
       eventIds: [suspicious-login-1]
       searchableText: MDM enrolled macbook phone
       # Approved public lookup index; enrollment findings remain in the body.
@@ -1020,5 +1251,6 @@ scenario:
 
         Investigation notes are your separate working draft. Save them before switching work; the structured summary records the selected findings for handoff.
         Do not include passwords, approval codes, or claims about the employee's intentions.
+        Case references to preserve after comparison: A-1042, the two session identifiers, the exact inventory label, and the route-catalogue and work-travel coverage limits. These references are a review checklist, not a finding.
       eventIds: [suspicious-login-1]
       searchableText: ticket investigation notes
