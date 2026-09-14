@@ -100,9 +100,13 @@ function actionsForEvent(
         : remaining[0]
           ? [target(rules, event, remaining[0])]
           : [];
-    const also = stage.alsoOffer.map((actionId) =>
-      target(rules, event, actionId),
-    );
+    const also = stage.alsoOffer
+      .filter(
+        (actionId) =>
+          !rules.actions[actionId]?.tracksCompletion ||
+          !hasCompleted(event, actionId),
+      )
+      .map((actionId) => target(rules, event, actionId));
     return withManagerAndUtility(
       rules,
       event,

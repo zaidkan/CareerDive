@@ -112,7 +112,11 @@ describe("cross-referenced login case", () => {
     }
     const wrong = applyTaskAttempt(state, {
       ...attempt,
-      selectedOptionIds: ["vpn-display-city"],
+      selectedOptionIds: [
+        "baseline-vpn-route",
+        "approved-vpn-exit",
+        "vpn-display-city",
+      ],
     });
     expect(wrong.accepted).toBe(false);
     expect(wrong.state.simClock).toBe(state.simClock);
@@ -138,6 +142,18 @@ describe("cross-referenced login case", () => {
       );
       expect(state.observedArtifactIds).toContain("login-follow-up-guide");
       expect(state.observedArtifactIds).not.toContain("scanner-window");
+      expect(
+        toClientView(state).availableActions.some(
+          (action) =>
+            action.eventId === eventId && action.id === "search_knowledge_base",
+        ),
+      ).toBe(false);
+      expect(
+        toClientView(state).availableActions.some(
+          (action) =>
+            action.eventId === eventId && action.id === "escalate_alert",
+        ),
+      ).toBe(true);
       expect(state.ticketNotes[eventId]).toMatch(/S-0731/);
       expect(state.ticketNotes[eventId]).toMatch(/S-0741/);
       expect(state.ticketNotes[eventId]).toMatch(/VPN/);

@@ -40,6 +40,19 @@ export function CaseReview({
                 question still to answer. A saved note does not close the case
                 or request a review.
               </p>
+              {view.availableActions.some(
+                (action) =>
+                  action.eventId === event.id &&
+                  action.id === "search_knowledge_base" &&
+                  !action.taskId,
+              ) ? (
+                <p>
+                  Need more evidence? In Guides, use Check response procedure to
+                  review the available follow-up checks while leaving the case
+                  open. Your saved comparison remains here for the eventual
+                  decision.
+                </p>
+              ) : null}
               <details open>
                 <summary>Saved investigation note</summary>
                 {note ? (
