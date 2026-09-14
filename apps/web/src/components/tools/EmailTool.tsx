@@ -39,7 +39,7 @@ export function EmailTool({
 }) {
   const selected =
     artifacts.find(({ id }) => id === selectedId) ?? artifacts[0];
-  if (!selected) return <p>No messages are available yet.</p>;
+  if (!selected) return <p>No messages are available here yet. You can continue your open work in the other tools.</p>;
 
   return (
     <div className="email-tool">

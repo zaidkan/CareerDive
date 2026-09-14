@@ -36,10 +36,10 @@ export function InventoryLookup({
         onChange={(event) => {
           setQuery(event.target.value);
         }}
-        placeholder="e.g. unknown-laptop-17"
+        placeholder="Enter the device name shown in the alert"
       />
       {query.trim() && matches.length === 0 ? (
-        <p role="status">No inventory records match that device.</p>
+        <p role="status">No inventory records match that device. Check the full device name in the alert and try again; a missing match does not tell you who used it.</p>
       ) : null}
       {matches.map((record: ClientArtifact) => (
         <article key={record.id}>

@@ -25,7 +25,7 @@ export function AlertTool({
   useEffect(() => {
     if (selectedId) headingRef.current?.focus();
   }, [selectedId]);
-  if (!selected) return <p>No alerts are available yet.</p>;
+  if (!selected) return <p>No alert records are available here yet. Check the other tools for open work.</p>;
 
   return (
     <div className="alert-tool">

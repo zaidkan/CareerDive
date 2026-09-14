@@ -19,8 +19,8 @@ export function SourceEvidence({
   return (
     <div className="source-evidence">
       <p>
-        Mark a passage in the record below. Selected passages become your
-        findings.
+        Keep the source beside your finding: select highlighted text in the
+        records below. Select it again to remove it from your findings.
       </p>
       {artifacts
         .filter(({ observed, body }) => observed && body)

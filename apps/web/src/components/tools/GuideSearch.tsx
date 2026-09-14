@@ -56,7 +56,7 @@ export function GuideSearch({
             onChange={(event) => {
               setQuery(event.target.value);
             }}
-            placeholder="e.g. login alert, phishing"
+            placeholder="Try login, device, or scanner"
             type="search"
             value={query}
           />
@@ -90,7 +90,7 @@ export function GuideSearch({
               key={`${view.sessionId}:${view.kbQuery}`}
               id="kb-query"
               name="query"
-              placeholder="e.g. login alert, phishing"
+              placeholder="Describe the check you need help with"
               type="search"
             />
             <button
@@ -105,9 +105,9 @@ export function GuideSearch({
             </button>
             {isLoginFollowUp ? (
               <p>
-                Review the follow-up procedure and keep this case open. Save the
-                remaining question in Tickets; this check does not contact a
-                reviewer or contain an account.
+                Find your next check in the follow-up guide, then save the
+                unanswered question in Tickets. Reading the guide leaves the
+                case open; it does not contact a reviewer or restrict account access.
               </p>
             ) : null}
           </form>

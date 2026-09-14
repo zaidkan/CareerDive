@@ -34,10 +34,10 @@ export function CaseReview({
               aria-label="Case review before decision"
               className="work-task-sources"
             >
-              <h4>Review trail · {event.title}</h4>
+              <h4>Your notes and records · {event.title}</h4>
               <p>
                 If you need more evidence, use the available checks and save the
-                question still to answer. A saved note does not close the case
+                question you still need to answer in Tickets. A saved note does not close the case
                 or request a review.
               </p>
               {view.availableActions.some(
@@ -49,7 +49,7 @@ export function CaseReview({
                 <p>
                   Need more evidence? In Guides, use Check response procedure to
                   review the available follow-up checks while leaving the case
-                  open. Your saved comparison remains here for the eventual
+                  open. Your saved comparison stays here to help with your
                   decision.
                 </p>
               ) : null}
@@ -58,14 +58,14 @@ export function CaseReview({
                 {note ? (
                   <pre className="artifact-body">{note}</pre>
                 ) : (
-                  <p>No investigation note saved for this case yet.</p>
+                  <p>No investigation note saved for this case yet. In Tickets, write what you checked and what you need to check next, then save it.</p>
                 )}
               </details>
               <details>
                 <summary>Earlier opened records ({opened.length})</summary>
                 <p>
-                  Opening a record does not verify every claim in it. Compare
-                  the source with the wording in your note.
+                  Reading a record does not confirm every claim it contains.
+                  Check that your note says what the record supports and leaves room for what is still unknown.
                 </p>
                 {opened.map((artifact) => (
                   <article key={artifact.id}>
