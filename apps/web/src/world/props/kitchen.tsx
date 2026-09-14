@@ -56,8 +56,8 @@ export function Fridge({
         <MeshLabel
           text={snackBars > 0 ? `${String(snackBars)} BARS` : "EMPTY"}
           position={[0, 0.56, 0.375]}
-          width={0.48}
-          height={0.12}
+          width={0.6}
+          height={0.15}
         />
       ) : null}
       {/* Thin shelf edges and a recessed toe kick give the appliance depth
