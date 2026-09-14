@@ -10,6 +10,10 @@ import {
 } from "../src/index.js";
 
 const eventId = "suspicious-login-1";
+function required<T>(value: T | undefined): T {
+  if (value === undefined) throw new Error("Missing case fixture");
+  return value;
+}
 const newRecords = [
   "login-session-timeline",
   "prior-session-1",
@@ -32,7 +36,7 @@ function complete(initial: WorldState, id: SimulationActionId): WorldState {
   );
   if (!action?.taskId)
     return applyAction(state, { id, eventId, actorId: "user" }).state;
-  const task = state.rules.tasks[action.taskId]!;
+  const task = required(state.rules.tasks[action.taskId]);
   for (const step of task.steps) {
     for (const source of new Set(
       step.options.flatMap((o) => (o.source ? [o.source.artifactId] : [])),
@@ -80,10 +84,10 @@ describe("cross-referenced login case", () => {
       complete(world(), "review_alert"),
       "inspect_login_context",
     );
-    const task = state.rules.tasks["account-pattern-compare"]!;
-    const step = task.steps.find((s) => s.id === "vpn-cross-check");
+    const task = required(state.rules.tasks["account-pattern-compare"]);
+    const step = required(task.steps.find((s) => s.id === "vpn-cross-check"));
     expect(step).toBeDefined();
-    for (const prior of task.steps.slice(0, task.steps.indexOf(step!))) {
+    for (const prior of task.steps.slice(0, task.steps.indexOf(step))) {
       for (const id of new Set(
         prior.options.flatMap((o) => (o.source ? [o.source.artifactId] : [])),
       )) {
@@ -101,10 +105,12 @@ describe("cross-referenced login case", () => {
     const attempt = {
       eventId,
       taskId: task.id,
-      selectedOptionIds: step!.requiredOptionIds,
+      selectedOptionIds: step.requiredOptionIds,
     };
     expect(() => applyTaskAttempt(state, attempt)).toThrow(/Open the source/);
-    for (const id of new Set(step!.options.map((o) => o.source!.artifactId))) {
+    for (const id of new Set(
+      step.options.map((o) => required(o.source).artifactId),
+    )) {
       state = applyWorkplaceInteraction(state, {
         type: "open_artifact",
         artifactId: id,
@@ -172,14 +178,14 @@ describe("cross-referenced login case", () => {
     expect(state.events.find((e) => e.id === eventId)?.resolution).toMatch(
       /VPN/,
     );
-    const delayed = state.ledger.find(
-      (entry) => entry.actionId === "dismiss_alert",
+    const delayed = required(
+      state.ledger.find((entry) => entry.actionId === "dismiss_alert"),
     );
     expect(delayed?.applied).toBe(false);
     expect(delayed?.description).toMatch(/session identifiers/i);
     // Existing zero-assessment note action advances no clock; the regular scheduler
     // applies the consequence on the next work action at its deterministic due time.
-    state = { ...state, simClock: delayed!.dueAt! };
+    state = { ...state, simClock: required(delayed.dueAt) };
     state = applyAction(state, {
       id: "update_notebook",
       eventId: "handoff-1",
@@ -190,7 +196,7 @@ describe("cross-referenced login case", () => {
       "escalated",
     );
     expect(toClientView(state).operationalMessages.join(" ")).toContain(
-      delayed!.description,
+      delayed.description,
     );
   });
 });

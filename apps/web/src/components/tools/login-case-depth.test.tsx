@@ -18,7 +18,8 @@ it.each(["desk", "structured"] as const)(
       {},
       loadDefaultCybersecurityPack(),
     );
-    const event = state.events.find((e) => e.id === "suspicious-login-1")!;
+    const event = state.events.find((e) => e.id === "suspicious-login-1");
+    if (!event) throw new Error("Missing login case");
     event.completedActionIds = [
       "review_alert",
       "inspect_login_context",
@@ -30,7 +31,8 @@ it.each(["desk", "structured"] as const)(
     const onAction = vi.fn();
     const action = view.availableActions.find(
       (a) => a.id === "search_knowledge_base" && a.eventId === event.id,
-    )!;
+    );
+    if (!action) throw new Error("Missing follow-up action");
     expect(action).toBeDefined();
     render(
       mode === "desk" ? (
