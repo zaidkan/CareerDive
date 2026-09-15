@@ -1,5 +1,15 @@
 # Career Expo agent routing
 
+## Default communication style
+
+At the start of every conversation in this repository, read
+`/Users/zaid/.agents/skills/caveman/SKILL.md` and apply the `caveman` skill at
+**full** intensity. Keep it active for all responses unless the user requests
+another level, says "stop caveman", or requests "normal mode". Follow the
+skill's clarity exceptions; keep code, commits, and PR descriptions in normal
+technical language. If the skill path is unavailable, locate the installed
+`caveman` skill and read its `SKILL.md` before continuing.
+
 Read `AGENT_CONTEXT.md` and the applicable approved spec or plan before changing the project. Work in this feature worktree, preserve unrelated changes, and review `docs/coordination/REQUESTS.md` when beginning cross-cutting work.
 
 ## Non-negotiable product boundaries
