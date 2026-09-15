@@ -42,7 +42,7 @@ export function actionMutationKey(action: AvailableAction): string {
 }
 
 export function taskMutationKey(task: ClientTaskView): string {
-  return `task:${task.id}:${String(task.stepIndex)}`;
+  return `task:${task.eventId}:${task.id}:${String(task.stepIndex)}`;
 }
 
 export function notificationMutationKey(

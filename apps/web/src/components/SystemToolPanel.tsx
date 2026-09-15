@@ -134,7 +134,7 @@ function WorkInteraction({
     return task ? [task] : [];
   });
   const uniqueTasks = [
-    ...new Map(tasks.map((task) => [task.id, task])).values(),
+    ...new Map(tasks.map((task) => [`${task.eventId}:${task.id}`, task])).values(),
   ];
   const missingTaskActions = taskActions.filter(
     (action) =>
@@ -148,7 +148,7 @@ function WorkInteraction({
       <CaseReview view={view} actions={actions} />
       {uniqueTasks.map((task) => (
         <TaskInteraction
-          key={task.id}
+          key={`${task.eventId}:${task.id}`}
           artifacts={view.artifacts}
           onOpenArtifact={onOpenArtifact}
           mutationState={mutationState}

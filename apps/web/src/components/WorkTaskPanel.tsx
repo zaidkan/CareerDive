@@ -9,17 +9,23 @@ import {
   type MutationState,
 } from "../useMutationCoordinator.js";
 
-export function WorkTaskPanel({
-  task,
-  onTaskAttempt,
-  relatedArtifacts = [],
-  mutationState = EMPTY_MUTATION_STATE,
-}: {
+type WorkTaskPanelProps = {
   task: ClientTaskView;
   onTaskAttempt?: TaskAttemptHandler;
   relatedArtifacts?: ClientArtifact[];
   mutationState?: MutationState;
-}) {
+};
+
+export function WorkTaskPanel(props: WorkTaskPanelProps) {
+  return <EventTaskPanel key={`${props.task.eventId}:${props.task.id}`} {...props} />;
+}
+
+function EventTaskPanel({
+  task,
+  onTaskAttempt,
+  relatedArtifacts = [],
+  mutationState = EMPTY_MUTATION_STATE,
+}: WorkTaskPanelProps) {
   const [selected, setSelected] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<{
     accepted: boolean;
@@ -76,7 +82,7 @@ export function WorkTaskPanel({
 
   return (
     <section
-      aria-labelledby={`task-${task.id}-title`}
+      aria-labelledby={`task-${task.eventId}-${task.id}-title`}
       className="work-task"
       data-action-id={task.actionId}
       data-event-id={task.eventId}
@@ -88,7 +94,7 @@ export function WorkTaskPanel({
           <p className="eyebrow">
             Work step {task.stepIndex + 1} of {task.stepCount}
           </p>
-          <h4 id={`task-${task.id}-title`}>{task.title}</h4>
+          <h4 id={`task-${task.eventId}-${task.id}-title`}>{task.title}</h4>
         </div>
         <span className="work-task-kind">{task.kind.replaceAll("_", " ")}</span>
       </header>
@@ -141,7 +147,7 @@ export function WorkTaskPanel({
               >
                 <input
                   checked={checked}
-                  name={`task-${task.id}`}
+                  name={`task-${task.eventId}-${task.id}`}
                   onChange={() => {
                     if (single) {
                       setSelected([option.id]);
