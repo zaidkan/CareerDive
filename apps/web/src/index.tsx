@@ -30,6 +30,11 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
   const [sessionId, setSessionId] = useState<string>();
   const [debrief, setDebrief] = useState<Debrief>();
   const [error, setError] = useState<string>();
+  const [sessionRequest, setSessionRequest] = useState({
+    kind: "tutorial" as "tutorial" | "assessed",
+    attempt: 0,
+  });
+  const [debriefStatus, setDebriefStatus] = useState<"loading" | "failed">();
   const [phase, setPhase] = useState<"tutorial" | "assessed">("tutorial");
   const [activeSurface, setActiveSurface] = useState<
     "briefing" | "dashboard" | "manager"
@@ -45,11 +50,17 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
   useEffect(() => {
     const generation = ++sessionGenerationRef.current;
     currentSessionRef.current = undefined;
+    invalidateMutations();
+    setError(undefined);
+    setView(undefined);
+    setDebrief(undefined);
+    setDebriefStatus(undefined);
     void client
       .createSession({
         seed: Date.now() & 0x7fffffff,
-        sessionKind: "tutorial",
-        pacingMode: "practice",
+        sessionKind: sessionRequest.kind,
+        pacingMode:
+          sessionRequest.kind === "tutorial" ? "practice" : "standard",
       })
       .then((created) => {
         if (generation !== sessionGenerationRef.current) return;
@@ -59,11 +70,17 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
         };
         setSessionId(created.sessionId);
         setView(created.view);
+        setPhase(sessionRequest.kind);
+        setActiveSurface("briefing");
       })
       .catch(() => {
+        if (generation !== sessionGenerationRef.current) return;
         setError("Simulation could not start. Try again shortly.");
       });
-  }, [client]);
+    return () => {
+      sessionGenerationRef.current += 1;
+    };
+  }, [client, invalidateMutations, sessionRequest]);
 
   function currentSession() {
     const current = currentSessionRef.current;
@@ -76,6 +93,7 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
   }) {
     const current = currentSessionRef.current;
     if (
+      sessionGenerationRef.current !== session.generation ||
       current?.generation !== session.generation ||
       current.sessionId !== session.sessionId
     ) {
@@ -83,30 +101,27 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
     }
   }
 
-  async function startAssessedShift() {
-    const generation = ++sessionGenerationRef.current;
-    currentSessionRef.current = undefined;
-    invalidateMutations();
-    setError(undefined);
-    setView(undefined);
-    setDebrief(undefined);
+  function startAssessedShift() {
+    setSessionRequest((current) => ({
+      kind: "assessed",
+      attempt: current.attempt + 1,
+    }));
+  }
+
+  async function loadDebrief(session: {
+    generation: number;
+    sessionId: string;
+  }) {
+    assertCurrentSession(session);
+    setDebriefStatus("loading");
     try {
-      const created = await client.createSession({
-        seed: Date.now() & 0x7fffffff,
-        sessionKind: "assessed",
-        pacingMode: "standard",
-      });
-      if (generation !== sessionGenerationRef.current) return;
-      currentSessionRef.current = {
-        generation,
-        sessionId: created.sessionId,
-      };
-      setSessionId(created.sessionId);
-      setView(created.view);
-      setPhase("assessed");
-      setActiveSurface("briefing");
+      const result = await client.getDebrief(session.sessionId);
+      assertCurrentSession(session);
+      setDebrief(result);
+      setDebriefStatus(undefined);
     } catch {
-      setError("Assessed shift could not start. Try again shortly.");
+      if (sessionGenerationRef.current !== session.generation) return;
+      setDebriefStatus("failed");
     }
   }
 
@@ -140,18 +155,13 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
           view: nextView,
           success,
           ...(action.id === "complete_shift"
-              ? {
-                  onApplied: () => {
-                    assertCurrentSession(session);
-                    void client
-                      .getDebrief(session.sessionId)
-                      .then(setDebrief)
-                      .catch(() => {
-                        setError("Debrief could not be loaded.");
-                      });
-                  },
-                }
-              : {}),
+            ? {
+                onApplied: () => {
+                  assertCurrentSession(session);
+                  void loadDebrief(session);
+                },
+              }
+            : {}),
         };
       });
     } catch {
@@ -171,41 +181,33 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
         feedback: "Session is not ready.",
       };
     }
-    try {
-      const result = await runMutation(taskMutationKey(task), async () => {
-        assertCurrentSession(session);
-        try {
-          const outcome = await client.submitTaskAttempt(
-            session.sessionId,
-            task.id,
-            task.eventId,
-            selectedOptionIds,
-          );
-          return {
-            result: outcome,
-            view: outcome.view,
-            success: outcome.accepted
-              ? outcome.completed
-                ? `Task complete. ${outcome.feedback}`
-                : `Step ${String(task.stepIndex + 1)} complete. ${outcome.feedback}`
-              : outcome.feedback,
-          };
-        } catch (cause) {
-          throw new Error("That work step could not be checked.", { cause });
-        }
-      });
-      return {
-        accepted: result.accepted,
-        completed: result.completed,
-        feedback: result.feedback,
-      };
-    } catch {
-      return {
-        accepted: false,
-        completed: false,
-        feedback: "Something interrupted the check. Try again.",
-      };
-    }
+    const result = await runMutation(taskMutationKey(task), async () => {
+      assertCurrentSession(session);
+      try {
+        const outcome = await client.submitTaskAttempt(
+          session.sessionId,
+          task.id,
+          task.eventId,
+          selectedOptionIds,
+        );
+        return {
+          result: outcome,
+          view: outcome.view,
+          success: outcome.accepted
+            ? outcome.completed
+              ? `Task complete. ${outcome.feedback}`
+              : `Step ${String(task.stepIndex + 1)} complete. ${outcome.feedback}`
+            : outcome.feedback,
+        };
+      } catch (cause) {
+        throw new Error("That work step could not be checked.", { cause });
+      }
+    });
+    return {
+      accepted: result.accepted,
+      completed: result.completed,
+      feedback: result.feedback,
+    };
   }
 
   async function respondToWorkNotification(
@@ -301,9 +303,22 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
       </header>
 
       {error ? (
-        <p className="app-alert" role="alert">
-          {error}
-        </p>
+        <div className="app-alert" role="alert">
+          <p>{error}</p>
+          {!view ? (
+            <button
+              type="button"
+              onClick={() => {
+                setSessionRequest((current) => ({
+                  ...current,
+                  attempt: current.attempt + 1,
+                }));
+              }}
+            >
+              Retry starting shift
+            </button>
+          ) : null}
+        </div>
       ) : null}
 
       {phase === "tutorial" && view ? (
@@ -312,7 +327,7 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
             <button
               className="start-shift"
               onClick={() => {
-                void startAssessedShift();
+                startAssessedShift();
               }}
               type="button"
             >
@@ -322,7 +337,7 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
             <button
               className="skip-tutorial"
               onClick={() => {
-                void startAssessedShift();
+                startAssessedShift();
               }}
               type="button"
             >
@@ -334,10 +349,32 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
 
       {!view ? (
         <p className="app-loading" aria-live="polite">
-          Preparing workplace…
+          {error ? "Your shift has not started yet." : "Preparing workplace…"}
         </p>
       ) : debrief ? (
         <DebriefView debrief={debrief} />
+      ) : debriefStatus ? (
+        <section aria-label="Shift completion" aria-live="polite">
+          <h2>Shift complete</h2>
+          {debriefStatus === "failed" ? (
+            <>
+              <p role="alert">
+                Debrief could not be loaded. Your completed work is saved.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  const session = currentSession();
+                  if (session) void loadDebrief(session);
+                }}
+              >
+                Retry loading debrief
+              </button>
+            </>
+          ) : (
+            <p>Loading your debrief…</p>
+          )}
+        </section>
       ) : activeSurface === "briefing" ? (
         <ShiftBriefing
           onOpen={() => {

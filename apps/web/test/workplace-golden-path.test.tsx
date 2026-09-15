@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { useState } from "react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
@@ -13,6 +14,7 @@ import { APP_TABS } from "../src/world/deskOs/tabs.js";
 import { WORK_SYSTEMS } from "../src/systems.js";
 import type { NotificationHandler } from "../src/components/shared.js";
 import { BreakRoomPanel, CarriedSnackControl } from "../src/world/BreakRoomPanel.js";
+import { actionMutationKey, notificationMutationKey, taskMutationKey, useMutationCoordinator, workplaceMutationKey } from "../src/useMutationCoordinator.js";
 import { JulesDialogue } from "../src/world/JulesDialogue.js";
 
 afterEach(cleanup);
@@ -50,35 +52,56 @@ describe("rendered workplace golden path", () => {
     await repository.createSession("user-1", state);
     const caller = createAppRouter(repository).createCaller({ userId: "user-1" });
     const trace: unknown[] = [];
-    const update = async () => { state = (await repository.getSession("user-1", "golden")).state; rerender(tree()); };
-    const onAction = async (action: AvailableAction, freeText?: string) => {
-      trace.push({ type: "action", id: action.id, eventId: action.eventId, freeText });
-      await caller.simulation.performAction({ sessionId: "golden", actionId: action.id, eventId: action.eventId, ...(freeText ? { freeText } : {}) });
-      await update();
+    let coordinator: ReturnType<typeof useMutationCoordinator>;
+    const failures = new Set<string>();
+    const recovered = new Set<string>();
+    let failedSnapshot: string | undefined;
+    function failOnce(kind: string) {
+      if (failures.has(kind)) return;
+      failures.add(kind);
+      failedSnapshot = JSON.stringify(state);
+      throw new Error(`Network unavailable: ${kind}`);
+    }
+    const update = async () => {
+      state = (await repository.getSession("user-1", "golden")).state;
+      return toClientView(state);
     };
-    const onTaskAttempt = async (task: ClientTaskView, selectedOptionIds: string[]) => {
-      trace.push({ type: "task", taskId: task.id, eventId: task.eventId, selectedOptionIds });
-      const result = await caller.simulation.submitTaskAttempt({ sessionId: "golden", taskId: task.id, eventId: task.eventId, selectedOptionIds });
-      expect(result.accepted).toBe(true);
-      await update();
-      return result;
+    const onAction = (action: AvailableAction, freeText?: string) => {
+      void coordinator.runMutation(actionMutationKey(action), async () => {
+        failOnce("action");
+        trace.push({ type: "action", id: action.id, eventId: action.eventId, freeText });
+        await caller.simulation.performAction({ sessionId: "golden", actionId: action.id, eventId: action.eventId, ...(freeText ? { freeText } : {}) });
+        return { result: undefined, view: await update() };
+      }).catch(() => undefined);
     };
-    const onWorkplaceInteraction = async (interaction: WorkplaceInteraction) => {
-      trace.push(interaction);
-      const result = await caller.simulation.performWorkplaceInteraction({ sessionId: "golden", interaction });
-      await update();
-      return result;
-    };
-    const onNotification: NotificationHandler = async (notification, response, onApplied) => {
-      trace.push({ type: "notification", id: notification.id, response });
-      await caller.simulation.respondToNotification({ sessionId: "golden", notificationId: notification.id, response });
-      await update();
-      onApplied?.();
-    };
-    const tree = () => {
-      const view = toClientView(state);
+    const onTaskAttempt = (task: ClientTaskView, selectedOptionIds: string[]) =>
+      coordinator.runMutation(taskMutationKey(task), async () => {
+        failOnce("task");
+        trace.push({ type: "task", taskId: task.id, eventId: task.eventId, selectedOptionIds });
+        const result = await caller.simulation.submitTaskAttempt({ sessionId: "golden", taskId: task.id, eventId: task.eventId, selectedOptionIds });
+        expect(result.accepted).toBe(true);
+        return { result, view: await update() };
+      });
+    const onWorkplaceInteraction = (interaction: WorkplaceInteraction) =>
+      coordinator.runMutation(workplaceMutationKey(interaction), async () => {
+        if (interaction.type === "open_artifact") failOnce("artifact");
+        trace.push(interaction);
+        const result = await caller.simulation.performWorkplaceInteraction({ sessionId: "golden", interaction });
+        return { result, view: await update() };
+      });
+    const onNotification: NotificationHandler = (notification, response, onApplied) =>
+      coordinator.runMutation(notificationMutationKey(notification, response), async () => {
+        failOnce("notification");
+        trace.push({ type: "notification", id: notification.id, response });
+        await caller.simulation.respondToNotification({ sessionId: "golden", notificationId: notification.id, response });
+        return { result: undefined, view: await update(), ...(onApplied ? { onApplied } : {}) };
+      }).catch(() => undefined);
+    const tree = (view: ClientView) => {
       assertPublicView(view);
-      const props = { view, onAction, onTaskAttempt, onWorkplaceInteraction, onNotification };
+      const props = { view, onAction, onTaskAttempt, onWorkplaceInteraction, onNotification,
+        mutationState: coordinator.mutationState,
+        onRetryMutation: () => { void coordinator.retryMutation().catch(() => undefined); },
+      };
       return mode === "os" ? <>
         <DeskOs {...props} phase="seated_monitor" onLoginSuccess={() => undefined} onStand={() => undefined} onOsFullscreen={() => undefined} />
         {/* Actual spatial HUD components, without a WebGL canvas. */}
@@ -88,13 +111,33 @@ describe("rendered workplace golden path", () => {
         <JulesDialogue seenTopics={view.workplace.julesTopicsSeen} pending={false} onClose={() => undefined} onTopic={(topic) => { void onWorkplaceInteraction({ type: "talk_to_jules", topic }); }} />
       </> : <ExperienceShell {...props} mode={mode} onModeChange={() => undefined} />;
     };
-    const { container, rerender } = render(tree());
+    function Harness() {
+      const [view, setView] = useState(() => toClientView(state));
+      coordinator = useMutationCoordinator(setView);
+      return tree(view);
+    }
+    const { container } = render(<Harness />);
     async function activate(element: HTMLElement) {
       expect(element).toBeEnabled();
       if (mode === "list") {
         element.focus();
         await user.keyboard(element.tagName === "INPUT" ? " " : "{Enter}");
       } else await user.click(element);
+      await waitFor(() => { expect(coordinator.mutationState.pendingKey).toBeUndefined(); });
+      const retry = screen.queryByRole("button", { name: "Retry" });
+      if (retry) {
+        const error = required(coordinator.mutationState.error, "inline network error");
+        expect(error).toMatch(/^Network unavailable:/);
+        expect(JSON.stringify(state)).toBe(failedSnapshot);
+        expect(screen.getAllByRole("alert").some((node) => node.textContent.includes(error))).toBe(true);
+        if (mode === "list") {
+          retry.focus();
+          await user.keyboard("{Enter}");
+        } else await user.click(retry);
+        await waitFor(() => { expect(coordinator.mutationState.pendingKey).toBeUndefined(); });
+        expect(coordinator.mutationState.error).toBeUndefined();
+        recovered.add(error);
+      }
     }
     async function openSystem(systemId: AvailableAction["systemId"]) {
       if (mode === "list") return;
@@ -192,6 +235,9 @@ describe("rendered workplace golden path", () => {
     expect(state.workplace).toMatchObject({ fridgeSnackBars: 1, carriedSnackBites: 2, coffeeServings: 1, julesTopicsSeen: ["current_work"] });
     expect(state.events.find(({ id }) => id === suspicious)?.status).toBe("resolved");
     expect(state.events.find(({ id }) => id === routine)?.status).toBe("resolved");
+    expect([...failures].sort()).toEqual(["action", "artifact", "notification", "task"]);
+    expect(recovered.size).toBe(4);
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
     const stored = await repository.getSession("user-1", "golden");
     expect(stored.evidence.length).toBeGreaterThan(0);
     expect(foldActionLog(initial, stored.actionLog)).toEqual(state);
