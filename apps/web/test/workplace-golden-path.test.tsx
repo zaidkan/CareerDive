@@ -123,18 +123,18 @@ describe("rendered workplace golden path", () => {
         element.focus();
         await user.keyboard(element.tagName === "INPUT" ? " " : "{Enter}");
       } else await user.click(element);
-      await waitFor(() => expect(coordinator.mutationState.pendingKey).toBeUndefined());
+      await waitFor(() => { expect(coordinator.mutationState.pendingKey).toBeUndefined(); });
       const retry = screen.queryByRole("button", { name: "Retry" });
       if (retry) {
         const error = required(coordinator.mutationState.error, "inline network error");
         expect(error).toMatch(/^Network unavailable:/);
         expect(JSON.stringify(state)).toBe(failedSnapshot);
-        expect(screen.getAllByRole("alert").some((node) => node.textContent?.includes(error))).toBe(true);
+        expect(screen.getAllByRole("alert").some((node) => node.textContent.includes(error))).toBe(true);
         if (mode === "list") {
           retry.focus();
           await user.keyboard("{Enter}");
         } else await user.click(retry);
-        await waitFor(() => expect(coordinator.mutationState.pendingKey).toBeUndefined());
+        await waitFor(() => { expect(coordinator.mutationState.pendingKey).toBeUndefined(); });
         expect(coordinator.mutationState.error).toBeUndefined();
         recovered.add(error);
       }
