@@ -184,6 +184,11 @@ describe("rendered workplace golden path", () => {
       const item = Array.from(queue?.querySelectorAll<HTMLButtonElement>("button") ?? []).find((button) => eventTitle && button.textContent.includes(eventTitle));
       if (item) await user.click(item);
       if (!action.taskId) {
+        if ((id === "dismiss_alert" && eventId === routine) || id === "escalate_alert") {
+          const note = required(state.ticketNotes[eventId], "saved handoff before decision");
+          expect(Array.from(container.querySelectorAll("pre.artifact-body")).some((node) => node.textContent === note)).toBe(true);
+          expect(note).toContain(eventId === routine ? "RUN-FIN-031" : "file-access or mailbox activity");
+        }
         await activate(required(container.querySelector<HTMLElement>(`button[data-action-id="${id}"][data-event-id="${eventId}"]`), `${id} action button`));
         return;
       }
@@ -194,6 +199,10 @@ describe("rendered workplace golden path", () => {
         const taskRule = required(state.rules.tasks[taskId], `task rule ${taskId}`);
         const step = required(taskRule.steps[stepIndex], `task step ${taskId}:${String(stepIndex)}`);
         const panel = () => required(container.querySelector<HTMLElement>(`[data-task-id="${taskId}"][data-event-id="${eventId}"]`), `${taskId} task panel`);
+        if (step.id === "scanner-run-cross-check") {
+          expect(within(panel()).getByRole("button", { name: "Submit findings" })).toBeDisabled();
+          expect(panel().querySelector('[data-option-id="run-identity-scope"]')).toBeNull();
+        }
         for (const artifactId of step.relatedArtifactIds) {
           if (!state.observedArtifactIds.includes(artifactId)) {
             const taskContainer = required(panel().parentElement, `${taskId} task container`);
@@ -244,6 +253,9 @@ describe("rendered workplace golden path", () => {
     const debrief = await caller.debrief.get({ sessionId: "golden" });
     expect(debrief.confidence).toBe("early_signal");
     expect(Object.keys(debrief.sections)).toHaveLength(8);
+    expect(debrief.sections.consequences).toContain("RUN-FIN-031");
+    expect(debrief.sections.consequences).toContain("SCAN-FIN-MON");
+    expect(debrief.sections.consequences).toContain("07:45 export has no file-access or mailbox activity");
     outcomes.set(mode, stored);
     traces.set(mode, trace);
   }, 30000);
