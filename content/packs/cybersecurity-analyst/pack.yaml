@@ -410,7 +410,7 @@ scenario:
       systemId: ticket_queue
       kind: build_summary
       title: Build an investigation note
-      whyItMatters: Clear notes let the next analyst act without repeating your work.
+      whyItMatters: Clear notes let the next analyst repeat your comparisons, identify missing evidence, and request a bounded review without guessing what you checked.
       steps:
         - id: summary-evidence
           title: Choose evidence
@@ -471,6 +471,32 @@ scenario:
           requiredOptionIds: [route-mismatch-with-limits]
           coachOnFailure: Compare the session and connection identifiers, then check the HR record's coverage. Preserve the explanation you tested without turning a missing field into proof.
           successText: The ticket now carries the competing explanation and the records that limit it.
+        - id: summary-collection-limits
+          title: State what the records cannot show
+          prompt: Preserve the collection boundary so the reviewer can identify evidence still needed.
+          instruction: Select the coverage limit and the warning about repeated summaries of one source.
+          relatedArtifactIds: [login-session-timeline]
+          minSelections: 2
+          maxSelections: 2
+          options:
+            - id: collection-coverage-limit
+              label: The export ends at 07:45 and has no file-access or mailbox activity; what was accessed remains unverified.
+              source:
+                artifactId: login-session-timeline
+                quote: "Collection ends at 07:45. This export has no file-access or mailbox activity and cannot establish what was accessed."
+            - id: shared-source-limit
+              label: A-1042 and login-context-1 summarize the same source, so they are not independent confirmations.
+              source:
+                artifactId: login-session-timeline
+                quote: "A-1042 and login-context-1 summarize this same source; counting them separately does not create independent corroboration."
+            - id: session-refresh-only
+              label: Include only the later session refresh.
+              source:
+                artifactId: login-session-timeline
+                quote: "07:43 · S-0741 · account portal session refresh."
+          requiredOptionIds: [collection-coverage-limit, shared-source-limit]
+          coachOnFailure: A session refresh describes activity, but not the export's coverage. Find what was not collected and which summaries share a source; missing activity records do not prove nothing was accessed.
+          successText: Your handoff now states the collection gap without claiming a data-access outcome.
         - id: summary-next-step
           title: Add the next step
           prompt: Add a reversible professional next step to the ticket.
@@ -543,6 +569,38 @@ scenario:
           coachOnFailure: Match scanner name, time window, and target network together.
           successText: Alert matches the approved scanner window.
 
+        - id: scanner-run-cross-check
+          title: Corroborate the recorded scanner activity
+          prompt: An approved window says what was allowed; the run log says what the scanner recorded doing. Connect the run to the alert before closing it.
+          instruction: Select the matching run identity and scope, then the alert's recorded event time.
+          relatedArtifactIds: [scanner-alert, scanner-run-log, scanner-window]
+          minSelections: 2
+          maxSelections: 2
+          options:
+            - id: run-identity-scope
+              label: Recorded run identity, target scope, and change reference.
+              source:
+                artifactId: scanner-run-log
+                quote: "RUN-FIN-031 · scanner vuln-scan-03 · target finance VLAN · change reference SCAN-FIN-MON."
+            - id: recorded-event-time
+              label: The alert event time to compare with the approved window.
+              source:
+                artifactId: scanner-alert
+                quote: "Recorded activity: most recent completed Monday window, 10:18 office local; compare this event time, not the notification arrival time."
+            - id: delivery-time
+              label: Use delivery to this shift as the time of the scan.
+              source:
+                artifactId: scanner-run-log
+                quote: "Delivery: monitoring forwarded the saved alert to the current shift after a queue delay."
+            - id: schedule-owner
+              label: Use the team that owns the schedule as the run match.
+              source:
+                artifactId: scanner-window
+                quote: "Schedule owner: infrastructure operations."
+          requiredOptionIds: [run-identity-scope, recorded-event-time]
+          coachOnFailure: Compare recorded event time with the run interval and approved window. Arrival in your queue explains the interruption, not when the scan occurred; a schedule owner is not a run identifier.
+          successText: You connected alert A-1180 to a recorded run within the approved scope and time.
+
     - id: scanner-ticket-summary
       eventTemplateId: routine_alert_review
       actionId: document_ticket
@@ -555,14 +613,14 @@ scenario:
           title: Record the match
           prompt: Record the evidence that supports expected activity.
           instruction: Record the source, time, and scope match.
-          relatedArtifactIds: [scanner-alert, scanner-window]
+          relatedArtifactIds: [scanner-alert, scanner-window, scanner-run-log]
           minSelections: 2
           maxSelections: 2
           options:
             - id: scanner-matches
-              label: The scanner name matches vuln-scan-03
+              label: A-1180 matches RUN-FIN-031 — scanner vuln-scan-03, finance VLAN, change reference SCAN-FIN-MON.
             - id: scope-matches
-              label: Time and finance network match the approved window
+              label: Recorded Monday 10:18 activity fits the 10:05–10:32 run and approved 10:00–12:00 finance window; queue arrival is not event time.
             - id: priority-proves-safe
               label: Low priority alone proves the alert is safe
             - id: handoff-proves-safe
@@ -570,6 +628,27 @@ scenario:
           requiredOptionIds: [scanner-matches, scope-matches]
           coachOnFailure: Use matching source, time, and scope—not priority or someone else's assumption.
           successText: Your note records the trusted schedule match.
+        - id: scanner-coverage
+          title: Keep the closure within the record's limits
+          prompt: Record what the run log can support without turning an expected scan into a claim about every system's security.
+          instruction: Select the run log's coverage statement for the ticket.
+          relatedArtifactIds: [scanner-run-log]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: run-coverage-limit
+              label: RUN-FIN-031 records discovery connections only; it does not establish vulnerability findings or prove every finance system is secure.
+              source:
+                artifactId: scanner-run-log
+                quote: "Coverage: this log records discovery connections only; it does not establish vulnerability findings or prove every finance system is secure."
+            - id: run-completion-only
+              label: Use the completed run status as the whole closure finding.
+              source:
+                artifactId: scanner-run-log
+                quote: "Run status: completed."
+          requiredOptionIds: [run-coverage-limit]
+          coachOnFailure: Completed describes the run's status. Find what the log actually measures before claiming a security result; keep the closure specific to this connection alert.
+          successText: The ticket distinguishes expected connection activity from a security assessment.
         - id: scanner-decision
           title: State the closure reason
           prompt: State the conclusion that fits the evidence.
@@ -877,7 +956,9 @@ scenario:
               the limits of the employee and HR records make the remaining question clear:
               who controlled the flagged session, and whether containment is warranted.
               The reviewer can start with that question instead of rebuilding the comparison.
-              No containment or confirmed identity finding has been recorded by this escalation.
+              The 07:45 export has no file-access or mailbox activity, and the alert and
+              context summarize one source; the reviewer must obtain fuller records to
+              establish access. No containment or confirmed identity finding has been recorded by this escalation.
         review_alert:
           observeArtifactIds: [suspicious-login-alert]
           hidden:
@@ -960,12 +1041,14 @@ scenario:
             cognitiveLoad: 1
         dismiss_alert:
           resolve: true
-          resolution: Reviewed, documented, and closed as expected activity.
+          resolution: A-1180 matched RUN-FIN-031 and SCAN-FIN-MON; documented and closed as expected discovery connections, not a finding that every system is secure.
           consequence:
             description: >
               The reviewed routine alert was documented and closed as expected activity.
-              Your source, time, and scope reference lets the next analyst understand
-              the closure without repeating the schedule check. Return to the login
+              Alert A-1180 is linked to RUN-FIN-031 and approved reference SCAN-FIN-MON.
+              Recorded Monday 10:18 activity fits the run and window; delivery to this shift
+              does not change that event time. The closure concerns expected discovery
+              connections, not vulnerability findings or a claim that every system is secure. Return to the login
               notes and continue from the next step you left there.
           hidden:
             taskBacklog: -1
@@ -1204,8 +1287,27 @@ scenario:
         This alert summarizes connection activity, not confirmed exploitation or data access.
         Before closing, compare source, time, and target scope with the approved reference and leave that match in the ticket.
       eventIds: [routine-alert-1]
-      relatedArtifactIds: [scanner-window]
+      relatedArtifactIds: [scanner-window, scanner-run-log]
       searchableText: vuln-scan finance VLAN
+    - id: scanner-run-log
+      systemId: alert_dashboard
+      kind: alert
+      title: Scanner run log · A-1180
+      summary: Recorded execution and collection coverage for the scanner alert
+      body: |
+        Purpose: compare what the scanner recorded doing with the approved maintenance entry. Approval alone does not establish that an observed connection belonged to that run.
+
+        RUN-FIN-031 · scanner vuln-scan-03 · target finance VLAN · change reference SCAN-FIN-MON.
+        Recorded interval: most recent completed Monday, 10:05–10:32 office local. A-1180 refers to connection activity at 10:18 within this run.
+        Run status: completed.
+        Delivery: monitoring forwarded the saved alert to the current shift after a queue delay.
+
+        Coverage: this log records discovery connections only; it does not establish vulnerability findings or prove every finance system is secure.
+        Correlation: match the alert's source, target, and event time to the run and approved entry. The shared alert reference links the records; it does not turn the alert summary into an independent measurement.
+        Closure applies to A-1180 only. A different source, target, or time needs its own review; this maintenance record does not explain the unrelated login case.
+      eventIds: [routine-alert-1]
+      relatedArtifactIds: [scanner-alert, scanner-window]
+      searchableText: scanner run execution correlation coverage
     - id: scanner-window
       systemId: knowledge_base
       kind: kb_document
@@ -1216,12 +1318,14 @@ scenario:
         Close matching alerts after documenting the window reference.
 
         Reference: SCAN-FIN-MON · recurring maintenance entry · times are office local.
+        Schedule owner: infrastructure operations.
         Purpose: let the team distinguish scheduled discovery from unexplained connection activity.
         In scope: scanner vuln-scan-03, finance network, and the stated Monday window.
         Out of scope: a different source, a different network, or activity outside that window. Do not extend this approval to another alert just because it looks routine.
 
         Record the scanner, event time, target network, and reference in the closure note.
         Compare the alert's recorded event time even when monitoring delivers the notice later.
+        Corroborate the source, time, and scope with the scanner run log. An approval describes permitted activity; it does not prove that a particular run occurred.
         If a detail does not match, keep the uncertainty visible and ask Morgan for procedural guidance.
       eventIds: [routine-alert-1]
       searchableText: approved scanner window finance
