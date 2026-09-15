@@ -473,7 +473,7 @@ scenario:
           successText: The ticket now carries the competing explanation and the records that limit it.
         - id: summary-collection-limits
           title: State what the records cannot show
-          prompt: Preserve the collection boundary so the reviewer knows which evidence still needs to be requested.
+          prompt: Preserve the collection boundary so the reviewer can identify evidence still needed.
           instruction: Select the coverage limit and the warning about repeated summaries of one source.
           relatedArtifactIds: [login-session-timeline]
           minSelections: 2
@@ -578,12 +578,12 @@ scenario:
           maxSelections: 2
           options:
             - id: run-identity-scope
-              label: RUN-FIN-031 records vuln-scan-03 on the finance network under SCAN-FIN-MON.
+              label: Recorded run identity, target scope, and change reference.
               source:
                 artifactId: scanner-run-log
                 quote: "RUN-FIN-031 · scanner vuln-scan-03 · target finance VLAN · change reference SCAN-FIN-MON."
             - id: recorded-event-time
-              label: The recorded Monday 10:18 activity falls inside the approved window.
+              label: The alert event time to compare with the approved window.
               source:
                 artifactId: scanner-alert
                 quote: "Recorded activity: most recent completed Monday window, 10:18 office local; compare this event time, not the notification arrival time."
