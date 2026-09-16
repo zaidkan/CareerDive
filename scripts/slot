@@ -5,9 +5,9 @@
 # Model
 #   Each Codex ACCOUNT (zk, hamza) runs up to 3 model terminals, named EXACTLY
 #   by the manual Orca tab title (Codex cannot overwrite the tab-level title):
-#       terrazk  solzk  astrazk        (account zk)
-#       terrahamza  solhamza  astrahamza   (account hamza)
-#   Tab name = <model><account>, model in {terra, sol, astra}, account in {zk, hamza}.
+#       zkterra  zksol  zkastra        (account zk)
+#       hamzaterra  hamzasol  hamzaastra   (account hamza)
+#   Tab name = <account><model>, account in {zk, hamza}, model in {terra, sol, astra}.
 #   terra=Terra High, sol=Sol High, astra=Astra Low (default; Med/High only on
 #   explicit user change for one task, then back to Low).
 #
@@ -24,7 +24,7 @@
 # Usage
 #   scripts/slot list                      # all model terminals (JSON)
 #   scripts/slot resolve <model> <account> # one terminal handle+state (JSON)
-#       e.g. scripts/slot resolve terra zk   -> resolves tab 'terrazk'
+#       e.g. scripts/slot resolve terra zk   -> resolves tab 'zkterra'
 #   scripts/slot account-status            # per-account BUSY/free + active dispatch (JSON)
 #   scripts/slot capacity                  # integer: accounts with >=1 live terminal and not busy
 #
@@ -52,7 +52,7 @@ orca = os.environ["ORCA_BIN"]
 worktree = os.environ["WORKTREE"]
 models = ["terra", "sol", "astra"]
 accounts = ["zk", "hamza"]
-names = [m + a for a in accounts for m in models]  # terrazk, solzk, ...
+names = [a + m for a in accounts for m in models]  # hamzaterra, hamzasol, ...
 
 listing = subprocess.run(
     [orca, "terminal", "list", "--worktree", worktree,
@@ -85,7 +85,7 @@ def parse(name):
     """exact <model><account> -> (model, account) or None."""
     for a in accounts:
         for m in models:
-            if name == m + a:
+            if name == a + m:
                 return (m, a)
     return None
 
@@ -101,7 +101,7 @@ for tab_id, title in tabs:
 rows = []
 for a in accounts:
     for m in models:
-        n = m + a
+        n = a + m
         hs = by_name[n]
         if len(hs) == 0:
             rows.append({"name": n, "model": m, "account": a, "handle": None, "state": "UNAVAILABLE"})
@@ -142,7 +142,7 @@ for lay in res.get("visualLayouts",[]): walk(lay.get("root",{}),tabs)
 name_handle={}
 for tid,title in tabs:
     h=live_by_tab.get(tid)
-    if h and title and title in [m+a for a in accounts for m in models]:
+    if h and title and title in [a+m for a in accounts for m in models]:
         name_handle.setdefault(title,h)
 
 # active root dispatches by terminal handle (best-effort; needs run)
@@ -164,7 +164,7 @@ for a in accounts:
     terms={}
     busy_by=None
     for m in models:
-        n=m+a; h=name_handle.get(n)
+        n=a+m; h=name_handle.get(n)
         terms[n]={"handle":h,"live":bool(h)}
         if h and h in active_handles: busy_by=n
     live_any=any(t["live"] for t in terms.values())
@@ -181,7 +181,7 @@ case "$cmd" in
   resolve)
     model="${1:-}"; account="${2:-}"
     is_model "$model" && is_account "$account" || { echo "usage: slot resolve <terra|sol|astra> <zk|hamza>" >&2; exit 64; }
-    resolve_all | python3 -c "import json,sys; d=json.load(sys.stdin); n=sys.argv[1]+sys.argv[2]; r=[x for x in d['terminals'] if x['name']==n][0]; print(json.dumps(r,indent=2))" "$model" "$account"
+    resolve_all | python3 -c "import json,sys; d=json.load(sys.stdin); n=sys.argv[2]+sys.argv[1]; r=[x for x in d['terminals'] if x['name']==n][0]; print(json.dumps(r,indent=2))" "$model" "$account"
     ;;
   account-status) account_status ;;
   capacity)
