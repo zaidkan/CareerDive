@@ -1,72 +1,58 @@
 #!/usr/bin/env bash
 #
-# slot — Career-Expo worker-slot availability helper.
+# slot — Career-Expo model-terminal resolver (account + model tier).
 #
-# Purpose
-#   Give the user one simple command to enable/disable a canonical Codex
-#   subscription slot, and give Kiro one deterministic resolver for scheduling.
+# Model
+#   Each Codex ACCOUNT (zk, hamza) runs up to 3 model terminals, named EXACTLY
+#   by the manual Orca tab title (Codex cannot overwrite the tab-level title):
+#       terrazk  solzk  astrazk        (account zk)
+#       terrahamza  solhamza  astrahamza   (account hamza)
+#   Tab name = <model><account>, model in {terra, sol, astra}, account in {zk, hamza}.
+#   terra=Terra High, sol=Sol High, astra=Astra Low (default; Med/High only on
+#   explicit user change for one task, then back to Low).
 #
-# Model (manual-tab-name only)
-#   Logical slots (canonical names): hamza=CODEX-1, zk1=CODEX-2, zk2=CODEX-3.
+#   Identity comes ONLY from the manual tab-level title
+#   (terminal list --include-visual-layouts -> visualLayouts[].root.tabs[].title,
+#   joined to a live Codex terminal by tabId). No markers, no scrollback, no
+#   state file, no persisted handles.
 #
-#   Identity AND availability are derived ENTIRELY from the reliable manual
-#   Orca tab name exposed at
-#       terminal list --include-visual-layouts --json
-#       -> result.visualLayouts[].root.tabs[].title   (joined by tabId)
-#   Orca does NOT let Codex overwrite this tab-level title. The flat/process
-#   `title` field IS overwritten by Codex and is never used here.
-#
-#   A live terminal belongs to a slot if its manual tab name begins with the
-#   slot's canonical prefix (hamza / zk1 / zk2). It is ENABLED iff the manual
-#   tab name EXACTLY equals the canonical name; any suffix (hamzaoff, hamza1,
-#   hamza-anything) means DISABLED.
-#
-#   No ORCA_SLOT stream marker. No terminal scrollback read. No state file.
-#   No terminal UUID is persisted anywhere. Handles are resolved dynamically
-#   by joining the matching tab's tabId to its current live terminal.
-#
-# Prefix precedence note: zk1 and zk2 do not collide (distinct prefixes), and
-# "hamza" does not prefix "zk*". A name is matched to at most one slot by exact
-# canonical prefix.
+#   ACCOUNT-LEVEL CONCURRENCY: the 3 terminals of an account share ONE usage
+#   pool. Enforce ONE ROOT TASK PER ACCOUNT (not per terminal). `account-status`
+#   reports, per account, whether any of its terminals is backing an active root
+#   task (BUSY) so Kiro does not double-spend an account.
 #
 # Usage
-#   scripts/slot list                 # resolve + print every slot's state (JSON)
-#   scripts/slot resolve <slot>       # resolve one slot (JSON)
-#   scripts/slot on  <slot>           # enable  (rename manual tab -> <slot>)
-#   scripts/slot off <slot>           # disable (rename manual tab -> <slot>off)
-#   scripts/slot capacity             # print integer root-worker capacity
+#   scripts/slot list                      # all model terminals (JSON)
+#   scripts/slot resolve <model> <account> # one terminal handle+state (JSON)
+#       e.g. scripts/slot resolve terra zk   -> resolves tab 'terrazk'
+#   scripts/slot account-status            # per-account BUSY/free + active dispatch (JSON)
+#   scripts/slot capacity                  # integer: accounts with >=1 live terminal and not busy
 #
-#   <slot> is one of: hamza | zk1 | zk2
-#
-# Notes
-#   Requires Orca running. Uses the Orca CLI resolved from $ORCA_CLI_COMMAND,
-#   else `orca`.
+#   models: terra sol astra    accounts: zk hamza
 
 set -euo pipefail
 
 ORCA_BIN="${ORCA_CLI_COMMAND:-orca}"
 CAREER_EXPO_WORKTREE="${CAREER_EXPO_WORKTREE:-id:e4e8bc75-131b-4baf-a2f1-aa6fa411f9c8::/Users/zaid/orca/Career-Expo}"
+RUN_ID="${CAREER_EXPO_RUN:-}"
 
-CANONICAL_SLOTS=(hamza zk1 zk2)
+MODELS=(terra sol astra)
+ACCOUNTS=(zk hamza)
 
-is_canonical() {
-  local s="$1"
-  for c in "${CANONICAL_SLOTS[@]}"; do
-    [[ "$s" == "$c" ]] && return 0
-  done
-  return 1
-}
+is_model()   { case "$1" in terra|sol|astra) return 0;; *) return 1;; esac; }
+is_account() { case "$1" in zk|hamza) return 0;; *) return 1;; esac; }
 
-# Emit the resolved slot table as JSON on stdout.
-# Each row: {slot, count, identity_handle, tab_name, enabled, state}
-# Identity + availability come only from the manual tab-level title.
+# Emit resolved model-terminal table as JSON.
+# rows: {name, model, account, handle, state}  where state = AVAILABLE|UNAVAILABLE|AMBIGUOUS
 resolve_all() {
   ORCA_BIN="$ORCA_BIN" WORKTREE="$CAREER_EXPO_WORKTREE" python3 - <<'PY'
 import json, os, subprocess
 
 orca = os.environ["ORCA_BIN"]
 worktree = os.environ["WORKTREE"]
-canonical = ["hamza", "zk1", "zk2"]
+models = ["terra", "sol", "astra"]
+accounts = ["zk", "hamza"]
+names = [m + a for a in accounts for m in models]  # terrazk, solzk, ...
 
 listing = subprocess.run(
     [orca, "terminal", "list", "--worktree", worktree,
@@ -74,141 +60,142 @@ listing = subprocess.run(
     capture_output=True, text=True, check=True,
 ).stdout
 res = json.loads(listing).get("result", {})
-terminals = res.get("terminals", [])
-layouts = res.get("visualLayouts", [])
 
-# Live-terminal set by tabId (a terminal must be present, connected, Codex).
 live_by_tab = {}
-for t in terminals:
-    if t.get("agentIdentity") != "codex":
-        continue
-    if not t.get("connected"):
+for t in res.get("terminals", []):
+    if t.get("agentIdentity") != "codex" or not t.get("connected"):
         continue
     live_by_tab.setdefault(t.get("tabId"), t.get("handle"))
 
-# Manual tab-level titles (NOT the Codex-overwritten pane/flat title).
-def walk_tabs(node, out):
+def walk(node, out):
     if not isinstance(node, dict):
         return
     for t in node.get("tabs", []) or []:
         out.append((t.get("tabId"), t.get("title")))
-        walk_tabs(t, out)
-    panes = node.get("panes")
-    if isinstance(panes, dict):
-        walk_tabs(panes, out)
+        walk(t, out)
+    p = node.get("panes")
+    if isinstance(p, dict):
+        walk(p, out)
 
 tabs = []
-for lay in layouts:
-    walk_tabs(lay.get("root", {}), tabs)
+for lay in res.get("visualLayouts", []):
+    walk(lay.get("root", {}), tabs)
 
-def slot_for(name):
-    """Return the canonical slot whose prefix matches this manual tab name, or None."""
-    if not name:
-        return None
-    for c in canonical:
-        if name == c or name.startswith(c):
-            return c
+def parse(name):
+    """exact <model><account> -> (model, account) or None."""
+    for a in accounts:
+        for m in models:
+            if name == m + a:
+                return (m, a)
     return None
 
-# slot -> list of {handle, tab_name, enabled}
-by_slot = {s: [] for s in canonical}
+# name -> list of handles (exact match)
+by_name = {n: [] for n in names}
 for tab_id, title in tabs:
-    handle = live_by_tab.get(tab_id)
-    if handle is None:
-        continue  # tab has no live Codex terminal
-    slot = slot_for(title)
-    if slot is None:
+    h = live_by_tab.get(tab_id)
+    if h is None or not title:
         continue
-    by_slot[slot].append({
-        "handle": handle,
-        "tab_name": title,
-        "enabled": (title == slot),  # EXACT match required
-    })
+    if title in by_name:
+        by_name[title].append(h)
 
 rows = []
-capacity = 0
-for slot in canonical:
-    entries = by_slot[slot]
-    count = len(entries)
-    if count == 0:
-        rows.append({"slot": slot, "count": 0, "identity_handle": None,
-                     "tab_name": None, "enabled": False, "state": "UNAVAILABLE"})
-        continue
-    if count > 1:
-        rows.append({"slot": slot, "count": count,
-                     "identity_handle": [e["handle"] for e in entries],
-                     "tab_name": [e["tab_name"] for e in entries],
-                     "enabled": False, "state": "AMBIGUOUS"})
-        continue
-    e = entries[0]
-    enabled = e["enabled"]
-    # BUSY vs AVAILABLE (active root task) is decided by Kiro against
-    # orchestration worker-list; this helper reports schedulable-eligibility.
-    state = "AVAILABLE" if enabled else "UNAVAILABLE"
-    if enabled:
-        capacity += 1
-    rows.append({"slot": slot, "count": 1, "identity_handle": e["handle"],
-                 "tab_name": e["tab_name"], "enabled": enabled, "state": state})
+for a in accounts:
+    for m in models:
+        n = m + a
+        hs = by_name[n]
+        if len(hs) == 0:
+            rows.append({"name": n, "model": m, "account": a, "handle": None, "state": "UNAVAILABLE"})
+        elif len(hs) == 1:
+            rows.append({"name": n, "model": m, "account": a, "handle": hs[0], "state": "AVAILABLE"})
+        else:
+            rows.append({"name": n, "model": m, "account": a, "handle": hs, "state": "AMBIGUOUS"})
 
-print(json.dumps({"slots": rows, "capacity": capacity}, indent=2))
+print(json.dumps({"terminals": rows}, indent=2))
 PY
 }
 
-# Resolve the current live handle for exactly one slot (any canonical-prefix
-# tab, enabled or disabled). Prints the handle, or exits non-zero.
-resolve_handle() {
-  local want="$1"
-  resolve_all | python3 -c '
-import json, sys
-want = sys.argv[1]
-data = json.load(sys.stdin)
-for r in data["slots"]:
-    if r["slot"] == want:
-        h = r["identity_handle"]
-        if r["count"] == 1 and isinstance(h, str):
-            print(h); sys.exit(0)
-        if r["count"] == 0:
-            sys.stderr.write("slot %s: no live Codex terminal whose manual tab name begins with %s\n" % (want, want)); sys.exit(2)
-        sys.stderr.write("slot %s: AMBIGUOUS (%d terminals match the prefix)\n" % (want, r["count"])); sys.exit(3)
-sys.stderr.write("unknown slot %s\n" % want); sys.exit(4)
-' "$want"
+# Per-account status incl. one-root-task-per-account lock (needs run id).
+account_status() {
+  ORCA_BIN="$ORCA_BIN" RUN_ID="$RUN_ID" WORKTREE="$CAREER_EXPO_WORKTREE" python3 - <<'PY'
+import json, os, subprocess
+
+orca = os.environ["ORCA_BIN"]
+run_id = os.environ.get("RUN_ID", "")
+worktree = os.environ["WORKTREE"]
+models = ["terra", "sol", "astra"]; accounts = ["zk", "hamza"]
+
+# reuse resolve_all logic inline
+listing = subprocess.run([orca,"terminal","list","--worktree",worktree,"--include-visual-layouts","--json"],
+                         capture_output=True,text=True,check=True).stdout
+res = json.loads(listing).get("result", {})
+live_by_tab = {}
+for t in res.get("terminals", []):
+    if t.get("agentIdentity")=="codex" and t.get("connected"):
+        live_by_tab.setdefault(t.get("tabId"), t.get("handle"))
+def walk(node,out):
+    if not isinstance(node,dict): return
+    for t in node.get("tabs",[]) or []: out.append((t.get("tabId"),t.get("title"))); walk(t,out)
+    p=node.get("panes"); 
+    if isinstance(p,dict): walk(p,out)
+tabs=[]
+for lay in res.get("visualLayouts",[]): walk(lay.get("root",{}),tabs)
+name_handle={}
+for tid,title in tabs:
+    h=live_by_tab.get(tid)
+    if h and title and title in [m+a for a in accounts for m in models]:
+        name_handle.setdefault(title,h)
+
+# active root dispatches by terminal handle (best-effort; needs run)
+active_handles=set()
+if run_id:
+    try:
+        wl=subprocess.run([orca,"orchestration","worker-list","--run",run_id,"--json"],
+                          capture_output=True,text=True,check=True).stdout
+        d=json.loads(wl).get("result",{})
+        act={"ready","running","dispatched","working"}
+        for w in d.get("workers",[]):
+            if str(w.get("workerState","")).lower() in act and w.get("agentTerminalHandle"):
+                active_handles.add(w["agentTerminalHandle"])
+    except Exception:
+        pass
+
+out=[]
+for a in accounts:
+    terms={}
+    busy_by=None
+    for m in models:
+        n=m+a; h=name_handle.get(n)
+        terms[n]={"handle":h,"live":bool(h)}
+        if h and h in active_handles: busy_by=n
+    live_any=any(t["live"] for t in terms.values())
+    out.append({"account":a,"live":live_any,"busy": busy_by is not None,
+                "busy_terminal":busy_by,"terminals":terms,
+                "state":("BUSY" if busy_by else ("FREE" if live_any else "UNAVAILABLE"))})
+print(json.dumps({"accounts":out,"run":run_id or None}, indent=2))
+PY
 }
 
 cmd="${1:-}"; shift || true
-
 case "$cmd" in
-  list)
-    resolve_all
-    ;;
+  list) resolve_all ;;
   resolve)
-    slot="${1:-}"; is_canonical "$slot" || { echo "usage: slot resolve <hamza|zk1|zk2>" >&2; exit 64; }
-    resolve_all | python3 -c "import json,sys; d=json.load(sys.stdin); r=[x for x in d['slots'] if x['slot']==sys.argv[1]][0]; print(json.dumps(r, indent=2))" "$slot"
+    model="${1:-}"; account="${2:-}"
+    is_model "$model" && is_account "$account" || { echo "usage: slot resolve <terra|sol|astra> <zk|hamza>" >&2; exit 64; }
+    resolve_all | python3 -c "import json,sys; d=json.load(sys.stdin); n=sys.argv[1]+sys.argv[2]; r=[x for x in d['terminals'] if x['name']==n][0]; print(json.dumps(r,indent=2))" "$model" "$account"
     ;;
+  account-status) account_status ;;
   capacity)
-    resolve_all | python3 -c "import json,sys; print(json.load(sys.stdin)['capacity'])"
-    ;;
-  on)
-    slot="${1:-}"; is_canonical "$slot" || { echo "usage: slot on <hamza|zk1|zk2>" >&2; exit 64; }
-    handle="$(resolve_handle "$slot")"
-    "$ORCA_BIN" terminal rename --terminal "$handle" --title "$slot" --json >/dev/null
-    echo "slot $slot ENABLED (manual tab renamed to '$slot')"
-    ;;
-  off)
-    slot="${1:-}"; is_canonical "$slot" || { echo "usage: slot off <hamza|zk1|zk2>" >&2; exit 64; }
-    handle="$(resolve_handle "$slot")"
-    "$ORCA_BIN" terminal rename --terminal "$handle" --title "${slot}off" --json >/dev/null
-    echo "slot $slot DISABLED (manual tab renamed to '${slot}off')"
+    account_status | python3 -c "import json,sys; d=json.load(sys.stdin); print(sum(1 for a in d['accounts'] if a['state']=='FREE'))"
     ;;
   *)
     cat >&2 <<EOF
-slot — Career-Expo worker-slot availability helper (manual-tab-name only)
+slot — Career-Expo model-terminal resolver (account + model tier)
 usage:
-  scripts/slot list             resolve and print all slot states (JSON)
-  scripts/slot resolve <slot>   resolve one slot (JSON)
-  scripts/slot on  <slot>       enable  (manual tab -> <slot>)
-  scripts/slot off <slot>       disable (manual tab -> <slot>off)
-  scripts/slot capacity         print integer root-worker capacity
-  <slot> = hamza | zk1 | zk2
+  scripts/slot list                       all model terminals (JSON)
+  scripts/slot resolve <model> <account>  one terminal (JSON)   e.g. resolve terra zk -> terrazk
+  scripts/slot account-status             per-account BUSY/free (set CAREER_EXPO_RUN for lock check)
+  scripts/slot capacity                   # of accounts live and not busy
+  models: terra sol astra   accounts: zk hamza
 EOF
     exit 64
     ;;
