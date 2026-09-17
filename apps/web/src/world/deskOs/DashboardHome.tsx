@@ -67,8 +67,13 @@ export function DashboardHome({
               }}
               type="button"
             >
+              <span className="desk-os-tile-icon" aria-hidden="true">
+                {system.label.charAt(0)}
+              </span>
               <strong>{system.label}</strong>
-              <span>{count > 0 ? `${String(count)} open` : system.hint}</span>
+              <span className={count > 0 ? "desk-os-tile-count" : undefined}>
+                {count > 0 ? `${String(count)} open` : system.hint}
+              </span>
             </button>
           );
         })}
@@ -79,6 +84,9 @@ export function DashboardHome({
           }}
           type="button"
         >
+          <span className="desk-os-tile-icon" aria-hidden="true">
+            M
+          </span>
           <strong>Meetings</strong>
           <span>Current shift checkpoints</span>
         </button>
