@@ -194,6 +194,8 @@ A Work Item represents a piece of work that exists in the simulated workplace, s
 
 A Work Item is not a question.
 
+**Runtime representation (Phase 0 decision, binding):** "Work Item" is the player/product abstraction. Its canonical runtime representation is an **extended `EventInstance`** — the existing event state already carries ID, type, status, creation time, linked records, resolution, scheduler integration, serialization, and replay. No separate competing WorkItem state store will be introduced. Phase 1 extends `EventInstance` with acknowledgement state/time, priority/attention metadata, linked ticket ID, waiting/monitoring states, and follow-up references (see §6, §18 Phase 1).
+
 It contains or references:
 
 - stable ID;
@@ -219,7 +221,7 @@ A typical lifecycle is:
 
 Not every Work Item needs every state.
 
-The state machine must be deterministic and content-authored.
+The state machine must be deterministic and content-authored. The lifecycle states map onto the extended `EventStatus` enum (`pending`, `active`, `acknowledged`, `monitoring`, `waiting`, `resolved`, `escalated`, `expired`); Phase 1 adds the missing states rather than building a parallel machine.
 
 ## 3.3 Player freedom
 
@@ -381,6 +383,8 @@ Morgan provides only the facts Morgan canonically knows.
 
 ### T+20 — Employee phishing report arrives
 
+**Implementation status:** greenfield content. The current pack defines phishing action shells whose referenced artifacts do not exist and whose actions no progression offers; there is no functioning phishing workflow to re-author. The beat below describes the target, built on the Phase 2 query engine and Phase 5 decisions once they exist.
+
 A separate employee report enters the queue.
 
 Purpose:
@@ -479,9 +483,9 @@ The consequence is not labeled punishment or reward.
 
 It is the next state of the workplace.
 
-### T+43 — False-positive review appears
+### T+43 — False-positive review appears (SHOULD-ship, Phase 0 decision)
 
-A separate low-stakes review demonstrates that suspicious-looking alerts are not always malicious.
+A separate low-stakes review demonstrates that suspicious-looking alerts are not always malicious. It is SHOULD-ship rather than MUST: it teaches “unusual ≠ malicious” and prevents “always escalate” learning, but no content exists for it and the shift is coherent without it. If built, keep it small and reuse existing mechanics — no special discrimination system.
 
 Purpose:
 
@@ -614,6 +618,8 @@ Accessible renderer:
 - no hidden answer-key fields reach the client;
 - query order does not alter underlying truth.
 
+**Implementation status (Phase 0):** the structured query engine is genuinely new. What exists today is the `kbQuery` free-text slot (an action effect stores the player's text; there is no query action, dataset schema, filter evaluation, result ordering, or query history) plus client-side filtering over serialized artifacts. Phase 2 builds the canonical query action, dataset schemas, deterministic filter/search, and query history.
+
 ---
 
 ## 5.2 Evidence Discovery
@@ -659,6 +665,8 @@ A discovery rule may require:
 - receiving a specific authored dialogue fact;
 - examining a KB/reference document.
 
+**Absence-proof semantics (Phase 0 decision, binding for Phase 3):** an absence fact ("no matching VPN record exists") is a normal fact with a coverage provenance rule, not a special primitive and never an exact-query match. A stored query establishes the absence iff its normalized filters semantically cover the authored requirement — the required dimensions (e.g. account/user, source IP where applicable) plus a time interval ⊇ the authored window — and the result set contains zero qualifying records. Broader queries qualify; wrong-account or unrelated-interval queries do not. The runtime records normalized query, dataset, filters, result IDs, and sim time; the discovery rule evaluates coverage deterministically at most once per query.
+
 When satisfied:
 
 - mark fact as discovered;
@@ -691,6 +699,8 @@ Do not show:
 - evidence state is deterministic and replayable;
 - absence-based facts require a query capable of establishing absence;
 - the client cannot infer hidden undiscovered facts from serialized metadata.
+
+**Implementation status (Phase 0):** no Evidence Fact or discovery-rule engine exists. The reusable provenance substrate is `observedArtifactIds` (global + per-event record-open tracking with observed-gated serialization) plus the source-quote gating pattern (submission requires opened sources; quotes withheld until observed). Assessment `EvidenceSignal` records behavioral signals per action and must NOT be confused with scenario Evidence Facts; the discovery store is a separate canonical domain (see §6.4).
 
 ---
 
@@ -760,6 +770,8 @@ Accessible mode:
 - missing useful evidence does not cause a “wrong answer” screen;
 - later NPC/consequence rules may react to ticket state;
 - free text never becomes authoritative world truth.
+
+**Implementation status (Phase 0):** deterministic free-text slots already exist and are canonical + replayed — `update_ticket_notes` writes per-event `ticketNotes`, `update_notebook` writes the global `notebook` string, and `build_summary` task completion synthesizes ticket text from selected option labels. These are usable foundations, not the target: no structured fields, status machine, evidence attachments, entity references, or transition legality exist. Phase 4 replaces `build_summary` synthesis with structured assembly while keeping the same canonical storage keys for replay continuity.
 
 ---
 
@@ -831,6 +843,8 @@ Avoid labels like:
 - no immediate “correct/incorrect” response exists;
 - the same decision at the same state/time yields the same consequence schedule.
 
+**Implementation status (Phase 0):** staged decisions with workplace-style labels already exist (`escalate_alert`, `dismiss_alert`), and the delayed unconditional path works today (`dismiss_alert` reopens the case after 40 simulated minutes via `delayMinutes` + `escalateOnApply`). What is missing is conditional firing (predicates evaluated at fire time), cancellation/supersession, and typed operations beyond escalation. Phase 5 extends the existing scheduler; it does not replace it.
+
 ---
 
 ## 5.5 Workplace Interactions
@@ -900,13 +914,41 @@ Accessible:
 - player can obtain equivalent canonical information in all renderers;
 - NPC dialogue responds to world state without becoming an open-ended authority.
 
+**Implementation status (Phase 0):** the AI phrasing boundary already holds (AI phrases bounded payloads; deterministic fallback exists; Jules is LLM-free and reads only the public client view). What does NOT exist is any NPC runtime model — no availability, intent contracts, authored fact projection into turns, or pending/delayed replies. `ask_manager` is a hardcoded effect branch, not an authored-intent pattern, and must be generalized rather than extended. NPC availability/intents are engine + schema work (Phase 6), with a schema-only intent sketch in Phase 1.
+
 ---
 
 # 6. Scenario State Model
 
 The backend remains the sole owner of canonical simulation state.
 
-A beta scenario state should conceptually include the following domains.
+Canonical state follows the existing `WorldState` split: pack-derived content is snapshotted into `rules` per session (versioned with the scenario); mutable per-session truth lives in instance state. New mechanics respect that split: authored definitions (fact definitions, dataset rows, ticket defaults, consequence rules) live in content; discovery/decision/attachment state lives in instance state.
+
+## Existing canonical state (reuse as-is)
+
+- session identity, seed, `simClock`, pacing/session metadata;
+- `events` (`EventInstance` list with per-event completion, observations, resolution);
+- `rules` (pack snapshot: actions, event templates, tasks, notifications);
+- `artifacts` + global `observedArtifactIds`;
+- action history (sequenced action/task/notification/interaction log);
+- `ticketNotes` (per-event free text), `notebook` (global free text), `kbQuery` (free text);
+- `notifications` (status/snooze machine);
+- consequence `ledger`;
+- workplace/resource state (energy, break-room, Jules topics seen);
+- hidden assessment numerics (never serialized).
+
+## Extended state (Phase 1 / 5)
+
+- `EventInstance` Work Item fields: acknowledgement state/time, priority/attention metadata, linked ticket ID, waiting/monitoring states, follow-up references;
+- typed consequence entries (predicate, operation, cancellation refs) extending the existing ledger entry;
+- safer client identity metadata replacing raw authoring keys (see §6.10).
+
+## New state (Phases 2–4, 6)
+
+- structured datasets + canonical query history (query action, normalized filters, result IDs, sim time);
+- discovered Evidence Facts (fact IDs, discovery time, satisfied provenance, ticket attachments);
+- structured tickets/cases (status machine, entity refs, evidence refs, disposition, history);
+- NPC runtime (availability, authored knowledge projection, intent contracts, pending replies).
 
 ## 6.1 Session state
 
@@ -990,15 +1032,16 @@ They must not become scores or career-fit signals.
 
 ## 6.9 Consequence scheduler state
 
-- pending consequence IDs;
-- trigger times;
-- condition predicates;
-- cancellation/supersession state;
-- emitted events.
+The scheduler foundation exists: pending ledger entries with deterministic due times, evaluated once per action turn (`simClock >= dueAt` fires on the next turn — consequences may arrive late relative to their due time, never early). Phase 5 extends entries with condition predicates evaluated at fire time, cancellation/supersession refs, and typed operations; the firing loop itself is reused.
 
 ## 6.10 Derived client view
 
-The serializer must expose only what the player is currently allowed to know.
+The serializer must expose only what the player is currently allowed to know. The observed-gating mechanism is the correct substrate: artifact bodies, metadata, and source quotes serialize only after the player opens the source.
+
+Two authoring keys are explicitly NOT safe client metadata and must be resolved in Phase 1:
+
+- `templateId` per event: strip from client events (or replace with an opaque client identifier). It lets clients join events to pack definitions.
+- broad `relatedArtifactIds`: do not emit full related-record lists per artifact or task view — they pre-answer which records matter. Expose related records only in the context of the query or record view that legitimately surfaced them.
 
 It must not serialize:
 
@@ -1151,7 +1194,7 @@ The goal is investigation texture, not scale.
 
 # 8. Consequence Architecture
 
-The current effect model should evolve from mostly resolve/emit/text consequences into deterministic state transitions.
+The consequence pipeline exists and ships delayed branches from content today: an action effect may carry an immediate description, a `resolve` transition with templated resolution text, artifact observations, and a `delayMinutes` consequence that fires deterministically once the simulated clock passes its due time (evaluated per action turn). The narrow delayed-escalation op (`escalateOnApply` + `escalateResolution`) is proven by the dismiss→reopen branch. Phase 5 extends — not replaces — this pipeline.
 
 A **Consequence Rule** should conceptually define:
 
@@ -1166,7 +1209,7 @@ A **Consequence Rule** should conceptually define:
 
 ## 8.1 Consequence types
 
-Beta should support a small set:
+Beta should support a small set. Of the list below, only resolve/reopen-via-escalation and message-equivalent descriptions exist today; the rest are Phase 5 typed operations on the extended ledger entry. Do not create a general-purpose scripting engine unless necessary.
 
 1. **EnqueueWorkItem**
 2. **UpdateWorkItemState**
@@ -1182,17 +1225,19 @@ Do not create a general-purpose scripting engine unless necessary.
 
 ## 8.2 Delayed consequences
 
-A consequence may be scheduled for a later simulated time.
+A consequence may be scheduled for a later simulated time. Delayed unconditional consequences already work from content (`delayMinutes` → deterministic `dueAt`).
 
 Example:
 
 `decision at T+30 -> follow-up eligible at T+42`
 
-The scheduler evaluates the authored condition at execution time.
+Under the existing scheduler the follow-up fires on the first action turn whose clock reaches T+42 — possibly later than T+42, never earlier. Phases that need exact-time execution must extend the scheduler; the beta beat sheet is authored against next-turn firing.
+
+The scheduler evaluates the authored condition at execution time. (Conditions themselves are Phase 5 scope; until then, only the due-time check exists.)
 
 ## 8.3 Conditional consequences
 
-A consequence may depend on state such as:
+Phase 5 scope — no predicate evaluation exists today; the scheduler checks due time only. Once added, a consequence may depend on state such as:
 
 - decision taken;
 - evidence discovered;
@@ -1355,13 +1400,15 @@ Jules primarily provides:
 
 Jules should not grade the player.
 
-Possible intents:
+**Scope decision (Phase 0, binding):** Jules uses a narrow authored-intent model, not Morgan-depth knowledge. The beta Jules intents are exactly:
 
-- Give status update
-- Escalate case
-- Ask what information is still needed
-- Confirm process requirement
-- Report a new development
+- Give status update (player briefs Jules; payload references current Work Item states);
+- Escalate case (routes to the escalation decision path, never decides it);
+- Ask what information is still needed (answered from canonical documentation state, e.g. missing ticket update — never a grade);
+- Confirm process requirement (bounded, authored);
+- Acknowledge a completed routine item.
+
+Each intent is a canonical action ID with availability predicates over canonical state, an authored semantic payload, and deterministic fallback text. The existing deterministic peer replies become fallback/corpus text. Jules shares the generic NPC intent infrastructure with Morgan but needs no knowledge base of her own.
 
 ## 11.3 AI phrasing boundary
 
@@ -1447,6 +1494,8 @@ Desk OS must not show:
 - answer validation;
 - “try again” states.
 
+Desk OS must also not leak authoring metadata that pre-answers investigation: no raw `templateId` values and no exhaustive related-record lists outside the record view that surfaced them (see §6.10).
+
 ## 12.5 Work queue prominence
 
 The player should always be able to determine:
@@ -1506,6 +1555,8 @@ Same principle.
 A renderer must not grant a meaningful simulation advantage because it is faster to navigate.
 
 If movement consumes simulated time, equivalent non-3D actions must consume the same canonical time cost or movement must be treated as presentation-only.
+
+Stated asymmetry (accepted): 3D movement costs energy but zero simulated minutes, while investigative actions cost minutes. Movement is therefore presentation-only and can never buy time or evidence. If movement ever costs simulated time, desk/accessible equivalents must carry matching costs.
 
 ## 13.4 Evidence parity
 
@@ -1587,11 +1638,28 @@ Build-time/runtime content validation should catch:
 - renderer parity gaps;
 - hidden-state fields accidentally marked client-visible.
 
+The model extends the existing `CareerPackSchema.superRefine` cross-checks (event/action/artifact/task/notification references, source-quote exactness) rather than replacing them. Phase 1 adds: `observeArtifactIds` target validation, `instanceId` uniqueness, orphaned-action/undefined-artifact detection (the class of bug that left phishing dead), and trigger/deadline sanity. No generic scripting language is introduced; every new authoring construct is a declarative schema with a validator.
+
 ---
 
 # 15. Old WorkTask Migration Strategy
 
 Do not rewrite everything at once.
+
+**Binding rule: migrating a workflow away from WorkTasks requires releasing/removing its canonical task gate. Merely hiding or removing its quiz UI is insufficient — `TaskRequiredError` blocks the underlying action until the bound task completes, so a hidden-but-gated action stays unreachable.**
+
+## 15.0 Per-workflow migration protocol
+
+For every workflow being migrated:
+
+1. identify its legacy WorkTasks;
+2. identify the canonical actions those tasks gate;
+3. build the replacement interaction;
+4. verify replacement state is canonical and replayed;
+5. expose it in all required renderers;
+6. release/remove the WorkTask requirement for the migrated actions (compatibility flag or binding removal — never a silent UI-only change);
+7. maintain legacy task behavior only for still-unmigrated paths;
+8. remove obsolete task definitions once no renderer or runtime path depends on them.
 
 ## 15.1 Compatibility period
 
@@ -1619,11 +1687,12 @@ Do not build new central-case content on `requiredOptionIds`.
    - keep only as temporary legacy;
    - remove because it is redundant quiz content.
 3. Re-author the central A-1042 investigation first.
-4. Re-author routine scanner/phishing work.
-5. Re-author false-positive review.
-6. Re-author handoff/summary as actual documentation state.
-7. Delete or stop invoking superseded quiz steps.
-8. Remove legacy support only after no beta path depends on it.
+4. Re-author routine scanner work (existing chain migrates to query mechanics).
+5. Author phishing content greenfield on completed mechanics (no functioning workflow exists to re-author).
+6. Author false-positive review only if SHOULD-ship budget allows.
+7. Re-author handoff/summary as actual documentation state.
+8. Delete or stop invoking superseded quiz steps.
+9. Remove legacy support only after no beta path depends on it.
 
 ## 15.4 Legacy behavior
 
@@ -1669,14 +1738,14 @@ Safe content-only tasks after mechanics exist include:
 
 The following cannot honestly be solved by YAML additions alone under the current architecture:
 
-- true record querying;
-- evidence discovery with provenance;
-- structured case/ticket assembly;
-- multi-state consequences;
-- delayed conditional branches;
-- renderer-independent workplace interaction contracts.
+- true record querying (**new** engine);
+- evidence discovery with provenance (**new** engine);
+- structured case/ticket assembly (**new** engine + UI; free-text slots exist);
+- multi-state consequences (**extension** of the existing scheduler: predicates, cancellation, typed ops — delayed unconditional scheduling already exists);
+- delayed conditional branches (**extension**, same);
+- renderer-independent workplace interaction contracts (**new** NPC intent contracts; AI phrasing boundary exists).
 
-These require deterministic engine/schema support.
+These require deterministic engine/schema support. Conversely, the following are explicitly NOT greenfield: action lifecycle, delayed unconditional scheduling, artifact observation, free-text notebook/ticket slots, notification/snooze behavior, replay, and the pack validation framework.
 
 ---
 
@@ -1709,6 +1778,8 @@ Test reducers/effects for:
 - consequence cancellation/supersession;
 - NPC availability;
 - simulated time.
+
+Phase-specific RED requirements build on the existing replay/serializer suites: Phase 1 must add Work Item projection shape, lifecycle + illegal-transition rejection, serializer no-leak (`templateId`, scoped related records), new pack-validation failures, gate-release on a migrated action, and replay equality; Phase 2 query determinism/ordering/invalid-filter/history/zero-result/hidden-data; Phase 3 undiscovered-initially, provenance-gated discovery, absence coverage, attach-undiscovered rejection; Phase 4 ticket transitions, attachment rules, free-text-cannot-alter-truth, `build_summary` retirement; Phase 5 conditional/cancel/supersede/typed ops plus the delayed-dismiss regression; Phase 6 availability, authored-knowledge-only, fallback, renderer equivalence.
 
 ## 17.3 Deterministic replay tests
 
@@ -1811,16 +1882,19 @@ Map current content and engine behavior to this spec.
 
 ### Objective
 
-Introduce the renderer-independent Work Item model without yet rebuilding all content.
+Extend the existing event model into Work Item semantics. No separate Work Item subsystem: "Work Item" is the product term, extended `EventInstance` the runtime.
 
 ### Required changes
 
-- schemas;
-- core reducer/state;
-- queue;
-- legal action model;
-- client view;
-- deterministic event log.
+- schemas (event status/field extensions);
+- core reducer/state (compatibility, no behavior change for legacy paths);
+- queue projection;
+- legal action model (gate-release mechanism for migrated actions);
+- client view (`WorkItem` projection; `templateId` strip; related-record scoping);
+- deterministic event log (unchanged format);
+- pack validation (`observeArtifactIds` targets, `instanceId` uniqueness, orphan detector);
+- schema-only sketches for NPC intents, Evidence Fact definitions, datasets, ticket contracts (types only, no behavior);
+- `rng.ts` wire-or-delete.
 
 ### RED tests
 
@@ -1831,10 +1905,11 @@ Introduce the renderer-independent Work Item model without yet rebuilding all co
 
 ### Acceptance criteria
 
-- Work Items can be queued, acknowledged, updated, resolved;
+- Work Items can be queued, acknowledged, updated, resolved (as extended events);
 - multiple Work Items can coexist;
-- client sees only legal current actions;
-- legacy WorkTasks still function during migration.
+- client sees only legal current actions, without `templateId` or exhaustive related-record lists;
+- legacy WorkTasks still function during migration;
+- migrated actions demonstrably escape the legacy task gate while unmigrated ones stay gated.
 
 ---
 
@@ -1939,7 +2014,7 @@ Replace build-summary quiz steps with structured documentation.
 
 ### Objective
 
-Make decisions alter future world state.
+Make decisions alter future world state — by extending the proven scheduler, not replacing it. First quick win after spec corrections: un-gate the existing staged decisions from quiz completion so the dismiss/escalate paths run on the new loop before deeper branches land.
 
 ### Required changes
 
@@ -1969,7 +2044,7 @@ Make decisions alter future world state.
 
 ### Objective
 
-Make Morgan/Jules part of the work loop without giving AI authority.
+Make Morgan/Jules part of the work loop without giving AI authority. Generalize the hardcoded `ask_manager` branch into authored intent contracts; Morgan first with availability + pending replies. Jules ships the narrow intent set decided in Phase 0 (status, escalate routing, process clarification, documentation request, acknowledgement) on the same infrastructure.
 
 ### Required changes
 
@@ -2010,12 +2085,12 @@ Convert current SOC content into the new loop.
 3. A-1042 central investigation;
 4. authentication/VPN/device data;
 5. Morgan interaction;
-6. phishing report;
-7. Jules interaction;
+6. phishing report (**greenfield** content on completed mechanics, not re-author);
+7. Jules interaction (narrow intent set);
 8. central decision;
 9. delayed branch consequence;
-10. false-positive review;
-11. end-of-shift handoff.
+10. false-positive review (**only if SHOULD-ship budget allows**);
+11. end-of-shift handoff (structured work product; `complete_shift` evolves into the handoff builder in Phase 4).
 
 ### Acceptance criteria
 
@@ -2033,7 +2108,7 @@ Convert current SOC content into the new loop.
 
 ### Objective
 
-Ensure all three renderers expose the same career-relevant simulation.
+Parity architecture already exists (shared derivation + canonical action IDs across all three renderers). This phase writes the missing per-action parity **contract tests** for every new mechanic, completes Desk OS usability, and removes quiz remnants — it does not build parity infrastructure.
 
 ### Tasks
 
@@ -2098,11 +2173,11 @@ The beta must be deep enough to prove the new interaction model without becoming
 - case notebook/ticket;
 - monitor/escalate/dismiss-or-close stateful actions where authored;
 - delayed conditional consequences;
-- Morgan bounded interaction;
-- Jules bounded interaction;
-- phishing routine Work Item;
+- Morgan bounded interaction (generalized intent contracts; hardcoded branch retired);
+- Jules bounded interaction (narrow intent set: status, escalate routing, process clarification, documentation request, acknowledgement);
+- phishing routine Work Item (**greenfield** content — no functioning workflow exists; action shells reusable as naming scaffolding);
 - scanner routine Work Item;
-- false-positive review;
+- false-positive review (**SHOULD-ship**: include only if budget allows after core stabilizes);
 - end-of-shift handoff work product;
 - 3D/desk/accessibility parity;
 - deterministic replay;
@@ -2193,3 +2268,47 @@ The redesign is complete enough for beta when a player can finish the SOC shift 
 > The player spent most of the shift using workplace tools, investigating structured records, managing overlapping work, talking to coworkers, building a case, making operational decisions, and responding to consequences — not selecting authored correct answers.
 
 At that point the project has crossed the important threshold from a career-themed quiz into a bounded career simulation.
+
+---
+
+# Appendix R. Reconciliation Decision Registry (Phase 0, binding)
+
+Recorded so future workers do not reopen settled architecture. Source: Phase 0 audit synthesis, verified against runtime.
+
+- **R1 Work Item representation:** product term only; runtime is extended `EventInstance`. No parallel WorkItem store.
+- **R2 Task-gate migration:** hiding quiz UI is not migration; each migrated action must release its `TaskRequiredError` gate (§15.0).
+- **R3 Scheduler reuse:** delayed unconditional consequences exist; Phase 5 extends the firing loop with predicates/cancel/typed ops.
+- **R4 Evidence Fact ownership:** definitions + provenance rules in pack content (`rules` snapshot); discovery state (IDs, time, provenance, attachments) in instance state. Never in assessment `EvidenceSignal`.
+- **R5 False-positive:** SHOULD-ship, not MUST.
+- **R6 Jules:** narrow authored intents on shared NPC infrastructure; no Morgan-depth knowledge; never a grader.
+- **R7 VPN absence:** coverage-based provenance rule (account + IP + interval ⊇ authored window, zero rows), never exact-query match.
+- **R8 Hidden metadata:** `templateId` stripped from client; `relatedArtifactIds` scoped per surfacing view, never exhaustive.
+- **R9 Assessment ≠ scenario evidence:** `EvidenceSignal` stays behavioral; discovery is a separate domain.
+- **R10 Phishing:** unimplemented; greenfield content, not re-author.
+- **R11 Time asymmetry:** movement costs energy, zero minutes; accepted as presentation-only.
+
+## Phase 1 Boundary (exact, for the implementation-plan author)
+
+**Objective:** Work Item semantics on extended events, with legacy quiz coexisting but escapable.
+
+**Included:** `EventStatus`/field extensions (`acknowledgedAt`, priority, `linkedTicketId`, follow-ups, `acknowledged/monitoring/waiting`); `WorkItem` serializer projection; `templateId` strip + related-record scoping; validation (`observeArtifactIds` targets, `instanceId` uniqueness, orphan detector, trigger/deadline sanity); `rng.ts` wire-or-delete; schema-only sketches (NPC intent, Evidence Fact definition, dataset, ticket); per-action gate-release mechanism.
+
+**Excluded:** query engine, discovery runtime, ticket restructure, consequence predicates, NPC behavior, content re-author, quiz deletion.
+
+**Runtime responsibilities:** additive event extension; unchanged legacy paths; preserved replay.
+
+**Client responsibilities:** `WorkItem` projection; metadata cleanup; no new tools.
+
+**Migration responsibilities:** compatibility flag/binding mechanism letting migrated actions escape `TaskRequiredError` while unmigrated actions stay gated.
+
+**Validation responsibilities:** all Phase 1 pack checks above, failing loudly at load.
+
+**Likely areas:** `packages/schemas/{world,events,client-view,tasks,career-pack}.ts`, `packages/core/{serializer,world,availability}.ts`, `packages/core/test/*`.
+
+**RED tests:** projection shape; lifecycle + illegal-transition rejection; no-leak serializer; validation failures; gate-release on a migrated action; replay equality.
+
+**GREEN acceptance:** RED green, full suite green, no guarantee weakened, legacy shift fully playable.
+
+**Compatibility:** legacy shift functional until workflows migrate, one workflow at a time.
+
+**Phase 2 handoff:** frozen sketch types + `WorkItem` projection shape + cleaned visibility contract.
