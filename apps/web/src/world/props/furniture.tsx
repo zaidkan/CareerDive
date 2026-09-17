@@ -92,8 +92,8 @@ export function OfficeChair({
       <mesh position={[0, 0.62, -0.1]}>
         <boxGeometry args={[0.38, 0.12, 0.04]} />
         <meshStandardMaterial
-          color={occupied ? "#a8c4be" : highlighted ? "#e8b84a" : "#507c79"}
-          emissive={highlighted && !occupied ? "#e8b84a" : "#000000"}
+          color={occupied ? "#a8c4be" : highlighted ? "#6ea8fe" : "#507c79"}
+          emissive={highlighted && !occupied ? "#6ea8fe" : "#000000"}
           emissiveIntensity={0.3}
           roughness={0.85}
         />

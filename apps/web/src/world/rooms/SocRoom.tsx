@@ -1,5 +1,5 @@
 import { ContactShadows } from "@react-three/drei";
-import { useThree } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ClientWorkplaceState } from "@sim/schemas";
 import * as THREE from "three";
@@ -9,6 +9,7 @@ import { Hotspot, nearestHotspot } from "../Hotspot.js";
 import { NameTag } from "../NameTag.js";
 import { PlayerController } from "../PlayerController.js";
 import { useWorldQuality } from "../effects/useAdaptiveQuality.js";
+import { useAmbientMotion } from "../props/ambient.js";
 import { DustMotes, VentPapers } from "../props/atmosphere.js";
 import {
   CeilingAC,
@@ -26,6 +27,7 @@ import {
 import { CarpetRunner, FloorTileGrid } from "../props/floor.js";
 import {
   CoatRack,
+  DESK_SURFACE_Y,
   MonitorArmDesk,
   OfficeChair,
   PersonalLockers,
@@ -33,7 +35,7 @@ import {
   TrashBin,
 } from "../props/furniture.js";
 import { CeilingFixture } from "../props/lighting.js";
-import { MeshLabel, WallCalendar, Whiteboard } from "../props/signage.js";
+import { MeshLabel, StationPlate, WallCalendar, Whiteboard } from "../props/signage.js";
 import { DocumentShredder, SecurityCamera, ServerRack } from "../props/tech.js";
 import { DeskSurfaceDetails } from "../props/WorkplaceDetails.js";
 import { Workstation } from "../Workstation.js";
@@ -71,7 +73,30 @@ import {
  * Every coordinate lives in socLayout.ts so the reachability test can guard it.
  */
 
-function AlertWall() {
+/**
+ * Alert boards with a faint cosmetic screen-breathing pass.
+ * Severity colors stay (red/amber/teal carry meaning); only intensity
+ * breathes, and it freezes under prefers-reduced-motion.
+ */
+function AlertWall({ animated = true }: { animated?: boolean }) {
+  const live = useAmbientMotion(animated);
+  const screens = useRef<(THREE.MeshStandardMaterial | null)[]>([
+    null,
+    null,
+    null,
+  ]);
+
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    for (let i = 0; i < screens.current.length; i += 1) {
+      const mat = screens.current[i];
+      if (!mat) continue;
+      mat.emissiveIntensity = live
+        ? 0.65 + Math.sin(t * (0.9 + i * 0.23) + i * 2.1) * 0.08
+        : 0.65;
+    }
+  });
+
   return (
     <group position={ALERT_POS}>
       <mesh position={[0, 0.78, 0.15]} castShadow receiveShadow>
@@ -112,6 +137,9 @@ function AlertWall() {
           <mesh position={[0, 0, 0.04]}>
             <boxGeometry args={[0.9, 0.62, 0.02]} />
             <meshStandardMaterial
+              ref={(node) => {
+                screens.current[i] = node;
+              }}
               color="#05080a"
               emissive={i === 1 ? "#ff6b4a" : i === 0 ? "#e8b84a" : "#4fd0c8"}
               emissiveIntensity={0.65}
@@ -119,6 +147,12 @@ function AlertWall() {
           </mesh>
         </group>
       ))}
+      <MeshLabel
+        text="ALERT WALL"
+        position={[0, 2.5, -0.42]}
+        width={0.8}
+        height={0.13}
+      />
     </group>
   );
 }
@@ -338,8 +372,8 @@ export function SocRoom({
       <mesh position={[0, 2.7, -ROOM.halfZ + 0.2]}>
         <boxGeometry args={[floorW - 1, 0.05, 0.05]} />
         <meshStandardMaterial
-          color="#e8b84a"
-          emissive="#e8b84a"
+          color="#6ea8fe"
+          emissive="#6ea8fe"
           emissiveIntensity={0.55}
         />
       </mesh>
@@ -396,8 +430,17 @@ export function SocRoom({
       />
 
       {/* Mirrored desk row — same facing, clear east corridor to break */}
-      <Workstation position={PLAYER_DESK} showLoginNote clutterVariant={0} />
+      <Workstation
+        position={PLAYER_DESK}
+        showLoginNote
+        clutterVariant={0}
+        rightEmissive="#6ea8fe"
+      />
       <DeskSurfaceDetails position={PLAYER_DESK} variant={0} />
+      <StationPlate
+        text="YOUR DESK"
+        position={[PLAYER_DESK[0] - 0.15, DESK_SURFACE_Y, PLAYER_DESK[2] + 0.28]}
+      />
       <OfficeChair
         position={[PLAYER_DESK[0], 0, PLAYER_DESK[2] + SEAT]}
         rotationY={CHAIR_FACE_DESK}
@@ -416,12 +459,16 @@ export function SocRoom({
       <Workstation
         position={MORGAN_DESK}
         deskColor="#26201a"
-        leftEmissive="#e8b84a"
+        leftEmissive="#6ea8fe"
         rightEmissive="#4fd0c8"
         showLamp={false}
         clutterVariant={1}
       />
       <DeskSurfaceDetails position={MORGAN_DESK} variant={1} />
+      <StationPlate
+        text="MORGAN"
+        position={[MORGAN_DESK[0] - 0.15, DESK_SURFACE_Y, MORGAN_DESK[2] + 0.28]}
+      />
       <OfficeChair
         position={[MORGAN_DESK[0], 0, MORGAN_DESK[2] + SEAT]}
         rotationY={CHAIR_FACE_DESK}
@@ -453,8 +500,13 @@ export function SocRoom({
         showLamp={false}
         deskColor="#2a221c"
         clutterVariant={2}
+        rightEmissive="#6ea8fe"
       />
       <DeskSurfaceDetails position={HOT_DESK} variant={2} />
+      <StationPlate
+        text="HOT DESK"
+        position={[HOT_DESK[0] - 0.15, DESK_SURFACE_Y, HOT_DESK[2] + 0.28]}
+      />
       <OfficeChair
         position={[HOT_DESK[0], 0, HOT_DESK[2] + SEAT]}
         rotationY={CHAIR_FACE_DESK}
@@ -470,7 +522,7 @@ export function SocRoom({
         rotationY={2.2}
         primary="#8a7a68"
         secondary="#32281e"
-        accent="#e8b84a"
+        accent="#6ea8fe"
         hair="#241610"
         seed={2}
       />
@@ -495,7 +547,7 @@ export function SocRoom({
         seed={3}
       />
 
-      <AlertWall />
+      <AlertWall animated={!seated} />
       {/* Racks read front-on from the aisle, so they belong on the north wall */}
       <ServerRack position={[-9.8, 0.9, -6.92]} />
       <ServerRack position={[-9.0, 0.9, -6.92]} />
@@ -535,6 +587,13 @@ export function SocRoom({
         label="ADAPTERS"
         rotationY={Math.PI / 2}
         open={openCabinet !== null}
+      />
+      <MeshLabel
+        text="PARTS"
+        position={[-10.05, 1.78, 4.6]}
+        rotationY={Math.PI / 2}
+        width={0.45}
+        height={0.11}
       />
       <DocumentShredder position={[-10.45, 0, 3.0]} rotationY={Math.PI / 2} />
       {/* Shared bins live along the walls, never inside a cubicle footprint */}

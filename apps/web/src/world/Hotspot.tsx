@@ -1,6 +1,8 @@
+import { Html } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
-import type { Group, Mesh } from "three";
+import type { Mesh, MeshBasicMaterial, MeshStandardMaterial } from "three";
+import { useAmbientMotion } from "./props/ambient.js";
 import type { HotspotId } from "./worldTypes.js";
 
 export type HotspotDef = {
@@ -9,6 +11,42 @@ export type HotspotDef = {
   position: [number, number, number];
   radius: number;
 };
+
+/**
+ * Enterprise interaction affordance.
+ * Grounded floor ring + low marker puck + approach-only prompt label.
+ * Blue = current journey objective, teal = in range, graphite = idle.
+ * Cosmetic only — IDs, anchors and radii stay canonical in socLayout.ts.
+ */
+const OBJECTIVE_BLUE = "#6ea8fe";
+const IN_RANGE_TEAL = "#2dd4bf";
+const IDLE_GRAPHITE = "#5a6572";
+
+/** Readable verb per station. break_door carries its dynamic open/close label. */
+function promptFor(def: HotspotDef): string {
+  switch (def.id) {
+    case "desk_player":
+      return "Sit at your desk";
+    case "alert_wall":
+      return "Review the alert wall";
+    case "morgan_station":
+      return "Talk to Morgan";
+    case "break_door":
+      return def.label;
+    case "storage":
+      return "Open the parts cabinets";
+    case "door_exit":
+      return "Exit to the floor map";
+    case "jules":
+      return "Talk to Jules";
+    case "coffee":
+      return "Brew coffee";
+    case "fridge":
+      return "Check the fridge";
+    default:
+      return def.label;
+  }
+}
 
 export function Hotspot({
   def,
@@ -19,47 +57,123 @@ export function Hotspot({
   active: boolean;
   target?: boolean;
 }) {
-  const ref = useRef<Group>(null);
-  const glow = useRef<Mesh>(null);
-  useFrame((state) => {
-    if (!active && !target) return;
-    if (!ref.current) return;
-    ref.current.rotation.y = state.clock.elapsedTime * (target ? 1.35 : 0.9);
-    if (glow.current) {
-      const pulse = 0.7 + Math.sin(state.clock.elapsedTime * (target ? 4.2 : 3)) * 0.3;
-      glow.current.scale.setScalar(pulse);
+  const live = useAmbientMotion(true);
+  const puck = useRef<Mesh>(null);
+  const puckMat = useRef<MeshStandardMaterial>(null);
+  const ringMat = useRef<MeshBasicMaterial>(null);
+
+  const color = target ? OBJECTIVE_BLUE : active ? IN_RANGE_TEAL : IDLE_GRAPHITE;
+  const restGlow = target ? 1.6 : active ? 1.1 : 0.35;
+
+  useFrame(({ clock }) => {
+    if (!live) {
+      if (puckMat.current) puckMat.current.emissiveIntensity = restGlow;
+      return;
+    }
+    if (!active && !target) {
+      if (puckMat.current) puckMat.current.emissiveIntensity = restGlow;
+      return;
+    }
+    const t = clock.elapsedTime;
+    const rate = target ? 2.2 : 1.6;
+    const swell = Math.sin(t * rate) * 0.06;
+    puck.current?.scale.setScalar(1 + swell);
+    if (puckMat.current) {
+      puckMat.current.emissiveIntensity = restGlow + Math.sin(t * rate) * 0.25;
+    }
+    if (ringMat.current) {
+      ringMat.current.opacity = (target ? 0.95 : 0.85) + Math.sin(t * rate) * 0.08;
     }
   });
 
-  const color = target ? "#e8b84a" : active ? "#4fd0c8" : "#e8b84a";
-  const emissive = target ? "#e8b84a" : active ? "#4fd0c8" : "#a87a28";
-
   return (
-    <group position={def.position} ref={ref}>
-      <mesh position={[0, target ? 1.35 : 1.15, 0]} ref={glow}>
-        <octahedronGeometry args={[target ? 0.2 : 0.13, 0]} />
-        <meshStandardMaterial
+    <group position={def.position}>
+      {/* Soft ground fill marking the interaction zone. */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.035, 0]}>
+        <circleGeometry args={[0.45, 28]} />
+        <meshBasicMaterial
           color={color}
-          emissive={emissive}
-          emissiveIntensity={target ? 2.1 : active ? 1.6 : 0.55}
-          roughness={0.25}
-          metalness={0.2}
-          toneMapped={false}
+          transparent
+          opacity={target ? 0.22 : active ? 0.18 : 0.08}
+          depthWrite={false}
         />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]}>
-        <ringGeometry args={[target ? 0.58 : 0.48, target ? 0.78 : 0.62, 16]} />
+      {/* Crisp zone edge. */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.045, 0]}>
+        <ringGeometry args={[0.5, 0.58, 40]} />
         <meshBasicMaterial
-          color={target || active ? "#e8b84a" : "#5c4634"}
+          ref={ringMat}
+          color={color}
           transparent
-          opacity={target ? 0.95 : active ? 0.9 : 0.4}
+          opacity={target ? 0.95 : active ? 0.85 : 0.4}
+          depthWrite={false}
+          toneMapped={false}
         />
       </mesh>
       {active || target ? (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
-          <ringGeometry args={[target ? 0.88 : 0.7, target ? 1.02 : 0.78, 16]} />
-          <meshBasicMaterial color="#e8b84a" transparent opacity={target ? 0.55 : 0.35} />
+          <ringGeometry args={[0.66, 0.7, 40]} />
+          <meshBasicMaterial
+            color={color}
+            transparent
+            opacity={0.35}
+            depthWrite={false}
+          />
         </mesh>
+      ) : null}
+      {/* Low marker puck — anchored to the floor, not a floating quest marker. */}
+      <mesh position={[0, 0.13, 0]} ref={puck}>
+        <octahedronGeometry args={[0.09, 0]} />
+        <meshStandardMaterial
+          ref={puckMat}
+          color={color}
+          emissive={color}
+          emissiveIntensity={restGlow}
+          roughness={0.3}
+          metalness={0.1}
+          toneMapped={false}
+        />
+      </mesh>
+      {/* Prompt appears on approach only; E key + HUD button stay keyboard paths. */}
+      {active || target ? (
+        <Html
+          center
+          distanceFactor={10}
+          position={[0, 1.45, 0]}
+          style={{ pointerEvents: "none", userSelect: "none" }}
+          zIndexRange={[12, 0]}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.45rem",
+              whiteSpace: "nowrap",
+              background: "rgba(13, 17, 23, 0.9)",
+              border: `1px solid ${color}`,
+              borderRadius: "6px",
+              padding: "0.3rem 0.5rem",
+              color: "#e8edf3",
+              fontSize: "12px",
+              fontWeight: 600,
+              letterSpacing: "0.01em",
+            }}
+          >
+            <span>{promptFor(def)}</span>
+            <kbd
+              style={{
+                border: "1px solid rgba(232, 237, 243, 0.4)",
+                background: "rgba(110, 168, 254, 0.15)",
+                borderRadius: "4px",
+                padding: "0.05rem 0.35rem",
+                fontSize: "11px",
+                fontFamily: "inherit",
+              }}
+            >
+              E
+            </kbd>
+          </div>
+        </Html>
       ) : null}
     </group>
   );

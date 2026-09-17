@@ -54,8 +54,7 @@ export function makeLabelTexture(text: string, w = 256, h = 64): THREE.CanvasTex
   return tex;
 }
 
-export function MeshLabel({
-  text,
+export function MeshLabel({  text,
   position,
   rotationY = 0,
   width = 0.55,
@@ -77,6 +76,41 @@ export function MeshLabel({
         side={THREE.DoubleSide}
       />
     </mesh>
+  );
+}
+
+/**
+ * Freestanding desk tent card ("YOUR DESK", "MORGAN", "HOT DESK").
+ * Sits on the finished surface and faces the chair side (+Z local).
+ * Reuses the shared label-plate texture — no new assets.
+ */
+export function StationPlate({
+  text,
+  position,
+  rotationY = 0,
+  width = 0.36,
+}: {
+  text: string;
+  position: [number, number, number];
+  rotationY?: number;
+  width?: number;
+}) {
+  const texture = useMemo(() => makeLabelTexture(text), [text]);
+  return (
+    <group position={position} rotation={[0, rotationY, 0]}>
+      <mesh position={[0, 0.006, 0]} receiveShadow>
+        <boxGeometry args={[width + 0.05, 0.012, 0.13]} />
+        <meshStandardMaterial color="#232a31" roughness={0.6} metalness={0.15} />
+      </mesh>
+      <mesh position={[0, 0.068, -0.026]} rotation={[-0.22, 0, 0]}>
+        <planeGeometry args={[width, 0.115]} />
+        <meshBasicMaterial
+          map={texture}
+          toneMapped={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+    </group>
   );
 }
 
