@@ -38,6 +38,7 @@ export function createInitialWorldState(
       managerConsulted: false,
       completedActionIds: [],
       observedArtifactIds: [],
+      followUpRefs: [],
     }),
   );
 
