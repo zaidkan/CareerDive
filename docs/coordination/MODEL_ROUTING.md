@@ -91,3 +91,63 @@ Not "which model is strongest?" but "which model is strong enough to finish this
 without unnecessarily consuming allowance?" — **Luna finds. Terra builds. Sol designs, diagnoses,
 and verifies difficult work. Astra rescues exceptional problems.** Optimize for best completed
 project per allowance, not best response per invocation.
+
+## Refined division (2026-09-17) — expensive intelligence at decision points, cheap capacity during execution
+
+**Sol defines. Terra/external cheap workers execute. Sol owns hard implementation. Astra handles exceptional complexity.**
+
+- **Sol High = definition/architecture** — decide what the task means, success criteria, which
+  constraints matter, files/subsystems involved, and how to decompose. Sol ALSO owns **heavy
+  implementation** when the coding itself needs extensive cross-file reasoning, a major refactor,
+  or unclear state — don't repeatedly retry a cheaper model on conceptually hard work.
+- **Terra High (and external cheap executors) = faithful execution of a well-specified plan** —
+  used AFTER Sol defines; the model must not need to rediscover the architecture.
+- **Astra = exceptional difficulty** — huge unfamiliar systems, long-horizon, complex tool
+  workflows, or when even Sol struggles.
+
+**Implementation-packet rule (mandatory when Sol hands off to a cheaper executor):** Sol must
+produce a packet good enough that the executor does NOT re-read the whole repo and recreate the
+plan. A good packet contains: exact objective; acceptance criteria; files/subsystems likely
+involved; constraints/invariants; implementation steps; tests required; things NOT to change;
+escalation conditions. Otherwise you get the worst case — pay Sol to understand the project, then
+hand vague instructions to Terra/DeepSeek, which re-discovers everything. That defeats the purpose.
+
+## External execution capacity (PLANNED — wire up only after install + probe)
+
+Two additional CHEAP runners, separate usage pools from Codex Plus (zk/hamza):
+
+**Path A — OpenCode + DeepSeek.** OpenCode CLI = runner/agent harness; DeepSeek V4 (e.g. Pro/Flash)
+= model behind it (`opencode run -m provider/model`). Model as `agentIdentity=opencode, model=deepseek-v4-*`
+(lifecycle belongs to the runner OpenCode; capability/usage to the model DeepSeek). Slot e.g.
+`deepseek1` (runner opencode, usagePool opencode-deepseek). Known: `worker-start --agent opencode`
+does NOT reliably deliver the Orca preamble — use an adapter: open plain terminal → mint Orca
+dispatch/tracking ID → write preamble → `opencode run --auto "<preamble>"` (`--auto` avoids
+permission blocks) → Git/test verify → completion/integration. OpenCode supports MCP
+(`opencode mcp add/list`) so project-memory is architecturally supported (probe our exact config).
+
+**Path B — Freebuff.** Own CLI runner (`npm i -g freebuff`), own bundled free model pool
+(DeepSeek V4.1 Flash, GLM, Luna, etc., no API key). Slot e.g. `freebuff1` (runner freebuff,
+usagePool freebuff). Orca is actively adding native `freebuff` TuiAgent support — probe whether
+OUR installed Orca recognizes it: if yes use native path, if no run as plain-terminal worker
+(don't over-engineer around a feature Orca is landing).
+
+**Routing role of external cheap executors:** default = cheap execution of a STRONG specification
+(the conceptual problem is already solved by Sol). Multi-file is fine — the boundary is
+"conceptual problem solved," NOT "one file." ESCALATE BACK TO SOL if the executor starts:
+redesigning architecture, discovering major undocumented invariants, failing across subsystems,
+hitting a hard race/state issue, needing cross-system reasoning not in the packet, contradicting
+the packet, or thrashing unrelated code to pass tests. Don't burn cheap tokens forever just
+because they're cheap.
+
+**Review by blast radius, not model prejudice:** well-specified low-risk external work that passes
+tests + acceptance = DONE (no mandatory Sol review). High-blast-radius external work → independent
+Sol review; medium-risk → Terra may be a sufficient independent reviewer.
+
+**Concurrency = usage-pool + dependency safety, NOT total terminal count.** One root task per
+Codex ACCOUNT still holds (zk pool, hamza pool). But independent pools can run concurrently:
+`terrazk` + `solhamza` + `deepseek1` + `freebuff1` may each run a root task simultaneously IF the
+DAG tasks are genuinely independent and worktrees don't conflict.
+
+**Probe-before-trust (both runners):** binary/version, available models, non-interactive run,
+autonomy flag, MCP/project-memory visibility, Git edit/commit, Orca adapter/native behavior,
+completion detection. Harmless/disposable probe first. Record design now; implement after install.
