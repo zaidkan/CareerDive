@@ -110,7 +110,6 @@ export const WorldStateSchema = z.object({
   sessionId: z.string(),
   sessionKind: SessionKindSchema,
   seed: z.number().int(),
-  rngState: z.number().int(),
   simClock: z.number().int().nonnegative(),
   currentLocationId: z.string(),
   locations: z.record(z.string(), LocationSchema),

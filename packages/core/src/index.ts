@@ -1,4 +1,3 @@
-export { createSeededRandom } from "./rng.js";
 export { availableActions } from "./availability.js";
 export { createInitialWorldState } from "./world.js";
 export {
