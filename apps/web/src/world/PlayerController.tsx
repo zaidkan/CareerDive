@@ -2,7 +2,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { clampToRoom, collidesAt, type Aabb } from "./collision.js";
-import { blockedWalkDetector, nearestStandableTarget, SAFE_ANCHORS } from "./navigation.js";
+import { nearestStandableTarget, SAFE_ANCHORS } from "./navigation.js";
 import { walkBobOffset } from "./playerMotion.js";
 import { bindLookControls } from "./lookControls.js";
 
@@ -155,7 +155,6 @@ export function PlayerController({
   seated = false,
   seatPosition = [3.2, 1.35, -1.75],
   seatLookAt = [3.2, 1.25, -3.4],
-  onWalkBlocked,
   onRecover,
   onAcceptedDistance,
 }: {
@@ -166,7 +165,6 @@ export function PlayerController({
   seated?: boolean;
   seatPosition?: [number, number, number];
   seatLookAt?: [number, number, number];
-  onWalkBlocked?: () => void;
   onRecover?: (position: [number, number, number]) => void;
   onAcceptedDistance?: (meters: number) => void;
 }) {
@@ -192,11 +190,6 @@ export function PlayerController({
   const bobPhase = useRef(0);
   const bobAmt = useRef(0);
   const reduceMotion = useRef(false);
-  const target = useRef<THREE.Vector3 | null>(null);
-  const blockedFrames = useRef(0);
-  const blockedReported = useRef(false);
-  const raycaster = useRef(new THREE.Raycaster());
-  const pointer = useRef(new THREE.Vector2());
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
@@ -212,9 +205,6 @@ export function PlayerController({
   }, []);
 
   useEffect(() => {
-    if ((!enabled || seated) && document.pointerLockElement === gl.domElement) {
-      document.exitPointerLock();
-    }
     keys.current.clear();
     if (!enabled || seated) return;
 
@@ -238,38 +228,14 @@ export function PlayerController({
         Math.min(PITCH_MAX, pitch.current - dy * LOOK_SENS),
       );
     });
-    const onLockChange = () => {
-      if (document.pointerLockElement === gl.domElement) return;
-      keys.current.clear();
-      camera.rotation.order = "YXZ";
-      camera.rotation.x = pitch.current;
-      camera.rotation.y = yaw.current;
-      camera.rotation.z = 0;
-    };
     const onBlur = () => {
       keys.current.clear();
       vel.current.set(0, 0, 0);
-    };
-    const onDoubleClick = (event: MouseEvent) => {
-      const rect = gl.domElement.getBoundingClientRect();
-      pointer.current.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
-      raycaster.current.setFromCamera(pointer.current, camera);
-      const direction = raycaster.current.ray.direction;
-      if (Math.abs(direction.y) < 0.001) return;
-      const distance = (0 - raycaster.current.ray.origin.y) / direction.y;
-      if (distance <= 0) return;
-      const hit = raycaster.current.ray.origin.clone().addScaledVector(direction, distance);
-      const accepted = nearestStandableTarget({ x: hit.x, z: hit.z }, colliders);
-      target.current = new THREE.Vector3(accepted.x, pos.current.y, accepted.z);
-      blockedFrames.current = 0;
-      blockedReported.current = false;
     };
 
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
     window.addEventListener("blur", onBlur);
-    document.addEventListener("pointerlockchange", onLockChange);
-    gl.domElement.addEventListener("dblclick", onDoubleClick);
 
     return () => {
       window.removeEventListener("keydown", onKeyDown);
@@ -277,10 +243,8 @@ export function PlayerController({
       disposeLook();
       onBlur();
       window.removeEventListener("blur", onBlur);
-      document.removeEventListener("pointerlockchange", onLockChange);
-      gl.domElement.removeEventListener("dblclick", onDoubleClick);
     };
-  }, [camera, enabled, gl.domElement, seated]);
+  }, [enabled, gl.domElement, seated]);
 
   useEffect(() => {
     seatSettled.current = false;
@@ -368,10 +332,6 @@ export function PlayerController({
       wish.current.add(right.current);
     }
 
-    if (target.current) {
-      wish.current.set(target.current.x - pos.current.x, 0, target.current.z - pos.current.z);
-      if (wish.current.lengthSq() < 0.04) target.current = null;
-    }
     if (wish.current.lengthSq() > 0) {
       wish.current.normalize().multiplyScalar(SPEED);
     }
@@ -402,16 +362,6 @@ export function PlayerController({
       pos.current.z = clampToRoom(pos.current.z, "z");
       const acceptedDistance = before.distanceTo(pos.current);
       if (acceptedDistance > 0) onAcceptedDistance?.(acceptedDistance);
-      if (target.current && acceptedDistance < 0.0001) blockedFrames.current += 1;
-      else if (acceptedDistance > 0) blockedFrames.current = 0;
-      if (target.current && blockedWalkDetector(blockedFrames.current).status === "stuck") {
-        target.current = null;
-        vel.current.set(0, 0, 0);
-        if (!blockedReported.current) {
-          blockedReported.current = true;
-          onWalkBlocked?.();
-        }
-      }
     }
 
     if (!standSettled.current) {
@@ -453,10 +403,7 @@ export function PlayerController({
       const anchor = nearestStandableTarget(SAFE_ANCHORS.aisle, colliders);
       pos.current.set(anchor.x, spawn[1], anchor.z);
       resumePos.current.copy(pos.current);
-      target.current = null;
       vel.current.set(0, 0, 0);
-      blockedFrames.current = 0;
-      blockedReported.current = false;
       onRecover([pos.current.x, pos.current.y, pos.current.z]);
     };
     window.addEventListener("soc-recover-aisle", recover);
