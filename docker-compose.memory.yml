@@ -1,0 +1,19 @@
+services:
+  neo4j:
+    image: neo4j:5
+    container_name: orca-neo4j
+    restart: unless-stopped
+
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+
+    environment:
+      NEO4J_AUTH: "neo4j/${NEO4J_PASSWORD}"
+
+    volumes:
+      - orca-neo4j-data:/data
+
+volumes:
+  orca-neo4j-data:
+    name: orca-neo4j-data

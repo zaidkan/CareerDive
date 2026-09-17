@@ -1,0 +1,245 @@
+#!/usr/bin/env bash
+#
+# oc-worker — Career-Expo ephemeral OpenCode free-model worker dispatcher.
+#
+# Purpose
+#   Dispatch a bounded implementation task to ONE of the three approved $0
+#   OpenCode free models as an ephemeral, headless worker (clean context per
+#   task, no persistent TUI session). Kiro selects the DAG task + the free
+#   model explicitly on every dispatch. Emits structured ROUTE telemetry so we
+#   can empirically compare Muse / Union / Nemotron on THIS repository.
+#
+# Worker slots (logical; runner = opencode; usagePool = opencode-free)
+#     muse1      -> opencode/muse-spark-1.3-contributor-free   (PRIMARY; effort variants)
+#     union1     -> opencode/union-alpha                        (2nd strong executor; no variants)
+#     nemotron1  -> opencode/nemotron-3-ultra-free              (3rd / long-context text; no variants)
+#
+# HARD COST RULE (no paid fallback, ever, without explicit human authorization)
+#   Only the three allow-listed $0 model IDs below may be dispatched. Any other
+#   model id is REFUSED. This script NEVER silently substitutes a paid/Zen
+#   model. If a free model is unavailable/rate-limited, it reports throttled and
+#   stops; Kiro decides whether to route to another APPROVED free slot.
+#
+# Reasoning variants (probed from ~/.cache/opencode/models.json, 2026-09-17)
+#   - muse-spark-1.3-contributor-free : effort = [minimal low medium high xhigh]
+#   - union-alpha                     : NO discrete effort tiers (reasoning=true)
+#   - nemotron-3-ultra-free           : NO discrete effort tiers (reasoning=true)
+#   => --variant is applied ONLY for muse (default xhigh for substantial work,
+#      overridable). Passing a variant to union/nemotron is suppressed.
+#
+# Usage
+#   scripts/oc-worker slots
+#   scripts/oc-worker models                       # verify allow-listed ids resolve + are $0
+#   scripts/oc-worker warm    [--dir <path>]       # warm project-memory MCP (avoid cold-start -32000)
+#   scripts/oc-worker run --slot <muse1|union1|nemotron1> \
+#                         --task <task_id> \
+#                         --class <implementation|tests|refactor|debug|investigation> \
+#                         --reason "<short why>" \
+#                         [--dir <worktree path>] \
+#                         [--effort <minimal|low|medium|high|xhigh>]   # muse only
+#                         (--prompt "<text>" | --spec <file>)
+#
+# Notes
+#   - No secret is read or printed by this script. NEO4J_PASSWORD reaches the
+#     MCP server via opencode.json {env:NEO4J_PASSWORD} interpolation only.
+#   - Telemetry appended to .orca-opencode/route.log (JSONL) in the repo root.
+#   - macOS has no coreutils `timeout`; a background PID + kill guard is used.
+
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+OC_BIN="${OPENCODE_BIN:-opencode}"
+LOG_DIR="$REPO_ROOT/.orca-opencode"
+ROUTE_LOG="$LOG_DIR/route.log"
+MODELS_CACHE="${OPENCODE_MODELS_CACHE:-$HOME/.cache/opencode/models.json}"
+# Per-run hard wall-clock guard (seconds). Correctness > speed, but avoid hangs.
+MAX_RUN_SECONDS="${OC_MAX_RUN_SECONDS:-900}"
+mkdir -p "$LOG_DIR"
+
+# --- Approved $0 model allow-list (slot -> model id). NO paid models here. ---
+slot_model() {
+  case "$1" in
+    muse1)     echo "opencode/muse-spark-1.3-contributor-free";;
+    union1)    echo "opencode/union-alpha";;
+    nemotron1) echo "opencode/nemotron-3-ultra-free";;
+    *) return 1;;
+  esac
+}
+# muse is the only slot with selectable reasoning effort.
+slot_supports_variant() { [ "$1" = "muse1" ]; }
+
+die() { echo "ERROR: $*" >&2; exit 1; }
+
+now_epoch() { date +%s; }
+iso_now()   { date -u "+%Y-%m-%dT%H:%M:%SZ"; }
+
+cmd_slots() {
+  printf '%-10s %-42s %-16s %s\n' SLOT MODEL_ID USAGE_POOL VARIANTS
+  printf '%-10s %-42s %-16s %s\n' muse1     "$(slot_model muse1)"     opencode-free "minimal|low|medium|high|xhigh"
+  printf '%-10s %-42s %-16s %s\n' union1    "$(slot_model union1)"    opencode-free "none"
+  printf '%-10s %-42s %-16s %s\n' nemotron1 "$(slot_model nemotron1)" opencode-free "none"
+}
+
+# Verify each allow-listed model resolves and is genuinely $0 in the local cache.
+cmd_models() {
+  local ok=1
+  local listed; listed="$("$OC_BIN" models 2>/dev/null || true)"
+  for slot in muse1 union1 nemotron1; do
+    local id short; id="$(slot_model "$slot")"; short="${id#opencode/}"
+    if printf '%s\n' "$listed" | grep -qx "$id"; then
+      # cost check from local cache
+      local cost
+      cost="$(MODELS_CACHE="$MODELS_CACHE" SHORT="$short" python3 - <<'PY'
+import json,os
+try:
+    d=json.load(open(os.environ["MODELS_CACHE"]))
+    m=d["opencode"]["models"][os.environ["SHORT"]]
+    c=m.get("cost",{})
+    print(f'in={c.get("input")} out={c.get("output")} cache={c.get("cache_read")}')
+except Exception as e:
+    print("cost=UNKNOWN")
+PY
+)"
+      if printf '%s' "$cost" | grep -q "in=0 out=0"; then
+        echo "OK   $slot -> $id  ($cost, \$0 verified)"
+      else
+        echo "WARN $slot -> $id  ($cost)  <-- NOT confirmed \$0; do NOT dispatch until re-checked"
+        ok=0
+      fi
+    else
+      echo "FAIL $slot -> $id  (not in 'opencode models' output)"
+      ok=0
+    fi
+  done
+  [ "$ok" = 1 ] || { echo "One or more free models unverified. Refusing to treat as READY." >&2; return 2; }
+}
+
+# Warm the project-memory MCP once so the first real tool call in a dispatch
+# does not hit the uvx/embedding cold-start '-32000 Connection closed'.
+cmd_warm() {
+  local dir="$REPO_ROOT"
+  [ "${1:-}" = "--dir" ] && dir="$2"
+  echo "[warm] priming project-memory MCP in $dir (first launch downloads pkg+model; be patient)..."
+  ( "$OC_BIN" run --auto --dir "$dir" -m "$(slot_model muse1)" \
+      "Use project-memory to search for subject __warmup_noop__ and reply WARM_OK." \
+      >"$LOG_DIR/warm.out" 2>&1 & echo $! >"$LOG_DIR/.warm.pid" )
+  local pid; pid="$(cat "$LOG_DIR/.warm.pid")"; local w=0
+  while kill -0 "$pid" 2>/dev/null; do sleep 5; w=$((w+5)); [ "$w" -ge 240 ] && { kill "$pid" 2>/dev/null; break; }; done
+  if grep -q "WARM_OK\|returned" "$LOG_DIR/warm.out" 2>/dev/null; then
+    echo "[warm] project-memory MCP warm."
+  else
+    echo "[warm] warm-up inconclusive; see $LOG_DIR/warm.out"; fi
+}
+
+log_route() { # append one JSONL telemetry record
+  local worker="$1" model="$2" task="$3" klass="$4" reason="$5" result="$6" \
+        duration="$7" throttled="$8" retries="$9" note="${10:-}"
+  WORKER="$worker" MODEL="$model" TASK="$task" KLASS="$klass" REASON="$reason" \
+  RESULT="$result" DURATION="$duration" THROTTLED="$throttled" RETRIES="$retries" \
+  NOTE="$note" TS="$(iso_now)" python3 - >>"$ROUTE_LOG" <<'PY'
+import json,os
+print(json.dumps({
+  "ts": os.environ["TS"], "worker": os.environ["WORKER"], "runner": "opencode",
+  "model": os.environ["MODEL"], "task": os.environ["TASK"],
+  "class": os.environ["KLASS"], "reason": os.environ["REASON"],
+  "cost_class": "free", "result": os.environ["RESULT"],
+  "duration_s": int(os.environ["DURATION"]), "throttled": os.environ["THROTTLED"]=="1",
+  "retries": int(os.environ["RETRIES"]), "note": os.environ["NOTE"],
+}))
+PY
+}
+
+cmd_run() {
+  local slot="" task="" klass="implementation" reason="" dir="$REPO_ROOT" \
+        effort="xhigh" prompt="" spec=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --slot) slot="$2"; shift 2;;
+      --task) task="$2"; shift 2;;
+      --class) klass="$2"; shift 2;;
+      --reason) reason="$2"; shift 2;;
+      --dir) dir="$2"; shift 2;;
+      --effort) effort="$2"; shift 2;;
+      --prompt) prompt="$2"; shift 2;;
+      --spec) spec="$2"; shift 2;;
+      *) die "unknown arg: $1";;
+    esac
+  done
+  local model; model="$(slot_model "$slot")" || die "unknown slot '$slot' (use muse1|union1|nemotron1)"
+  [ -n "$task" ]   || die "--task <id> required"
+  [ -n "$reason" ] || die "--reason required (for telemetry)"
+  if [ -z "$prompt" ] && [ -n "$spec" ]; then [ -f "$spec" ] || die "spec not found: $spec"; prompt="$(cat "$spec")"; fi
+  [ -n "$prompt" ] || die "provide --prompt or --spec"
+
+  # HARD allow-list guard: never dispatch a non-approved (possibly paid) model.
+  case "$model" in
+    opencode/muse-spark-1.3-contributor-free|opencode/union-alpha|opencode/nemotron-3-ultra-free) ;;
+    *) die "refusing to dispatch non-allow-listed model '$model' (no paid fallback)";;
+  esac
+
+  # Build variant args (muse only).
+  local variant_args=()
+  if slot_supports_variant "$slot"; then
+    case "$effort" in minimal|low|medium|high|xhigh) variant_args=(--variant "$effort");;
+      *) die "invalid --effort '$effort' (muse supports minimal|low|medium|high|xhigh)";; esac
+  else
+    [ "$effort" != "xhigh" ] && echo "[note] $slot has no reasoning variants; ignoring --effort $effort" >&2
+  fi
+
+  local variant_note=""; [ "${#variant_args[@]}" -gt 0 ] && variant_note="variant=$effort"
+  echo "ROUTE dispatch worker=$slot runner=opencode model=${model#opencode/} task=$task class=$klass cost_class=free $variant_note"
+  local out; out="$LOG_DIR/run-$slot-$task-$(date +%Y%m%d-%H%M%S).out"
+  local start; start="$(now_epoch)"
+  ( "$OC_BIN" run --auto --dir "$dir" -m "$model" ${variant_args[@]+"${variant_args[@]}"} "$prompt" >"$out" 2>&1 & echo $! >"$LOG_DIR/.run.pid" )
+  local pid; pid="$(cat "$LOG_DIR/.run.pid")"; local w=0 timed_out=0
+  while kill -0 "$pid" 2>/dev/null; do sleep 5; w=$((w+5)); if [ "$w" -ge "$MAX_RUN_SECONDS" ]; then kill "$pid" 2>/dev/null; timed_out=1; break; fi; done
+  local end; end="$(now_epoch)"; local dur=$(( end - start ))
+
+  # Classify result from output.
+  local throttled=0 result="success"
+  if grep -qiE "rate.?limit|too many requests|429|quota|throttl" "$out"; then throttled=1; result="throttled"; fi
+  if grep -qiE "connection closed|-32000" "$out"; then result="mcp_cold_start_error"; fi
+  if [ "$timed_out" = 1 ]; then result="timeout"; fi
+  if grep -qiE "^Error:|\bError\b.*failed" "$out" && [ "$result" = "success" ]; then result="error"; fi
+
+  # Safety audit: confirm ONLY the intended free model appeared in the session header.
+  if grep -qE "> build ·" "$out"; then
+    if grep -E "> build ·" "$out" | grep -qvE "muse-spark-1.3-contributor-free|union-alpha|nemotron-3-ultra-free"; then
+      result="PAID_MODEL_LEAK"; echo "!! ALERT: non-free model header detected in $out" >&2
+    fi
+  fi
+
+  log_route "$slot" "$model" "$task" "$klass" "$reason" "$result" "$dur" "$throttled" "0" "$out"
+  echo "ROUTE result worker=$slot task=$task result=$result duration=${dur}s throttled=$throttled log=$out"
+  echo "--- worker output (tail) ---"
+  grep -vE "^timestamp=" "$out" | tail -25
+  case "$result" in
+    success) return 0;;
+    throttled) echo "[stop] $slot throttled — do NOT auto-fallback to paid; route to another APPROVED free slot or ask user." >&2; return 3;;
+    mcp_cold_start_error) echo "[hint] run 'scripts/oc-worker warm' then retry (cold-start MCP)." >&2; return 4;;
+    timeout) return 5;;
+    PAID_MODEL_LEAK) return 42;;
+    *) return 1;;
+  esac
+}
+
+sub="${1:-}"; shift || true
+case "$sub" in
+  slots)  cmd_slots;;
+  models) cmd_models;;
+  warm)   cmd_warm "$@";;
+  run)    cmd_run "$@";;
+  *)
+    cat >&2 <<EOF
+oc-worker — ephemeral OpenCode free-model worker dispatcher (no paid fallback)
+usage:
+  scripts/oc-worker slots
+  scripts/oc-worker models
+  scripts/oc-worker warm [--dir <path>]
+  scripts/oc-worker run --slot <muse1|union1|nemotron1> --task <id> \\
+     --class <implementation|tests|refactor|debug|investigation> \\
+     --reason "<why>" [--dir <path>] [--effort <minimal|low|medium|high|xhigh>] \\
+     (--prompt "<text>" | --spec <file>)
+EOF
+    exit 64;;
+esac
