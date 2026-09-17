@@ -108,6 +108,8 @@ export function DeskOs({
       <div className="desk-os-chrome">
         <div className="desk-os-traffic" aria-hidden="true">
           <span className="desk-os-dot desk-os-dot-close" />
+          <span className="desk-os-dot desk-os-dot-min" />
+          <span className="desk-os-dot desk-os-dot-max" />
         </div>
         <div
           className="desk-os-tabs"
