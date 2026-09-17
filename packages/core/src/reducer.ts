@@ -42,12 +42,17 @@ export function applyAction(
     throw new ActionUnavailableError(action.id);
   }
   if (allowedAction.taskId) {
-    const progress =
-      currentState.taskProgress[
-        `${allowedAction.eventId}:${allowedAction.taskId}`
-      ];
-    if (!progress?.completed) {
-      throw new TaskRequiredError(action.id, allowedAction.taskId);
+    // P1-T03: released bindings never gate, even if a taskId is present
+    // (availability omits it; this covers any divergent caller state).
+    const binding = currentState.rules.tasks[allowedAction.taskId];
+    if (!binding?.releasesActionGate) {
+      const progress =
+        currentState.taskProgress[
+          `${allowedAction.eventId}:${allowedAction.taskId}`
+        ];
+      if (!progress?.completed) {
+        throw new TaskRequiredError(action.id, allowedAction.taskId);
+      }
     }
   }
 

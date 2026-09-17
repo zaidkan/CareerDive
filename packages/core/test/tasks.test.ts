@@ -63,6 +63,7 @@ function packWithHandoffTask(): CareerPack {
       kind: "select_clues",
       title: "Find unfinished work",
       whyItMatters: "Handoffs stop work from getting lost between shifts.",
+      releasesActionGate: false,
       steps: [
         {
           id: "unfinished-item",

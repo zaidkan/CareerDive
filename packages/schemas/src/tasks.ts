@@ -86,6 +86,13 @@ export const PackTaskDefinitionSchema = z.object({
   title: z.string().min(1),
   whyItMatters: z.string().min(1),
   steps: z.array(PackTaskStepSchema).min(1),
+  /**
+   * P1-T03 migration compatibility: when true, this binding's legacy
+   * WorkTask no longer gates its canonical action. Narrow flag — it
+   * controls only the legacy WorkTask requirement, nothing else.
+   * Cross-binding consistency is P1-T05 validation territory.
+   */
+  releasesActionGate: z.boolean().default(false),
 });
 export type PackTaskDefinition = z.infer<typeof PackTaskDefinitionSchema>;
 
