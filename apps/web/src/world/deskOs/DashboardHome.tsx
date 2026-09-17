@@ -20,7 +20,7 @@ export function DashboardHome({
   return (
     <div className="desk-os-home">
       <header className="desk-os-home-hero">
-        <div>
+        <div className="desk-os-home-hero-copy">
           <p className="eyebrow">Shift console</p>
           <h2>Your workstation</h2>
           <p>
