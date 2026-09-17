@@ -4,7 +4,7 @@ import { LockScreen } from "./LockScreen.js";
 import { OpsConsole } from "./OpsConsole.js";
 import { BrowserApp } from "./os/BrowserApp.js";
 import { Desktop } from "./os/Desktop.js";
-import { FileExplorer } from "./os/FileExplorer.js";
+import { FileExplorer, type OpenableFile } from "./os/FileExplorer.js";
 import { Notes } from "./os/Notes.js";
 import { Taskbar } from "./os/Taskbar.js";
 import type { OsAppId } from "./os/browserState.js";
@@ -51,7 +51,14 @@ export function DeskOs({
 }) {
   // Single-active-window model: exactly one app fills the workspace.
   const [activeApp, setActiveApp] = useState<OsAppId>("browser");
+  // Opened files live at shell level so they survive app switches.
+  const [openFile, setOpenFile] = useState<OpenableFile | null>(null);
   const locked = phase === "desk_login";
+
+  const openFileInNotes = (file: OpenableFile) => {
+    setOpenFile(file);
+    setActiveApp("notes");
+  };
 
   const opsConsole = (
     <OpsConsole
@@ -82,10 +89,10 @@ export function DeskOs({
           <BrowserApp opsConsole={opsConsole} />
         </div>
         <div hidden={locked || activeApp !== "files"}>
-          <FileExplorer />
+          <FileExplorer onOpenFile={openFileInNotes} />
         </div>
         <div hidden={locked || activeApp !== "notes"}>
-          <Notes />
+          <Notes openFile={openFile} />
         </div>
       </div>
       {locked ? (

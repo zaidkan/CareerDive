@@ -3543,6 +3543,31 @@ section[aria-labelledby="structured-title"],
   letter-spacing: -0.02em;
 }
 
+.os-open-file {
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid #2563eb;
+  border-radius: 8px;
+  background: var(--ink-lift);
+}
+
+.os-open-file-name {
+  margin: 0 0 0.25rem;
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.os-open-file-body {
+  margin: 0;
+  color: var(--fog);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
 .os-notes-area {
   min-height: 10rem;
   padding: 0.6rem 0.7rem;

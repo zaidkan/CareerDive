@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { BROWSER_PAGES, pageUrl, useBrowserHistory, type BrowserPageId } from "./browserState.js";
+import { prefersReducedMotion } from "./reducedMotion.js";
 
 export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
   const { page, canBack, canForward, back, forward, navigate } = useBrowserHistory("ops");
@@ -7,14 +8,21 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
   const timer = useRef<number | null>(null);
   useEffect(
     () => () => {
-      if (timer.current !== null) window.clearTimeout(timer.current);
+      if (timer.current !== null) {
+        window.clearTimeout(timer.current);
+        timer.current = null;
+      }
     },
     [],
   );
   const reload = () => {
     if (reloading) return;
+    // Cosmetic only: never touches canonical state. Under reduced-motion the
+    // feedback resolves synchronously so nothing depends on a timer.
+    if (prefersReducedMotion()) return;
     setReloading(true);
     timer.current = window.setTimeout(() => {
+      timer.current = null;
       setReloading(false);
     }, 400);
   };
@@ -67,6 +75,8 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
       <nav aria-label="Bookmarks" className="os-bookmarks">
         {BROWSER_PAGES.map((entry) => (
           <button
+            aria-current={entry.id === "ops" && page === entry.id ? "page" : undefined}
+            aria-describedby={entry.id === "ops" ? "os-ops-bookmark-hint" : undefined}
             aria-pressed={page === entry.id}
             className={`os-bookmark${page === entry.id ? " os-bookmark-active" : ""}`}
             key={entry.id}
@@ -78,6 +88,9 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
             {entry.title}
           </button>
         ))}
+        <span className="visually-hidden" id="os-ops-bookmark-hint">
+          Start your shift here — opens the SOC work console.
+        </span>
       </nav>
       <div className="os-page">
         <span aria-live="polite" className="visually-hidden">
