@@ -30,16 +30,18 @@ spends most of the shift *doing* SOC work, not selecting authored answers.
 | Layer | File | Role |
 |---|---|---|
 | Locked product/governance | `AGENTS.md`, `docs/career-sim-build-spec.md` | Constraints; cannot be overridden |
-| Canonical target design | `interactivity-and-content-depth-design.md` (TRACKED, `a42fdec`) | Target experience + phases. **PRE-audit; NOT yet reconciled with C1–C9.** |
+| Canonical target design | `interactivity-and-content-depth-design.md` (TRACKED, reconciled `a82a02b`) | Target experience + phases. **Reconciled with Phase 0 (C1–C9 + §24 in Appendix R + body). Verified by Kiro.** |
 | Canonical Phase 0 findings | `interactivity-and-content-depth-phase0-audit.md` (UNTRACKED) | Verified repo baseline; raises C1–C9 + 4 open §24 questions |
 | Investigator reports | `phase0-core-runtime-audit.md` (TRACKED), `phase0-content-renderer-audit.md` (UNTRACKED) | Deeper evidence behind the synthesis |
 | Supporting/reference only | `renderer-parity-accessibility-matrix.md`, `soc-shift-realism-reference.md`, `soc-structured-content-pack.md` (all UNTRACKED) | Guide content/UI/acceptance later; may NOT override canonical architecture (each self-declares "canonical design spec wins") |
 | Historical/superseded | `2026-07-14`, `2026-08-06`, `2026-08-27`, `2026-08-28` design docs | Prior-era; superseded for this redesign |
 
 **Authority conflict flagged:** the canonical design spec was authored BEFORE Phase 0 and does NOT
-incorporate C1–C9 or resolve the four §24 questions. Until a reconciliation pass updates it (or an
-explicit correction doc is accepted), the design spec's pre-audit assumptions and the audit's
-corrected findings coexist. Where they differ, the audit's *repository-verified* facts are truth.
+**Authority conflict RESOLVED (commit `a82a02b`):** the canonical design spec has been reconciled with
+Phase 0 — C1–C9 and the four §24 decisions are recorded in Appendix R (Reconciliation Decision Registry)
+and woven into the body. Kiro verified each is present and free of stale contradictions. The canonical
+design spec is now the single source of truth for planning; the Phase 0 audit remains the verified
+baseline evidence behind it.
 
 ## Architecture Baseline
 
@@ -79,24 +81,24 @@ False-positive review content = greenfield.
 
 ## Final Architectural Decisions
 
-### C1–C9 (from Phase 0 audit §22) — STATUS: RAISED, NOT YET RECONCILED INTO CANONICAL SPEC
-| # | Corrected direction (summary) | In canonical spec? |
-|---|---|---|
-| C1 | Narrow consequence gap to conditional/cancellable (delayed unconditional already works) | NO |
-| C2 | Migration MUST release the `TaskRequiredError` gate per migrated action | NO |
-| C3 | Reframe notebook/ticket/KB/decisions as upgrades, not greenfield | NO |
-| C4 | Scope/strip serializer leaks (`templateId`, `relatedArtifactIds`) | NO |
-| C5 | NPC availability = engine+schema (Phase 6); move intent schema sketch to Phase 1 | NO |
-| C6 | Phishing = greenfield, not re-author | NO |
-| C7 | Clarify Jules: author intents OR accept peer-dialogue for the MUST | NO |
-| C8 | Rescope Phase 8 to parity TESTS | NO |
-| C9 | State movement/time asymmetry explicitly (presentation-only) | NO |
+### C1–C9 — STATUS: RECONCILED INTO CANONICAL SPEC (commit `a82a02b`, Appendix R + body). Verified by Kiro.
+| # | Corrected direction (summary) | Registry | In-body |
+|---|---|---|---|
+| C1 | Narrow consequence gap to conditional/cancellable (delayed unconditional already works) | R3 | §8 (`:846`, `:1035`, `:1228`) |
+| C2 | Migration MUST release the `TaskRequiredError` gate per migrated action | R2 | §15 binding rule `:1649` + §15.0 `:1651` |
+| C3 | Reframe notebook/ticket/KB/decisions as upgrades, not greenfield | R3/R10 | §16 non-greenfield list `:1748` |
+| C4 | Scope/strip serializer leaks (`templateId`, `relatedArtifactIds`) | R8 | §6.10 `:1043-1044`, §12 `:1497` |
+| C5 | NPC availability = engine+schema (Phase 6); intent sketch in Phase 1 | R6 | §11 status `:917`, Phase 6 `:2047` |
+| C6 | Phishing = greenfield, not re-author | R10 | §4 status `:386`, migration `:1691` |
+| C7 | Jules = narrow authored intents on shared infra (never grader) | R6 | §11 `:1411`, Phase 6 `:2047` |
+| C8 | Rescope Phase 8 to parity TESTS | (phases) | §17/§18 RED reqs `:1782` |
+| C9 | Movement/time asymmetry explicit (presentation-only) | R11 | Appendix R |
 
-### Four §24 decisions — STATUS: OPEN (no reconciliation artifact resolves them)
-1. Evidence Fact state ownership (rules-snapshot vs instance) — UNRESOLVED.
-2. False-positive review keep-vs-defer from beta MUST — UNRESOLVED (currently listed MUST in §19.1).
-3. Jules author-canonical-intents vs accept-peer-dialogue — UNRESOLVED.
-4. VPN absence-fact modeling (first-class query-establishes-absence vs special provenance) — UNRESOLVED.
+### Four §24 decisions — STATUS: RESOLVED (Appendix R registry, binding)
+1. **Evidence Fact ownership (R4):** definitions + provenance rules in pack `rules` snapshot; discovery state (IDs/time/provenance/attachments) in instance state; NEVER assessment `EvidenceSignal`. (§6.3-6.4 `:703,925,949`)
+2. **False-positive review (R5):** **SHOULD-ship, not MUST** — include only if budget allows after core stabilizes. (§19.1 re-tagged `:2180`, §19.2 `:2187`)
+3. **Jules (R6):** narrow authored intents on shared NPC infrastructure; no Morgan-depth knowledge; never a grader; deterministic peer replies become fallback text. (§11 `:1411`)
+4. **VPN absence (R7):** coverage-based provenance rule (account + IP + interval ⊇ authored window, zero rows), never exact-query match. Phase 3 binding. (§6/§3 `:668`)
 
 ## Phase Dependency Map (from design spec §18; audit-adjusted notes)
 
@@ -139,8 +141,10 @@ Independent review where practical (prefer a reviewer that did not implement the
 checks before merge. Worker "done" is evidence, not acceptance.
 
 ## Current Next Step
-**BLOCKED pending reconciliation.** The canonical design spec does not yet incorporate C1–C9 and the four
-§24 decisions are unresolved. Next approved step: a reconciliation pass (higher-reasoning architect or
-explicit user decisions) that (a) applies C1–C9 to the canonical design spec, and (b) resolves the four
-§24 questions into a decision registry. Only after that is Phase 1 planning valid. Do NOT dispatch
-implementation workers until then.
+**Reconciliation complete and verified (commit `a82a02b`).** Canonical spec now incorporates C1–C9 +
+the four §24 decisions (Appendix R) and defines an explicit Phase 1 Boundary. Verdict: **READY FOR
+PHASE 1 PLANNING.** Next approved step (on user instruction only): convert the spec's Phase 1 Boundary
+into the Phase 1 engineering DAG. Phase 1 is FOUNDATION ONLY (extend `EventInstance`, `WorkItem`
+serializer projection, hidden-metadata cleanup, validation, gate-release mechanism, schema-only
+sketches) — it must NOT include the query engine, discovery runtime, ticket restructure, consequence
+predicates, NPC behavior, or content re-author. Do NOT dispatch implementation workers until instructed.
