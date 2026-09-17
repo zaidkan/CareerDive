@@ -225,7 +225,7 @@ export function ServerRack({
               bays.current[i] = node;
             }}
             color="#0a0e12"
-            emissive={i % 2 === 0 ? "#4fd0c8" : "#e8b84a"}
+            emissive={i % 2 === 0 ? "#4fd0c8" : "#6ea8fe"}
             emissiveIntensity={0.35 + (i % 3) * 0.1}
           />
         </mesh>
