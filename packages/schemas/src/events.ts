@@ -6,10 +6,14 @@ import { WorkSystemIdSchema } from "./session.js";
 export const EventStatusSchema = z.enum([
   "pending",
   "active",
+  "acknowledged",
+  "monitoring",
+  "waiting",
   "resolved",
   "escalated",
   "expired",
 ]);
+export type EventStatus = z.infer<typeof EventStatusSchema>;
 export const EventInstanceSchema = z.object({
   id: z.string(),
   templateId: z.string(),
@@ -24,6 +28,9 @@ export const EventInstanceSchema = z.object({
   completedActionIds: z.array(SimulationActionIdSchema).default([]),
   observedArtifactIds: z.array(z.string()).default([]),
   resolution: z.string().optional(),
+  acknowledgedAt: z.number().int().nonnegative().optional(),
+  linkedTicketId: z.string().min(1).optional(),
+  followUpRefs: z.array(z.string()).default([]),
 });
 export type EventInstance = z.infer<typeof EventInstanceSchema>;
 

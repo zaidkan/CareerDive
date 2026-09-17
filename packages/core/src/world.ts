@@ -38,6 +38,7 @@ export function createInitialWorldState(
       managerConsulted: false,
       completedActionIds: [],
       observedArtifactIds: [],
+      followUpRefs: [],
     }),
   );
 
@@ -65,7 +66,6 @@ export function createInitialWorldState(
     sessionId,
     sessionKind: options.sessionKind ?? "assessed",
     seed,
-    rngState: seed,
     simClock: 0,
     currentLocationId: pack.scenario.location.id,
     locations: {
