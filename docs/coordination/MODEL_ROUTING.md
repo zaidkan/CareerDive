@@ -112,42 +112,75 @@ involved; constraints/invariants; implementation steps; tests required; things N
 escalation conditions. Otherwise you get the worst case — pay Sol to understand the project, then
 hand vague instructions to Terra/DeepSeek, which re-discovers everything. That defeats the purpose.
 
-## External execution capacity (PLANNED — wire up only after install + probe)
+## External execution capacity — OpenCode FREE workers (VERIFIED + WIRED 2026-09-17)
 
-Two additional CHEAP runners, separate usage pools from Codex Plus (zk/hamza):
+Separate usage pool from Codex Plus (zk/hamza): **`usagePool = opencode-free`**. OpenCode CLI
+`v1.18.31` is the ephemeral/headless runner (`opencode run --auto -m provider/model`), one clean
+context per task, no persistent TUI. Dispatch via **`scripts/oc-worker`** (allow-list enforced;
+route telemetry in `.orca-opencode/route.log`).
 
-**Path A — OpenCode + DeepSeek.** OpenCode CLI = runner/agent harness; DeepSeek V4 (e.g. Pro/Flash)
-= model behind it (`opencode run -m provider/model`). Model as `agentIdentity=opencode, model=deepseek-v4-*`
-(lifecycle belongs to the runner OpenCode; capability/usage to the model DeepSeek). Slot e.g.
-`deepseek1` (runner opencode, usagePool opencode-deepseek). Known: `worker-start --agent opencode`
-does NOT reliably deliver the Orca preamble — use an adapter: open plain terminal → mint Orca
-dispatch/tracking ID → write preamble → `opencode run --auto "<preamble>"` (`--auto` avoids
-permission blocks) → Git/test verify → completion/integration. OpenCode supports MCP
-(`opencode mcp add/list`) so project-memory is architecturally supported (probe our exact config).
+### Approved $0 model slots (probed & cost-verified; NO paid fallback)
 
-**Path B — Freebuff.** Own CLI runner (`npm i -g freebuff`), own bundled free model pool
-(DeepSeek V4.1 Flash, GLM, Luna, etc., no API key). Slot e.g. `freebuff1` (runner freebuff,
-usagePool freebuff). Orca is actively adding native `freebuff` TuiAgent support — probe whether
-OUR installed Orca recognizes it: if yes use native path, if no run as plain-terminal worker
-(don't over-engineer around a feature Orca is landing).
+| Slot | Model ID | Context / Output | Image | Reasoning variants |
+|---|---|---|---|---|
+| `muse1` (PRIMARY) | `opencode/muse-spark-1.3-contributor-free` | 1,048,576 / 131,072 | text+image+video+pdf+audio | effort: minimal·low·medium·high·**xhigh** |
+| `union1` (2nd executor) | `opencode/union-alpha` | 262,144 / 131,072 | text+image | none (reasoning on, no tiers) |
+| `nemotron1` (3rd / long-text) | `opencode/nemotron-3-ultra-free` | 1,000,000 / 128,000 | **text only** | none (reasoning on, no tiers) |
 
-**Routing role of external cheap executors:** default = cheap execution of a STRONG specification
-(the conceptual problem is already solved by Sol). Multi-file is fine — the boundary is
-"conceptual problem solved," NOT "one file." ESCALATE BACK TO SOL if the executor starts:
-redesigning architecture, discovering major undocumented invariants, failing across subsystems,
-hitting a hard race/state issue, needing cross-system reasoning not in the packet, contradicting
-the packet, or thrashing unrelated code to pass tests. Don't burn cheap tokens forever just
-because they're cheap.
+All three confirmed `input=0 output=0 cache_read=0` in `~/.cache/opencode/models.json`. All support
+tool_call (MCP). No stored OpenCode credentials are required for the `opencode/*` free provider.
+
+**Reasoning-variant policy:** `muse1` uses `--variant xhigh` for substantial/important
+implementation, `--variant high` for ordinary implementation; do NOT waste xhigh on trivial
+mechanical work. `union1`/`nemotron1` expose NO discrete effort tiers — never invent `high`/`xhigh`
+for them (`scripts/oc-worker` suppresses `--variant` for those slots).
+
+**Preferred free execution order:** `muse1 → union1 → nemotron1`. This is NOT mandatory
+retry-through-all: if the task itself is conceptually stuck, do NOT re-send the same broken task
+through every free model — return to **Sol High** for diagnosis/replanning, then hand the revised
+implementation packet back to a free executor.
+
+**HARD COST RULE — no paid fallback.** Kiro may ONLY dispatch these three $0 IDs through OpenCode.
+If a free model disappears, becomes paid, is rate-limited, or fails resolution: **STOP.** Do NOT
+substitute Sol/GLM/Kimi/paid-Muse/any Zen model through OpenCode. `scripts/oc-worker` refuses any
+non-allow-listed model and flags a `PAID_MODEL_LEAK` if a non-free header ever appears. On
+`throttled`, it stops and asks Kiro to route to another APPROVED free slot or tell the user.
+
+### Shared brain (project-memory) on OpenCode
+
+`/opt/homebrew/bin/uvx neo4j-agent-memory[mcp,sentence-transformers]` is wired into OpenCode via
+project-local `opencode.json` (`mcp.project-memory`, `type:local`, `{env:NEO4J_PASSWORD}` only, no
+hardcoded secret, same `--user-id career-expo` namespace as Kiro's `.kiro/settings/mcp.json`).
+Cross-agent read/write verified (Kiro↔OpenCode, same Neo4j graph). **Cold-start gotcha:** the first
+MCP tool call in a fresh `opencode run` can fail once with `-32000 Connection closed` while `uvx`
+resolves the package + loads the embedding model; mitigations = `timeout:60000` in `opencode.json`,
+`scripts/oc-worker warm` before relying on it, or retry once. Keep the MCP tool surface focused;
+query only relevant memories (MCP tools add to model context).
+
+### Dispatch adapter (`scripts/oc-worker`)
+
+`worker-start --agent opencode` does NOT reliably deliver the Orca preamble. Use the ephemeral
+adapter instead: Kiro mints the task packet → `scripts/oc-worker run --slot <muse1|union1|nemotron1>
+--task <id> --class <...> --reason "<why>" --dir <worktree> [--effort <tier>] (--prompt|--spec)`
+→ the worker edits/tests/commits under `--auto` → Kiro Git/test verifies → integration. Every
+dispatch appends a ROUTE record (worker, model, task, class, cost_class=free, result,
+success/throttled/failure, duration, throttled, retries) to `.orca-opencode/route.log` so we can
+empirically rank Muse/Union/Nemotron on THIS repo rather than trusting internet benchmarks.
+
+**Routing role:** faithful execution of a STRONG specification (conceptual problem already solved by
+Sol). Multi-file is fine — the boundary is "conceptual problem solved," NOT "one file." ESCALATE
+BACK TO SOL if an executor redesigns architecture, discovers major undocumented invariants, fails
+across subsystems, hits a hard race/state issue, needs cross-system reasoning not in the packet,
+contradicts the packet, or thrashes unrelated code to pass tests. Track Union's reliability
+separately (new/stealth model — do not assume its hidden identity).
 
 **Review by blast radius, not model prejudice:** well-specified low-risk external work that passes
 tests + acceptance = DONE (no mandatory Sol review). High-blast-radius external work → independent
 Sol review; medium-risk → Terra may be a sufficient independent reviewer.
 
-**Concurrency = usage-pool + dependency safety, NOT total terminal count.** One root task per
-Codex ACCOUNT still holds (zk pool, hamza pool). But independent pools can run concurrently:
-`terrazk` + `solhamza` + `deepseek1` + `freebuff1` may each run a root task simultaneously IF the
-DAG tasks are genuinely independent and worktrees don't conflict.
-
-**Probe-before-trust (both runners):** binary/version, available models, non-interactive run,
-autonomy flag, MCP/project-memory visibility, Git edit/commit, Orca adapter/native behavior,
-completion detection. Harmless/disposable probe first. Record design now; implement after install.
+**Concurrency = usage-pool + dependency safety, NOT total terminal count.** One root task per Codex
+ACCOUNT still holds (zk pool, hamza pool). The `opencode-free` pool is independent, so
+`terrazk` + `solhamza` + one `opencode-free` root job may run concurrently IF the DAG tasks are
+genuinely independent and worktrees don't conflict. **Start conservatively: one active
+`opencode-free` root job** (Muse/Union/Nemotron may share OpenCode provider rate limits until
+measured). Increase only if telemetry shows independent/high enough capacity.
