@@ -26,6 +26,9 @@ function target(
     ({ eventTemplateId, actionId }) =>
       eventTemplateId === event.templateId && actionId === definition.id,
   );
+  // P1-T03: a released binding offers the plain canonical action. The
+  // legacy quiz UI has nothing to bind to; the gate is gone with it.
+  const gated = task && !task.releasesActionGate;
   return {
     id: definition.id,
     eventId: event.id,
@@ -33,7 +36,7 @@ function target(
     label: definition.label,
     description: definition.description,
     simulatedMinutes: definition.simulatedMinutes,
-    ...(task ? { taskId: task.id } : {}),
+    ...(gated ? { taskId: task.id } : {}),
   };
 }
 
