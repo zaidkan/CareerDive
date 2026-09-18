@@ -2,6 +2,9 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { BROWSER_PAGES, pageUrl, useBrowserHistory, type BrowserPageId } from "./browserState.js";
 import { prefersReducedMotion } from "./reducedMotion.js";
 
+import { appDefinition } from "./appCatalog.js";
+import { WindowChrome } from "./WindowChrome.js";
+
 export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
   const { page, canBack, canForward, back, forward, navigate } = useBrowserHistory("ops");
   const [reloading, setReloading] = useState(false);
@@ -29,8 +32,14 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
   const openPage = (next: BrowserPageId) => {
     navigate(next);
   };
+  const meta = appDefinition("browser");
   return (
-    <section aria-label="Browser" className="os-window os-browser">
+    <section aria-label="Browser" className="os-window os-browser" data-app="browser">
+      <WindowChrome
+        app="browser"
+        title={meta.label}
+        subtitle={page === "ops" ? "SOC Ops Console" : "Intranet"}
+      />
       <div className="os-browser-bar">
         <div className="os-browser-nav" role="group" aria-label="Browser navigation">
           <button
@@ -92,6 +101,11 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
           Start your shift here — opens the SOC work console.
         </span>
       </nav>
+      <p className="os-browser-subtitle" aria-live="polite">
+        {page === "ops"
+          ? "Secure intranet — signed in · Verdaly workstation SOC-07"
+          : "Intranet (internal) · not assessed for evidence"}
+      </p>
       <div className="os-page">
         <span aria-live="polite" className="visually-hidden">
           {reloading ? "Reloading page." : ""}
