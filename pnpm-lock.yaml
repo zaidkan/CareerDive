@@ -188,6 +188,10 @@ importers:
       yaml:
         specifier: ^2.8.0
         version: 2.9.0
+    devDependencies:
+      '@sim/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/core:
     dependencies:
