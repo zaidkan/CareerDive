@@ -8,6 +8,8 @@
  * must never flow back up this list.
  */
 export * from "./session.js";
+export * from "./records.js";
+export * from "./query.js";
 export * from "./actions.js";
 export * from "./tasks.js";
 export * from "./workplace.js";
@@ -19,7 +21,6 @@ export * from "./career-pack.js";
 export * from "./assessment.js";
 export * from "./pathway.js";
 export * from "./npc.js";
-export * from "./records.js";
 export * from "./evidence-facts.js";
 export * from "./ticket.js";
 export * from "./npc-intent.js";

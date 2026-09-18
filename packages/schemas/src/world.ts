@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import { ActionDefinitionSchema, SimulationActionIdSchema } from "./actions.js";
 import { EventInstanceSchema, PackEventTemplateSchema } from "./events.js";
+import { QueryHistoryEntrySchema } from "./query.js";
+import { DatasetIdSchema, RuntimeDatasetSchema } from "./records.js";
 import {
   PacingModeSchema,
   SessionKindSchema,
@@ -80,6 +82,9 @@ export const ScenarioRulesSchema = z.object({
   notifications: z
     .record(z.string(), PackNotificationDefinitionSchema)
     .default({}),
+  // P2-T01: immutable structured datasets, versioned with the scenario.
+  // Keyed by datasetId; default {} keeps pre-Phase-2 packs valid.
+  datasets: z.record(DatasetIdSchema, RuntimeDatasetSchema).default({}),
 });
 export type ScenarioRules = z.infer<typeof ScenarioRulesSchema>;
 
@@ -127,6 +132,8 @@ export const WorldStateSchema = z.object({
   kbQuery: z.string().default(""),
   taskProgress: z.record(z.string(), TaskProgressSchema).default({}),
   notifications: z.array(NotificationStateSchema).default([]),
+  // P2-T01: append-only, reducer-local, replayed query history (server-side).
+  queryHistory: z.array(QueryHistoryEntrySchema).default([]),
   workplace: WorkplaceStateSchema,
   hidden: HiddenStateSchema,
 });

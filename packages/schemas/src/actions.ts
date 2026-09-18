@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { QueryRecordsPayloadSchema } from "./query.js";
 import { WorkSystemIdSchema } from "./session.js";
 
 export const SimulationActionIdSchema = z.enum([
@@ -10,6 +11,7 @@ export const SimulationActionIdSchema = z.enum([
   "inspect_account_history",
   "check_device_inventory",
   "search_knowledge_base",
+  "query_records",
   "dismiss_alert",
   "escalate_alert",
   "document_ticket",
@@ -30,6 +32,12 @@ export const SimulationActionSchema = z.object({
   actorId: z.string().min(1),
   eventId: z.string().min(1).optional(),
   freeText: z.string().max(2_000).optional(),
+  /**
+   * P2-T01: structured query payload. Present only for `query_records`;
+   * legality of the pairing (payload required iff id === "query_records") is
+   * enforced in the reducer, keeping the envelope back-compatible.
+   */
+  queryPayload: QueryRecordsPayloadSchema.optional(),
 });
 export type SimulationAction = z.infer<typeof SimulationActionSchema>;
 

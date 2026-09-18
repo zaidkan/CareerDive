@@ -109,6 +109,7 @@ const view: ClientView = {
   kbQuery: "",
   tasks: [],
   notifications: [],
+  queryResults: [],
   workplace: {
     energy: { current: 100, max: 100 },
     carriedSnackBites: 0,

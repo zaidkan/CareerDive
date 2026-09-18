@@ -149,6 +149,7 @@ function makeView(overrides: Partial<ClientView> = {}): ClientView {
     kbQuery: "",
     tasks: [],
     notifications: [],
+    queryResults: [],
     workplace: {
       energy: { current: 73, max: 100 },
       carriedSnackBites: 0,

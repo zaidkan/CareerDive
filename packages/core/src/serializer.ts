@@ -189,6 +189,8 @@ export function toClientView(state: WorldState): ClientView {
     kbQuery: state.kbQuery,
     tasks,
     notifications,
+    // P2: per-query result views are attached by the query path; empty here.
+    queryResults: [],
     workplace: structuredClone(state.workplace),
   };
 }

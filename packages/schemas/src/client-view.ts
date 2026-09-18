@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { AvailableActionSchema } from "./actions.js";
 import { EventInstanceSchema, WorkItemCategorySchema } from "./events.js";
+import { QueryResultViewSchema } from "./query.js";
 import { PacingModeSchema, SessionKindSchema } from "./session.js";
 import { ClientNotificationSchema, ClientTaskViewSchema } from "./tasks.js";
 import { ClientWorkplaceStateSchema } from "./workplace.js";
@@ -62,6 +63,8 @@ export const ClientViewSchema = z.object({
   kbQuery: z.string(),
   tasks: z.array(ClientTaskViewSchema).default([]),
   notifications: z.array(ClientNotificationSchema).default([]),
+  // P2-T01: per-query result views only (never the full server-side history).
+  queryResults: z.array(QueryResultViewSchema).default([]),
   workplace: ClientWorkplaceStateSchema,
 });
 export type ClientView = z.infer<typeof ClientViewSchema>;

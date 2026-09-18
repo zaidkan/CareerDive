@@ -34,6 +34,7 @@ const view: ClientView = {
   kbQuery: "",
   tasks: [],
   notifications: [],
+  queryResults: [],
   workplace: {
     energy: { current: 0, max: 100 },
     carriedSnackBites: 1,
