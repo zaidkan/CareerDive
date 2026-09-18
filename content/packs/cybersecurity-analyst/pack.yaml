@@ -755,6 +755,13 @@ scenario:
         observeArtifactIds: [device-inventory-1]
         hidden:
           accuracy: 1
+    - id: query_records
+      systemId: alert_dashboard
+      label: Search records
+      description: Query structured records for explicit identifiers, accounts, or time windows.
+      simulatedMinutes: 2
+      energyCost: 0
+      tracksCompletion: false
     - id: search_knowledge_base
       systemId: knowledge_base
       label: Check response procedure
@@ -864,7 +871,7 @@ scenario:
       progression:
         kind: stages
         allowManager: true
-        utilityActions: [update_ticket_notes]
+        utilityActions: [update_ticket_notes, query_records]
         stages:
           - after: []
             offer: [review_alert]
