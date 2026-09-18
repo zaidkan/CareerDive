@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type {
+  ActionLogEntry,
   AuthRecord,
   DatasetId,
   DeviceRecord,
+  EventInstance,
   EvidenceFactDefinition,
   EvidenceFactDiscoveryState,
   QueryFilter,
@@ -21,7 +23,7 @@ import {
   WorldStateSchema,
 } from "@sim/schemas";
 import * as core from "../src/index.js";
-import { applyAction, foldActionLog } from "../src/index.js";
+import { applyAction, foldActionLog, toClientView } from "../src/index.js";
 
 // ---------------------------------------------------------------------------
 // PHASE 4 RED-TEST FOUNDATION — structured ticket / meaningful documentation.
@@ -41,9 +43,17 @@ import { applyAction, foldActionLog } from "../src/index.js";
 //
 // INTENTIONAL RED: Phase 4 structured-ticket runtime does not exist. The P3
 // discovery evaluator (`discoverEvidenceFacts`) IS real and reused here; the
-// structured-ticket store + reader + legality validator are NOT. Tests that
-// depend on them fail with a RED marker, clearly separated from the GREEN
+// structured-ticket store + reader + legality validator are NOT, and no
+// canonical action or action-log payload carries ticket updates yet. Tests
+// that depend on them fail with a RED marker, clearly separated from the GREEN
 // schema-contract + invariant tests below.
+//
+// Sections P4-1..P4-10 pin the store/reader/validator contract against an
+// installed ticket. Section P4-11 pins the player VERB: `document_ticket`
+// carrying a strict `ticketPayload` must flow through `applyAction` into
+// canonical state, survive `ActionLogEntrySchema` + `foldActionLog`, and reach
+// the client projection. A ticket that only exists because a test installed it
+// is not documentation.
 //
 // PHASE 4 CONTRACT ASSUMPTIONS (from canonical spec; flagged for implementers):
 // 1. Structured tickets are canonical session state, owned by the backend
@@ -67,6 +77,34 @@ import { applyAction, foldActionLog } from "../src/index.js";
 // 7. Attachments stay Evidence Facts, never assessment `EvidenceSignal`.
 // 8. Determinism: same canonical actions -> same ticket state, same attachment
 //    ordering, same structured fields. No wall clock, no RNG, no client state.
+// 9. Player documentation is a canonical ACTION: `document_ticket` carries a
+//    strict `ticketPayload` (mirrors the landed P2 `query_records` /
+//    `queryPayload` pairing), and the payload must survive
+//    `SimulationActionSchema` + `ActionLogEntrySchema` so `foldActionLog`
+//    reproduces ticket state. Payload shape: `{ ticketId, status?,
+//    entityRefs?, attachEvidenceFactIds?, detachEvidenceFactIds?,
+//    disposition?, noteText?, followUp? }`.
+// 10. Attachment through the action path is ADDITIVE in canonical action order
+//    (a repeated attach action never stores a duplicate id); removal is
+//    EXPLICIT via `detachEvidenceFactIds`, and detaching a fact that is not
+//    attached is a no-op. A later update never silently drops an earlier
+//    attachment.
+// 11. The canonical action path REJECTS an illegal update before mutation and
+//    leaves canonical state identical: unknown ticket id, attachment of an
+//    undiscovered/unknown fact id, entity reference that resolves to nothing,
+//    unknown payload keys, and any transition out of a terminal `closed`
+//    ticket. A dedicated error (for example `TicketValidationError`, mirroring
+//    the landed `QueryValidationError`) is preferred; only the throw plus zero
+//    mutation is pinned here.
+// 12. Attachment must project into Phase 3 discovery state:
+//    `discoverEvidenceFacts(state)[factId].attachedToTicketIds` reflects the
+//    ticket a fact is attached to (hardcoded `[]` today).
+// 13. The player-visible projection exposes the canonical store
+//    (`ClientView.structuredTickets`) with canonical ticket fields only —
+//    never definition prose, provenance, or answer-shaped metadata.
+// 14. `closed` is terminal (the only transition rule pinned here); a
+//    same-status repeat is legal and idempotent. Phase 4 may author a fuller
+//    transition table but must not accept a transition out of `closed`.
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
@@ -152,6 +190,14 @@ const FACT_FLAGGED_SESSION_DEVICE: EvidenceFactDefinition = {
 
 const QUERY_MINUTES = 2;
 
+/**
+ * Canonical Work Item / ticket identifiers shared by the fixtures and the
+ * Phase 4 action-path section (P4-11). The ticket id is authored content; the
+ * Work Item points back at it through `linkedTicketId`.
+ */
+const WORK_ITEM_ID = "suspicious-login-1";
+const TICKET_ID = "suspicious-login-1";
+
 function stateWithDatasets(): WorldState {
   return WorldStateSchema.parse({
     sessionId: "sess-1",
@@ -159,10 +205,32 @@ function stateWithDatasets(): WorldState {
     seed: 7,
     simClock: 400,
     currentLocationId: "desk",
-    locations: {},
+    locations: {
+      desk: {
+        id: "desk",
+        name: "SOC desk",
+        connectedLocationIds: [],
+        interactableIds: [],
+      },
+    },
     facts: {},
     npcs: {},
-    events: [],
+    // One active Work Item. `linkedTicketId` is the canonical work-item ->
+    // ticket association the ticket store must resolve against.
+    events: [
+      {
+        id: WORK_ITEM_ID,
+        templateId: "suspicious_login",
+        title: "Unfamiliar sign-in",
+        summary: "",
+        priority: "high",
+        systemId: "alert_dashboard",
+        status: "active",
+        triggeredAt: 400,
+        deadlineAt: 600,
+        linkedTicketId: TICKET_ID,
+      },
+    ],
     ledger: [],
     completedActionIds: [],
     pacingMode: "standard",
@@ -177,8 +245,77 @@ function stateWithDatasets(): WorldState {
           energyCost: 0,
           tracksCompletion: false,
         },
+        // P4-11: structured ticket updates are repeatable utility actions
+        // (non-completing), matching how `update_ticket_notes` is modeled today.
+        document_ticket: {
+          id: "document_ticket",
+          systemId: "ticket_queue",
+          label: "Document ticket",
+          description: "Record structured ticket state.",
+          simulatedMinutes: 0,
+          energyCost: 0,
+          tracksCompletion: false,
+        },
+        update_ticket_notes: {
+          id: "update_ticket_notes",
+          systemId: "ticket_queue",
+          label: "Update ticket notes",
+          description: "Edit the investigation notes.",
+          simulatedMinutes: 0,
+          energyCost: 0,
+          tracksCompletion: false,
+          defaultEffect: { setTicketNotesFromFreeText: true },
+        },
+        update_notebook: {
+          id: "update_notebook",
+          systemId: "team_chat",
+          label: "Update notebook",
+          description: "Write in the scratch notebook.",
+          simulatedMinutes: 0,
+          energyCost: 0,
+          tracksCompletion: false,
+          defaultEffect: { setNotebookFromFreeText: true },
+        },
+        review_alert: {
+          id: "review_alert",
+          systemId: "alert_dashboard",
+          label: "Review alert",
+          description: "Read the alert signal.",
+          simulatedMinutes: 2,
+          energyCost: 0,
+          tracksCompletion: true,
+        },
+        ask_manager: {
+          id: "ask_manager",
+          systemId: "team_chat",
+          label: "Ask Morgan",
+          description: "Ask the shift lead for guidance.",
+          simulatedMinutes: 1,
+          energyCost: 0,
+          tracksCompletion: false,
+        },
       },
-      eventTemplates: {},
+      eventTemplates: {
+        suspicious_login: {
+          instanceId: WORK_ITEM_ID,
+          title: "Unfamiliar sign-in",
+          summary: "",
+          priority: "high",
+          systemId: "alert_dashboard",
+          triggerAt: 400,
+          deadlineMinutes: 200,
+          progression: {
+            kind: "linear",
+            sequence: ["review_alert"],
+            utilityActions: [
+              "document_ticket",
+              "update_ticket_notes",
+              "update_notebook",
+            ],
+          },
+          managerGuidance: "Keep the ticket current before any handoff.",
+        },
+      },
       tasks: {},
       notifications: {},
       datasets: {
@@ -429,12 +566,17 @@ describe("P4-0 frozen ticket schema contract (GREEN)", () => {
   });
 
   it("ticketId, linkedWorkItemIds, and status are mandatory (no detached UI text)", () => {
-    const { ticketId: _tid, ...noId } = VALID;
-    expect(() => StructuredTicketSchema.parse(noId)).toThrow();
-    const { linkedWorkItemIds: _l, ...noLink } = VALID;
-    expect(() => StructuredTicketSchema.parse(noLink)).toThrow();
-    const { status: _s, ...noStatus } = VALID;
-    expect(() => StructuredTicketSchema.parse(noStatus)).toThrow();
+    const withoutId: Partial<StructuredTicket> = { ...VALID };
+    delete withoutId.ticketId;
+    expect(() => StructuredTicketSchema.parse(withoutId)).toThrow();
+
+    const withoutLink: Partial<StructuredTicket> = { ...VALID };
+    delete withoutLink.linkedWorkItemIds;
+    expect(() => StructuredTicketSchema.parse(withoutLink)).toThrow();
+
+    const withoutStatus: Partial<StructuredTicket> = { ...VALID };
+    delete withoutStatus.status;
+    expect(() => StructuredTicketSchema.parse(withoutStatus)).toThrow();
   });
 });
 
@@ -947,5 +1089,461 @@ describe("P4-10 determinism", () => {
     let second = installTicket(stateWithDatasets(), ticket);
     second = query(second, "devices", { deviceLabel: "unknown-laptop-17" });
     expect(readStructuredTickets(first)).toEqual(readStructuredTickets(second));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// P4-11 — the canonical action path: documenting a ticket is a real player verb.
+//
+// P4-1..P4-10 pin the ticket store/reader/validator against an installed
+// ticket. This section pins the verb: `document_ticket` with a strict
+// `ticketPayload` must flow through `applyAction` into canonical state, survive
+// `ActionLogEntrySchema` + `foldActionLog`, and reach the client projection.
+// Rejection of illegal updates happens on this path, before mutation.
+// ---------------------------------------------------------------------------
+
+const DISCOVERED_FACT_ID = "fact-device-unenrolled";
+const PRESENCE_FACT_ID = "fact-device-exact-presence";
+const UNDISCOVERED_FACT_ID = "fact-flagged-session-device";
+
+const RED_TICKET_PAYLOAD =
+  "RED[Phase 4]: the canonical action log drops ticket updates. Phase 4 must " +
+  "add a strict `SimulationAction.ticketPayload` on `document_ticket` " +
+  "(mirroring the landed P2 `query_records`/`queryPayload` pairing) and accept " +
+  "it through `SimulationActionSchema`/`ActionLogEntrySchema` so " +
+  "`foldActionLog` reproduces canonical ticket state.";
+
+/** A second attachable fact, discovered by the presence query in the fixture. */
+const FACT_DEVICE_EXACT_PRESENCE: EvidenceFactDefinition = {
+  id: PRESENCE_FACT_ID,
+  statement:
+    "Device inventory contains exactly one 'unknown-laptop-17' record for the exact label.",
+  relatedWorkItemIds: [WORK_ITEM_ID],
+  provenance: {
+    kind: "query_presence",
+    datasetId: "devices",
+    requiredDimensions: ["deviceLabel"],
+    requiredFilters: { deviceLabel: "unknown-laptop-17" },
+  },
+  attachable: true,
+};
+
+/**
+ * PHASE 4 CONTRACT SHIM — the strict ticket-update payload Phase 4 must add to
+ * the canonical action (mirrors the landed P2 `QueryRecordsPayload`).
+ * Attachment is additive; removal is explicit.
+ */
+type TicketUpdatePayload = {
+  ticketId: string;
+  status?: TicketStatus;
+  entityRefs?: string[];
+  attachEvidenceFactIds?: string[];
+  detachEvidenceFactIds?: string[];
+  disposition?: string;
+  noteText?: string;
+  followUp?: string;
+};
+
+/**
+ * Authored initial ticket/work-item content (spec §7.5: player-created changes
+ * become part of canonical state). Phase 4 seeds this from the pack.
+ */
+const AUTHORED_TICKET: StructuredTicket = {
+  ticketId: TICKET_ID,
+  linkedWorkItemIds: [WORK_ITEM_ID],
+  status: "open",
+  entityRefs: ["unknown-laptop-17"],
+  evidenceFactIds: [],
+};
+
+/**
+ * Authored ticket plus the canonical investigation that discovers two facts
+ * (`fact-device-unenrolled`, `fact-device-exact-presence`). The third authored
+ * definition stays undiscovered, proving discovery — not naming — gates
+ * attachment.
+ */
+function documentedWorld(): WorldState {
+  let state = installFactDefinitions(stateWithDatasets(), [
+    FACT_DEVICE_UNENROLLED,
+    FACT_DEVICE_EXACT_PRESENCE,
+    FACT_FLAGGED_SESSION_DEVICE,
+  ]);
+  state = query(state, "devices", { deviceLabel: "unknown-laptop-17" });
+  state = openRecords(state, "unknown-laptop-17");
+  return installTicket(state, AUTHORED_TICKET);
+}
+
+function apply(state: WorldState, action: SimulationAction): WorldState {
+  return applyAction(state, action).state;
+}
+
+function ticketAction(
+  payload: TicketUpdatePayload,
+  eventId: string = WORK_ITEM_ID,
+): SimulationAction {
+  return {
+    id: "document_ticket",
+    actorId: "player",
+    eventId,
+    ticketPayload: payload,
+  } as unknown as SimulationAction;
+}
+
+function documentTicket(
+  state: WorldState,
+  payload: TicketUpdatePayload,
+): WorldState {
+  return apply(state, ticketAction(payload));
+}
+
+function reviewAction(): SimulationAction {
+  return { id: "review_alert", actorId: "player", eventId: WORK_ITEM_ID };
+}
+
+function noteAction(freeText: string): SimulationAction {
+  return {
+    id: "update_ticket_notes",
+    actorId: "player",
+    eventId: WORK_ITEM_ID,
+    freeText,
+  };
+}
+
+function notebookAction(freeText: string): SimulationAction {
+  return {
+    id: "update_notebook",
+    actorId: "player",
+    eventId: WORK_ITEM_ID,
+    freeText,
+  };
+}
+
+function managerAction(): SimulationAction {
+  return { id: "ask_manager", actorId: "player", eventId: WORK_ITEM_ID };
+}
+
+function ticketOf(
+  state: WorldState,
+  ticketId: string = TICKET_ID,
+): StructuredTicket | undefined {
+  return byTicketId(readStructuredTickets(state), ticketId);
+}
+
+function ticketPayloadOf(value: unknown): unknown {
+  return (value as { ticketPayload?: unknown } | undefined)?.ticketPayload;
+}
+
+/**
+ * Replay entries built through the canonical log schema. If the log silently
+ * strips a ticket payload, this throws the explicit RED diagnostic instead of
+ * letting the fold "pass" against an empty update.
+ */
+function replayEntries(actions: SimulationAction[]): ActionLogEntry[] {
+  const parsed = ActionLogEntrySchema.array().parse(
+    actions.map((action, index) => ({
+      sequence: index + 1,
+      interaction: { type: "action" as const, action },
+    })),
+  );
+  const droppedPayload = parsed.some((entry, index) => {
+    const source = actions[index];
+    if (!source || ticketPayloadOf(source) === undefined) return false;
+    const logged =
+      entry.interaction.type === "action" ? entry.interaction.action : undefined;
+    return ticketPayloadOf(logged) === undefined;
+  });
+  if (droppedPayload) throw new Error(RED_TICKET_PAYLOAD);
+  return parsed;
+}
+
+/** One documented-shift-style log: status, attach, note, detach, re-attach. */
+function documentationActions(): SimulationAction[] {
+  return [
+    reviewAction(),
+    ticketAction({ ticketId: TICKET_ID, status: "in_progress" }),
+    ticketAction({
+      ticketId: TICKET_ID,
+      attachEvidenceFactIds: [DISCOVERED_FACT_ID],
+    }),
+    ticketAction({
+      ticketId: TICKET_ID,
+      noteText: "Device inventory checked; no enrollment record.",
+    }),
+    ticketAction({
+      ticketId: TICKET_ID,
+      detachEvidenceFactIds: [DISCOVERED_FACT_ID],
+    }),
+    ticketAction({
+      ticketId: TICKET_ID,
+      attachEvidenceFactIds: [PRESENCE_FACT_ID],
+    }),
+  ];
+}
+
+describe("P4-11 canonical action path (RED until Phase 4)", () => {
+  it("P4-11a the ticket store is schema-backed canonical state, not UI text", () => {
+    const parsed = WorldStateSchema.parse(
+      installTicket(stateWithDatasets(), AUTHORED_TICKET),
+    ) as unknown as StructuredTicketStore;
+    expect(parsed.structuredTickets).toBeDefined();
+    expect(Object.keys(parsed.structuredTickets ?? {})).toContain(TICKET_ID);
+  });
+
+  it("P4-11b document_ticket records status, attachment, and disposition", () => {
+    const state = documentTicket(documentedWorld(), {
+      ticketId: TICKET_ID,
+      status: "in_progress",
+      attachEvidenceFactIds: [DISCOVERED_FACT_ID],
+      disposition:
+        "Keep the case open while the route question is unresolved.",
+    });
+    const ticket = ticketOf(state);
+    expect(ticket?.status).toBe("in_progress");
+    expect(ticket?.evidenceFactIds).toEqual([DISCOVERED_FACT_ID]);
+    expect(ticket?.disposition).toBe(
+      "Keep the case open while the route question is unresolved.",
+    );
+    expect(ticket?.linkedWorkItemIds).toEqual([WORK_ITEM_ID]);
+  });
+
+  it("P4-11c attachment projects into discovery state and detach clears it", () => {
+    let state = documentTicket(documentedWorld(), {
+      ticketId: TICKET_ID,
+      attachEvidenceFactIds: [DISCOVERED_FACT_ID],
+    });
+    expect(ticketOf(state)?.evidenceFactIds).toEqual([DISCOVERED_FACT_ID]);
+    const attached = discover(state).find(
+      ({ factId }) => factId === DISCOVERED_FACT_ID,
+    );
+    expect(attached?.attachedToTicketIds).toEqual([TICKET_ID]);
+
+    state = documentTicket(state, {
+      ticketId: TICKET_ID,
+      detachEvidenceFactIds: [DISCOVERED_FACT_ID],
+    });
+    expect(ticketOf(state)?.evidenceFactIds).toEqual([]);
+    const detached = discover(state).find(
+      ({ factId }) => factId === DISCOVERED_FACT_ID,
+    );
+    expect(detached?.attachedToTicketIds).toEqual([]);
+  });
+
+  it("P4-11d illegal updates are rejected before mutation", () => {
+    const before = documentedWorld();
+    const illegal: TicketUpdatePayload[] = [
+      { ticketId: "ticket-does-not-exist", status: "in_progress" },
+      { ticketId: TICKET_ID, attachEvidenceFactIds: [UNDISCOVERED_FACT_ID] },
+      { ticketId: TICKET_ID, attachEvidenceFactIds: ["fact-does-not-exist"] },
+      { ticketId: TICKET_ID, entityRefs: ["ghost-device-99"] },
+      {
+        ticketId: TICKET_ID,
+        expectedEvidenceFactIds: [DISCOVERED_FACT_ID],
+      } as unknown as TicketUpdatePayload,
+    ];
+    for (const payload of illegal) {
+      expect(() => documentTicket(before, payload)).toThrow();
+    }
+    expect(ticketOf(before)?.status).toBe("open");
+    expect(ticketOf(before)?.evidenceFactIds).toEqual([]);
+  });
+
+  it("P4-11e closed is terminal and same-status repeats are idempotent", () => {
+    const closed = installTicket(documentedWorld(), {
+      ...AUTHORED_TICKET,
+      status: "closed",
+    });
+    const terminalStatuses: TicketStatus[] = [
+      "open",
+      "in_progress",
+      "pending_review",
+      "escalated",
+    ];
+    for (const status of terminalStatuses) {
+      expect(() =>
+        documentTicket(closed, { ticketId: TICKET_ID, status }),
+      ).toThrow();
+    }
+    const repeat = documentTicket(closed, {
+      ticketId: TICKET_ID,
+      status: "closed",
+    });
+    expect(ticketOf(repeat)?.status).toBe("closed");
+  });
+
+  it("P4-11f repeated identical updates are idempotent, never duplicated", () => {
+    const base = documentedWorld();
+    const update: TicketUpdatePayload = {
+      ticketId: TICKET_ID,
+      status: "in_progress",
+      attachEvidenceFactIds: [DISCOVERED_FACT_ID],
+      noteText: "Snapshot recorded.",
+    };
+    const once = documentTicket(base, update);
+    const twice = documentTicket(once, update);
+    expect(ticketOf(twice)).toEqual(ticketOf(once));
+    expect(ticketOf(twice)?.evidenceFactIds).toEqual([DISCOVERED_FACT_ID]);
+    const attached = discover(twice).find(
+      ({ factId }) => factId === DISCOVERED_FACT_ID,
+    );
+    expect(attached?.attachedToTicketIds).toEqual([TICKET_ID]);
+  });
+
+  it("P4-11g attachment ordering follows canonical action order", () => {
+    const forward = documentTicket(
+      documentTicket(documentedWorld(), {
+        ticketId: TICKET_ID,
+        attachEvidenceFactIds: [DISCOVERED_FACT_ID],
+      }),
+      {
+        ticketId: TICKET_ID,
+        attachEvidenceFactIds: [PRESENCE_FACT_ID],
+      },
+    );
+    const reverse = documentTicket(
+      documentTicket(documentedWorld(), {
+        ticketId: TICKET_ID,
+        attachEvidenceFactIds: [PRESENCE_FACT_ID],
+      }),
+      {
+        ticketId: TICKET_ID,
+        attachEvidenceFactIds: [DISCOVERED_FACT_ID],
+      },
+    );
+    expect(ticketOf(forward)?.evidenceFactIds).toEqual([
+      DISCOVERED_FACT_ID,
+      PRESENCE_FACT_ID,
+    ]);
+    expect(ticketOf(reverse)?.evidenceFactIds).toEqual([
+      PRESENCE_FACT_ID,
+      DISCOVERED_FACT_ID,
+    ]);
+  });
+
+  it("P4-11h documented state survives actions in other workplace systems", () => {
+    let state = documentTicket(documentedWorld(), {
+      ticketId: TICKET_ID,
+      status: "in_progress",
+      attachEvidenceFactIds: [DISCOVERED_FACT_ID],
+      disposition: "Keep monitoring the account while the case stays open.",
+    });
+    const documented = ticketOf(state);
+    state = apply(state, queryAction({ sessionId: "S-0731" }, "auth"));
+    state = apply(state, reviewAction());
+    state = apply(state, notebookAction("Comparing the flagged session."));
+    state = apply(state, managerAction());
+    expect(ticketOf(state)).toEqual(documented);
+  });
+
+  it("P4-11i documentation does not mutate work-item or assessment truth", () => {
+    const before = documentedWorld();
+    const after = documentTicket(before, {
+      ticketId: TICKET_ID,
+      status: "pending_review",
+      attachEvidenceFactIds: [DISCOVERED_FACT_ID],
+      disposition: "Escalate to tier 2 with the session identifiers.",
+    });
+    // The documentation lands on the ticket...
+    expect(ticketOf(after)?.status).toBe("pending_review");
+    expect(ticketOf(after)?.disposition).toBe(
+      "Escalate to tier 2 with the session identifiers.",
+    );
+    // ...and changes nothing else in canonical truth.
+    const shape = ({ id, status, completedActionIds, resolution }: EventInstance) =>
+      [id, status, completedActionIds, resolution];
+    expect(after.events.map(shape)).toEqual(before.events.map(shape));
+    expect(discover(after)).toEqual(discover(before));
+    expect(after.hidden).toEqual(before.hidden);
+    expect(after.ledger).toEqual([]);
+  });
+
+  it("P4-11j the player-visible projection exposes the canonical ticket", () => {
+    const state = documentTicket(documentedWorld(), {
+      ticketId: TICKET_ID,
+      status: "pending_review",
+      attachEvidenceFactIds: [DISCOVERED_FACT_ID],
+    });
+    const view = toClientView(state) as unknown as StructuredTicketStore;
+    expect(view.structuredTickets?.[TICKET_ID]).toMatchObject({
+      ticketId: TICKET_ID,
+      linkedWorkItemIds: [WORK_ITEM_ID],
+      status: "pending_review",
+    });
+    expect(view.structuredTickets?.[TICKET_ID]?.evidenceFactIds).toEqual([
+      DISCOVERED_FACT_ID,
+    ]);
+    expect(JSON.stringify(view)).not.toMatch(
+      /statement|provenance|attachable|expectedEvidence|idealDisposition/i,
+    );
+  });
+
+  it("P4-11k the action log carries ticket updates and replays identically", () => {
+    const entries = replayEntries(documentationActions());
+    const first = foldActionLog(documentedWorld(), entries);
+    const second = foldActionLog(documentedWorld(), entries);
+    expect(readStructuredTickets(first)).toEqual(readStructuredTickets(second));
+    expect(ticketOf(first)?.status).toBe("in_progress");
+    expect(ticketOf(first)?.noteText).toBe(
+      "Device inventory checked; no enrollment record.",
+    );
+    expect(ticketOf(first)?.evidenceFactIds).toEqual([PRESENCE_FACT_ID]);
+    expect(discover(first)).toEqual(discover(second));
+    expect(toClientView(first)).toEqual(toClientView(second));
+  });
+
+  it("P4-11l documented ticket carries no wall clock or grading fields", () => {
+    const state = documentTicket(documentedWorld(), {
+      ticketId: TICKET_ID,
+      status: "escalated",
+      attachEvidenceFactIds: [DISCOVERED_FACT_ID],
+      disposition: "Escalate with the session identifiers attached.",
+      noteText: "Unenrolled device; no covering route record for the window.",
+      followUp: "Tier 2 to confirm route coverage.",
+    });
+    const ticket = ticketOf(state);
+    if (!ticket) throw new Error("expected a canonical ticket");
+    expect(Object.keys(ticket).sort()).toEqual([
+      "disposition",
+      "entityRefs",
+      "evidenceFactIds",
+      "followUp",
+      "linkedWorkItemIds",
+      "noteText",
+      "status",
+      "ticketId",
+    ]);
+    expect(JSON.stringify(ticket)).not.toMatch(/\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it("P4-11m the canonical action log preserves ticketPayload", () => {
+    const entries = ActionLogEntrySchema.array().parse([
+      {
+        sequence: 1,
+        interaction: {
+          type: "action",
+          action: ticketAction({ ticketId: TICKET_ID, status: "in_progress" }),
+        },
+      },
+    ]);
+    const entry = entries[0];
+    const logged =
+      entry && entry.interaction.type === "action"
+        ? entry.interaction.action
+        : undefined;
+    expect(ticketPayloadOf(logged)).toEqual({
+      ticketId: TICKET_ID,
+      status: "in_progress",
+    });
+  });
+
+  it("GREEN guard: legacy free-text notes stay canonical and inert", () => {
+    const before = documentedWorld();
+    const after = apply(before, noteAction("Session identifiers for handoff."));
+    expect(after.ticketNotes[WORK_ITEM_ID]).toBe(
+      "Session identifiers for handoff.",
+    );
+    expect(discover(after)).toEqual(discover(before));
+    expect(after.events.map(({ id, status }) => [id, status])).toEqual(
+      before.events.map(({ id, status }) => [id, status]),
+    );
   });
 });
