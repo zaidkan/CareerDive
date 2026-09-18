@@ -1,5 +1,6 @@
 import type {
   DomainEffect,
+  QueryHistoryEntry,
   SimulationAction,
   TurnResult,
   WorldState,
@@ -7,6 +8,7 @@ import type {
 import { WorldStateSchema } from "@sim/schemas";
 import { availableActions } from "./availability.js";
 import { applyResolvedEffect, resolveActionEffect } from "./effects.js";
+import { runQuery } from "./query.js";
 import {
   activatePendingEvents,
   applyDueConsequences,
@@ -33,6 +35,10 @@ export function applyAction(
   currentState: WorldState,
   action: SimulationAction,
 ): TurnResult {
+  if (action.id === "query_records") {
+    return applyQueryRecords(currentState, action);
+  }
+
   const allowedAction = availableActions(currentState).find(
     ({ id, eventId }) =>
       id === action.id &&
@@ -89,6 +95,59 @@ export function applyAction(
   wakeSnoozedNotifications(state);
   expireOverdueEvents(state);
   applyDueConsequences(state, effects);
+
+  return { state: WorldStateSchema.parse(state), effects };
+}
+
+/**
+ * P2-T03: `query_records` reducer branch. Runs the pure engine over
+ * `rules.datasets`, appends exactly one append-only `QueryHistoryEntry`, and
+ * advances `simClock` per the action definition. It never marks records
+ * observed/opened and never evaluates evidence discovery (Phase 3).
+ *
+ * Invalid queries throw (via `runQuery` -> `QueryValidationError`) BEFORE any
+ * clone or mutation, so no history entry is appended and `seq` is not consumed.
+ * `simMinutes` on the entry is the POST-advance `simClock` (pinned convention).
+ */
+function applyQueryRecords(
+  currentState: WorldState,
+  action: SimulationAction,
+): TurnResult {
+  const definition = currentState.rules.actions.query_records;
+  if (!definition) {
+    throw new ActionUnavailableError(action.id);
+  }
+  if (!action.queryPayload) {
+    throw new ActionUnavailableError(action.id);
+  }
+  if (currentState.workplace.energy.current < definition.energyCost) {
+    throw new ActionUnavailableError(action.id);
+  }
+
+  // Evaluate BEFORE mutation. Throws for invalid requests (unknown dataset,
+  // bad filter, start > end), leaving state untouched and `seq` unconsumed.
+  const result = runQuery(currentState.rules.datasets, action.queryPayload);
+
+  const state = structuredClone(currentState);
+  const effects: DomainEffect[] = [
+    { type: "action_applied", actionId: action.id },
+  ];
+  state.workplace.energy.current -= definition.energyCost;
+  state.simClock += definition.simulatedMinutes;
+
+  const seq = state.queryHistory.length + 1;
+  const entry: QueryHistoryEntry = {
+    queryId: `${state.sessionId}-q${seq}`,
+    seq,
+    datasetId: result.datasetId,
+    normalizedFilters: result.normalizedFilters,
+    resultIds: result.resultIds,
+    totalCount: result.totalCount,
+    truncated: result.truncated,
+    simMinutes: state.simClock,
+    ...(action.eventId ? { actorEventId: action.eventId } : {}),
+  };
+  state.queryHistory.push(entry);
 
   return { state: WorldStateSchema.parse(state), effects };
 }
