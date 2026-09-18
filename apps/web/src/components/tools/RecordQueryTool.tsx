@@ -1,4 +1,4 @@
-import { useState, type SyntheticEvent } from "react";
+import { useMemo, useState, type SyntheticEvent } from "react";
 import {
   DATASET_FILTER_FIELDS,
   type AvailableAction,
@@ -12,6 +12,7 @@ import {
   EMPTY_MUTATION_STATE,
   type MutationState,
 } from "../../useMutationCoordinator.js";
+import "./RecordQueryTool.css";
 
 export type QueryRecordsHandler = (
   action: AvailableAction,
@@ -154,8 +155,24 @@ export function RecordQueryTool({
   const pending = Boolean(mutationState.pendingKey);
   const allowedFields = DATASET_FILTER_FIELDS[datasetId];
 
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    for (const field of allowedFields) {
+      if ((stringFilters[field] ?? "").trim()) count += 1;
+    }
+    if (windowStart.trim() || windowEnd.trim()) count += 1;
+    return count;
+  }, [allowedFields, stringFilters, windowStart, windowEnd]);
+
   function setStringFilter(field: string, value: string) {
     setStringFilters((current) => ({ ...current, [field]: value }));
+  }
+
+  function handleClearFilters() {
+    setStringFilters({});
+    setWindowStart("");
+    setWindowEnd("");
+    setValidationError(null);
   }
 
   function parseWindowBound(raw: string): number | undefined {
@@ -203,149 +220,250 @@ export function RecordQueryTool({
   }
 
   const results = view.queryResults;
+  const windowRangeInvalid =
+    validationError === "Time window start must be at or before the window end.";
+  const windowNumberInvalid =
+    validationError === "Time window bounds must be whole numbers zero or above.";
 
   return (
     <section aria-label="Record search" className="record-query-tool">
-      <h3>Record search</h3>
-      <p className="tool-subtle">
-        Search structured records by dataset and field. Results reflect the
-        records on file, including empty ones.
-      </p>
-      <form onSubmit={handleSubmit}>
-        <label htmlFor="record-query-dataset">Dataset</label>
-        <select
-          id="record-query-dataset"
-          value={datasetId}
-          onChange={(event) => {
-            setDatasetId(event.target.value as DatasetId);
-            setValidationError(null);
-          }}
-        >
-          {DATASET_ORDER.map((id) => (
-            <option key={id} value={id}>
-              {DATASET_LABELS[id]}
-            </option>
-          ))}
-        </select>
+      <div className="rq-head">
+        <p className="eyebrow">Investigate · structured records</p>
+        <h3>Record search</h3>
+        <p className="rq-subtle">
+          Search operational records by dataset and field. Results reflect the
+          records on file, including empty ones. Adjust filters and run again.
+        </p>
+      </div>
 
-        {allowedFields.map((field) => (
-          <div key={field}>
-            <label htmlFor={`record-query-${datasetId}-${field}`}>
-              {FILTER_LABELS[field] ?? field}
-            </label>
-            <input
-              id={`record-query-${datasetId}-${field}`}
-              type="text"
-              autoComplete="off"
-              spellCheck={false}
-              value={stringFilters[field] ?? ""}
-              onChange={(event) => {
-                setStringFilter(field, event.target.value);
-              }}
-              placeholder="Leave blank to include all"
-            />
+      <form
+        className="rq-form"
+        onSubmit={handleSubmit}
+        aria-busy={pending || undefined}
+      >
+        <div className="rq-dataset-row">
+          <label htmlFor="record-query-dataset">
+            Dataset
+            {activeFilterCount > 0
+              ? ` · ${String(activeFilterCount)} active filter${activeFilterCount === 1 ? "" : "s"}`
+              : ""}
+          </label>
+          <select
+            id="record-query-dataset"
+            value={datasetId}
+            onChange={(event) => {
+              setDatasetId(event.target.value as DatasetId);
+              setValidationError(null);
+            }}
+          >
+            {DATASET_ORDER.map((id) => (
+              <option key={id} value={id}>
+                {DATASET_LABELS[id]}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div
+          className="rq-filters"
+          role="group"
+          aria-label="Filters for selected dataset"
+        >
+          {allowedFields.map((field) => {
+            const hasValue = Boolean((stringFilters[field] ?? "").trim());
+            return (
+              <div
+                key={field}
+                className={hasValue ? "rq-field rq-field--active" : "rq-field"}
+              >
+                <label htmlFor={`record-query-${datasetId}-${field}`}>
+                  {FILTER_LABELS[field] ?? field}
+                </label>
+                <input
+                  id={`record-query-${datasetId}-${field}`}
+                  type="text"
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={stringFilters[field] ?? ""}
+                  onChange={(event) => {
+                    setStringFilter(field, event.target.value);
+                  }}
+                  placeholder="Leave blank to include all"
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="rq-time-row" role="group" aria-label="Time window">
+          <div className="rq-time-grid">
+            <div>
+              <label htmlFor={`record-query-${datasetId}-window-start`}>
+                Time from (shift minute)
+              </label>
+              <input
+                id={`record-query-${datasetId}-window-start`}
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                value={windowStart}
+                aria-invalid={
+                  windowNumberInvalid || windowRangeInvalid ? "true" : undefined
+                }
+                onChange={(event) => {
+                  setWindowStart(event.target.value);
+                }}
+                placeholder="Leave blank for no lower bound"
+              />
+            </div>
+            <div>
+              <label htmlFor={`record-query-${datasetId}-window-end`}>
+                Time to (shift minute)
+              </label>
+              <input
+                id={`record-query-${datasetId}-window-end`}
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                value={windowEnd}
+                aria-invalid={
+                  windowNumberInvalid || windowRangeInvalid ? "true" : undefined
+                }
+                onChange={(event) => {
+                  setWindowEnd(event.target.value);
+                }}
+                placeholder="Leave blank for no upper bound"
+              />
+            </div>
           </div>
-        ))}
-
-        <div>
-          <label htmlFor={`record-query-${datasetId}-window-start`}>
-            Time from (shift minute)
-          </label>
-          <input
-            id={`record-query-${datasetId}-window-start`}
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            value={windowStart}
-            onChange={(event) => {
-              setWindowStart(event.target.value);
-            }}
-            placeholder="Leave blank for no lower bound"
-          />
-        </div>
-        <div>
-          <label htmlFor={`record-query-${datasetId}-window-end`}>
-            Time to (shift minute)
-          </label>
-          <input
-            id={`record-query-${datasetId}-window-end`}
-            type="text"
-            inputMode="numeric"
-            autoComplete="off"
-            value={windowEnd}
-            onChange={(event) => {
-              setWindowEnd(event.target.value);
-            }}
-            placeholder="Leave blank for no upper bound"
-          />
+          <p className="rq-time-help">
+            Whole minutes from shift start. Leave blank for open-ended. A
+            bounded search reflects the interval you choose.
+          </p>
         </div>
 
-        {validationError ? <p role="alert">{validationError}</p> : null}
-        <button
-          type="submit"
-          disabled={!canSubmit || pending}
-          data-action-id={resolvedAction?.id}
-          {...(resolvedAction
-            ? { "data-event-id": resolvedAction.eventId }
-            : {})}
-        >
-          {pending ? "Searching…" : "Search records"}
-        </button>
-        {!canSubmit ? (
-          <p>Record search is not offered for the current work item.</p>
+        {validationError ? (
+          <p className="rq-validation" role="alert">
+            {validationError}
+          </p>
         ) : null}
+        <div className="rq-actions">
+          <button
+            className="rq-submit"
+            type="submit"
+            disabled={!canSubmit || pending}
+            data-action-id={resolvedAction?.id}
+            {...(resolvedAction
+              ? { "data-event-id": resolvedAction.eventId }
+              : {})}
+          >
+            {pending ? "Searching…" : "Search records"}
+          </button>
+          <button
+            className="rq-clear"
+            type="button"
+            onClick={handleClearFilters}
+            disabled={activeFilterCount === 0 && !validationError}
+            aria-label="Clear all record search filters"
+          >
+            Clear filters
+          </button>
+          {!canSubmit ? (
+            <span className="rq-hint">
+              Record search is not offered for the current work item.
+            </span>
+          ) : null}
+        </div>
       </form>
 
-      <div aria-label="Search results" aria-live="off">
+      <div className="rq-results" aria-label="Search results" aria-live="off">
         {results.length === 0 ? (
-          <p>
+          <p className="rq-empty">
             No searches run yet. Results will appear here without changing
             anything already on file.
           </p>
         ) : (
-          results.map((result, index) => {
-            // Only the most recent (last-appended) result carries a live
-            // role="status". Older results keep the same visible text as plain
-            // paragraphs so screen readers announce only the newest query and
-            // getByRole("status") stays unambiguous across repeated queries.
-            const isLatest = index === results.length - 1;
-            return (
-            <article key={result.queryId} aria-label={resultHeading(result)}>
-              <h4>{resultHeading(result)}</h4>
-              {result.truncated ? (
-                <p {...(isLatest ? { role: "status" } : {})} className="tool-subtle">
-                  Showing the first {String(result.records.length)} of{" "}
-                  {String(result.totalCount)}. Narrow the filters to see more.
-                </p>
-              ) : null}
-              {result.records.length === 0 && !result.truncated ? (
-                <p {...(isLatest ? { role: "status" } : {})}>
-                  No matching records for these filters.
-                </p>
-              ) : result.records.length > 0 ? (
-                <ol>
-                  {result.records.map((record) => (
-                    <li key={record.id}>
-                      <article aria-label={`Record ${record.id}`}>
-                        <h5>{record.id}</h5>
-                        <dl>
-                          {displayEntries(record)
-                            .filter(([key]) => key !== "id")
-                            .map(([key, value]) => (
-                              <div key={key}>
-                                <dt>{fieldLabel(key)}</dt>
-                                <dd>{formatFieldValue(value)}</dd>
-                              </div>
-                            ))}
-                        </dl>
-                      </article>
-                    </li>
-                  ))}
-                </ol>
-              ) : null}
-            </article>
-            );
-          })
+          <>
+            <div className="rq-results-head">
+              <p className="rq-results-title">
+                Recent results · {String(results.length)} quer
+                {results.length === 1 ? "y" : "ies"}
+              </p>
+              <span className="rq-results-meta">
+                Newest last · adjust filters and search again any time
+              </span>
+            </div>
+            <div className="rq-stack">
+              {results.map((result, index) => {
+                const isLatest = index === results.length - 1;
+                return (
+                  <article
+                    key={result.queryId}
+                    className="rq-result-block"
+                    aria-label={resultHeading(result)}
+                  >
+                    <div className="rq-result-head">
+                      <h4>{resultHeading(result)}</h4>
+                      <span
+                        className={
+                          result.totalCount === 0
+                            ? "rq-badge rq-badge--zero"
+                            : "rq-badge"
+                        }
+                      >
+                        {result.truncated
+                          ? `${String(result.records.length)} shown · ${String(result.totalCount)} total`
+                          : `${String(result.totalCount)} ${result.totalCount === 1 ? "record" : "records"}`}
+                      </span>
+                    </div>
+                    {result.truncated ? (
+                      <p
+                        className="rq-truncated"
+                        {...(isLatest ? { role: "status" as const } : {})}
+                      >
+                        Showing the first {String(result.records.length)} of{" "}
+                        {String(result.totalCount)}. Narrow the filters to see
+                        more.
+                      </p>
+                    ) : null}
+                    {result.records.length === 0 && !result.truncated ? (
+                      <p
+                        className="rq-zero"
+                        {...(isLatest ? { role: "status" as const } : {})}
+                      >
+                        No matching records for these filters.
+                      </p>
+                    ) : result.records.length > 0 ? (
+                      <ol className="rq-records">
+                        {result.records.map((record) => (
+                          <li key={record.id}>
+                            <article
+                              className="rq-record"
+                              aria-label={`Record ${record.id}`}
+                            >
+                              <h5>{record.id}</h5>
+                              <dl className="rq-fields">
+                                {displayEntries(record)
+                                  .filter(([key]) => key !== "id")
+                                  .map(([key, value]) => (
+                                    <div key={key}>
+                                      <dt data-field={key}>
+                                        {fieldLabel(key)}
+                                      </dt>
+                                      <dd>{formatFieldValue(value)}</dd>
+                                    </div>
+                                  ))}
+                              </dl>
+                            </article>
+                          </li>
+                        ))}
+                      </ol>
+                    ) : null}
+                  </article>
+                );
+              })}
+            </div>
+          </>
         )}
       </div>
     </section>
