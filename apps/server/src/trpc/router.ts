@@ -5,6 +5,7 @@ import {
   applyTaskAttempt,
   applyWorkplaceInteraction,
   createInitialWorldState,
+  QueryValidationError,
   respondToNotification,
   toClientView,
 } from "@sim/core";
@@ -22,7 +23,9 @@ import {
   WorkplaceFeedbackCodeSchema,
   WorkplaceInteractionSchema,
   type CareerPack,
+  type QueryRecordsPayload,
 } from "@sim/schemas";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { generateSafeNpcReply } from "../ai/npc-dialogue.js";
 import { getDefaultCareerPack } from "../career-pack.js";
@@ -113,6 +116,14 @@ export function createAppRouter(
             actionId: SimulationActionIdSchema,
             eventId: z.string().min(1),
             freeText: z.string().max(2_000).optional(),
+            /**
+             * P2-T06: structured payload for `query_records`, carried
+             * opaquely through transport (`z.unknown`) so the canonical
+             * core validator stays the single source of truth. Malformed
+             * payloads are mapped to a deterministic `invalid_payload`
+             * rejection below — never a raw schema dump.
+             */
+            queryPayload: z.unknown().optional(),
           }),
         )
         .output(
@@ -134,8 +145,41 @@ export function createAppRouter(
             ...(input.freeText === undefined
               ? {}
               : { freeText: input.freeText }),
+            ...(input.queryPayload === undefined
+              ? {}
+              : {
+                  queryPayload:
+                    input.queryPayload as QueryRecordsPayload,
+                }),
           };
-          const turn = applyAction(session.state, action);
+          let turn: ReturnType<typeof applyAction>;
+          try {
+            turn = applyAction(session.state, action);
+          } catch (error) {
+            // P2-T06: deterministic query-error mapping, scoped to the
+            // query action only. Core `QueryValidationError` messages are
+            // safe by construction (closed category + player-visible
+            // dataset/filter names); raw `ZodError`s are collapsed to the
+            // existing `invalid_payload` category so no schema internals,
+            // template ids, or authoring metadata leak. All other errors
+            // keep existing transport behavior.
+            if (input.actionId === "query_records") {
+              if (error instanceof QueryValidationError) {
+                throw new TRPCError({
+                  code: "BAD_REQUEST",
+                  message: `Query rejected (${error.category}): ${error.message}`,
+                });
+              }
+              if (error instanceof z.ZodError) {
+                throw new TRPCError({
+                  code: "BAD_REQUEST",
+                  message:
+                    "Query rejected (invalid_payload): query payload is invalid.",
+                });
+              }
+            }
+            throw error;
+          }
           const sequence = session.actionLog.length + 1;
           session.state = turn.state;
           session.actionLog.push({
