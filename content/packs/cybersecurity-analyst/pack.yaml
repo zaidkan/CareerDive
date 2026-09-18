@@ -1319,3 +1319,485 @@ scenario:
         Case references to preserve after comparison: A-1042, the two session identifiers, the exact inventory label, and the route-catalogue and work-travel coverage limits. These references are a review checklist, not a finding.
       eventIds: [suspicious-login-1]
       searchableText: ticket investigation notes
+
+  # Phase 2 structured datasets translated from
+  # docs/superpowers/specs/soc-structured-record-fixtures.md. IDs and values
+  # preserved verbatim; simMinutes use the RED-test mapping (office-local
+  # minutes since midnight). Rows without a canonical time omit simMinutes
+  # rather than inventing one. Phishing dataset intentionally absent: no
+  # canonical phishing records exist (fixtures Section 6 is all PROPOSED
+  # greenfield) and the quarantined action scaffolding stays out. AL-3
+  # false-positive cluster excluded (needs target-design confirmation).
+  # AL-4 excluded (tied to the deferred phishing item). AL-5 + SC-RUN-03
+  # excluded as a pair (the storage scanner lacks authored scanner/times).
+  # SC-NOTE-01 excluded (a memo does not fit the run-record schema).
+  datasets:
+    auth:
+      allowedFilterFields: [user, sourceIp, deviceLabel, sessionId, windowStartSimMinutes, windowEndSimMinutes]
+      records:
+        - id: AUTH-0731-PATEL
+          datasetId: auth
+          simMinutes: 451
+          user: j.patel@example.com
+          sourceIp: 198.51.100.20
+          deviceLabel: corp-macbook-patel
+          method: password + extra_identity_check
+          result: success
+          sessionId: S-0731
+          vpnConnectionId: V-218
+          relatedRecordIds: []
+          note: Managed-device certificate matched inventory at sign-in. Displayed city Montreal is a network estimate of the exit, not employee location.
+        - id: AUTH-0738-GROUP
+          datasetId: auth
+          simMinutes: 458
+          user: j.patel@example.com
+          sourceIp: 203.0.113.44
+          method: extra_identity_check
+          result: fail
+          attemptCount: 6
+          relatedRecordIds: []
+          note: Grouped row covering six failed extra checks 07:38:02-07:40:51. Groups by account and source; identifies no person.
+        - id: AUTH-0741-PATEL
+          datasetId: auth
+          simMinutes: 461
+          user: j.patel@example.com
+          sourceIp: 203.0.113.44
+          deviceLabel: unknown-laptop-17
+          method: password (accepted; extra-check result not present in export)
+          result: success
+          sessionId: S-0741
+          relatedRecordIds: []
+          note: Password success is not extra-check success. No VPN connection ID on this session.
+        - id: AUTH-0743-REFRESH
+          datasetId: auth
+          simMinutes: 463
+          user: j.patel@example.com
+          method: session_refresh
+          result: n/a
+          sessionId: S-0741
+          relatedRecordIds: [AUTH-0741-PATEL]
+          note: Portal refresh continues the session; verifies nothing about who controls it.
+        - id: AUTH-0715-PATEL-HQ
+          datasetId: auth
+          simMinutes: 435
+          user: j.patel@example.com
+          sourceIp: 10.20.4.18
+          deviceLabel: corp-macbook-patel
+          method: password + extra_identity_check
+          result: success
+          sessionId: S-0722
+          relatedRecordIds: []
+          note: Ordinary HQ sign-in; second baseline row.
+        - id: AUTH-0658-PATEL-PHONE
+          datasetId: auth
+          simMinutes: 418
+          user: j.patel@example.com
+          sourceIp: 10.20.4.9
+          deviceLabel: corp-phone-patel
+          method: mobile_sso
+          result: success
+          sessionId: S-0719
+          relatedRecordIds: []
+          note: Ordinary phone check-in for mail sync.
+        - id: AUTH-LASTWK-VPN-1
+          datasetId: auth
+          user: j.patel@example.com
+          sourceIp: 198.51.100.20
+          deviceLabel: corp-macbook-patel
+          method: password + extra_identity_check
+          result: success
+          sessionId: S-0690
+          vpnConnectionId: V-218
+          relatedRecordIds: []
+          note: Last week, first of two ordinary VPN sessions. Prior-week rows carry no office-local time on this shift.
+        - id: AUTH-LASTWK-VPN-2
+          datasetId: auth
+          user: j.patel@example.com
+          sourceIp: 198.51.100.20
+          deviceLabel: corp-macbook-patel
+          method: password + extra_identity_check
+          result: success
+          sessionId: S-0697
+          vpnConnectionId: V-218
+          relatedRecordIds: []
+          note: Last week, second of two ordinary VPN sessions.
+        - id: AUTH-0612-PATEL-TYPO
+          datasetId: auth
+          simMinutes: 372
+          user: j.patel@example.com
+          sourceIp: 10.20.4.9
+          deviceLabel: corp-macbook-patel
+          method: password (one failure, success 06:13 same row)
+          result: fail
+          relatedRecordIds: []
+          note: Ordinary morning typo inside the lookback.
+        - id: AUTH-0733-OKONKWO
+          datasetId: auth
+          simMinutes: 453
+          user: c.okonkwo@example.com
+          sourceIp: 10.20.4.9
+          deviceLabel: corp-macbook-okonkwo
+          method: password + extra_identity_check
+          result: success
+          sessionId: S-0735
+          relatedRecordIds: []
+          note: Morning sign-in rush; same HQ pattern, different person.
+        - id: AUTH-0740-GARCIA-FAIL-THEN-OK
+          datasetId: auth
+          simMinutes: 460
+          user: m.garcia@example.com
+          sourceIp: 10.20.4.9
+          deviceLabel: corp-macbook-garcia
+          method: password (one failure 07:40, success 07:41)
+          result: fail
+          relatedRecordIds: []
+          note: Single fail then success on the usual device and network is daily life; compare sequence and context.
+        - id: AUTH-0802-RIVERA-VPN
+          datasetId: auth
+          simMinutes: 482
+          user: a.rivera@example.com
+          sourceIp: 198.51.100.21
+          deviceLabel: corp-macbook-rivera
+          method: password + extra_identity_check
+          result: success
+          sessionId: S-0802
+          vpnConnectionId: V-219
+          relatedRecordIds: []
+          note: Second VPN user on a different connection; connection IDs are per-connection.
+        - id: AUTH-0755-SVC-BACKUP
+          datasetId: auth
+          simMinutes: 475
+          user: svc-backup
+          sourceIp: scheduler-internal
+          method: api_token (scheduled job)
+          result: success
+          relatedRecordIds: []
+          note: Non-interactive service principal; service sessions carry no user-session meaning.
+        - id: AUTH-0745-PATEL-HQ
+          datasetId: auth
+          simMinutes: 465
+          user: j.patel@example.com
+          sourceIp: 10.20.4.18
+          deviceLabel: corp-macbook-patel
+          method: password + extra_identity_check
+          result: success
+          sessionId: S-0746
+          relatedRecordIds: []
+          note: Ordinary office login at the collection edge; baseline continues past the incident window.
+        - id: AUTH-0835-OKONKWO-VPN
+          datasetId: auth
+          simMinutes: 515
+          user: c.okonkwo@example.com
+          sourceIp: 198.51.100.20
+          deviceLabel: corp-macbook-okonkwo
+          method: password + extra_identity_check
+          result: success
+          sessionId: S-0836
+          vpnConnectionId: V-217
+          relatedRecordIds: []
+          note: Ordinary remote login through the shared exit.
+        - id: AUTH-0722-GARCIA-FAIL
+          datasetId: auth
+          simMinutes: 442
+          user: m.garcia@example.com
+          sourceIp: 10.20.4.9
+          deviceLabel: corp-macbook-garcia
+          method: password (one failure, no retry in window)
+          result: fail
+          relatedRecordIds: []
+          note: Routine failed login with no follow-through.
+    vpn:
+      allowedFilterFields: [user, sourceIp, sessionId, vpnId, status, windowStartSimMinutes, windowEndSimMinutes]
+      records:
+        - id: V-218
+          datasetId: vpn
+          simMinutes: 449
+          vpnId: V-218
+          user: j.patel@example.com
+          startSimMinutes: 449
+          endSimMinutes: 485
+          exitIp: 198.51.100.20
+          deviceLabel: corp-macbook-patel
+          sessionId: S-0731
+          status: active
+          relatedRecordIds: []
+          note: Only approved VPN exit in the NET-VPN-04 snapshot (07:45). Catalogue covers organization-provided VPN only.
+        - id: V-219
+          datasetId: vpn
+          simMinutes: 482
+          vpnId: V-219
+          user: a.rivera@example.com
+          startSimMinutes: 482
+          exitIp: 198.51.100.21
+          deviceLabel: corp-macbook-rivera
+          sessionId: S-0802
+          status: active
+          relatedRecordIds: []
+          note: Second active connection; shared city is not a shared route.
+        - id: V-217
+          datasetId: vpn
+          simMinutes: 440
+          vpnId: V-217
+          user: c.okonkwo@example.com
+          startSimMinutes: 440
+          endSimMinutes: 470
+          exitIp: 198.51.100.20
+          deviceLabel: corp-macbook-okonkwo
+          sessionId: S-0735
+          status: active
+          relatedRecordIds: []
+          note: Shared exit IP with V-218; connection ID, not exit IP alone, links session to route.
+        - id: V-214
+          datasetId: vpn
+          simMinutes: 0
+          vpnId: V-214
+          user: m.garcia@example.com
+          startSimMinutes: 0
+          endSimMinutes: 10080
+          exitIp: 198.51.100.20
+          deviceLabel: corp-macbook-garcia
+          sessionId: S-0697
+          status: closed
+          relatedRecordIds: []
+          note: Ordinary week-ago row; time-window filters exclude it.
+        - id: V-220
+          datasetId: vpn
+          simMinutes: 540
+          vpnId: V-220
+          user: d.nguyen@example.com
+          startSimMinutes: 540
+          status: provisioning
+          relatedRecordIds: []
+          note: Pending approval; not a route for any session under review.
+        - id: V-221
+          datasetId: vpn
+          simMinutes: 470
+          vpnId: V-221
+          user: m.garcia@example.com
+          startSimMinutes: 470
+          endSimMinutes: 500
+          exitIp: 198.51.100.20
+          deviceLabel: corp-macbook-garcia
+          status: active
+          relatedRecordIds: []
+          note: Ordinary mid-shift remote session; shared exits are common infrastructure.
+        - id: V-216
+          datasetId: vpn
+          vpnId: V-216
+          user: j.patel@example.com
+          exitIp: 198.51.100.20
+          deviceLabel: corp-macbook-patel
+          status: closed
+          relatedRecordIds: []
+          note: Yesterday's ordinary session; outside the 07:25-07:45 target window, so it carries no office-local time on this shift.
+    devices:
+      allowedFilterFields: [deviceLabel, assignedUser, assignmentState, windowStartSimMinutes, windowEndSimMinutes]
+      records:
+        - id: corp-macbook-patel
+          datasetId: devices
+          deviceLabel: corp-macbook-patel
+          assignedUser: j.patel@example.com
+          deviceClass: macbook
+          enrolled: true
+          assignmentState: active
+          lastCheckinSimMinutes: 450
+          tags: []
+          relatedRecordIds: []
+          note: Last check-in 07:30 with S-0731 certificate match. Inventory covers registered work devices only.
+        - id: corp-phone-patel
+          datasetId: devices
+          deviceLabel: corp-phone-patel
+          assignedUser: j.patel@example.com
+          deviceClass: phone
+          enrolled: true
+          assignmentState: active
+          tags: []
+          relatedRecordIds: []
+          note: Second enrolled device on the account.
+        - id: unknown-laptop-17
+          datasetId: devices
+          deviceLabel: unknown-laptop-17
+          deviceClass: laptop
+          enrolled: false
+          assignmentState: unassigned
+          tags: []
+          relatedRecordIds: []
+          note: Exact flagged-session label; never checked into MDM. Exact-label match required; absence from inventory is not owner identification.
+        - id: corp-macbook-okonkwo
+          datasetId: devices
+          deviceLabel: corp-macbook-okonkwo
+          assignedUser: c.okonkwo@example.com
+          deviceClass: macbook
+          enrolled: true
+          assignmentState: active
+          tags: []
+          relatedRecordIds: []
+          note: Org-spanning inventory; match exact device names, not employee names.
+        - id: corp-macbook-rivera
+          datasetId: devices
+          deviceLabel: corp-macbook-rivera
+          assignedUser: a.rivera@example.com
+          deviceClass: macbook
+          enrolled: true
+          assignmentState: active
+          tags: []
+          relatedRecordIds: []
+          note: Reporter on a managed device.
+        - id: corp-phone-rivera
+          datasetId: devices
+          deviceLabel: corp-phone-rivera
+          assignedUser: a.rivera@example.com
+          deviceClass: phone
+          enrolled: true
+          assignmentState: active
+          tags: []
+          relatedRecordIds: []
+          note: Reporter second managed device.
+        - id: corp-macbook-patel-old
+          datasetId: devices
+          deviceLabel: corp-macbook-patel-old
+          assignedUser: j.patel@example.com
+          deviceClass: macbook
+          enrolled: false
+          assignmentState: retired
+          tags: [RETIRED]
+          relatedRecordIds: []
+          note: "Retired 2025, unenrolled on retirement. Deliberate near-miss: only the active exact label counts."
+        - id: unknown-laptop-04
+          datasetId: devices
+          deviceLabel: unknown-laptop-04
+          deviceClass: laptop
+          enrolled: false
+          assignmentState: unassigned
+          tags: []
+          relatedRecordIds: []
+          note: Seen once on the guest network last month, never enrolled. Unrelated to S-0741; different label, different date.
+        - id: loaner-pool-02
+          datasetId: devices
+          deviceLabel: loaner-pool-02
+          deviceClass: laptop
+          enrolled: true
+          assignmentState: loaner
+          tags: []
+          relatedRecordIds: []
+          note: Checked out to M. Garcia last week, returned. Inventories have lifecycles.
+        - id: corp-macbook-garcia
+          datasetId: devices
+          deviceLabel: corp-macbook-garcia
+          assignedUser: m.garcia@example.com
+          deviceClass: macbook
+          enrolled: true
+          assignmentState: active
+          lastCheckinSimMinutes: 470
+          tags: []
+          relatedRecordIds: []
+          note: Active known endpoint resolving the Garcia auth rows.
+        - id: corp-macbook-nguyen-old
+          datasetId: devices
+          deviceLabel: corp-macbook-nguyen-old
+          assignedUser: d.nguyen@example.com
+          deviceClass: macbook
+          enrolled: true
+          assignmentState: active
+          tags: []
+          relatedRecordIds: []
+          note: Assigned but stale with no check-in for 90 days. Assigned is not recently seen.
+    alerts:
+      allowedFilterFields: [alertId, account, deviceLabel, state, windowStartSimMinutes, windowEndSimMinutes]
+      records:
+        - id: A-1042
+          datasetId: alerts
+          simMinutes: 458
+          alertId: A-1042
+          category: sign-in monitoring
+          severity: high
+          account: j.patel@example.com
+          deviceLabel: unknown-laptop-17
+          sourceRefs: [AUTH-0738-GROUP, AUTH-0741-PATEL]
+          state: open
+          linkedWorkItemId: suspicious-login-1
+          relatedRecordIds: []
+          note: Six failed extra checks 07:38-07:40 then one password success 07:41 from 203.0.113.44.
+        - id: A-1180
+          datasetId: alerts
+          simMinutes: 618
+          alertId: A-1180
+          category: connection monitoring
+          severity: low
+          sourceRefs: [RUN-FIN-031, SCAN-FIN-MON]
+          state: open
+          linkedWorkItemId: routine-alert-1
+          relatedRecordIds: []
+          note: Recorded activity Monday 10:18; delivery delayed. Delivery time is not event time.
+        - id: A-1159
+          datasetId: alerts
+          alertId: A-1159
+          category: password-spray monitoring
+          severity: medium
+          state: open
+          relatedRecordIds: []
+          note: Forty failed attempts across twelve accounts, zero successes; source already blocklisted. Failed attempts are not an incident when controls held.
+        - id: A-1210
+          datasetId: alerts
+          alertId: A-1210
+          category: device lifecycle
+          severity: informational
+          state: monitoring
+          relatedRecordIds: []
+          note: New enrolled device, first seen; resolves on enrollment verify.
+        - id: A-1206
+          datasetId: alerts
+          alertId: A-1206
+          category: employee report
+          severity: low
+          state: closed
+          relatedRecordIds: []
+          note: Employee-marked newsletter from a known internal sender; reporter did right, message is ordinary.
+        - id: A-1214
+          datasetId: alerts
+          alertId: A-1214
+          category: connection monitoring
+          severity: low
+          sourceRefs: [RUN-FIN-031, SCAN-FIN-MON]
+          state: monitoring
+          relatedRecordIds: []
+          note: Single host re-alert inside the approved scan window; monitor through the window, then close with a run-log reference.
+    scanner:
+      allowedFilterFields: [scannerId, runId, scope, windowStartSimMinutes, windowEndSimMinutes]
+      records:
+        - id: RUN-FIN-031
+          datasetId: scanner
+          simMinutes: 605
+          runId: RUN-FIN-031
+          scannerId: vuln-scan-03
+          scope: finance-vlan
+          startSimMinutes: 605
+          endSimMinutes: 632
+          status: completed
+          coverage: discovery connections only
+          changeRef: SCAN-FIN-MON
+          linkedWorkItemId: routine-alert-1
+          relatedRecordIds: []
+          note: A-1180 activity at 10:18 falls inside this run.
+        - id: SCAN-FIN-MON
+          datasetId: scanner
+          runId: SCAN-FIN-MON
+          scannerId: vuln-scan-03
+          scope: finance-vlan
+          startSimMinutes: 600
+          endSimMinutes: 720
+          status: approved
+          relatedRecordIds: []
+          note: Approved Monday 10:00-12:00 discovery window; owner infrastructure operations. Compare recorded event time even when monitoring delivers later.
+        - id: RUN-FIN-030
+          datasetId: scanner
+          runId: RUN-FIN-030
+          scannerId: vuln-scan-03
+          scope: finance-vlan
+          startSimMinutes: 606
+          endSimMinutes: 631
+          status: completed
+          coverage: discovery connections only
+          changeRef: SCAN-FIN-MON
+          relatedRecordIds: []
+          note: Prior Monday run; weekly recurrence is real. Prior-week rows carry no office-local time on this shift.
