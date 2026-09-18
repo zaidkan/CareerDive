@@ -14,6 +14,7 @@ import { AlertTool } from "./tools/AlertTool.js";
 import { EmailTool } from "./tools/EmailTool.js";
 import { GuideSearch } from "./tools/GuideSearch.js";
 import { InventoryLookup } from "./tools/InventoryLookup.js";
+import { RecordQueryTool } from "./tools/RecordQueryTool.js";
 import { TaskInteraction } from "./tools/TaskInteraction.js";
 import { CaseReview } from "./tools/CaseReview.js";
 import { TeamChatTool } from "./tools/TeamChatTool.js";
@@ -310,6 +311,7 @@ export function SystemToolPanel({
           view={view}
         />
         {openArtifact ? <InventoryLookup view={view} onOpenArtifact={openArtifact} mutationState={mutationState} /> : null}
+        <RecordQueryTool view={view} mutationState={mutationState} />
         <WorkInteraction
           onOpenArtifact={openArtifact}
           actions={workInteractionActions(actions).filter(
