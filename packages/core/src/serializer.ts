@@ -1,5 +1,10 @@
-import type { ClientView, WorkItemCategory, WorldState } from "@sim/schemas";
-import { InventoryLookupKeysSchema } from "@sim/schemas";
+import type {
+  ClientView,
+  QueryResultView,
+  WorkItemCategory,
+  WorldState,
+} from "@sim/schemas";
+import { DatasetRecordSchema, InventoryLookupKeysSchema } from "@sim/schemas";
 import { availableActions } from "./availability.js";
 import { taskProgressKey } from "./tasks.js";
 import { canOpenArtifact } from "./workplace.js";
@@ -189,8 +194,48 @@ export function toClientView(state: WorldState): ClientView {
     kbQuery: state.kbQuery,
     tasks,
     notifications,
-    // P2: per-query result views are attached by the query path; empty here.
-    queryResults: [],
+    // P2-T04: per-query result views projected from server-side query history.
+    // Only per-query views are exposed — never the full `queryHistory` array,
+    // its `normalizedFilters`, `seq`, or `actorEventId`. Rows are re-projected
+    // through the strict player-visible record schema, so any hidden authoring
+    // field on a dataset row is stripped and no field marks a record observed.
+    queryResults: projectQueryResults(state),
     workplace: structuredClone(state.workplace),
   };
+}
+
+/**
+ * Project the append-only server-side `queryHistory` into the client-facing
+ * `QueryResultView[]`. Each entry contributes exactly one view carrying its
+ * own `queryId` plus the player-visible result metadata; record rows are
+ * pulled from `state.rules.datasets` by `resultId` (stable order preserved)
+ * and re-validated through `DatasetRecordSchema` (`.strict()`), which drops
+ * any non-schema field. Querying never marks a record observed, so this
+ * projection reads only and touches no observation state.
+ */
+function projectQueryResults(state: WorldState): QueryResultView[] {
+  return state.queryHistory.map((entry) => {
+    const dataset = state.rules.datasets[entry.datasetId];
+    const byId = new Map(
+      (dataset?.records ?? []).map((record) => [record.id, record]),
+    );
+    const records = entry.resultIds.flatMap((id) => {
+      const row = byId.get(id);
+      if (!row) return [];
+      // Strict re-parse strips any hidden/authoring field that may have been
+      // attached to the row outside the schema (defense in depth) and yields
+      // a fresh, player-visible-only copy.
+      const parsed = DatasetRecordSchema.safeParse(row);
+      return parsed.success ? [parsed.data] : [];
+    });
+    return {
+      queryId: entry.queryId,
+      datasetId: entry.datasetId,
+      records,
+      resultIds: [...entry.resultIds],
+      totalCount: entry.totalCount,
+      truncated: entry.truncated,
+      simMinutes: entry.simMinutes,
+    };
+  });
 }
