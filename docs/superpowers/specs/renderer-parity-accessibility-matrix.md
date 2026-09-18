@@ -666,3 +666,209 @@ where the invariant holds.
 | Movement | Avatar navigation | N/A (tool switching) | N/A (linear nav) | Movement changes nothing canonical (see Movement parity) | Keyboard movement never a skill gate; every hotspot action duplicated |
 | Time | Presentation-time walking | Instant tool switches | Instant linear nav | Identical canonical-time logs for identical action sequences | Remaining time in text where applicable; never spatial urgency |
 | Information access | Spatial + Desk OS surfaces | Workstation panels | Lists/forms/menus | Zero visual-only/spatial-only/pointer-only career information | Full text equivalents; semantic markup; reduced-motion safe |
+
+---
+
+## Interaction inventory coverage map
+
+Task requires every career-relevant interaction class from the canonical spec to be covered. Map (required class → entry above; gaps closed by §§ below):
+
+| Required interaction class | Covered by | Canonical state read / fired |
+|---|---|---|
+| Receiving/acknowledging work | §2 Acknowledging work; §15 Scanner workflow | Work Item status → acknowledged; follow-up eligibility |
+| Viewing queue / work items | §1 Viewing work queue | Read of Work Item list + statuses (no mutation) |
+| Opening records / artifacts | §7 Record inspection | Record → examined; discovery flags |
+| Querying authentication data | §4 Authentication search | Deterministic query → result set; records opened |
+| Querying VPN data | §5 VPN search | Same + absence-fact derivation only on performed query |
+| Querying device data | §6 Device lookup | Inventory record read; examined flag |
+| Querying alerts / scanner data | §3 Opening alerts; §15 Scanner workflow | Alert → opened; summary acknowledged |
+| Phishing investigation | §14 Phishing workflow | Staged report progression + disposition + reporter reply |
+| Notebook use | §9 Notebook usage | Timestamped notes appended; downstream reads identical |
+| Ticket / case documentation | §10 Ticket updates (+ § Ticket parity below) | Ticket fields updated; readiness flags |
+| Evidence attachment | §11 Attaching evidence | Attachment set add/remove; package contents |
+| Operational decisions | §16 Monitor / escalate / close (+ § Ticket parity) | Case routing/state per decision; consequence schedule |
+| Talking to Morgan | §12 Contacting Morgan (+ § NPC parity) | Intent availability; authored fact payload; pending/received flags |
+| Talking to Jules | §13 Interacting with Jules (+ § NPC parity) | Same; escalation acceptance; documentation requests |
+| Responding to interruptions | §17 Delayed consequence handling (+ Scenarios F–G below) | `read_update` + follow-up action of matching type |
+| Resolving / waiting / monitoring work | §16; §18 Returning to earlier work | Waiting/monitoring states; resumption preserves notes/evidence |
+| Delayed consequence follow-up | §17 Delayed consequence handling | Event marked read; downstream flags identical |
+| Handoff / final documentation | §19 End-of-shift handoff | Handoff record stored; shift closes; renderer-blind debrief |
+| KB / runbook lookup (supporting verb) | Structured query parity + Scenario H | KB article → opened/read; no truth change |
+
+No mechanics invented: every row traces to canonical spec §§3–5, 11–12 or realism-pack verbs. Future query/ticket/NPC engine work must keep these IDs renderer-independent.
+
+## Master parity matrix — canonical action/state view
+
+Requested shape: canonical action/state plus explicit same-information / same-time / same-consequence columns. (Companion to interaction entries §§1–19 and final acceptance matrix above, which remain normative detail.)
+
+| Interaction | Canonical action / state | 3D access | Desk access | Accessible access | Same information? | Same sim-time effect? | Same consequence? | Accessibility notes |
+|---|---|---|---|---|---|---|---|---|
+| View queue | `view_queue` reads Work Items | Desk OS queue + HUD/wayfinder | Queue panel | Simple list + heading objective | Yes — items, order, statuses, objective | Yes — read costs no sim time in any renderer | Yes — no state change anywhere | List semantics; status text not color-only |
+| Acknowledge | `acknowledge_item` → acknowledged | Hotspot or Desk OS row | Row button | Action-list button | Yes — confirmation + follow-up note | Yes — same scheduling | Yes — same follow-up eligibility | Named button; confirmation announced |
+| Open alert (A-1042) | `open_alert` → opened | Desk/wall hotspot → Desk OS | Queue → detail | Link → reading view | Yes — full metadata byte-identical | Yes | Yes — same unlocks (NPC, intents) | Focus to heading; severity in text |
+| Auth search | `search_auth` params → results | Desk OS record surface | Filter UI + table | Equivalent filters + list | Yes — same params, logic, IDs | Yes — search costs equal | Yes — none for search; open marks examined equally | Real inputs; "N results" announced |
+| VPN search | `search_vpn` params → results/absence | Same record surface | Same filter UI | Same filter UI | Yes — absence only from performed query | Yes | Yes — absence derivation identical | Empty state announced with next verbs |
+| Device lookup | `lookup_device` → record | Same record surface | Inventory search | Same, list idiom | Yes — identical fields | Yes | Yes — examined flag identical | Owner/enrollment labeled text |
+| Record inspect / compare | `open_record` → examined | Desk OS detail | Detail pane | Reading view | Yes — full fields; 2-record compare everywhere | Yes | Yes — same discovery unlocks | Heading + table semantics; focus management |
+| Evidence discovery | Rule fires from examined/query | Case list + provenance | Same | Same + live announcement | Yes — fact + provenance identical | Yes | Yes — downstream identical | Announced "Evidence added: …" |
+| Notebook | `update_notes` append/amend | Desk OS notes field | Ticket field + save status | Textarea + save | Yes — content, history | Yes | Yes — downstream reads same | Labeled field; save announced |
+| Ticket update | `update_ticket` bounded fields | Desk OS ticket app | Ticket app | Form equivalent | Yes — state rendered back; identical validation | Yes | Yes — readiness identical | Labels; errors linked + announced |
+| Attach evidence | `attach_evidence` add/remove | Attach-from-evidence control | Same control | Button per item + list | Yes — attached set + package preview | Yes | Yes — escalation reads same set | Buttons named with evidence; no drag-only |
+| Contact Morgan | `contact_morgan` + intent | Approach + action | Team Chat + action | Action list + action ID | Yes — authored facts only | Yes — delay semantics equal | Yes — flags identical | Keyboard-operable; replies announced |
+| Interact Jules | Intents (status/escalate/needed/process) | Approach/break-room + intents | Lead surface + intents | Action list + intents | Yes — content-identical, state-dependent | Yes | Yes — escalation logic identical | Confirmations announced; nothing by tone/face |
+| Phishing stages | `open/inspect/check/scope/dispose/reply` | Queue + Desk OS stages | Inbox + panes | Stepped list/form | Yes — senders, chips, verdicts, counts | Yes | Yes — stage gating + effects | Keyboard stages; verdicts text; counts numeric |
+| Scanner routine | `review_scan` + acknowledge + follow-up | Summary + acknowledge | Same | Same | Yes — scope, summary, framing | Yes | Yes — gating + reminder | Chart text equivalent; follow-up announced |
+| Monitor/escalate/close | `decide_*` + reason + evidence precond | Case-surface controls | Same | Same, context in labels | Yes — options, preconditions, next-step text | Yes — same schedule | Yes — downstream beats identical | Context labels; confirm/undo; announced |
+| Delayed event | `read_update` + typed follow-up | Cue + queue entry | Inbox + indicator | Queue + announcement | Yes — full text everywhere | Yes — canonical-time timing | Yes — read-state + effects | Announced; persistent list; unread in text |
+| Resume work | `reopen_item` reads preserved case | Queue/Desk OS restore | Queue → case restore | Same, focus to heading | Yes — notes/evidence/history complete | Yes | Yes — resumption never resets | Predictable focus; no spatial references |
+| Handoff / end shift | `write_handoff` + `end_shift` | Desk OS + exit hotspot | Form + control | Same fields + control | Yes — fields + rendered summary | Yes | Yes — debrief inputs identical | Labels; review before submit; announced |
+| KB lookup | `open_kb` → read | Desk OS KB | KB panel + search | List + search | Yes — same bodies | Yes | Yes — no gating by renderer | Search keyboard-operable; headings semantic |
+| Wait / monitor | `decide_monitor` → monitoring | Case control | Same | Same | Yes — re-surface terms in fiction | Yes | Yes — re-surface identical | Confirmation announced |
+
+## Structured query parity
+
+Applies to every future structured dataset (auth, VPN, device, alert, scanner, KB, phishing-headers/link where applicable). 3D may render a workstation visually but must call the same canonical query action with the same parameters — never a parallel query path.
+
+1. **Selecting dataset.** All datasets reachable in all renderers without spatial prerequisites. Dataset picker is a real control (tab/radio/select/menu) with text labels. Acceptance: keyboard-only tester reaches every dataset in ≤ a few stops from case/queue in each renderer.
+2. **Entering filters.** Same filter dimensions everywhere (user, IP, session/reference ID, device, time window, category per dataset). Filters are real inputs/selects/comboboxes; no map-click-only, slider-only, or drag-only filter. Active filters shown as removable text chips/buttons in all renderers.
+3. **Changing time ranges.** Time entry accepts typed input (absolute or documented relative form) in every renderer; any visual picker is an enhancement with a text equivalent. Same normalization rules; same inclusive/exclusive semantics; invalid ranges produce identical validation text.
+4. **Reviewing results.** Same deterministic result set and order for same normalized query. Results as real table (headers/scope/caption) or list — never unlabeled div grids. Stable record IDs visible in text. Count announced ("N results for …").
+5. **Zero-result queries.** Empty state is a real status (announced, re-readable), suggests next verbs in text ("widen time window", "check spelling", "open runbook"), and records the same query-history entry as a non-empty query. Zero results never read as failure/grade.
+6. **Sorting where supported.** If any renderer offers sort, all offer it on the same columns with the same default order; sort control is keyboard-operable; current sort exposed in text. No renderer may default-sort evidence-relevant columns differently.
+7. **Viewing record detail.** Full field set identical (see §7 Record inspection). Detail reachable by keyboard in all renderers; focus moves to record heading; back-navigation returns focus to originating row.
+8. **Repeating query.** Same query re-run returns same records (replay-identical). Repeat control preserves parameters visibly; no renderer silently mutates stored filters between runs.
+9. **Query history.** Every performed query (including zero-result) appends the same history entry — normalized filters, dataset, result IDs, sim time — visible and re-runnable in all renderers. History is what absence-proof rules evaluate; renderer must never add or drop history entries.
+10. **Accessible field completeness.** Accessible representation retains ALL career-relevant record fields — including provenance-adjacent metadata (timestamps, IDs, coverage notes, auth-result glosses). Summarized/collapsed views must offer an expand path to full fields; truncation without expansion is a parity violation.
+
+## Evidence discovery parity
+
+1. **Provenance, not renderer.** Every Evidence Fact fires from canonical provenance (records opened, queries performed, authored dialogue facts received, KB examined) — never from hotspot visits, camera angles, notice-order, or pointer precision.
+2. **Identical observed IDs.** Equivalent action sequences in all renderers produce identical `observedArtifactIds` sets and identical discovered-fact sets. Diff test: scripted canonical log replayed per renderer → sets equal.
+3. **Absence proof identical.** Absence facts ("no matching VPN session in queried interval") derive only from a stored query whose normalized filters semantically cover the authored requirement (dimensions + time ⊇ authored window) with zero qualifying records. Broader queries qualify; wrong-account/wrong-interval queries do not — in every renderer. Reading a sentence that claims absence never substitutes for performing the query.
+4. **No hidden relevance indicators.** No renderer surfaces importance rank, "required" flags, clue counters, completion percentages, or precomputed related-record lists. Related records surface only inside the record/query view that legitimately surfaced them.
+5. **No spatial tells.** No glow, pulse, highlight, beacon, audio sting, haptic, or prop placement may mark career-relevant records, NPCs, or hotspots beyond generic "interactive" affordance. Any persistent emphasis must be text-labeled AND available through non-spatial surfaces (e.g. "current objective" label in queue).
+6. **Client blindness.** Serialized views expose discovered facts + provenance only; undiscovered definitions, consequence predicates, branch labels, and answer keys never reach any client.
+
+## Ticket / documentation parity
+
+1. **Opening ticket.** Same ticket(s) openable in all renderers from queue or case surface; same ticket ID, linked Work Items, status, and history shown.
+2. **Structured fields.** Same editable field set everywhere (title/incident ref, status, affected account/entity, related sessions/devices, disposition/action, pending follow-up). Same required/optional marking in text; same legal-transition enforcement with identical messages.
+3. **Writing notes.** Same free-text capacity, save semantics (autosave status perceivable in all renderers), amendment-not-penalty history. Free text never becomes authoritative world truth; downstream rules read notes identically.
+4. **Attaching Evidence Facts.** Only discovered facts attachable (backend validates); attach/remove available per fact in all renderers via real buttons; attached set rendered back identically; escalation package preview (if any) identical.
+5. **Disposition/action.** Same disposition options with same preconditions (e.g. escalation requires attached evidence) and same reason capture; decisions labeled as workplace actions, never quiz answers.
+6. **Review status/history.** Full ticket state, attachment list, note history, and status transitions re-readable in all renderers as lists with timestamps. Switching renderers mid-case loses nothing.
+
+## NPC parity
+
+1. **Same intents, same gates.** Morgan intents (handoff, session/device/account question, prior-shift context, share finding, narrow procedural) and Jules intents (status, escalate-route, what-is-needed, process confirm, routine ack) expose identical availability predicates over canonical state in all renderers. 3D approach walks to the NPC; desk/accessible use contact surfaces — all invoke the same canonical action IDs.
+2. **Same knowledge bounds.** Morgan emits only authored Morgan-known facts; Jules answers from canonical documentation state + authored process bounds. Neither invents facts, verdicts, procedures, deadlines, or hidden evidence in any renderer.
+3. **Same timing.** Delayed replies arrive with equivalent canonical-time semantics and identical content everywhere; arrival never gated on 3D position. Pending state and delivery both announced + persistently listed.
+4. **Phrasing ≠ meaning.** AI may vary phrasing of the selected semantic payload only (intent, factual payload, tone, linked fact IDs, required/forbidden claims). Deterministic fallback text preserves identical facts with AI disabled. Phrasing diffs across renderers must never alter canonical meaning — assert by comparing semantic payloads, not strings.
+5. **No embodiment-exclusive content.** Spatial cues (avatar gesture, gaze, office location, voice tone) carry zero career information. Everything load-bearing exists as text in the dialogue/message record.
+
+## Accessibility requirements (touch / narrow, reduced motion, color)
+
+Keyboard and screen-reader bars are defined in §§ Keyboard accessibility / Screen-reader above and stay normative. This section closes the remaining three.
+
+### Touch / narrow layouts
+
+- No hover-only interactions: every tooltip, preview, or affordance carrying meaning also appears on focus/tap or in adjacent text.
+- Touch targets ≥ 24×24 CSS px for all career-relevant controls (44×44 preferred for primary decisions); no overlapping hit areas in desk or 3D chrome.
+- No clipped career-relevant information at 320px width or 200% zoom: record fields, ticket fields, dialogue content, validation messages reflow without horizontal scrolling of meaning (data tables may scroll with sticky headers + caption preserved).
+- No drag-only, pinch-only, or multi-finger-gesture-required actions; drag-and-drop attach (if offered) always has a button equivalent.
+- 3D canvas chrome (hotspot prompts, interact key hints) usable without fine pointer: adjacent DOM controls duplicate every hotspot action.
+
+### Reduced motion
+
+- `prefers-reduced-motion` freezes all non-essential animation in every renderer (pulse/bob/glow, wayfinder bounce, camera sway, toast slide, LED shimmer).
+- No information encoded only through movement: pulsing objective also text-labeled; arrival motion paired with live-region announcement + persistent entry.
+- Camera transitions (sit/stand, room change) offer instant-cut equivalents; no mandatory animated traversal before a canonical action becomes available.
+- Parallax, auto-play ambient loops, and shake-on-error are disabled under reduced motion; errors use text + icon, never shake alone.
+
+### Color
+
+- No evidence, status, severity, verdict, availability, or validation state communicated solely by color. Every color-coded element carries a text label, icon with label, or pattern + label ("High severity", "Acknowledged", "Fail — replies go elsewhere").
+- Contrast: text and meaningful iconography meet WCAG 2.2 AA (4.5:1 body, 3:1 large/graphic) in all renderers including 3D DOM chrome and Desk OS surfaces.
+- Reputation/auth-result chips (pass/fail), verdict badges, energy meter, and queue status pills all expose their value as text programmatically (not `aria-hidden` color swatches).
+- Focus indicators never rely on color change alone (outline + offset, visible in high-contrast modes).
+
+## Renderer-equivalence scenarios
+
+Run each in 3D, desk-only, and accessible; pass = identical canonical state/outcome + identical information content (presentation may differ). "Identical" verified by diffing canonical action logs, observed-ID sets, ticket/NPC/consequence state — never by eyeballing.
+
+- **A — A-1042 auth trail.** Open A-1042 → search auth by user + window → open S-0731 and S-0741 → compare. Expect: same records, same fields, same examined flags, same derived facts in all renderers.
+- **B — VPN zero-result + absence proof.** Run VPN query over authored window for (j.patel, 203.0.113.44) returning zero rows. Expect: identical empty-state meaning, identical query-history entry, identical later absence-fact eligibility; broader re-query also qualifies identically.
+- **C — Morgan before/after fact.** Ask Morgan about handoff before opening device inventory, then again after discovering the enrollment fact. Expect: identical available intents at each point, identical semantic payloads, identical pending/delay timing.
+- **D — Ticket attach + disposition.** Attach two discovered facts, write note, set disposition to escalate/monitor. Expect: identical ticket state, identical validation outcomes, identical downstream acknowledgement/request.
+- **E — Delayed consequence blindness.** Decide monitor (or escalate), advance canonical time past follow-up due point, consume the event. Expect: same event content, same timing relative to canonical clock, same read-state and downstream flags regardless of renderer or navigation speed.
+- **F — Interruption while parked.** Park A-1042 mid-investigation (notes saved), acknowledge scanner item, consume phishing-report arrival, return to A-1042. Expect: parked notes/evidence intact in all renderers; queue order/status identical; no renderer loses or resets work.
+- **G — Scanner follow-up gating.** Acknowledge scanner summary in one renderer, verify follow-up arrives; fresh session ignoring it verifies reminder state. Expect: identical gating (follow-up only after acknowledgement), identical reminder wording, no numeric penalty anywhere.
+- **H — KB + handoff closure.** Look up runbook/KB article, finish routine item, write end-of-shift handoff, end shift. Expect: identical handoff record, renderer-blind debrief (no movement/skill vocabulary), shift closes in all renderers including without any 3D navigation.
+- **I — Phishing full path.** Triage report → sender/headers → link safety → scope count → disposition + reporter reply. Expect: same stage gating, same records, same disposition effects, same reply outcome.
+- **J — Position-only null.** Walk everywhere / switch tools without invoking canonical actions. Expect: zero canonical state change in every renderer (no facts, no flags, no schedule shifts).
+
+## Current migration hazards (read-only inspection, 2026-09-18)
+
+Do NOT fix here. Future migration owners must resolve each before claiming parity. Unrelated worktree changes were left untouched; findings below come from committed code + specs.
+
+| # | Hazard | Location | Risk | Migration note |
+|---|---|---|---|---|
+| H1 | Raw `templateId` serialized on client events | `packages/core/src/serializer.ts:106-108` | Clients can join events to pack rules; renderer could branch on authoring identity | Replace with opaque client identifier or strip (canonical §6.10 already requires) |
+| H2 | `relatedArtifactIds` emitted per task view | `packages/core/src/serializer.ts:59`; `WorkTaskPanel.tsx:49`; `TaskInteraction.tsx:26-33`; `RecordComparison.tsx:19` | Pre-answers which records matter; any renderer reading it gains relevance hints | Expose related records only inside surfacing record/query view; gate task options on observed set |
+| H3 | Source-quote gating exists but task chrome surrounds it | `serializer.ts:62-75`; `TaskInteraction.tsx` "Open source" buttons | Quiz-shaped UI persists around canonical reads; future renderers may copy quiz semantics instead of query semantics | Migrate workflows off `TaskRequiredError` gates per canonical §15 protocol (release/remove gate, never hide UI only) |
+| H4 | Proximity/position state in 3D layer | `world/presentation.ts:set_nearby`; `socLayout.ts:BASE_HOTSPOTS/BREAK_INTERIOR_HOTSPOTS`; `RoomCanvas.tsx:onNearbyChange/onInteract`; `SpatialShell.tsx:FLAVOR/INTERACT_LABEL` | Standing near Morgan/Jules/alert wall could gate or flavor career info (e.g. `morgan_station` flavor points at Team chat — today benign, pattern risky) | Keep proximity presentation-only; assert J-null (position-only playthrough changes nothing); duplicate every hotspot action in DOM |
+| H5 | Pointer-lock + interact-key path in 3D | `SpatialShell.tsx:pointerlock` listeners; `PlayerController.tsx:mode` | Career action could become reachable only via pointer/keys without DOM equivalent | Every hotspot action needs adjacent keyboard control; pointer-lock never required for canonical actions |
+| H6 | Movement exertion / energy meters | `world/useMovementExertion.js`; `BreakRoomPanel.tsx:EnergyMeter`; `ExperienceShell.tsx:NonspatialResources` "Walk 5 meters" | Energy/time confusion: players may read movement cost as sim-time or career signal | Keep movement cost in presentation/energy only, zero sim minutes; never feed telemetry (distance, speed) into evidence/debrief |
+| H7 | Dual Jules paths (spatial vs non-spatial) | `SpatialShell.tsx` JulesDialogue + `ExperienceShell.tsx:NonspatialResources` JulesDialogue, both via `julesDialogueFromClientView` | Paths can drift (topics, seen-state, reply timing) so availability differs by renderer | Single intent contract + shared availability predicate; diff-test both shells on same state |
+| H8 | Break-room/snack interactions | `BreakRoomPanel.tsx` eat/snack/fridge/coffee; `NonspatialResources` duplicates | Ambient actions may acquire undocumented state or become renderer-specific rituals | Inventory ambient interactions; either keep all state-free or give each a canonical ID with parity in all renderers |
+| H9 | Free-text `kbQuery` slot vs structured query future | `serializer.ts:189`; `GuideSearch.tsx` (also dirty in worktree — not reviewed) | Text search may behave differently per renderer or bypass normalized query history (breaks absence proof) | Route all record discovery through canonical query action + history; keep `kbQuery` text as input, not as parallel truth |
+| H10 | Toast/banner-only notification risk | `NotificationBanner.tsx`; `MutationStatus.tsx`; `SpatialShell` HUD cues | Delayed events consumable only via transient chrome in one renderer | Every event lands in queue/updates list persistently; toasts auto-expire AND persist |
+| H11 | Desk OS tab vs accessible-list divergence | `world/deskOs/*` (tabs, OpsConsole, DashboardHome) vs `AccessibleMode.tsx` vs `WorkSurface.tsx`/`SystemToolPanel.tsx` | New tool added to Desk OS tabs but not to list renderer (or vice versa) | Parity checklist item 1–3 gates every new tool; shared interaction tests across renderers |
+| H12 | `observedArtifactIds` per-event + global split | `serializer.ts:33,116,146`; `SourceEvidence.tsx`; artifact-open tests | Per-renderer open path may set one but not both, splitting later gating | Single canonical open/record-examined write path; cross-renderer resume test (§18/F) must pass |
+| H13 | Worktree caveat | Uncommitted Phase-1 files (e.g. `GuideSearch.tsx`, `CaseRail.tsx`, serializer, schema edits per `git status`) | Findings H1–H12 describe committed code + specs; dirty files not assessed | Re-run this hazard sweep after Phase-1 lands; do not treat this list as covering uncommitted work |
+
+## Automated test recommendations
+
+| Requirement | Best test layer | Suggested assertion |
+|---|---|---|
+| Same available-action set per state | Shared interaction test (all renderers, same `ClientView`) | `availableActions(view)` deep-equal across walk/desk/list adapters |
+| Identical canonical log for scripted sequence | E2E (scripted walkthrough ×3, diff logs) | Action log + `observedArtifactIds` + ticket + NPC flags byte-equal |
+| Identical sim-time event log | Core unit + E2E | Canonical timestamps equal, tolerance zero, across renderers |
+| Query params/result/history identical | Core unit (query engine) + renderer component | Same normalized query → same result IDs + same history entry incl. zero-result |
+| Absence proof coverage semantics | Core unit | Broader query qualifies; wrong-account/interval does not; unread-claim ≠ proof |
+| No leaked authoring metadata in client views | Serializer test | `templateId`, full `relatedArtifactIds`, undiscovered facts, predicates absent from every client payload |
+| Evidence set identical post-sequence | Core unit + shared interaction | Discovered-fact IDs + provenance equal across renderers |
+| Ticket attach/validation identical | Core unit + E2E | Same inputs → same ticket state; invalid attach rejected everywhere |
+| NPC intents/payloads identical | Core unit (availability) + component | Same intents per state; semantic payloads equal; fallback text fact-equal |
+| Position-only null | E2E / movement-parity test | Walk-only run mutates zero canonical fields |
+| Slow-vs-fast navigation null | E2E | Same canonical actions at different speeds → same end state |
+| Keyboard end-to-end per renderer | Accessibility test (keyboard-only script) | Every career action reachable, operable, focus sane, no traps |
+| Screen-reader semantics | Accessibility test + manual SR pass | Labels name targets; tables/lists semantic; arrivals/decisions announced |
+| Touch targets / reflow | Accessibility test + manual | Targets ≥24px; 320px/200% zoom clips nothing career-relevant |
+| Reduced motion | Accessibility test (media-query emulation) | Animations frozen; no motion-only information |
+| Color-independence | Accessibility test + lint | No status by color alone; contrast AA; text equivalents present |
+| Toast persistence | Renderer component test | Every transient event also in persistent queue/updates list |
+| Handoff/debrief blindness | E2E + content lint | Handoff captures mechanic state; debrief strings contain zero movement/skill vocabulary |
+| No grading language | Serializer + content lint + E2E | Banned tokens (correct/incorrect/score/stars/percent) absent from all surfaces |
+
+## Final parity release checklist
+
+All boxes must hold for every new mechanic, Work Item type, and interaction before acceptance (extends § Parity regression checklist with ship gates):
+
+1. Canonical action named, renderer-independent; no renderer-specific IDs carry career effects.
+2. Scripted identical sequences in 3D/desk/accessible produce identical canonical end state (diffed, not eyeballed) — scenarios A–J pass.
+3. All revealed information exists as text in all renderers; § Information parity list walked per new UI element.
+4. Nothing career-relevant is visual-only, spatial-only, pointer-precision, hover-only, drag-only, or motion-only.
+5. No evidence path bypasses canonical actions; H4/H5 null tests pass.
+6. Full keyboard path end-to-end in every renderer; focus order sane; no traps; confirm/undo on consequential decisions.
+7. Screen-reader pass complete: labels, focus, announcements (queue/status/evidence/decisions/delayed events), table/list semantics.
+8. Touch/narrow pass: targets, reflow at 320px/200% zoom, no clipped career content.
+9. Reduced-motion + color passes complete.
+10. Time behavior identical: canonical-time logs match; delays key off canonical clock, never wall-clock/dwell.
+11. Serializer test green: no `templateId`, exhaustive related lists, undiscovered facts, predicates, or keys in client payloads (H1–H3 resolved or waived with issue link).
+12. NPC bounds hold everywhere: same intents/gates/content/delays; fallback fact-equal; no invented facts.
+13. Query parity holds: all 10 structured-query items verified for every dataset the mechanic touches.
+14. Ticket parity holds: open/edit/attach/dispose/review identical; cross-renderer resume loses nothing.
+15. Handoff captures the mechanic; debrief is renderer-blind (content lint green).
+16. Hazard sweep re-run: H1–H13 reviewed against current code; new hazards appended, none silently dropped.
+17. Flaky-free evidence: unit + serializer + shared-interaction + component + E2E + a11y layers above recorded with commit SHAs; failures adjudicated, not ignored.
