@@ -95,6 +95,35 @@ function fillDescription(template: string, event: EventInstance): string {
     .replaceAll("{{event.title}}", event.title);
 }
 
+function managerGuidanceForA1042(
+  state: WorldState,
+  event: EventInstance,
+  authoredGuidance: string,
+): string {
+  if (event.templateId !== "suspicious_login") return authoredGuidance;
+
+  const completed = new Set<string>(event.completedActionIds);
+  if (!completed.has("review_alert")) return authoredGuidance;
+
+  const inspectedRelevantRecord = [
+    "inspect_login_context",
+    "inspect_account_history",
+    "check_device_inventory",
+  ].some((actionId) => completed.has(actionId));
+  const queriedRelevantRecords = state.queryHistory.some(
+    (entry) => entry.actorEventId === event.id,
+  );
+  if (!inspectedRelevantRecord && !queriedRelevantRecords) {
+    return "I have seen the alert, but not enough context to add much yet. Tell me which record you checked and what still does not line up; I will help with the process, not choose the outcome.";
+  }
+
+  const context = state.facts["manager-managed-device-context"]?.content;
+  if (!context) {
+    return "I do not recognize that device name from our managed-device work, but that is context rather than proof of who used it. Keep the exact identifier and the remaining uncertainty in your note.";
+  }
+  return `${context} That does not establish who used the flagged device. Keep the exact identifier and the remaining uncertainty in your note.`;
+}
+
 export function applyResolvedEffect(input: {
   state: WorldState;
   event: EventInstance;
@@ -127,10 +156,14 @@ export function applyResolvedEffect(input: {
   if (action.id === "ask_manager") {
     event.managerConsulted = true;
     const template = state.rules.eventTemplates[event.templateId];
-    const guidance = (
-      template?.managerGuidance ??
-      "Morgan has no additional operational context for this work."
-    ).trim();
+    const guidance = managerGuidanceForA1042(
+      state,
+      event,
+      (
+        template?.managerGuidance ??
+        "Morgan has no additional operational context for this work."
+      ).trim(),
+    );
     const entry = consequence(state, event.id, action.id, guidance);
     state.ledger.push(entry);
     effects.push({ type: "consequence_recorded", consequenceId: entry.id });

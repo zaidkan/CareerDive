@@ -561,7 +561,11 @@ describe("section 9 · coworker dependency", () => {
     state = perform(state, action("ask_manager", LOGIN));
 
     const messages = toClientView(state).operationalMessages;
-    expect(messages.some((m) => /Morgan recommends/i.test(m))).toBe(true);
+    expect(
+      messages.some((m) =>
+        /Morgan recommends|not enough context|managed MacBook and phone/i.test(m),
+      ),
+    ).toBe(true);
     // One-shot: asking again is no longer offered.
     const stillOffered = toClientView(state).availableActions.some(
       (a) => a.id === "ask_manager" && a.eventId === LOGIN,
