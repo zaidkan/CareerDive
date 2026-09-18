@@ -299,6 +299,19 @@ export function SpatialShell({
     spatial.phase === "seated_monitor" ||
     spatial.phase === "focus_desk";
 
+  const showContextPrompt =
+    walking &&
+    !!nearbyHotspotId &&
+    !julesOpen &&
+    !breakStation &&
+    !atDesk &&
+    !canonicalMutationPending &&
+    !workplacePending;
+
+  const contextLabel = nearbyHotspotId
+    ? contextLabelFor(nearbyHotspotId, nearbyLabel)
+    : undefined;
+
   if (spatial.phase === "floor_map") {
     return (
       <FloorMap
@@ -442,13 +455,19 @@ export function SpatialShell({
                 <span className="room-hud-count">{stepLabel}</span>
                 {journey.title}
               </p>
-              <p className="room-hud-line">
-                {nearbyIsTarget && nearbyPrompt ? nearbyPrompt : journey.body}
-              </p>
-              {compass ? <p className="room-hud-compass">{compass}</p> : null}
-              {!nearbyIsTarget && nearbyPrompt ? (
-                <p className="room-hud-nearby">{nearbyPrompt}</p>
+              <p className="room-hud-line">{journey.body}</p>
+              {showContextPrompt && contextLabel ? (
+                <button
+                  type="button"
+                  className="room-hud-prompt"
+                  onClick={() => handleInteract(nearbyHotspotId!)}
+                  aria-label={`${contextLabel} — press E to interact`}
+                >
+                  <kbd>E</kbd>
+                  <span>{contextLabel}</span>
+                </button>
               ) : null}
+              {compass ? <p className="room-hud-compass">{compass}</p> : null}
               {spatial.flavorMessage ? (
                 <p className="room-flavor">{spatial.flavorMessage}</p>
               ) : null}
@@ -502,7 +521,7 @@ export function SpatialShell({
                   {mouseSensitivity.toFixed(1)}×
                 </output>
               </label>
-              {nearbyHotspotId && !breakStation ? (
+              {!showContextPrompt && nearbyHotspotId && !breakStation ? (
                 <button
                   className="start-shift"
                   onClick={() => {
