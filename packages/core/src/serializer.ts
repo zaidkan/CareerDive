@@ -1,8 +1,26 @@
-import type { ClientView, WorldState } from "@sim/schemas";
+import type { ClientView, WorkItemCategory, WorldState } from "@sim/schemas";
 import { InventoryLookupKeysSchema } from "@sim/schemas";
 import { availableActions } from "./availability.js";
 import { taskProgressKey } from "./tasks.js";
 import { canOpenArtifact } from "./workplace.js";
+
+/**
+ * Server-side Work Item bucket for client events. Fixed mapping evaluated
+ * against canonical state only — never serialized inputs — so clients cannot
+ * join events back to pack rules. Unknown templates fall back to "general".
+ */
+export function workItemCategoryForTemplate(templateId: string): WorkItemCategory {
+  switch (templateId) {
+    case "suspicious_login":
+      return "main_case";
+    case "routine_alert_review":
+      return "routine";
+    case "incomplete_handoff":
+      return "handoff";
+    default:
+      return "general";
+  }
+}
 
 export function toClientView(state: WorldState): ClientView {
   const location = state.locations[state.currentLocationId];
@@ -13,6 +31,16 @@ export function toClientView(state: WorldState): ClientView {
     .filter(({ applied }) => applied)
     .map(({ description }) => description);
   const observed = new Set(state.observedArtifactIds);
+  // R2: task-view relevance lists stay server-side until each record is
+  // legitimately surfaced (observed + openable). An unobserved id reveals
+  // which records matter before the player finds them (Phase 0 C4), so it
+  // is never serialized. Observed ids keep flowing so comparison, source,
+  // and open-button renderers keep working on surfaced records.
+  const scopedTaskRelatedIds = (relatedArtifactIds: readonly string[]) =>
+    relatedArtifactIds.filter(
+      (artifactId) =>
+        observed.has(artifactId) && canOpenArtifact(state, artifactId),
+    );
   const actions = availableActions(state);
   const tasks = actions.flatMap((action) => {
     if (!action.taskId) return [];
@@ -38,7 +66,7 @@ export function toClientView(state: WorldState): ClientView {
         prompt: taskStep.prompt,
         instruction: taskStep.instruction,
         whyItMatters: task.whyItMatters,
-        relatedArtifactIds: taskStep.relatedArtifactIds,
+        relatedArtifactIds: scopedTaskRelatedIds(taskStep.relatedArtifactIds),
         stepIndex: progress.currentStep,
         stepCount: task.steps.length,
         options: taskStep.options.map(({ source, ...option }) => ({
@@ -97,10 +125,13 @@ export function toClientView(state: WorldState): ClientView {
           completedActionIds,
           observedArtifactIds,
           resolution,
+          acknowledgedAt,
+          linkedTicketId,
+          followUpRefs,
         }) => {
           const event = {
             id,
-            templateId,
+            category: workItemCategoryForTemplate(templateId),
             title,
             summary,
             priority,
@@ -109,6 +140,9 @@ export function toClientView(state: WorldState): ClientView {
             deadlineAt,
             completedActionIds,
             observedArtifactIds,
+            acknowledgedAt,
+            linkedTicketId,
+            followUpRefs,
           };
           return resolution === undefined ? event : { ...event, resolution };
         },
@@ -145,13 +179,13 @@ export function toClientView(state: WorldState): ClientView {
           ...(lookupKeys.success ? { lookupKeys: lookupKeys.data } : {}),
         };
         if (isObserved) {
+          // Related-record lists stay server-side: references surface only
+          // inside record bodies and query results, never as precomputed
+          // relevance metadata (Phase 0 C4).
           return {
             ...preview,
             body: artifact.body,
             metadata: artifact.metadata,
-            relatedArtifactIds: artifact.relatedArtifactIds.filter(
-              (artifactId) => canOpenArtifact(state, artifactId),
-            ),
             searchableText: artifact.searchableText,
           };
         }
