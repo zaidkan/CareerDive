@@ -54,6 +54,7 @@ export function DeskOs({
   // Opened files live at shell level so they survive app switches.
   const [openFile, setOpenFile] = useState<OpenableFile | null>(null);
   const locked = phase === "desk_login";
+  const unreadCount = view.notifications.filter(({ status }) => status === "unread").length;
 
   const openFileInNotes = (file: OpenableFile) => {
     setOpenFile(file);
@@ -96,7 +97,7 @@ export function DeskOs({
         </div>
       </div>
       {locked ? (
-        <div className="desk-os-body">
+        <div className="desk-os-body desk-os-lock-body">
           <div className="desk-os-window-actions">
             <button
               aria-pressed={osFullscreen}
@@ -116,6 +117,8 @@ export function DeskOs({
         <Taskbar
           activeApp={activeApp}
           simClock={view.simClock}
+          workplace={view.workplace}
+          unreadNotifications={unreadCount}
           osFullscreen={osFullscreen}
           onSelect={setActiveApp}
           onOsFullscreen={onOsFullscreen}
