@@ -815,54 +815,13 @@ scenario:
       tracksCompletion: false
       defaultEffect:
         setNotebookFromFreeText: true
-    - id: open_phishing_report
-      systemId: email
-      label: Open phishing report
-      description: Read the employee's report without opening the suspicious link.
-      simulatedMinutes: 5
-      energyCost: 2
-      defaultEffect:
-        observeArtifactIds: [phishing-email-1]
-    - id: inspect_email_headers
-      systemId: email
-      label: Inspect email headers
-      description: Check sender, reply-to, authentication, and routing details.
-      simulatedMinutes: 10
-      energyCost: 4
-      defaultEffect:
-        observeArtifactIds: [phishing-headers-1]
-        hidden:
-          accuracy: 1
-    - id: check_link_destination
-      systemId: alert_dashboard
-      label: Analyze link destination
-      description: Use the approved inspection tool to examine the destination safely.
-      simulatedMinutes: 10
-      energyCost: 4
-      defaultEffect:
-        observeArtifactIds: [phishing-link-1]
-        hidden:
-          accuracy: 1
-    - id: quarantine_message
-      systemId: alert_dashboard
-      label: Quarantine matching message
-      description: Contain matching copies through the approved mail-security control.
-      simulatedMinutes: 5
-      energyCost: 2
-      defaultEffect:
-        consequence:
-          description: >
-            Matching messages were quarantined through the approved mail-security control.
-    - id: notify_reporter
-      systemId: email
-      label: Update the reporter
-      description: Explain the safe next steps and confirm the report was received.
-      simulatedMinutes: 5
-      energyCost: 1
-      defaultEffect:
-        consequence:
-          description: >
-            The employee received safe next steps and confirmation that the report was being handled.
+    # R1 QUARANTINE (Phase 1): five incomplete phishing actions removed from the
+    # active pack — open_phishing_report, inspect_email_headers,
+    # check_link_destination, quarantine_message, notify_reporter. They were
+    # never offered by any progression, had no actionEffects/tasks entries, and
+    # referenced undefined artifacts (phishing-email-1, phishing-headers-1,
+    # phishing-link-1). Real phishing gameplay remains future work for Phase 7
+    # re-authoring; see soc-structured-content-pack.md Section 6 (PROPOSED).
     - id: ask_manager
       systemId: team_chat
       label: Ask manager for context
