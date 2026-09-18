@@ -313,25 +313,16 @@ export function RecordQueryTool({
             <article key={result.queryId} aria-label={resultHeading(result)}>
               <h4>{resultHeading(result)}</h4>
               {result.truncated ? (
-                isLatest ? (
-                  <p role="status" className="tool-subtle">
-                    Showing the first {String(result.records.length)} of{" "}
-                    {String(result.totalCount)}. Narrow the filters to see more.
-                  </p>
-                ) : (
-                  <p className="tool-subtle">
-                    Showing the first {String(result.records.length)} of{" "}
-                    {String(result.totalCount)}. Narrow the filters to see more.
-                  </p>
-                )
+                <p {...(isLatest ? { role: "status" } : {})} className="tool-subtle">
+                  Showing the first {String(result.records.length)} of{" "}
+                  {String(result.totalCount)}. Narrow the filters to see more.
+                </p>
               ) : null}
-              {result.records.length === 0 ? (
-                isLatest ? (
-                  <p role="status">No matching records for these filters.</p>
-                ) : (
-                  <p>No matching records for these filters.</p>
-                )
-              ) : (
+              {result.records.length === 0 && !result.truncated ? (
+                <p {...(isLatest ? { role: "status" } : {})}>
+                  No matching records for these filters.
+                </p>
+              ) : result.records.length > 0 ? (
                 <ol>
                   {result.records.map((record) => (
                     <li key={record.id}>
@@ -351,7 +342,7 @@ export function RecordQueryTool({
                     </li>
                   ))}
                 </ol>
-              )}
+              ) : null}
             </article>
             );
           })

@@ -313,6 +313,10 @@ describe("RecordQueryTool", () => {
     expect(
       screen.getByRole("heading", { name: "VPN sessions — 0 matches" }),
     ).toBeVisible();
+    expect(screen.getAllByRole("status")).toHaveLength(1);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "No matching records for these filters.",
+    );
     expect(screen.getByLabelText("Session ID")).toHaveValue("S-0741");
   });
 
