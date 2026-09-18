@@ -307,7 +307,7 @@ export function RecordQueryTool({
             <article key={result.queryId} aria-label={resultHeading(result)}>
               <h4>{resultHeading(result)}</h4>
               {result.truncated ? (
-                <p role="status">
+                <p className="tool-subtle">
                   Showing the first {String(result.records.length)} of{" "}
                   {String(result.totalCount)}. Narrow the filters to see more.
                 </p>
