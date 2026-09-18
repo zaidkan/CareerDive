@@ -11,13 +11,20 @@ import {
 
 const login = "suspicious-login-1";
 const routine = "routine-alert-1";
-function world() {
-  return createInitialWorldState(
-    "shift-evidence",
-    24,
-    {},
-    loadDefaultCybersecurityPack(),
-  );
+function world(pack = loadDefaultCybersecurityPack()) {
+  return createInitialWorldState("shift-evidence", 24, {}, pack);
+}
+function legacyScannerPack() {
+  const pack = structuredClone(loadDefaultCybersecurityPack());
+  for (const id of [
+    "scanner-alert-compare",
+    "scanner-window-match",
+    "scanner-ticket-summary",
+  ]) {
+    const t = pack.scenario.tasks.find((task) => task.id === id);
+    if (t) t.releasesActionGate = false;
+  }
+  return pack;
 }
 function complete(
   initial: WorldState,
@@ -53,8 +60,8 @@ function complete(
   }
   return state;
 }
-function interrupted() {
-  let state = complete(world(), "read_handoff", "handoff-1");
+function interrupted(pack = loadDefaultCybersecurityPack()) {
+  let state = complete(world(pack), "read_handoff", "handoff-1");
   state = complete(state, "acknowledge_handoff", "handoff-1");
   state = complete(state, "review_alert", login);
   return complete(state, "inspect_login_context", login);
@@ -90,7 +97,14 @@ describe("shift evidence coverage", () => {
   });
 
   it("requires the run and alert sources, coaches arrival-time confusion without advancing work", () => {
-    let state = complete(interrupted(), "review_alert", routine);
+    const pack = legacyScannerPack();
+    let state = complete(world(pack), "read_handoff", "handoff-1");
+    state = complete(state, "acknowledge_handoff", "handoff-1");
+    state = complete(state, "review_alert", login);
+    state = complete(state, "inspect_login_context", login);
+    // Advance to routine active (triggerAt 25)
+    state = { ...state, simClock: 30 };
+    state = complete(state, "review_alert", routine);
     state = complete(
       state,
       "search_knowledge_base",
@@ -132,8 +146,9 @@ describe("shift evidence coverage", () => {
   });
 
   it("carries independent case references and collection limits into both canonical tickets", () => {
+    const pack = legacyScannerPack();
     const run = () => {
-      let state = interrupted();
+      let state = interrupted(pack);
       for (const id of [
         "review_alert",
         "search_knowledge_base",

@@ -528,6 +528,7 @@ scenario:
       kind: compare_records
       title: Triage the new scanner alert
       whyItMatters: Interruptions need quick priority checks before they take over the main case.
+      releasesActionGate: true
       steps:
         - id: scanner-identity
           title: Identify the source and target
@@ -556,6 +557,7 @@ scenario:
       kind: match_reference
       title: Check the approved scanner window
       whyItMatters: Trusted change records distinguish expected maintenance from unexplained activity.
+      releasesActionGate: true
       steps:
         - id: schedule-match
           title: Match alert to change calendar
@@ -614,6 +616,7 @@ scenario:
       kind: build_summary
       title: Document why routine work is safe to close
       whyItMatters: Even expected alerts need a record showing what was checked.
+      releasesActionGate: true
       steps:
         - id: scanner-evidence
           title: Record the match
