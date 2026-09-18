@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { appDefinition } from "./appCatalog.js";
+import { WindowChrome } from "./WindowChrome.js";
 import { findFileFolder, initialFakeFs, moveFile, type FakeFs, type FsFile, type FsFolderId } from "./useFakeFs.js";
 
 const DROP_MIME = "text/os-file-id";
@@ -62,8 +64,15 @@ export function FileExplorer({ onOpenFile }: { onOpenFile: (file: OpenableFile) 
     if (file) onOpenFile({ id: file.id, name: file.name, body: file.body });
   };
 
+  const meta = appDefinition("files");
+
   return (
-    <section aria-label="File Explorer" className="os-window os-files">
+    <section aria-label="File Explorer" className="os-window os-files" data-app="files">
+      <WindowChrome
+        app="files"
+        title={meta.label}
+        subtitle={`${folderLabel(folder)} · ${fs.filesByFolder[folder].length} items`}
+      />
       <div className="os-toolbar" role="group" aria-label="File actions">
         <button className="desk-os-ghost" disabled={!selected} onClick={openSelected} type="button">
           Open
