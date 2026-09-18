@@ -40,8 +40,16 @@ import type {
 } from "../components/shared.js";
 import {
   EMPTY_MUTATION_STATE,
+  workplaceMutationKey,
   type MutationState,
 } from "../useMutationCoordinator.js";
+import {
+  loadMouseSensitivity,
+  MAX_MOUSE_SENSITIVITY,
+  MIN_MOUSE_SENSITIVITY,
+  MOUSE_SENSITIVITY_STEP,
+  saveMouseSensitivity,
+} from "./mouseSensitivity.js";
 
 const RoomCanvas = lazy(async () => {
   const mod = await import("./RoomCanvas.js");
@@ -77,7 +85,6 @@ export function SpatialShell({
   guided = false,
   onAcceptedDistance,
   onRoomExit,
-  movementQueued = false,
 }: {
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
@@ -89,11 +96,13 @@ export function SpatialShell({
   guided?: boolean;
   onAcceptedDistance?: (meters: number) => void;
   onRoomExit?: () => void;
-  movementQueued?: boolean;
 }) {
   const [spatial, dispatch] = useReducer(reduceSpatialEvent, INITIAL_SPATIAL);
   const [nearbyLabel, setNearbyLabel] = useState<string>();
   const [pointerLocked, setPointerLocked] = useState(false);
+  const [mouseSensitivity, setMouseSensitivity] = useState(
+    loadMouseSensitivity,
+  );
   const [workplacePending, setWorkplacePending] = useState(false);
   const [julesOpen, setJulesOpen] = useState(false);
   const [julesReply, setJulesReply] = useState<JulesDialogueReply>();
@@ -149,8 +158,9 @@ export function SpatialShell({
   const submitWorkplaceInteraction = useCallback(
     async (interaction: WorkplaceInteraction) => {
       if (!onWorkplaceInteraction || workplacePendingRef.current) return;
+      const isMovementExertion = interaction.type === "movement_exertion";
       workplacePendingRef.current = true;
-      setWorkplacePending(true);
+      if (!isMovementExertion) setWorkplacePending(true);
 
       const attemptQueuedClose = async (shouldAttempt: boolean) => {
         if (!closeFridgeIntentRef.current) return;
@@ -185,7 +195,7 @@ export function SpatialShell({
       } finally {
         closeFridgeIntentRef.current = false;
         workplacePendingRef.current = false;
-        setWorkplacePending(false);
+        if (!isMovementExertion) setWorkplacePending(false);
       }
     },
     [onWorkplaceInteraction],
@@ -343,6 +353,11 @@ export function SpatialShell({
       : undefined;
   const canonicalMutationPending = Boolean(mutationState.pendingKey);
   const resourcePending = workplacePending || canonicalMutationPending;
+  const movementMutationPending =
+    mutationState.pendingKey ===
+    workplaceMutationKey({ type: "movement_exertion", distanceMeters: 5 });
+  const playerMovementBlocked =
+    workplacePending || (canonicalMutationPending && !movementMutationPending);
 
   return (
     <section
@@ -357,13 +372,14 @@ export function SpatialShell({
           fallback={<p className="room-loading">Entering {roomLabel}…</p>}
         >
           <RoomCanvas
-            enabled={walking && !movementQueued && !resourcePending}
+            enabled={walking && !playerMovementBlocked}
             {...(onAcceptedDistance ? { onAcceptedDistance } : {})}
             onBreakRoomExit={requestFridgeCloseOnExit}
             onInteract={handleInteract}
             onNearbyChange={onNearbyChange}
             seated={atDesk}
             workplace={view.workplace}
+            mouseSensitivity={mouseSensitivity}
             onWalkBlocked={() => {
               setWalkBlocked(true);
             }}
@@ -467,6 +483,25 @@ export function SpatialShell({
               </details>
             </div>
             <div className="room-hud-actions">
+              <label className="room-sensitivity" htmlFor="mouse-sensitivity">
+                Mouse sensitivity
+                <input
+                  id="mouse-sensitivity"
+                  type="range"
+                  min={MIN_MOUSE_SENSITIVITY}
+                  max={MAX_MOUSE_SENSITIVITY}
+                  step={MOUSE_SENSITIVITY_STEP}
+                  value={mouseSensitivity}
+                  onChange={(event) => {
+                    const next = Number(event.currentTarget.value);
+                    setMouseSensitivity(next);
+                    saveMouseSensitivity(next);
+                  }}
+                />
+                <output htmlFor="mouse-sensitivity">
+                  {mouseSensitivity.toFixed(1)}×
+                </output>
+              </label>
               {nearbyHotspotId && !breakStation ? (
                 <button
                   className="start-shift"

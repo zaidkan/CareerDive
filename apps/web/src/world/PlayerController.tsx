@@ -5,9 +5,12 @@ import { clampToRoom, collidesAt, type Aabb } from "./collision.js";
 import { nearestStandableTarget, SAFE_ANCHORS } from "./navigation.js";
 import { walkBobOffset } from "./playerMotion.js";
 import { bindLookControls } from "./lookControls.js";
+import {
+  applyLookDelta,
+  DEFAULT_MOUSE_SENSITIVITY,
+} from "./mouseSensitivity.js";
 
 const SPEED = 2.96;
-const LOOK_SENS = 0.002;
 const VEL_DAMP = 11;
 const SEAT_DAMP = 5;
 const STAND_DAMP = 5;
@@ -153,6 +156,7 @@ export function PlayerController({
   enabled,
   spawn = [0, 1.6, 4.2],
   seated = false,
+  mouseSensitivity = DEFAULT_MOUSE_SENSITIVITY,
   seatPosition = [3.2, 1.35, -1.75],
   seatLookAt = [3.2, 1.25, -3.4],
   onRecover,
@@ -163,6 +167,7 @@ export function PlayerController({
   enabled: boolean;
   spawn?: [number, number, number];
   seated?: boolean;
+  mouseSensitivity?: number;
   seatPosition?: [number, number, number];
   seatLookAt?: [number, number, number];
   onRecover?: (position: [number, number, number]) => void;
@@ -190,6 +195,8 @@ export function PlayerController({
   const bobPhase = useRef(0);
   const bobAmt = useRef(0);
   const reduceMotion = useRef(false);
+  const mouseSensitivityRef = useRef(mouseSensitivity);
+  mouseSensitivityRef.current = mouseSensitivity;
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
@@ -222,10 +229,11 @@ export function PlayerController({
       keys.current.delete(event.code);
     };
     const disposeLook = bindLookControls(gl.domElement, (dx, dy) => {
-      yaw.current -= dx * LOOK_SENS;
+      const delta = applyLookDelta(dx, dy, mouseSensitivityRef.current);
+      yaw.current -= delta.yaw;
       pitch.current = Math.max(
         PITCH_MIN,
-        Math.min(PITCH_MAX, pitch.current - dy * LOOK_SENS),
+        Math.min(PITCH_MAX, pitch.current - delta.pitch),
       );
     });
     const onBlur = () => {

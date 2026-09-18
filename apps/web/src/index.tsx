@@ -271,7 +271,9 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
         return {
           result,
           view: result.view,
-          success: "Workplace updated.",
+          ...(interaction.type === "movement_exertion"
+            ? {}
+            : { success: "Workplace updated." }),
         };
       } catch (cause) {
         throw new Error("That workplace interaction could not be completed.", {

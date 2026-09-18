@@ -164,6 +164,7 @@ export function SocRoom({
   seated = false,
   highlightHotspotId,
   workplace,
+  mouseSensitivity,
   onBreakRoomExit,
   onWalkBlocked,
   onRecover,
@@ -175,6 +176,7 @@ export function SocRoom({
   seated?: boolean;
   highlightHotspotId?: HotspotId;
   workplace: ClientWorkplaceState;
+  mouseSensitivity: number;
   onBreakRoomExit: () => void;
   onWalkBlocked?: () => void;
   onRecover?: (position: [number, number, number]) => void;
@@ -699,6 +701,7 @@ export function SocRoom({
         seatLookAt={PLAYER_SEAT_LOOK}
         seatPosition={PLAYER_SEAT_CAM}
         seated={seated}
+        mouseSensitivity={mouseSensitivity}
         spawn={PLAYER_SPAWN}
         {...(onWalkBlocked ? { onWalkBlocked } : {})}
         onRecover={(position) => {

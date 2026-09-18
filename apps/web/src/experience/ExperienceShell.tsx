@@ -108,7 +108,6 @@ export function ExperienceShell({
           <SpatialShell
             onAcceptedDistance={movement.addDistance}
             onRoomExit={movement.resetDistance}
-            movementQueued={movement.queued}
             guided={guided}
             onAction={onAction}
             {...(onTaskAttempt ? { onTaskAttempt } : {})}

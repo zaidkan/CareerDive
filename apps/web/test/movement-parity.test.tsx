@@ -9,20 +9,26 @@ import {
   toClientView,
 } from "@sim/core";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
-import type { WorkplaceInteraction } from "@sim/schemas";
+import type { ClientView, WorkplaceInteraction } from "@sim/schemas";
 import { ExperienceShell } from "../src/experience/ExperienceShell.js";
 
 vi.mock("../src/world/RoomCanvas.js", () => ({
   RoomCanvas: ({
+    enabled,
     onAcceptedDistance,
     onWalkBlocked,
     onRecover,
   }: {
+    enabled: boolean;
     onAcceptedDistance: (meters: number) => void;
     onWalkBlocked: () => void;
     onRecover: () => void;
   }) => (
-    <div data-interaction-id="movement_exertion">
+    <div
+      data-interaction-id="movement_exertion"
+      data-room-enabled={String(enabled)}
+      data-testid="room-canvas-mock"
+    >
       <button
         onClick={() => {
           onAcceptedDistance(2.5);
@@ -100,6 +106,41 @@ it("submits the same movement ID through spatial and keyboard-only controls, wit
     })),
   );
 }, 15000);
+
+it("keeps spatial movement enabled while routine exertion sync is pending", async () => {
+  const user = userEvent.setup();
+  let resolve: ((value: { view: ClientView; sequence: number; feedback: "movement_recorded" }) => void) | undefined;
+  const pending = new Promise<{ view: ClientView; sequence: number; feedback: "movement_recorded" }>((done) => {
+    resolve = done;
+  });
+  const submit = vi.fn(() => pending);
+  const state = createInitialWorldState("movement-pending", 24, {}, pack);
+
+  render(
+    <ExperienceShell
+      view={toClientView(state)}
+      mode="walk"
+      onModeChange={vi.fn()}
+      onAction={vi.fn()}
+      mutationState={{ pendingKey: "workplace:movement_exertion" }}
+      onWorkplaceInteraction={submit}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: /Security Operations/ }));
+  expect(
+    await screen.findByRole("button", { name: "Accepted walk" }, { timeout: 6000 }),
+  ).toBeVisible();
+  expect(screen.getByTestId("room-canvas-mock")).toHaveAttribute(
+    "data-room-enabled",
+    "true",
+  );
+  resolve?.({
+    view: toClientView(state),
+    sequence: 1,
+    feedback: "movement_recorded",
+  });
+  await pending;
+});
 
 it.each(["walk", "desk", "list"] as const)(
   "exposes canonical emergency recovery without evidence in %s",

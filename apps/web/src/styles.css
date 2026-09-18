@@ -2315,6 +2315,29 @@ section[aria-labelledby="structured-title"],
   text-transform: uppercase;
 }
 
+.room-sensitivity {
+  display: grid;
+  grid-template-columns: auto minmax(7rem, 13rem) auto;
+  gap: 0.55rem;
+  align-items: center;
+  width: min(100%, 22rem);
+  margin-top: 0.55rem;
+  color: var(--mute);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.room-sensitivity input {
+  min-width: 7rem;
+  accent-color: var(--signal);
+}
+
+.room-sensitivity output {
+  min-width: 2.2rem;
+  color: var(--paper);
+  text-align: right;
+}
+
 .energy-meter-track {
   display: block;
   height: 0.42rem;
