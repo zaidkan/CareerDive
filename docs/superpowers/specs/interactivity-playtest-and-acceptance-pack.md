@@ -34,6 +34,25 @@ implementation-agnostic.
 5. A scenario passes only when every Pass criterion holds and no Forbidden
    behavior was observed.
 
+## Test IDs and result-recording convention (for Phase 7-9 reuse)
+
+- Every scenario keeps its stable ID (`CE-1`, `PT-FULL`, `PT-BRANCH-A/D/V/M`,
+  `PT-QUIZ`, `PT-MUNDANE`, `PT-PACE-1..4`, `PT-MORGAN`, `PT-JULES`,
+  `PT-ABSENCE`, `PT-FP`, `PT-DOC`, `PT-CONS`, `PT-PARITY`, `PT-A11Y`).
+- Tag each run with renderer (`3D` / `Desk` / `Accessible`) and build under test.
+  Section 1 scenarios must pass in all three unless the scenario says otherwise.
+- Record one line per run: `ID | renderer | PASS/FAIL/PENDING | observed vs
+  Expected | Forbidden hits (surface + exact text) | notes`.
+- Mark `PENDING SUPPORTING CONTENT` when the build lacks rows the fixtures doc
+  still flags PROPOSED (currently: A-1204 cluster, phishing bodies, handoff
+  fields). Do not invent stand-in facts; log the gap in Appendix A instead.
+- Mark `CONTENT GAP: ...` inside Appendix A only. Never edit the content pack
+  or fixtures to satisfy a test.
+- Fixture cross-reference: `soc-structured-record-fixtures.md` owns row IDs
+  (`AUTH-*`, `V-*`, `D*`, `AL-*`, `PH-*`, `SC-*`, `MORGAN-CTX-01`); this pack
+  only names them as test inputs. Pack `pack.yaml` owns truth; fixtures own
+  rows; this doc owns pass/fail.
+
 ## Terminology
 
 - **Work Item**: a piece of simulated work with a stable identity and status
@@ -367,9 +386,9 @@ Also verify: reading the A-1042 sentence claiming "no prior successes from this 
 
 # 10. False-positive playtest (PT-FP)
 
-Compact case around proposed A-1204 (c.okonkwo, unseen residential IP, "Chicago" estimate vs Toronto) if content/fixtures support it. Current support: content pack Section 5.2 + fixtures AL-3 define the item as PROPOSED (1 alert row + 1 auth row + reuse V4/D4), flagged as SHOULD-ship pending T+43 confirmation. If the build under test lacks those rows, mark this section `PENDING SUPPORTING CONTENT` and do not invent canonical facts.
+Compact case around proposed A-1204 (c.okonkwo, unseen residential IP, "Chicago" estimate vs Toronto) if content/fixtures support it. Fixture cluster (fixtures §4a, all PROPOSED SUPPORTING RECORD): `AL-3 A-1204` + `AUTH-0915-OKONKWO-CHI` (S-0915, V-217, enrolled device, extra check done, zero prior fails) + `V-215` (prior-week precedent, same user/connection/exit) + catalogue `V-217` + `D4 corp-macbook-okonkwo` + `MORGAN-CTX-01` (one delayed coworker fact, report not proof). If the build under test lacks any of those rows, mark this section `PENDING SUPPORTING CONTENT` and do not invent canonical facts.
 
-When supported, verify: initially unusual (unseen IP + surprising city); at least two datasets consulted (auth + VPN catalogue and/or inventory); correlation produces benign explanation (enrolled device + extra check completed + V-217 exit matched + zero prior fails; city estimate alone insufficient); player can document/close as expected/verified with reason citing those three agreements; no field literally says "false positive"; no scoring; no forced escalation. Fail if the item resolves from one screen, if any signal is pre-labeled benign/malicious, or if closing requires escalation.
+When supported, verify: initially unusual (unseen IP + surprising city); at least two datasets consulted (auth `AUTH-0915` + VPN catalogue `V-217` and/or inventory `D4`, plus precedent `V-215`); correlation produces benign explanation (enrolled device + extra check completed + V-217 exit matched + zero prior fails + prior-week precedent + coworker context; city estimate alone insufficient); player can document/close as expected/verified with reason citing those agreements; no field literally says "false positive"; no scoring; no forced escalation. Noise/boundary rows added since (`AUTH-0745-PATEL-HQ`, `AUTH-0835-OKONKWO-VPN`, `AUTH-0722-GARCIA-FAIL`, `V-221`, `V-216`, `D9`, `D10`, `AL-8`, `AL-9`) must not change this read and must never join the A-1204 keys. Fail if the item resolves from one screen, if any signal is pre-labeled benign/malicious, or if closing requires escalation.
 
 # 11. Documentation / ticket acceptance (PT-DOC)
 
@@ -425,10 +444,11 @@ The shift passes only if ALL hold:
 
 Write `CONTENT GAP: …` here when a test needs content that does not exist yet. Current known gaps (read-only observations, no edits made):
 
-- CONTENT GAP: Phishing artifacts (`phishing-email-1`, `phishing-headers-1`, `phishing-link-1` referenced by pack actions) have no canonical bodies — phishing playtests run against PROPOSED Section 6 content until pack authors add them.
-- CONTENT GAP: False-positive A-1204 rows are PROPOSED/SHOULD-ship (content pack §5.2, fixtures AL-3) — PT-FP stays `PENDING SUPPORTING CONTENT` in builds without those rows.
+- CONTENT GAP: Phishing artifacts (`phishing-email-1`, `phishing-headers-1`, `phishing-link-1` referenced by pack actions) have no canonical bodies — phishing playtests run against PROPOSED Section 6 content until pack authors add them. Pack actions for phishing are additionally DEAD/INCOMPLETE per fixtures §0 C17 (never offered by any progression); PT-PACE-1 phishing trigger and PT-PARITY phishing row are target-behavior tests that may legitimately fail today.
+- CONTENT GAP: False-positive A-1204 cluster rows (`AL-3`, `AUTH-0915-OKONKWO-CHI`, `V-215`, `MORGAN-CTX-01` plus reuse `V-217`/`D4`) are PROPOSED/SHOULD-ship (content pack §5.2, fixtures §4a) — PT-FP stays `PENDING SUPPORTING CONTENT` in builds without those rows.
 - CONTENT GAP: End-of-shift handoff has no canonical fields yet — handoff playtests run against PROPOSED field content.
 - CONTENT GAP: Structured query/evidence/discovery/delayed-conditional machinery is future implementation — absence, discovery, and conditional-consequence playtests define target behavior that may legitimately fail today.
+- CONTENT GAP: Fixture noise/boundary expansion (`AUTH-0745-PATEL-HQ`, `AUTH-0835-OKONKWO-VPN`, `AUTH-0722-GARCIA-FAIL`, `V-221`, `V-216`, `D9`, `D10`, `AL-8`, `AL-9`) exists in fixtures only; if the build under test serves fewer rows, branch/absence/FP tests still pass on the smaller set provided no remaining row joins the wrong keys and no verdict is pre-labeled.
 
 
 
