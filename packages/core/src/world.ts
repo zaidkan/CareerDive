@@ -94,6 +94,9 @@ export function createInitialWorldState(
       tasks,
       notifications: notificationRules,
       datasets,
+      ...(pack.scenario.evidenceFacts !== undefined
+        ? { evidenceFacts: pack.scenario.evidenceFacts }
+        : {}),
     },
     artifacts: Object.fromEntries(
       pack.scenario.artifacts.map((artifact) => [artifact.id, artifact]),

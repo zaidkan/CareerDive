@@ -222,6 +222,10 @@ const FACT_NO_VPN_CVR: EvidenceFactDefinition = {
     datasetId: "vpn",
     requiredDimensions: ["user", "sourceIp"],
     coveredWindowMinutes: 20,
+    requiredFilters: {
+      user: "j.patel@example.com",
+      sourceIp: "203.0.113.44",
+    },
   },
   attachable: true,
 };
@@ -235,6 +239,7 @@ const FACT_DEVICE_EXACT_PRESENCE: EvidenceFactDefinition = {
     kind: "query_presence",
     datasetId: "devices",
     requiredDimensions: ["deviceLabel"],
+    requiredFilters: { deviceLabel: "unknown-laptop-17" },
   },
   attachable: true,
 };
@@ -409,7 +414,7 @@ describe("EFD-1 positive record discovery (RED until Phase 3)", () => {
       "devices",
       { deviceLabel: "unknown-laptop-17" },
     );
-    expect(result.rules.datasets.devices?.records.map((r) => r.id)).toEqual([
+    expect(result.queryHistory.at(-1)?.resultIds).toEqual([
       "unknown-laptop-17",
     ]);
     // No record opened; discovery must stay empty.

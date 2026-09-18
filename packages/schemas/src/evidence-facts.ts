@@ -1,11 +1,13 @@
 import { z } from "zod";
 
+import { QueryFilterSchema } from "./query.js";
+
 /**
- * P1-T06 schema-only sketch: scenario Evidence Facts.
+ * Phase 3: scenario Evidence Facts.
  *
  * Canonical spec §5.2 (Evidence Discovery) + §6.4 (Discovery state).
- * Types-only forward contract for Phase 3. NO discovery evaluation,
- * NO absence detection runtime, NO attachment behavior here.
+ * Authored definitions and runtime discovery state contract. Discovery
+ * evaluation lives in @sim/core; attachment behavior remains a later phase.
  *
  * Scenario Evidence Facts are NOT assessment `EvidenceSignal`
  * (see `assessment.ts`): definitions carry authored provenance rules,
@@ -29,12 +31,16 @@ export const EvidenceProvenanceSchema = z.discriminatedUnion("kind", [
     kind: z.literal("query_presence"),
     datasetId: z.string(),
     requiredDimensions: z.array(z.string()).min(1),
+    /** Optional authored values; dimensions alone remain valid legacy schema. */
+    requiredFilters: QueryFilterSchema.partial().optional(),
   }),
   z.object({
     kind: z.literal("query_absence_coverage"),
     datasetId: z.string(),
     requiredDimensions: z.array(z.string()).min(1),
     coveredWindowMinutes: z.number().int().positive(),
+    /** Optional authored values; dimensions alone remain valid legacy schema. */
+    requiredFilters: QueryFilterSchema.partial().optional(),
   }),
   z.object({
     kind: z.literal("dialogue_fact"),

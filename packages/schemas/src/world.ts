@@ -16,6 +16,7 @@ import {
   TaskProgressSchema,
 } from "./tasks.js";
 import { WorkplaceStateSchema } from "./workplace.js";
+import { EvidenceFactDefinitionSchema } from "./evidence-facts.js";
 
 export const LocationSchema = z.object({
   id: z.string(),
@@ -82,6 +83,9 @@ export const ScenarioRulesSchema = z.object({
   notifications: z
     .record(z.string(), PackNotificationDefinitionSchema)
     .default({}),
+  // Phase 3: authored definitions are immutable scenario content. Discovery
+  // state remains instance-derived and is never serialized through this map.
+  evidenceFacts: z.record(z.string(), EvidenceFactDefinitionSchema).optional(),
   // P2-T01: immutable structured datasets, versioned with the scenario.
   // Keyed by datasetId; default {} keeps pre-Phase-2 packs valid.
   datasets: z.record(DatasetIdSchema, RuntimeDatasetSchema).default({}),

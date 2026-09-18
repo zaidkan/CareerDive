@@ -164,13 +164,14 @@ describe("P1-T06 disallowed structures fail", () => {
   });
 });
 
-describe("P1-T06 sketches are not wired into runtime", () => {
-  it("no production runtime module imports the still-sketch modules", () => {
+describe("P1-T06 remaining sketches are not wired into runtime", () => {
+  it("no production runtime module imports the remaining sketch modules", () => {
     // P2-T01 promoted records.ts to runtime (datasets/query engine consume it),
-    // so it is intentionally excluded here. evidence-facts / npc-intent / ticket
-    // remain types-only forward contracts owned by Phases 3/4/6.
+    // so it is intentionally excluded here. Evidence Facts are now a Phase 3
+    // runtime contract; NPC intent and ticket remain forward contracts owned by
+    // Phases 4/6.
     const output = execSync(
-      "grep -rln --include='*.ts' --include='*.tsx' -e 'evidence-facts' -e 'npc-intent' -e 'src/ticket.js' packages/core/src apps/server/src apps/web/src || true",
+      "grep -rln --include='*.ts' --include='*.tsx' -e 'npc-intent' -e 'src/ticket.js' packages/core/src apps/server/src apps/web/src || true",
       { encoding: "utf-8" },
     );
     const sketchImports = output

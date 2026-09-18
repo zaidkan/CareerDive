@@ -22,6 +22,7 @@ import {
   WorkArtifactSchema,
 } from "./world.js";
 import { PackWorkplaceDefaultsSchema } from "./workplace.js";
+import { EvidenceFactDefinitionSchema } from "./evidence-facts.js";
 
 export const ScenarioRhythmSchema = z.enum([
   "routine_monitoring",
@@ -92,6 +93,9 @@ export const CareerPackSchema = z
       artifacts: z.array(WorkArtifactSchema).default([]),
       tasks: z.array(PackTaskDefinitionSchema).default([]),
       notifications: z.array(PackNotificationDefinitionSchema).default([]),
+      evidenceFacts: z
+        .record(z.string(), EvidenceFactDefinitionSchema)
+        .optional(),
       workplaceDefaults: PackWorkplaceDefaultsSchema,
       // P2-T02: authored structured datasets, keyed by DatasetId. Default {}
       // keeps pre-Phase-2 packs valid (backward compatibility).
