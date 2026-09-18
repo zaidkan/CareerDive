@@ -123,6 +123,27 @@ export const CareerPackSchema = z
     }
     const taskIds = new Set<string>();
     const taskBindings = new Set<string>();
+    // P1-T03 canonical contract: a released binding offers the plain action,
+    // so the flag is only meaningful when the template progression actually
+    // offers the bound action (sequence/stage offers, utility actions, or
+    // the allowManager ask_manager grant).
+    const offeredByTemplate = new Map<string, Set<SimulationActionId>>();
+    for (const [templateId, template] of Object.entries(
+      pack.scenario.eventTemplates,
+    )) {
+      const offered = new Set<SimulationActionId>();
+      for (const id of template.progression.utilityActions) offered.add(id);
+      if (template.progression.allowManager) offered.add("ask_manager");
+      if (template.progression.kind === "linear") {
+        for (const id of template.progression.sequence) offered.add(id);
+      } else {
+        for (const stage of template.progression.stages) {
+          for (const id of stage.offer) offered.add(id);
+          for (const id of stage.alsoOffer) offered.add(id);
+        }
+      }
+      offeredByTemplate.set(templateId, offered);
+    }
     for (const task of pack.scenario.tasks) {
       if (taskIds.has(task.id)) {
         ctx.addIssue({
@@ -165,6 +186,18 @@ export const CareerPackSchema = z
         });
       }
       taskBindings.add(binding);
+      const offered = offeredByTemplate.get(task.eventTemplateId);
+      if (
+        task.releasesActionGate &&
+        offered &&
+        !offered.has(task.actionId)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Task "${task.id}" sets releasesActionGate for action "${task.actionId}", which event template "${task.eventTemplateId}" never offers`,
+          path: ["scenario", "tasks"],
+        });
+      }
       for (const step of task.steps) {
         const sourced = step.options.filter(({ source }) => source);
         if (sourced.length && sourced.length !== step.options.length) {
@@ -217,6 +250,126 @@ export const CareerPackSchema = z
           message: `Notification "${notification.id}" references unknown event template "${notification.eventTemplateId}"`,
           path: ["scenario", "notifications"],
         });
+      }
+    }
+    // P1-T05 validation strengthening (Phase 1 invariants only).
+    // Migration-gate flag consistency: P1-T03 froze `releasesActionGate` on
+    // PackTaskDefinition (committed); validate authoring consistency here
+    // without inventing a competing field.
+    const instanceIdOwners = new Map<string, string>();
+    for (const [templateId, template] of Object.entries(
+      pack.scenario.eventTemplates,
+    )) {
+      const owner = instanceIdOwners.get(template.instanceId);
+      if (owner) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Duplicate event instanceId "${template.instanceId}" on "${owner}" and "${templateId}"`,
+          path: ["scenario", "eventTemplates", templateId],
+        });
+      } else {
+        instanceIdOwners.set(template.instanceId, templateId);
+      }
+      if (template.deadlineMinutes <= template.triggerAt) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Event "${templateId}" deadlineMinutes (${String(template.deadlineMinutes)}) must come after triggerAt (${String(template.triggerAt)})`,
+          path: ["scenario", "eventTemplates", templateId],
+        });
+      }
+    }
+    const instanceIds = new Set(instanceIdOwners.keys());
+    for (const action of pack.scenario.actions) {
+      for (const artifactId of action.defaultEffect?.observeArtifactIds ??
+        []) {
+        if (!artifactIds.has(artifactId)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Action "${action.id}" observes unknown artifact "${artifactId}"`,
+            path: ["scenario", "actions"],
+          });
+        }
+      }
+    }
+    for (const [templateId, template] of Object.entries(
+      pack.scenario.eventTemplates,
+    )) {
+      for (const [actionId, effect] of Object.entries(
+        template.actionEffects,
+      )) {
+        for (const artifactId of effect.observeArtifactIds) {
+          if (!artifactIds.has(artifactId)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: `Event "${templateId}" effect for "${actionId}" observes unknown artifact "${artifactId}"`,
+              path: ["scenario", "eventTemplates", templateId],
+            });
+          }
+        }
+      }
+    }
+    const referencedActions = new Set<SimulationActionId>();
+    for (const template of Object.values(pack.scenario.eventTemplates)) {
+      const collect = (ids: SimulationActionId[]) => {
+        for (const id of ids) referencedActions.add(id);
+      };
+      if (template.progression.kind === "linear") {
+        collect(template.progression.sequence);
+        collect(template.progression.utilityActions);
+      } else {
+        for (const stage of template.progression.stages) {
+          collect(stage.after);
+          collect(stage.offer);
+          collect(stage.alsoOffer);
+        }
+        collect(template.progression.utilityActions);
+      }
+      if (template.progression.allowManager) {
+        referencedActions.add("ask_manager");
+      }
+      for (const actionId of Object.keys(template.actionEffects)) {
+        referencedActions.add(actionId as SimulationActionId);
+      }
+    }
+    for (const task of pack.scenario.tasks) {
+      referencedActions.add(task.actionId);
+    }
+    const seenActionIds = new Set<SimulationActionId>();
+    for (const action of pack.scenario.actions) {
+      if (seenActionIds.has(action.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Duplicate action id "${action.id}"`,
+          path: ["scenario", "actions"],
+        });
+      }
+      seenActionIds.add(action.id);
+      if (!referencedActions.has(action.id) && action.tracksCompletion) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Action "${action.id}" is not referenced by any progression, effect, or task`,
+          path: ["scenario", "actions"],
+        });
+      }
+    }
+    const seenArtifactIds = new Set<string>();
+    for (const artifact of pack.scenario.artifacts) {
+      if (seenArtifactIds.has(artifact.id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Duplicate artifact id "${artifact.id}"`,
+          path: ["scenario", "artifacts"],
+        });
+      }
+      seenArtifactIds.add(artifact.id);
+      for (const eventId of artifact.eventIds) {
+        if (!instanceIds.has(eventId)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Artifact "${artifact.id}" references unknown event instance "${eventId}"`,
+            path: ["scenario", "artifacts"],
+          });
+        }
       }
     }
   });
