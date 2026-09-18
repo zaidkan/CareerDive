@@ -113,10 +113,31 @@ describe("P1-T02 WorkItem projection + hidden-state scoping", () => {
   });
 
   it("keeps legacy task-view record lists working during compatibility", () => {
-    const state = createInitialWorldState("p1-t02-compat", 7, {}, pack);
+    let state = createInitialWorldState("p1-t02-compat", 7, {}, pack);
+    // P3-T01 released handoff + initial inspections; verify a still-gated ticket task preserves its record list.
+    state = applyAction(state, {
+      id: "review_alert",
+      eventId: "suspicious-login-1",
+      actorId: "user",
+    }).state;
+    state = applyAction(state, {
+      id: "inspect_login_context",
+      eventId: "suspicious-login-1",
+      actorId: "user",
+    }).state;
+    state = applyAction(state, {
+      id: "inspect_account_history",
+      eventId: "suspicious-login-1",
+      actorId: "user",
+    }).state;
+    state = applyAction(state, {
+      id: "check_device_inventory",
+      eventId: "suspicious-login-1",
+      actorId: "user",
+    }).state;
     const view = toClientView(state);
-    const task = view.tasks.find(({ id }) => id === "handoff-open-items");
-    expect(task?.relatedArtifactIds).toContain("handoff-email");
+    const task = view.tasks.find(({ id }) => id === "login-ticket-summary");
+    expect(task?.relatedArtifactIds).toContain("suspicious-login-alert");
   });
 
   it("replay behavior is unchanged by the projection", () => {

@@ -245,7 +245,9 @@ describe("P3-T01 investigation-driven handoff and alert flow", () => {
     expect(serialized).not.toMatch(
       /requiredOptionIds|correctOptionIds|expectedAnswer|templateId|relevance/i,
     );
-    expect(serialized).not.toContain("relatedArtifactIds");
+    // P3-T01 releases handoff + A-1042 inspection gates; routine ticket tasks remain gated
+    // by design. Verify no hidden artifact relation leak on client artifacts.
+    expect(view.artifacts.every((a) => !("relatedArtifactIds" in a))).toBe(true);
     expect(view.operationalMessages.join(" ")).not.toMatch(
       /\b(correct|incorrect|right answer|wrong answer|clue found)\b/i,
     );

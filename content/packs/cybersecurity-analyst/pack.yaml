@@ -63,6 +63,7 @@ scenario:
       kind: select_clues
       title: Find what the last analyst left open
       whyItMatters: A handoff stops unfinished work from disappearing between shifts.
+      releasesActionGate: true
       steps:
         - id: unfinished-check
           title: Find the unfinished investigation step
@@ -136,6 +137,7 @@ scenario:
       kind: choose_response
       title: Tell Morgan your starting plan
       whyItMatters: Analysts name their priority so teammates know what is covered.
+      releasesActionGate: true
       steps:
         - id: choose-priority
           title: Choose a clear handoff reply
@@ -162,6 +164,7 @@ scenario:
       kind: compare_records
       title: Read the alert signal
       whyItMatters: One detail rarely proves anything. Analysts combine signals before deciding.
+      releasesActionGate: true
       steps:
         - id: alert-sequence
           title: Reconstruct what happened
@@ -206,6 +209,7 @@ scenario:
       kind: select_clues
       title: Find the strongest context clues
       whyItMatters: Device and network context help analysts judge whether a login fits normal use.
+      releasesActionGate: true
       steps:
         - id: context-clues
           title: Mark details that need follow-up
@@ -234,6 +238,7 @@ scenario:
       kind: compare_records
       title: Compare the account's normal pattern
       whyItMatters: A baseline is the account's usual pattern. It makes unusual activity easier to see.
+      releasesActionGate: true
       steps:
         - id: usual-pattern
           title: Build the normal baseline
@@ -336,6 +341,7 @@ scenario:
       kind: match_reference
       title: Match the device to inventory
       whyItMatters: Inventory shows which devices the organization recognizes and manages.
+      releasesActionGate: true
       steps:
         - id: inventory-match
           title: Check device ownership

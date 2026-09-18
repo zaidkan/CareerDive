@@ -21,13 +21,20 @@ const newRecords = [
   "travel-status-1",
   "login-follow-up-guide",
 ];
-function world() {
-  return createInitialWorldState(
-    "case-depth",
-    42,
-    {},
-    loadDefaultCybersecurityPack(),
-  );
+function world(pack = loadDefaultCybersecurityPack()) {
+  return createInitialWorldState("case-depth", 42, {}, pack);
+}
+function legacyInspectionPack() {
+  const pack = structuredClone(loadDefaultCybersecurityPack());
+  for (const id of [
+    "account-pattern-compare",
+    "device-owner-match",
+    "login-context-clues",
+  ]) {
+    const t = pack.scenario.tasks.find((task) => task.id === id);
+    if (t) t.releasesActionGate = false;
+  }
+  return pack;
 }
 function complete(initial: WorldState, id: SimulationActionId): WorldState {
   let state = initial;
@@ -81,7 +88,7 @@ describe("cross-referenced login case", () => {
 
   it("requires opening the independent VPN comparison sources and rejects a weak comparison without cost", () => {
     let state = complete(
-      complete(world(), "review_alert"),
+      complete(world(legacyInspectionPack()), "review_alert"),
       "inspect_login_context",
     );
     const task = required(state.rules.tasks["account-pattern-compare"]);

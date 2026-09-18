@@ -84,19 +84,40 @@ describe("deterministic workplace energy", () => {
   });
 
   it("charges failed task attempts zero energy and zero simulated time", () => {
-    const initial = world();
+    let initial = world();
+    // Advance to where a still-gated ticket task is offered (login-ticket-summary after inspections)
+    initial = applyAction(initial, {
+      id: "review_alert",
+      eventId: "suspicious-login-1",
+      actorId: "user",
+    }).state;
+    initial = applyAction(initial, {
+      id: "inspect_login_context",
+      eventId: "suspicious-login-1",
+      actorId: "user",
+    }).state;
+    initial = applyAction(initial, {
+      id: "inspect_account_history",
+      eventId: "suspicious-login-1",
+      actorId: "user",
+    }).state;
+    initial = applyAction(initial, {
+      id: "check_device_inventory",
+      eventId: "suspicious-login-1",
+      actorId: "user",
+    }).state;
     initial.workplace.energy.current = 73;
     const before = structuredClone(initial);
 
     const turn = applyTaskAttempt(initial, {
-      taskId: "login-alert-compare",
+      taskId: "login-ticket-summary",
       eventId: "suspicious-login-1",
-      selectedOptionIds: ["one-normal-login"],
+      selectedOptionIds: ["definite-attacker", "montreal-proof"],
     });
 
     expect(turn.accepted).toBe(false);
     expect(turn.state.workplace.energy.current).toBe(73);
-    expect(turn.state.simClock).toBe(0);
+    expect(turn.state.simClock).toBe(before.simClock);
     expect(initial).toEqual(before);
   });
 

@@ -139,7 +139,12 @@ describe("P1-T01 event lifecycle + field schema extension", () => {
   });
 
   it("new canonical state survives action turns and replay deterministically", () => {
-    const base = createInitialWorldState("p1-t01-replay", 7, {}, pack);
+    const legacyPack = structuredClone(pack);
+    const legacyTask = legacyPack.scenario.tasks.find(
+      ({ id }) => id === "handoff-open-items",
+    );
+    if (legacyTask) legacyTask.releasesActionGate = false;
+    const base = createInitialWorldState("p1-t01-replay", 7, {}, legacyPack);
     const withWorkItem = WorldStateSchema.parse({
       ...base,
       events: [

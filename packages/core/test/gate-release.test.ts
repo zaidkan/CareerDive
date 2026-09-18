@@ -27,11 +27,59 @@ function packWithReleasedHandoff(): CareerPack {
   return pack;
 }
 
+function packWithLegacyHandoff(): CareerPack {
+  const pack = structuredClone(loadDefaultCybersecurityPack());
+  const task = pack.scenario.tasks.find(
+    ({ id }) => id === "handoff-open-items",
+  );
+  if (!task) throw new Error("Missing fixture task handoff-open-items");
+  // Default pack now ships this binding released (P3-T01); recreate legacy for this test.
+  task.releasesActionGate = false;
+  return pack;
+}
+
+function packWithGatedInspection(): CareerPack {
+  const pack = structuredClone(loadDefaultCybersecurityPack());
+  for (const id of [
+    "login-context-clues",
+    "account-pattern-compare",
+    "device-owner-match",
+  ]) {
+    const task = pack.scenario.tasks.find((t) => t.id === id);
+    if (task) task.releasesActionGate = false;
+  }
+  return pack;
+}
+
 describe("P1-T03 per-action gate release", () => {
   it("blocks a legacy task-bound action before task completion", () => {
-    const pack = loadDefaultCybersecurityPack();
-    const state = createInitialWorldState("p1-t03-legacy", 7, {}, pack);
-    expect(() => applyAction(state, { ...READ_HANDOFF })).toThrow(
+    // Use a legacy pack where inspection is still gated to verify legacy blocking.
+    let gated = createInitialWorldState(
+      "p1-t03-legacy",
+      7,
+      {},
+      packWithGatedInspection(),
+    );
+    gated = applyAction(gated, {
+      id: "review_alert",
+      eventId: "suspicious-login-1",
+      actorId: "user",
+    }).state;
+    expect(() =>
+      applyAction(gated, {
+        id: "inspect_login_context",
+        eventId: "suspicious-login-1",
+        actorId: "user",
+      }),
+    ).toThrow(TaskRequiredError);
+    const legacyPack = packWithLegacyHandoff();
+    const legacyState = createInitialWorldState(
+      "p1-t03-legacy-handoff",
+      7,
+      {},
+      legacyPack,
+    );
+    expect(() => applyAction(legacyState, { ...READ_HANDOFF })).toThrow(
       TaskRequiredError,
     );
   });
@@ -51,15 +99,20 @@ describe("P1-T03 per-action gate release", () => {
   });
 
   it("keeps an unrelated legacy binding gated", () => {
-    const state = createInitialWorldState(
+    let state = createInitialWorldState(
       "p1-t03-other",
       7,
       {},
-      packWithReleasedHandoff(),
+      packWithGatedInspection(),
     );
+    state = applyAction(state, {
+      id: "review_alert",
+      eventId: "suspicious-login-1",
+      actorId: "user",
+    }).state;
     expect(() =>
       applyAction(state, {
-        id: "review_alert",
+        id: "inspect_login_context",
         eventId: "suspicious-login-1",
         actorId: "user",
       }),
@@ -88,7 +141,7 @@ describe("P1-T03 per-action gate release", () => {
       "p1-t03-avail-legacy",
       7,
       {},
-      loadDefaultCybersecurityPack(),
+      packWithLegacyHandoff(),
     );
     const released = createInitialWorldState(
       "p1-t03-avail-released",
