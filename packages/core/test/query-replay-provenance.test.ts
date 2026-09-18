@@ -3,6 +3,7 @@ import type {
   ActionLogEntry,
   AuthRecord,
   DatasetId,
+  QueryRecordsPayload,
   RuntimeDataset,
   SimulationAction,
   WorldState,
@@ -198,7 +199,7 @@ function queryAction(
   filters: Record<string, string | number>,
   datasetId: DatasetId = "auth",
   eventId?: string,
-): SimulationAction {
+): SimulationAction & { queryPayload: QueryRecordsPayload } {
   return {
     id: "query_records",
     actorId: "player",
