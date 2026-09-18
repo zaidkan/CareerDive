@@ -17,7 +17,6 @@ import {
   julesDialogueFromClientView,
   type JulesDialogueReply,
 } from "@sim/core";
-import { COMPANY } from "./company.js";
 import { MutationStatus } from "../components/MutationStatus.js";
 import {
   BreakRoomPanel,
@@ -26,6 +25,7 @@ import {
   EnergyMeter,
 } from "./BreakRoomPanel.js";
 import { coffeeControl, fridgeControl } from "./breakRoom.js";
+import { ControlsHelp } from "./ControlsHelp.js";
 import { LaptopOverlay } from "./deskOs/LaptopOverlay.js";
 import { FloorMap } from "./FloorMap.js";
 import { JulesDialogue } from "./JulesDialogue.js";
@@ -40,8 +40,16 @@ import type {
 } from "../components/shared.js";
 import {
   EMPTY_MUTATION_STATE,
+  workplaceMutationKey,
   type MutationState,
 } from "../useMutationCoordinator.js";
+import {
+  loadMouseSensitivity,
+  MAX_MOUSE_SENSITIVITY,
+  MIN_MOUSE_SENSITIVITY,
+  MOUSE_SENSITIVITY_STEP,
+  saveMouseSensitivity,
+} from "./mouseSensitivity.js";
 
 const RoomCanvas = lazy(async () => {
   const mod = await import("./RoomCanvas.js");
@@ -77,7 +85,6 @@ export function SpatialShell({
   guided = false,
   onAcceptedDistance,
   onRoomExit,
-  movementQueued = false,
 }: {
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
@@ -89,11 +96,13 @@ export function SpatialShell({
   guided?: boolean;
   onAcceptedDistance?: (meters: number) => void;
   onRoomExit?: () => void;
-  movementQueued?: boolean;
 }) {
   const [spatial, dispatch] = useReducer(reduceSpatialEvent, INITIAL_SPATIAL);
   const [nearbyLabel, setNearbyLabel] = useState<string>();
   const [pointerLocked, setPointerLocked] = useState(false);
+  const [mouseSensitivity, setMouseSensitivity] = useState(
+    loadMouseSensitivity,
+  );
   const [workplacePending, setWorkplacePending] = useState(false);
   const [julesOpen, setJulesOpen] = useState(false);
   const [julesReply, setJulesReply] = useState<JulesDialogueReply>();
@@ -149,8 +158,9 @@ export function SpatialShell({
   const submitWorkplaceInteraction = useCallback(
     async (interaction: WorkplaceInteraction) => {
       if (!onWorkplaceInteraction || workplacePendingRef.current) return;
+      const isMovementExertion = interaction.type === "movement_exertion";
       workplacePendingRef.current = true;
-      setWorkplacePending(true);
+      if (!isMovementExertion) setWorkplacePending(true);
 
       const attemptQueuedClose = async (shouldAttempt: boolean) => {
         if (!closeFridgeIntentRef.current) return;
@@ -185,7 +195,7 @@ export function SpatialShell({
       } finally {
         closeFridgeIntentRef.current = false;
         workplacePendingRef.current = false;
-        setWorkplacePending(false);
+        if (!isMovementExertion) setWorkplacePending(false);
       }
     },
     [onWorkplaceInteraction],
@@ -343,6 +353,11 @@ export function SpatialShell({
       : undefined;
   const canonicalMutationPending = Boolean(mutationState.pendingKey);
   const resourcePending = workplacePending || canonicalMutationPending;
+  const movementMutationPending =
+    mutationState.pendingKey ===
+    workplaceMutationKey({ type: "movement_exertion", distanceMeters: 5 });
+  const playerMovementBlocked =
+    workplacePending || (canonicalMutationPending && !movementMutationPending);
 
   return (
     <section
@@ -357,13 +372,14 @@ export function SpatialShell({
           fallback={<p className="room-loading">Entering {roomLabel}…</p>}
         >
           <RoomCanvas
-            enabled={walking && !movementQueued && !resourcePending}
+            enabled={walking && !playerMovementBlocked}
             {...(onAcceptedDistance ? { onAcceptedDistance } : {})}
             onBreakRoomExit={requestFridgeCloseOnExit}
             onInteract={handleInteract}
             onNearbyChange={onNearbyChange}
             seated={atDesk}
             workplace={view.workplace}
+            mouseSensitivity={mouseSensitivity}
             onWalkBlocked={() => {
               setWalkBlocked(true);
             }}
@@ -394,10 +410,7 @@ export function SpatialShell({
           />
         ) : null}
         {walking && !pointerLocked ? (
-          <p className="room-look-hint">
-            Click to look around, or hold and drag · WASD / arrows to move · F
-            fullscreen · Esc to release
-          </p>
+          <p className="room-look-hint">Click to look around</p>
         ) : null}
         {walking && julesOpen ? (
           <JulesDialogue
@@ -416,24 +429,38 @@ export function SpatialShell({
         ) : null}
         {walking ? (
           <div className="room-hud">
-            <div>
-              <MutationStatus
-                state={mutationState}
-                {...(onRetryMutation ? { onRetry: onRetryMutation } : {})}
-              />
-              <p className="eyebrow">
-                {COMPANY.name} · {roomLabel} · {stepLabel}
+            <div className="room-hud-brief">
+              {mutationState.error ||
+              mutationState.pendingKey ||
+              mutationState.success ? (
+                <MutationStatus
+                  state={mutationState}
+                  {...(onRetryMutation ? { onRetry: onRetryMutation } : {})}
+                />
+              ) : null}
+              <p className="room-hud-step">
+                <span className="room-hud-count">{stepLabel}</span>
+                {journey.title}
               </p>
-              <p className="room-hud-step">{journey.title}</p>
-              <p>
+              <p className="room-hud-line">
                 {nearbyIsTarget && nearbyPrompt ? nearbyPrompt : journey.body}
               </p>
               {compass ? <p className="room-hud-compass">{compass}</p> : null}
               {!nearbyIsTarget && nearbyPrompt ? (
                 <p className="room-hud-nearby">{nearbyPrompt}</p>
               ) : null}
-              <EnergyMeter workplace={view.workplace} />
-              <EmergencyRecoveryControl workplace={view.workplace} onSubmit={requestWorkplaceInteraction} pending={resourcePending || !onWorkplaceInteraction} />
+              {spatial.flavorMessage ? (
+                <p className="room-flavor">{spatial.flavorMessage}</p>
+              ) : null}
+              {walkBlocked ? (
+                <div className="room-flavor" role="status">
+                  Route blocked. Return to the aisle to continue safely.
+                  <button className="guidance-secondary" type="button" onClick={() => {
+                    window.dispatchEvent(new Event("soc-recover-aisle"));
+                    setWalkBlocked(false);
+                  }}>Return to aisle</button>
+                </div>
+              ) : null}
               {breakStation ? (
                 <BreakRoomPanel
                   onSubmit={requestWorkplaceInteraction}
@@ -442,28 +469,39 @@ export function SpatialShell({
                   workplace={view.workplace}
                 />
               ) : null}
-              <CarriedSnackControl
-                onSubmit={requestWorkplaceInteraction}
-                pending={resourcePending || !onWorkplaceInteraction}
-                workplace={view.workplace}
-              />
-              <p className="room-hud-controls">
-                WASD / arrows to move · E to interact · F fullscreen
-              </p>
-              {spatial.flavorMessage ? (
-                <p className="room-flavor">{spatial.flavorMessage}</p>
-              ) : null}
-              {walkBlocked ? (
-                <div role="status" className="room-flavor">
-                  Route blocked. Return to the aisle to continue safely.
-                  <button className="guidance-secondary" type="button" onClick={() => {
-                    window.dispatchEvent(new Event("soc-recover-aisle"));
-                    setWalkBlocked(false);
-                  }}>Return to aisle</button>
-                </div>
-              ) : null}
+            </div>
+            <div className="room-hud-status">
+              <EnergyMeter workplace={view.workplace} />
+              <details className="room-hud-details">
+                <summary>Supplies</summary>
+                <EmergencyRecoveryControl workplace={view.workplace} onSubmit={requestWorkplaceInteraction} pending={resourcePending || !onWorkplaceInteraction} />
+                <CarriedSnackControl
+                  onSubmit={requestWorkplaceInteraction}
+                  pending={resourcePending || !onWorkplaceInteraction}
+                  workplace={view.workplace}
+                />
+              </details>
             </div>
             <div className="room-hud-actions">
+              <label className="room-sensitivity" htmlFor="mouse-sensitivity">
+                Mouse sensitivity
+                <input
+                  id="mouse-sensitivity"
+                  type="range"
+                  min={MIN_MOUSE_SENSITIVITY}
+                  max={MAX_MOUSE_SENSITIVITY}
+                  step={MOUSE_SENSITIVITY_STEP}
+                  value={mouseSensitivity}
+                  onChange={(event) => {
+                    const next = Number(event.currentTarget.value);
+                    setMouseSensitivity(next);
+                    saveMouseSensitivity(next);
+                  }}
+                />
+                <output htmlFor="mouse-sensitivity">
+                  {mouseSensitivity.toFixed(1)}×
+                </output>
+              </label>
               {nearbyHotspotId && !breakStation ? (
                 <button
                   className="start-shift"
@@ -496,6 +534,7 @@ export function SpatialShell({
               >
                 Floor map
               </button>
+              <ControlsHelp />
             </div>
           </div>
         ) : null}
