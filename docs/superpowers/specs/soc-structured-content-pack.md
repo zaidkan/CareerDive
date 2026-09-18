@@ -444,3 +444,116 @@ Total queryable beta corpus: **~40–48 rows + 12 KB bodies + 16 existing prose 
 **Explicit non-goals honored:** no schema, no query-engine semantics, no required-query strings, no verdict changes. Canonical scenario truth altered nowhere; where a date/scope assumption was needed (Section 7 shift-date; Section 3 snapshot coverage; Section 6 reporter identity), it is labeled PROPOSED and confined to its item.
 
 **Handoff to implementers:** translate each row into whatever structured schema is approved, keeping IDs stable (`A-`, `V-`, `D-`, `AL-`, `PH-`, `SC-`, `KB-` prefixes proposed), preserving body prose from `pack.yaml` as the detail view, and enforcing Section 12 coverage requirements before any absence fact becomes representable.
+
+---
+
+## 14. Morgan / Jules / workplace interaction content (bounded, state-dependent)
+
+**Status:** PROPOSED interaction content. No new canonical truth. All payloads restate EXISTING CANONICAL FACTS or PROPOSED SUPPORTING RECORDS already defined above, within speaker knowledge bounds.
+
+**Speaker bounds (EXISTING CANONICAL FACT):**
+
+- Morgan (`npcs: [manager]`, Security Operations Manager) knows `alert-visible` fact only (`memoryFactIds: [alert-visible]`), plus `handoff-email` text, `chat-morgan` guidance lines, and per-template `managerGuidance`. Morgan does NOT know `employee-private-travel` (`notKnownBy: [manager, user]`), does NOT know who controlled S-0741, does NOT confirm compromise or clear the account.
+- Jules (peer-dialogue system, no pack NPC entry; defers decisions to Morgan) knows only public client-visible state already shown to the player plus deterministic peer topics (`first_day`, `current_work`, `break_room`, `team_context`). Jules holds no independent knowledge base.
+- Neither speaker invents procedure, deadlines, evidence, or verdicts. AI wording optional; deterministic fallback text below is authoritative for facts.
+
+**Global rules for this section:**
+
+- Morgan provides only facts Morgan plausibly knows; never tells player the answer.
+- Redirects point to a verb/record already in the pack (Alerts, account history, device inventory, VPN catalogue, runbook, ticket), never to hidden content.
+- No interaction gates investigation: all Morgan/Jules/texture exchanges are optional, never prerequisites for a canonical action.
+- One new fact-equivalent per exchange maximum. No multi-turn RPG trees.
+- Free text from player never becomes world truth.
+
+### 14.1 Morgan — early / insufficient context
+
+Player asks before opening A-1042 records. Morgan must not summarize unopened records, must not name S-0741 / 203.0.113.44 / unknown-laptop-17 detail beyond what `alert-visible` + handoff already state, and must redirect to useful context naturally.
+
+Deterministic fallback shape: acknowledge + state own limit + point at next record/procedure.
+
+- Fallback M-EARLY-1: "Still the unfamiliar login thread from handoff — I didn't finish the device check last night either. Start with the alert sequence, then compare account history. Tell me what record you are looking at and what doesn't line up."
+- Fallback M-EARLY-2: "Location estimate is only a lead, not an answer. I haven't confirmed who signed in. Open the alert and the login context first, then ask me about a specific mismatch."
+- Forbidden here: naming VPN absence, enrollment state of unknown-laptop-17, employee-report contents before player opened `employee-login-reply`, HR coverage limits before player opened `travel-status-1`.
+
+### 14.2 Morgan — after auth evidence
+
+Minimum state: player opened A-1042 / `login-context-1` / auth rows A1–A4 (at least the failure burst + S-0741). Morgan may contextualize whether pattern sounds familiar from prior shift, what Morgan personally observed, without interpreting guilt.
+
+- May say: prior shift saw unfamiliar login thread, only checked login time, did not get further; overnight had similar scanner noise but this timing looks different; does not recognize pattern as routine from own experience.
+- Must say with qualifier: observations are partial memory, player still verifies in records.
+- Must NOT say: who did it, whether it is compromise, whether account is safe, what decision to take.
+- Fallback M-AUTH-1: "Six fails then a success from the same source is not our usual morning pattern from what I saw. I only checked the time last night — I didn't pull history or inventory. Compare S-0731 and S-0741 side by side and note what differs."
+- Fallback M-AUTH-2: "I can't tell you who was behind that session from what I know. Keep sequence, source, and session IDs separate in your note."
+
+### 14.3 Morgan — after device / VPN correlation
+
+Minimum state: player opened device inventory (`device-inventory-1` / D1–D3) and/or VPN catalogue (`vpn-context-1` / V1 + absence coverage). Morgan may add human context only if canonically appropriate: inventory coverage limits, route-vs-city distinction as procedure, own unfinished check.
+
+- May restate: inventory covers registered work devices only; `chat-morgan` line "your tools and records remain the basis for the decision."
+- May restate as procedure pointer: compare both connection identifier and address; shared city estimate does not link routes.
+- Must NOT supply enrollment result ("unenrolled") as Morgan's own finding — player must have opened D3; Morgan can only confirm where to look and that night shift did not finish the check.
+- Must NOT assert "no VPN session exists" as Morgan knowledge — absence facts require player query coverage per Section 12; Morgan can suggest the query verb.
+- Fallback M-CORR-1: "I never finished the device check — you'd know more than me after you open inventory. Match the exact label, not just the owner name."
+- Fallback M-CORR-2: "For VPN, compare the session's connection ID and source against the route catalogue. Shared city label alone doesn't link two sessions to one route. Run the query for that user and window and see what comes back."
+
+### 14.4 Morgan — after incident action
+
+Minimum state: player took `document_ticket` / `escalate_alert` / `dismiss_alert` / `monitor` equivalent. Morgan reacts to operational consequences only, never grades.
+
+- After ticket update: acknowledge readability, not correctness. Fallback M-ACT-1: "Notes read clear — facts, uncertainty, and next step are separate. That helps whoever picks this up."
+- After escalation: acknowledge handoff, not verdict. Fallback M-ACT-2: "Got it, senior review has the session IDs and the open question. Keep the queue current while it is with them."
+- After monitor/defer: bless restraint as defensible without promising outcome. Fallback M-ACT-3: "Monitoring through end of shift works — flag me if a second session appears."
+- After close/dismiss: no praise/blame; state world fact only if scheduled follow-up exists. Fallback M-ACT-4: "Closed for now with your reason recorded. If related activity arrives the case reopens with history intact."
+- Forbidden: "correct," "wrong," "good job," stars, scores, "you should have escalated."
+
+### 14.5 Morgan semantic intents (state-gated payloads)
+
+| NPC | Player intent | Minimum canonical state | NPC knowledge | Semantic response | State effect if any |
+|---|---|---|---|---|---|
+| Morgan | Ask about recent activity | None (shift start) | `handoff-email`, `alert-visible` | Payload: night shift watched unfamiliar login thread, left device check unfinished; no interpretation. Fallback M-EARLY-1. | None; optionally marks handoff discussed |
+| Morgan | Ask whether user/device is expected | Opened A-1042 + account history rows (A5–A8 baseline) | Baseline pattern (HQ Wi-Fi + enrolled MacBook) as authored in `account-history-1`; no private facts | Payload: usual pattern Morgan has seen is HQ + enrolled MacBook; this session's pairing differs on face of records — player verifies in inventory. No verdict. | None |
+| Morgan | Ask whether they were traveling/remote | Opened `employee-login-reply` and `travel-status-1` | Employee report text + HR coverage limit only; private travel unknown | Payload: owner reports no travel / no Windows laptop use (report, not proof); register covers approved work trips only with no entry — neither proves travel. Suggest documenting gap. | None |
+| Morgan | Request clarification (procedure) | Any; best after opening runbook | `login-follow-up-guide`, `chat-morgan` pointers | Payload: procedural pointer only (which system holds which field; cite record IDs). No evidence supplied. | None |
+| Morgan | Notify of protective action (escalate/monitor/close/note) | Action already taken by player | Ticket/queue state visible to Morgan | Payload: operational acknowledgement per 14.4; restates open question + next holder. No grade. | None; consequence scheduler owns follow-ups |
+| Morgan | Share current finding | Player names record + mismatch | Same record if Morgan-known, else unknown | Payload: at most one relevant detail if Morgan-known, else "haven't looked at that — check [system]" + question toward a verb ("did you check VPN for that window?"). | None |
+
+AI phrasing may vary tone; payload facts and forbidden claims above are fixed.
+
+### 14.6 Jules — bounded lead/peer interactions
+
+Jules uses narrow authored intents only. Each is a canonical action with availability predicate over public state, authored semantic payload, deterministic fallback. Jules NEVER functions as grader, answer checker, hint system, or correct-decision oracle. Jules defers case decisions to Morgan / senior review per existing peer behavior.
+
+| NPC | Player intent | Minimum canonical state | NPC knowledge | Semantic response | State effect if any |
+|---|---|---|---|---|---|
+| Jules | Status update (player briefs Jules) | A-1042 opened | Work Item states visible in client view (open/investigating/decided) | Payload: acknowledgement of stated status + queue reminder. Fallback J-STATUS-1: "Got it — A-1042 still open and with you. Keep the ticket current so handoff reads clean." | None; may mark topic seen |
+| Jules | Process clarification | Any | Runbook/KB procedure titles only, never contents as answer | Payload: points at requirement, lets player satisfy it. Fallback J-PROC-1: "Escalations need attached evidence — which records are you attaching?" | None |
+| Jules | Escalation request | Ticket exists with ≥1 attached/discovered record ref (or explicit "thin" path) | Ticket attachment state + case status | Payload: accepts package; complete package → clean acknowledgement; thin package → specific evidence requests (auth history? device record? VPN check?). Fallback J-ESC-THIN-1: "Accepted — can you add what you checked for device and route before Tier 2 picks up?" | Routes to escalation decision path; never decides case |
+| Jules | Acknowledgement (routine item done) | Routine item (A-1180 / phishing / scanner) resolved with note | Closure note existence only, not quality grade | Payload: brief thanks + next-queue pointer. Fallback J-ACK-1: "Thanks, routine close recorded. Queue has [next item] if you want it." | None |
+| Jules | Documentation reminder | Ticket missing update while decision/escalation pending | Documentation state (notes present/absent, attachments present/absent) | Payload: process enforcement as care for next shift. Fallback J-DOC-1: "Get your notes current before handoff — facts, gap, next check." | None; no block on investigation |
+| Jules | End-of-shift handoff | Handoff available (T+60 shape) | Canonical handoff fields (open items, actions, attached evidence, follow-ups, disposition, uncertainty) | Payload: confirms receipt + names remaining opens from state. Fallback J-HAND-1: "Handoff captured — [N] items still open with notes attached. Next shift continues from there." | Handoff work product updated |
+
+Forbidden Jules behaviors (must never ship): numeric scores, "correct/incorrect," revealing hidden evidence or future content ("you'll want to look at…"), making the decision for the player ("you should escalate"), inventing procedure/deadlines/policy, disappointment/praise tone. Consequence of thin work is always a concrete professional request, never a grade.
+
+### 14.7 Coworker / workplace texture (non-evidence, optional, never gating)
+
+All PROPOSED, OPTIONAL REALISM FILLER. No canonical evidence, no Work Item state change except read/unread where noted. At most once per shift each. Never blocks progress; dismissible without action.
+
+| # | Moment | Trigger (public state only) | Text shape (fallback) | Why safe |
+|---|---|---|---|---|
+| T-1 | Hallway check-in | Shift start / first queue open | "Morning — queue's already moving. Holler if handoff reads thin." | No facts; availability color only |
+| T-2 | Queue-load mention | Second Work Item (A-1180 or phishing) arrives | "Two in the queue now. No rush — oldest-highest first is how we do it." | Prioritization habit, not answer |
+| T-3 | Teammate returns from break | After break-room / pause action | "Back — anything new land while I was out?" | Presence; player may brief or not |
+| T-4 | Routine scanner noise | A-1180 open | "That scanner one fires every Monday. Still worth the window check though." | Points at verb (check window), supplies no match result |
+| T-5 | Operational reminder | Pre-handoff, no ticket update yet | "Standup notes in 15 — tickets current helps everyone." | Process nudge; no content |
+| T-6 | Quiet-stretch invitation | No new items for a phase | "Quiet minute — good time for notes or KB skim." | Housekeeping invitation, optional |
+| T-7 | Duplicate-report color (if AL-4 ships) | AL-4 arrival | "Looks like the same lure twice — quarantine once, link both." | Dedup habit; scope key already in PH record |
+
+Rules: texture never names S-0741, 203.0.113.44, unknown-laptop-17 findings, travel, or verdicts. T-4 must not pre-close A-1180 ("it's just the scanner" forbidden — requires window+run match by player).
+
+### 14.8 Anti-pattern check (reject list)
+
+Reject any interaction that: reveals hidden evidence (`employee-private-travel`, undiscovered rows, future consequences, branch labels); tells player which action is correct; exposes authoring metadata (`templateId`, related-record spoilers, answer keys, clue counts); forces dialogue before investigation (no required Morgan/Jules gate on any query action); creates facts through AI (new IPs, devices, procedures, deadlines, verdicts); becomes a lengthy RPG tree (more than one fact or two exchanges to reach payload); grades performance; or duplicates canonical decision logic in dialogue. Texture that gates work fails review even if wording is good.
+
+### 14.9 Canonical-fact conflict audit (this section)
+
+No conflicts introduced. Checked against `pack.yaml`: Morgan sole NPC with `memoryFactIds: [alert-visible]` preserved; private travel stays `notKnownBy: [manager, user]` — Section 14.5 travel intent cites only employee report + HR coverage limit; Jules stays peer who defers to Morgan, no new NPC entry, no manager-title reassignment; handoff incompleteness (device check unfinished, scanner ref forgotten, "Ping Morgan") preserved as Morgan's stated limit; location-estimate-only-lead, single-source rule (A-1042 = login-context-1), collection-ends-07:45, and report-not-proof qualifier all restated as limits, never as verdicts. Reporter identity A. Rivera confined to phishing texture (T-7) with no link to login keys.
