@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { AvailableActionSchema } from "./actions.js";
-import { EventInstanceSchema } from "./events.js";
+import { EventInstanceSchema, WorkItemCategorySchema } from "./events.js";
 import { PacingModeSchema, SessionKindSchema } from "./session.js";
 import { ClientNotificationSchema, ClientTaskViewSchema } from "./tasks.js";
 import { ClientWorkplaceStateSchema } from "./workplace.js";
@@ -30,7 +30,6 @@ export type ClientArtifact = z.infer<typeof ClientArtifactSchema>;
 
 export const ClientEventSchema = EventInstanceSchema.pick({
   id: true,
-  templateId: true,
   title: true,
   summary: true,
   priority: true,
@@ -40,6 +39,13 @@ export const ClientEventSchema = EventInstanceSchema.pick({
   completedActionIds: true,
   observedArtifactIds: true,
   resolution: true,
+  acknowledgedAt: true,
+  linkedTicketId: true,
+}).extend({
+  category: WorkItemCategorySchema,
+  // Present on newly serialized events; optional so legacy-shaped fixtures
+  // and older clients stay valid.
+  followUpRefs: z.array(z.string()).optional(),
 });
 export const ClientViewSchema = z.object({
   sessionId: z.string(),

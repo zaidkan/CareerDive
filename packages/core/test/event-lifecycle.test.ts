@@ -5,7 +5,6 @@ import {
   EventStatusSchema,
   WorldStateSchema,
   type EventStatus,
-  type WorldState,
 } from "@sim/schemas";
 import {
   applyTaskAttempt,

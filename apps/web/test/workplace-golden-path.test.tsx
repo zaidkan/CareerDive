@@ -33,6 +33,13 @@ function required<T>(value: T | null | undefined, description: string): T {
 function assertPublicView(view: ClientView) {
   for (const key of ["hidden", "rules", "evidence", "reflections"]) expect(view).not.toHaveProperty(key);
   expect(JSON.stringify(view)).not.toMatch(/requiredOptionIds|coachOnFailure|successText|notKnownBy/);
+  for (const event of view.events) {
+    expect(event).not.toHaveProperty("templateId");
+    expect(["main_case", "routine", "handoff", "general"]).toContain(event.category);
+  }
+  for (const artifact of view.artifacts) {
+    expect(artifact).not.toHaveProperty("relatedArtifactIds");
+  }
   for (const artifact of view.artifacts.filter(({ observed }) => !observed)) {
     expect(artifact).not.toHaveProperty("body");
     expect(artifact).not.toHaveProperty("metadata");

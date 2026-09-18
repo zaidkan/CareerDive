@@ -58,7 +58,7 @@ const view: ClientView = {
   events: [
     {
       id: "suspicious-login-1",
-      templateId: "suspicious_login",
+      category: "main_case",
       title: "Unfamiliar successful login",
       summary: "Repeated failures followed by a successful sign-in.",
       priority: "high",
@@ -292,7 +292,7 @@ describe("parallel simulation views", () => {
         ...view.events,
         {
           id: "handoff-1",
-          templateId: "incomplete_handoff",
+          category: "handoff",
           title: "Shift handoff",
           summary: "The previous analyst left incomplete notes.",
           priority: "normal",

@@ -1,4 +1,4 @@
-import type { ClientView, WorkSystemId } from "@sim/schemas";
+import type { ClientView, WorkItemCategory, WorkSystemId } from "@sim/schemas";
 import { activeCases, closedCases } from "../workstation.js";
 
 export type ResumeTarget = {
@@ -6,10 +6,10 @@ export type ResumeTarget = {
   systemId: WorkSystemId;
 };
 
-function caseType(templateId: string): string {
-  if (templateId === "suspicious_login") return "Main case";
-  if (templateId === "routine_alert_review") return "Interruption";
-  if (templateId === "incomplete_handoff") return "Handoff";
+function caseType(category: WorkItemCategory): string {
+  if (category === "main_case") return "Main case";
+  if (category === "routine") return "Interruption";
+  if (category === "handoff") return "Handoff";
   return "Work item";
 }
 
@@ -48,7 +48,7 @@ export function CaseRail({
                   }}
                   type="button"
                 >
-                  <span>{caseType(event.templateId)}</span>
+                  <span>{caseType(event.category)}</span>
                   <strong>{event.title}</strong>
                   <small>
                     {task?.title ?? event.status.replaceAll("_", " ")}

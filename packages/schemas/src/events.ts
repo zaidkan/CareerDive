@@ -14,6 +14,20 @@ export const EventStatusSchema = z.enum([
   "expired",
 ]);
 export type EventStatus = z.infer<typeof EventStatusSchema>;
+
+/**
+ * Client-safe Work Item bucket projected by the serializer. Coarse display
+ * categories only: many templates may share one bucket, and buckets never
+ * join back to pack rules (no progression, effects, or answers keyed by
+ * category). Unknown templates fall back to "general".
+ */
+export const WorkItemCategorySchema = z.enum([
+  "main_case",
+  "routine",
+  "handoff",
+  "general",
+]);
+export type WorkItemCategory = z.infer<typeof WorkItemCategorySchema>;
 export const EventInstanceSchema = z.object({
   id: z.string(),
   templateId: z.string(),

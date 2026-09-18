@@ -38,7 +38,7 @@ export function GuideSearch({
   const isLoginFollowUp = view.events.some(
     (event) =>
       event.id === canonicalSearchAction?.eventId &&
-      event.templateId === "suspicious_login",
+      event.category === "main_case",
   );
 
   return (

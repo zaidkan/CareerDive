@@ -4,7 +4,7 @@ import { getJourneyStep, JOURNEY_TOTAL } from "../src/journey.js";
 
 const handoffEvent: ClientView["events"][number] = {
   id: "handoff-1",
-  templateId: "incomplete_handoff",
+  category: "handoff",
   title: "Shift handoff",
   summary: "The previous analyst left incomplete notes.",
   priority: "normal",

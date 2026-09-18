@@ -115,7 +115,7 @@ function makeView(overrides: Partial<ClientView> = {}): ClientView {
     events: [
       {
         id: "alert-1",
-        templateId: "suspicious_login",
+        category: "main_case",
         title: "Review alert",
         summary: "A login needs review.",
         priority: "high",

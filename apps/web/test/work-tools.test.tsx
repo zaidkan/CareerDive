@@ -27,7 +27,7 @@ function emailView(): ClientView {
     events: [
       {
         id: "handoff-1",
-        templateId: "incomplete_handoff",
+        category: "handoff",
         title: "Handoff email",
         summary: "A handoff is waiting.",
         priority: "normal",

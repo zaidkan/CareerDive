@@ -49,7 +49,7 @@ const view: ClientView = {
   events: [
     {
       id: "suspicious-login-1",
-      templateId: "suspicious_login",
+        category: "main_case",
       title: "Unfamiliar successful login",
       summary: "Repeated failures followed by a successful sign-in.",
       priority: "high",
