@@ -237,7 +237,7 @@ describe("deterministic simulation core", () => {
   it("starts a shift with guided handoff and scheduled workplace events", () => {
     const state = world("session-1", 42);
 
-    expect(state.events).toHaveLength(3);
+    expect(state.events).toHaveLength(4);
     expect(
       state.events.find(({ templateId }) => templateId === "incomplete_handoff")
         ?.status,
@@ -307,6 +307,9 @@ describe("deterministic simulation core", () => {
       ["search_knowledge_base", "routine-alert-1"],
       ["document_ticket", "routine-alert-1"],
       ["dismiss_alert", "routine-alert-1"],
+      ["review_alert", "blocked-spray-1"],
+      ["search_knowledge_base", "blocked-spray-1"],
+      ["dismiss_alert", "blocked-spray-1"],
     ] as const;
 
     let direct = initial;

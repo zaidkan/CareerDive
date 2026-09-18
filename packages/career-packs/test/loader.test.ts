@@ -40,6 +40,7 @@ describe("career pack governance", () => {
       "suspicious_login",
       "incomplete_handoff",
       "routine_alert_review",
+      "blocked_spray_review",
     ]);
     expect(pack.scenario.tasks.map(({ id }) => id)).toEqual(
       expect.arrayContaining([
@@ -59,6 +60,10 @@ describe("career pack governance", () => {
       expect.objectContaining({
         id: "routine-scanner-arrived",
         eventTemplateId: "routine_alert_review",
+      }),
+      expect.objectContaining({
+        id: "blocked-spray-arrived",
+        eventTemplateId: "blocked_spray_review",
       }),
     ]);
   });

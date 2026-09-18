@@ -248,7 +248,36 @@ export function SocRoom({
       next[2] > BREAK_NOOK.wallZ;
     if (insideBreakRoom.current && !isInside) onBreakRoomExit();
     insideBreakRoom.current = isInside;
+    const currentDef = nearbyId.current
+      ? hotspots.find((h) => h.id === nearbyId.current)
+      : undefined;
     const near = nearestHotspot(next, hotspots);
+    if (currentDef) {
+      const distCurrent = Math.hypot(
+        next[0] - currentDef.position[0],
+        next[2] - currentDef.position[2],
+      );
+      const exitRadius = currentDef.radius + 0.32;
+      if (distCurrent <= exitRadius) {
+        if (!near) {
+          lookAtRef.current = next;
+          return;
+        }
+        if (near.id !== nearbyId.current) {
+          const distNear = Math.hypot(
+            next[0] - near.position[0],
+            next[2] - near.position[2],
+          );
+          if (distNear > distCurrent - 0.35) {
+            lookAtRef.current = next;
+            return;
+          }
+        } else {
+          lookAtRef.current = next;
+          return;
+        }
+      }
+    }
     if (near?.id !== nearbyId.current) {
       nearbyId.current = near?.id;
       setActiveHotspot(near?.id);
