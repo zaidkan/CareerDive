@@ -182,6 +182,9 @@ importers:
 
   packages/career-packs:
     dependencies:
+      '@sim/core':
+        specifier: workspace:*
+        version: link:../core
       '@sim/schemas':
         specifier: workspace:*
         version: link:../schemas
