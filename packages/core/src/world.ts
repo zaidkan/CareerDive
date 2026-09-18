@@ -24,6 +24,15 @@ export function createInitialWorldState(
   const notificationRules = Object.fromEntries(
     pack.scenario.notifications.map((notification) => [notification.id, notification]),
   );
+  // P2: map authored pack datasets into the immutable rules snapshot so the
+  // query engine can read them at runtime. RuntimeDataset carries datasetId +
+  // records; allowedFilterFields is authoring/validation-only (career-pack.ts).
+  const datasets = Object.fromEntries(
+    Object.entries(pack.scenario.datasets).map(([datasetId, dataset]) => [
+      datasetId,
+      { datasetId, records: dataset.records },
+    ]),
+  );
   const events = Object.entries(pack.scenario.eventTemplates).map(
     ([templateId, template]) => ({
       id: template.instanceId,
@@ -84,6 +93,7 @@ export function createInitialWorldState(
       eventTemplates: pack.scenario.eventTemplates,
       tasks,
       notifications: notificationRules,
+      datasets,
     },
     artifacts: Object.fromEntries(
       pack.scenario.artifacts.map((artifact) => [artifact.id, artifact]),
