@@ -45,7 +45,7 @@ Nothing above changes scenario truth. Where a scope/date assumption was needed (
 
 ---
 
-## 1. Authentication fixtures (14 rows, grouped-failure form)
+## 1. Authentication fixtures (16 rows, grouped-failure form)
 
 Conceptual fields: record ID · user · time (office-local) · source IP / network · device label · method/step · result · session link · classification · note.
 
@@ -72,17 +72,19 @@ Conceptual fields: record ID · user · time (office-local) · source IP / netwo
 
 | ID | Row | Class | Why plausible / why safe |
 |---|---|---|---|
-| AUTH-0733-OKONKWO | c.okonkwo · 07:33 · HQ Wi-Fi · corp-macbook-okonkwo · success · S-0735 | **OPTIONAL REALISM FILLER** | Morning rush; same HQ pattern, different person. Tests user filter. Never joins Patel keys. |
-| AUTH-0740-GARCIA-FAIL-THEN-OK | m.garcia · 07:40 one failed password (1/5 lockout) then 07:41 success, HQ Wi-Fi, enrolled device | **OPTIONAL REALISM FILLER** | Calibration distractor: single-fail-then-success is daily life. Exactly one failure, usual device/network — similar glance, different inspection. Teaches sequence+context over pattern-match. |
-| AUTH-0802-RIVERA-VPN | a.rivera · 08:02 · VPN V-219 (exit 198.51.100.21) · corp-macbook-rivera · success | **OPTIONAL REALISM FILLER** | Second VPN user, different connection. V-IDs are per-connection. Rivera doubles as phishing reporter — ordinary day, two unrelated touchpoints. |
-| AUTH-0755-SVC-BACKUP | svc-backup · 07:55 · internal scheduler host · API token · success (scheduled job) | **OPTIONAL REALISM FILLER** | Service principals appear in exports. Labeled non-interactive; teaches scope, wastes only a glance. |
-| AUTH-0901-NGUYEN-RESET | d.nguyen · 09:01 · HQ Wi-Fi · password expired → reset required, no session | **OPTIONAL REALISM FILLER** | Resets happen — for others. Matches "no Patel resets in 30 days" by contrast. Tests user-field reading. |
+| AUTH-0733-OKONKWO | c.okonkwo · 07:33 · HQ Wi-Fi · corp-macbook-okonkwo · success · S-0735 | **OPTIONAL REALISM FILLER** | [noise] Morning rush; same HQ pattern, different person. Tests user filter. Never joins Patel keys. |
+| AUTH-0740-GARCIA-FAIL-THEN-OK | m.garcia · 07:40 one failed password (1/5 lockout) then 07:41 success, HQ Wi-Fi, enrolled device | **OPTIONAL REALISM FILLER** | [baseline] Calibration distractor: single-fail-then-success is daily life. Exactly one failure, usual device/network — similar glance, different inspection. Teaches sequence+context over pattern-match. |
+| AUTH-0802-RIVERA-VPN | a.rivera · 08:02 · VPN V-219 (exit 198.51.100.21) · corp-macbook-rivera · success | **OPTIONAL REALISM FILLER** | [hypothesis] Second VPN user, different connection. V-IDs are per-connection. Rivera doubles as phishing reporter — ordinary day, two unrelated touchpoints. |
+| AUTH-0755-SVC-BACKUP | svc-backup · 07:55 · internal scheduler host · API token · success (scheduled job) | **OPTIONAL REALISM FILLER** | [noise] Service principals appear in exports. Labeled non-interactive; teaches scope, wastes only a glance. |
+| AUTH-0745-PATEL-HQ | j.patel · 07:45 · HQ Wi-Fi 10.20.4.18 · corp-macbook-patel · password+extra check · success · S-0746 (mail sync, closed 08:00) | **OPTIONAL REALISM FILLER** | [baseline] Normal office login at collection edge. Expected device/account combination on a normal morning; shows baseline continues past the incident window. |
+| AUTH-0835-OKONKWO-VPN | c.okonkwo · 08:35 · VPN V-217 (exit 198.51.100.20) · corp-macbook-okonkwo · success · S-0836 | **OPTIONAL REALISM FILLER** | [baseline] Normal remote login through the shared exit. Reinforces V-217 as an ordinary route; pairs with V-217 catalogue row. |
+| AUTH-0722-GARCIA-FAIL | m.garcia · 07:22 · HQ Wi-Fi · corp-macbook-garcia (proposed D9) · one failed password, no retry inside window · no session | **OPTIONAL REALISM FILLER** | [noise] Routine failed login with no follow-through. Single-fail rows are daily life; contrasts both the Garcia 07:40 fail-then-success and the six-fail burst. |
 
-Cut order: NGUYEN-RESET, SVC-BACKUP, OKONKWO first. Never cut GARCIA-FAIL-THEN-OK (calibration) or 0612-TYPO (boundary).
+Cut order: 0722-GARCIA-FAIL, SVC-BACKUP, OKONKWO first. AUTH-0901-NGUYEN-RESET (password-reset row) removed to hold the 16-row cap — weakest of the set, tested the same user-field reading as the OKONKWO rush row. Never cut GARCIA-FAIL-THEN-OK (calibration) or 0612-TYPO (boundary).
 
 ---
 
-## 2. VPN fixtures (5 rows + 1 absence statement — catalogue, not haystack)
+## 2. VPN fixtures (7 rows + 1 absence statement — catalogue, not haystack)
 
 Conceptual fields: VPN ID · user · window · client/ingress · exit IP · device · session ref · class · note.
 
@@ -94,12 +96,14 @@ Conceptual fields: VPN ID · user · window · client/ingress · exit IP · devi
 | V-217 | c.okonkwo · 07:20–07:50 · exit 198.51.100.20 (shared exit IP with V-218) · corp-macbook-okonkwo | **PROPOSED SUPPORTING RECORD** | Exits can be shared; connection ID (not exit IP alone) links session to route. Matches ticket wording "compare both the identifier and address." Also supports false-positive AL-3. |
 | V-214 | m.garcia · last week, closed · exit 198.51.100.20 · ordinary row | **PROPOSED SUPPORTING RECORD** | Gives time-window filter something to exclude. |
 | V-220 | d.nguyen · 09:00 · status `provisioning`, not active | **PROPOSED SUPPORTING RECORD** | Teaches status reading. Explicitly not a route for any session under review. |
+| V-221 | m.garcia · 07:50–08:20 · exit 198.51.100.20 (shared exit, third instance) · corp-macbook-garcia (proposed D9) | **OPTIONAL REALISM FILLER** | [baseline] Legitimate remote session mid-shift. Shared exits are ordinary infrastructure; connection ID still disambiguates. Gives Garcia rows in two datasets. |
+| V-216 | j.patel · yesterday 09:00–09:40 · exit 198.51.100.20 · corp-macbook-patel · closed | **OPTIONAL REALISM FILLER** | [boundary] Same user on a normal day, outside the 07:25–07:45 target window. Time-window filters must exclude it; account-wide searches include it. |
 
 Player must query/correlate: VPN screen alone shows a catalogue; meaning comes only from joining session connection-ID + source against this catalogue. Zero-result absence (VPN-ABSENCE-0741) is meaningful only after a covering query (§8).
 
 ---
 
-## 3. Device inventory fixtures (8 rows)
+## 3. Device inventory fixtures (10 rows)
 
 Conceptual fields: label · assigned user · class · enrolled/managed · assignment · last check-in · class · note.
 
@@ -112,7 +116,9 @@ Conceptual fields: label · assigned user · class · enrolled/managed · assign
 | D5a/D5b corp-macbook-rivera + corp-phone-rivera | A. Rivera · enrolled/active ×2 | **PROPOSED SUPPORTING RECORD** | Reporter on managed devices; gives Rivera rows in two datasets. |
 | D6 corp-macbook-patel-old | J. Patel · RETIRED 2025, unenrolled on retirement, no check-ins | **OPTIONAL REALISM FILLER** | Deliberate near-miss: "patel macbook" search returns two rows; only active exact label counts. Tagged RETIRED. Never cut without replacing exact-label discipline elsewhere. |
 | D7 unknown-laptop-04 | Unassigned · seen once on guest network last month · never enrolled | **OPTIONAL REALISM FILLER** | "Unknown-* labels exist and are usually nothing." Explicit note: unrelated to S-0741, different label/date. Unknown ≠ malicious. |
-| D8 loaner-pool-02 | IT loaner pool · enrolled · checked out to M. Garcia last week, returned | **OPTIONAL REALISM FILLER** | Lifecycle texture; teaches status reading. First cut if budget binds. |
+| D8 loaner-pool-02 | IT loaner pool · enrolled · checked out to M. Garcia last week, returned | **OPTIONAL REALISM FILLER** | [noise] Lifecycle texture; teaches status reading. First cut if budget binds. |
+| D9 corp-macbook-garcia | M. Garcia · corporate MacBook · enrolled/active · last check-in 07:50 | **OPTIONAL REALISM FILLER** | [baseline] Active known endpoint. Gives the Garcia auth rows (07:22 fail, 07:40 fail-then-success) an enrolled device to resolve against. |
+| D10 corp-macbook-nguyen-old | D. Nguyen · corporate MacBook · assigned but stale: no check-in for 90 days, still listed | **OPTIONAL REALISM FILLER** | [boundary] Stale registered endpoint. Assigned ≠ recently seen; contrasts D1's 07:30 check-in. Cut before D9 if budget binds. |
 
 ---
 
@@ -122,13 +128,31 @@ Conceptual fields: label · assigned user · class · enrolled/managed · assign
 |---|---|---|---|
 | AL-1 A-1042 | High · sign-in monitoring · 07:38–07:41 sequence · j.patel · S-0741 · unknown-laptop-17 · 203.0.113.44 · links ticket `suspicious-login-1` | **EXISTING CANONICAL FACT** | Restates C1. Body = pack `suspicious-login-alert` prose as detail view. |
 | AL-2 A-1180 | Low · connection monitoring · delayed delivery · recorded Mon 10:18 · vuln-scan-03 · finance VLAN · links RUN-FIN-031, SCAN-FIN-MON, ticket `routine-alert-1` | **EXISTING CANONICAL FACT** | Restates C15. Self-contained routine cluster; explicitly unrelated to login cluster. |
-| AL-3 A-1204 "impossible-travel estimate" (benign) | c.okonkwo · single success from unseen residential IP, geo "Chicago" vs Toronto, BUT enrolled device + extra check completed + VPN V-217 exit matched + zero prior failures. Verdict: close as expected/verified with note. | **PROPOSED SUPPORTING RECORD** | Bounded contrast case for target T+43. Shares A-1042 surface (unseen IP + surprising city), inverts every load-bearing signal. Cost: this row + 1 auth row + reuse V4/D4. **Do not build until target confirms T+43 stays in beta.** |
-| AL-4 A-1191 duplicate phishing report | Second employee forwards same lure ~20 min after PH-RPT-01. Same Message-ID + URL host. | **OPTIONAL REALISM FILLER** | Links queue to phishing item; teaches dedup (quarantine once, link both). Never cut while phishing item ships. |
-| AL-5 A-1174 backup-job spike (storage VLAN) | Low · matches nightly backup window doc (KB-BACKUP-01 stub) | **OPTIONAL REALISM FILLER** | Second routine-benign shape; KB-match muscle memory. Cut with SC-RUN-03/KB-BACKUP-01 as a group. |
-| AL-6 A-1159 password-spray burst, blocked, zero successes | Medium · 40 fails / 12 accounts · source already blocklisted | **OPTIONAL REALISM FILLER** | Real-threat shape needing no action beyond confirming blocks. "Failed ≠ incident when controls held." |
-| AL-7 A-1210 new-device first-seen (enrolled, MFA ok) | Informational · auto-resolves on enrollment verify | **OPTIONAL REALISM FILLER** | Device-lifecycle texture; contrasts unknown-laptop-17. |
+| AL-3 A-1204 "impossible-travel estimate" (benign) | c.okonkwo · single success from unseen residential IP, geo "Chicago" vs Toronto, BUT enrolled device + extra check completed + VPN V-217 exit matched + zero prior failures. Verdict: close as expected/verified with note. | **PROPOSED SUPPORTING RECORD** | Bounded contrast case for target T+43 (confirmed; still budget-cuttable as a cluster). Shares A-1042 surface (unseen IP + surprising city), inverts every load-bearing signal. Cost: this row + AUTH-0915 + V-215 + MORGAN-CTX-01 + reuse V-217/D4. Full cluster specified in §4a. |
+| AL-4 A-1191 duplicate phishing report | Second employee forwards same lure ~20 min after PH-RPT-01. Same Message-ID + URL host. | **OPTIONAL REALISM FILLER** | [noise] Links queue to phishing item; teaches dedup (quarantine once, link both). Never cut while phishing item ships. |
+| AL-5 A-1174 backup-job spike (storage VLAN) | Low · matches nightly backup window doc (KB-BACKUP-01 stub) | **OPTIONAL REALISM FILLER** | [baseline] Second routine-benign shape; KB-match muscle memory. Cut with SC-RUN-03/KB-BACKUP-01 as a group. |
+| AL-6 A-1159 password-spray burst, blocked, zero successes | Medium · 40 fails / 12 accounts · source already blocklisted | **OPTIONAL REALISM FILLER** | [hypothesis] Real-threat shape needing no action beyond confirming blocks. "Failed ≠ incident when controls held." |
+| AL-7 A-1210 new-device first-seen (enrolled, MFA ok) | Informational · auto-resolves on enrollment verify | **OPTIONAL REALISM FILLER** | [noise] Device-lifecycle texture; contrasts unknown-laptop-17. |
+| AL-8 A-1206 newsletter classified as phish | Low · employee-marked newsletter from a known internal sender · closed as expected/verified with one-line note | **OPTIONAL REALISM FILLER** | [noise] Benign known pattern: reporter did right, message is ordinary. Keeps "everything is phishing" from becoming the winning read. Cut before AL-9. |
+| AL-9 A-1214 vuln-scan-03 host re-alert | Low · single host re-alerted inside SCAN-FIN-MON window · monitor through window, then close with run-log reference | **OPTIONAL REALISM FILLER** | [baseline] Scanner-generated alert exercising the quick dismissal/monitoring verb. Pairs with SC-RUN-01; teaches window-bound closure. |
 
-Recommended queue: 5 rows (AL-1, AL-2, AL-3 if confirmed, AL-4, AL-5). Minimum 4, maximum 8.
+Recommended queue: 6 rows (AL-1, AL-2, AL-3 if confirmed, AL-4, AL-5, AL-8). Minimum 4, maximum 9.
+
+## 4a. Compact false-positive case (A-1204 cluster — PROPOSED, T+43-gated, budget-cuttable)
+
+Status: all rows below are **PROPOSED SUPPORTING RECORD**, never existing truth. Discardable if T+43 is cut; the shift stays coherent without this cluster. No new mechanic: same future datasets plus the close-with-reason verb. No verdict field appears in any player-visible row; the analyst read below lives only in this designer note.
+
+Trigger: AL-3 A-1204 — rule fired on a single successful login for `c.okonkwo@example.com` from a previously unseen residential IP, geo estimate "Chicago" vs assigned Toronto. Unusual-looking at first glance, same surface shape as A-1042.
+
+Correlation (at least two data sources beyond the alert):
+
+| ID | Row | Class | Note |
+|---|---|---|---|
+| AUTH-0915-OKONKWO-CHI | c.okonkwo · 09:15 · residential IP 192.0.2.61 (unseen this quarter) · corp-macbook-okonkwo · password + extra check completed · success · session S-0915 · VPN V-217 | **PROPOSED SUPPORTING RECORD** | Single success, zero prior failures in window. Enrolled device + completed extra check + route match, all in one row. |
+| V-215 | c.okonkwo · last week weekday 10:05–10:40 · exit 198.51.100.20 · corp-macbook-okonkwo · closed | **PROPOSED SUPPORTING RECORD** | Normal-day precedent: same user, same connection, same exit last week. Shows remote work is this account's ordinary pattern. |
+| MORGAN-CTX-01 | Morgan bounded context (one authored fact): "Okonkwo mentioned working from Chicago this week." | **PROPOSED SUPPORTING RECORD** | Human context, report not proof. Morgan-known only; arrives delayed per NPC rules, never hands the read. |
+
+Intended read: enrolled device (D4) + completed extra check + VPN V-217 exit matched (V-217 catalogue row) + zero failure burst + prior-week precedent (V-215) + coworker context — against one surprising city estimate. Reasonable analyst decision is close as expected/verified with a note citing record IDs, not escalation. Outcome teaches unusual ≠ compromise without any field saying so. Inverts A-1042 on every load-bearing signal (enrolled vs unenrolled, check done vs absent, route matched vs absent, no burst); reuses V-217/D4 rather than inventing new infrastructure.
 
 ---
 
@@ -162,18 +186,54 @@ Lure: fake IT "mailbox quota" notice. Universally recognizable, no malware-analy
 ## 7. Intended query paths (no "correct query" strings)
 
 - **Auth:** filter by user (j.patel → central+baseline mix by design); filter by time window (morning cluster vs last-week rows); search session ID (S-0731 vs S-0741 side-by-side); search IP (203.0.113.44 → fail-group + success; 198.51.100.20 → baseline + V rows); open individual rows (grouped fail row expands to attempts). Every path returns mixed benign+central results; none resolves alone.
-- **VPN:** search by user; by IP (203.0.113.44 → zero rows = absence subject; 198.51.100.20 → V-218/V-217/V-214 = shared-exit lesson); by time window; by session/connection ID (S-0741 → no row; S-0731 → V-218). Catalogue must be joined with session records — the UI may offer click-to-pivot (select value → search next system) but never auto-performs the join.
-- **Device:** exact-label search (unknown-laptop-17 → D3 only; "patel macbook" → D1 + retired D6 = exactness lesson); account→devices and device→accounts pivots; status/tag reading (RETIRED, loaner, provisioning).
-- **Alerts:** queue filter by severity/category/state; open A-1042 detail (metadata to start, not to resolve); open A-1180 + run log + window side-by-side; duplicate recognition (AL-4 vs PH cluster).
+- **VPN:** search by user; by IP (203.0.113.44 → zero rows = absence subject; 198.51.100.20 → V-218/V-217/V-214/V-221 = shared-exit lesson); by time window (V-216 falls outside the target window; V-215 precedents prior-week remote work); by session/connection ID (S-0741 → no row; S-0731 → V-218; S-0915 → V-217). Catalogue must be joined with session records — the UI may offer click-to-pivot (select value → search next system) but never auto-performs the join.
+- **Device:** exact-label search (unknown-laptop-17 → D3 only; "patel macbook" → D1 + retired D6 = exactness lesson); account→devices and device→accounts pivots (Garcia auth rows → D9; Nguyen stale D10 vs active D1 check-in contrast); status/tag reading (RETIRED, loaner, provisioning, stale).
+- **Alerts:** queue filter by severity/category/state; open A-1042 detail (metadata to start, not to resolve); open A-1180 + run log + window side-by-side; duplicate recognition (AL-4 vs PH cluster); benign-known closure (AL-8) and window-bound monitoring (AL-9); FP contrast (A-1204 cluster §4a).
 - **Phishing:** report → message → headers → destination → scope-count → quarantine → notify → close. Shorter than A-1042 by design.
 
 ## 8. Likely player discoveries (content only; engine-agnostic)
 
-Login case: (1) six fails preceded S-0741 from 203.0.113.44 [presence, grouped row]; (2) S-0741 password-ok, extra-check absent [mixed presence+absence]; (3) S-0741 = unknown-laptop-17 + 203.0.113.44 + no VPN ID [2-record correlation]; (4) unknown-laptop-17 unenrolled, never MDM [presence of negative inventory state]; (5) baseline = HQ Wi-Fi + enrolled MacBook + 2 prior V-218 sessions [≥3-record correlation]; (6) S-0731 route does not explain S-0741 [3+ records incl. absence]; (7) shared Montreal estimate links nothing [fact about limits]; (8) owner reports no travel/no Windows laptop [report, not proof]; (9) HR register covers approved trips only [coverage fact]; (10) A-1042 + login-context-1 are one source [non-independence]; (11) export ends 07:45, no file/mailbox activity → access unverified; (12) 07:43 refresh continues S-0741, verifies nothing. Routine: (13) A-1180 ↔ RUN-FIN-031 ↔ SCAN-FIN-MON 3-way match; (14) delivery time ≠ event time; (15) discovery-connections-only coverage cap. Phishing: (16) report open, no click, original preserved; (17) displayed vs envelope sender + Reply-To mismatch; (18) SPF/DKIM/DMARC fail; (19) off-org http destination with recipient query; (20) quarantine by Message-ID+host covers AL-4. False-positive if confirmed: (21) A-1204 enrolled+MFA+route-matched, city estimate alone.
+Login case: (1) six fails preceded S-0741 from 203.0.113.44 [presence, grouped row]; (2) S-0741 password-ok, extra-check absent [mixed presence+absence]; (3) S-0741 = unknown-laptop-17 + 203.0.113.44 + no VPN ID [2-record correlation]; (4) unknown-laptop-17 unenrolled, never MDM [presence of negative inventory state]; (5) baseline = HQ Wi-Fi + enrolled MacBook + 2 prior V-218 sessions [≥3-record correlation]; (6) S-0731 route does not explain S-0741 [3+ records incl. absence]; (7) shared Montreal estimate links nothing [fact about limits]; (8) owner reports no travel/no Windows laptop [report, not proof]; (9) HR register covers approved trips only [coverage fact]; (10) A-1042 + login-context-1 are one source [non-independence]; (11) export ends 07:45, no file/mailbox activity → access unverified; (12) 07:43 refresh continues S-0741, verifies nothing. Routine: (13) A-1180 ↔ RUN-FIN-031 ↔ SCAN-FIN-MON 3-way match; (14) delivery time ≠ event time; (15) discovery-connections-only coverage cap. Phishing: (16) report open, no click, original preserved; (17) displayed vs envelope sender + Reply-To mismatch; (18) SPF/DKIM/DMARC fail; (19) off-org http destination with recipient query; (20) quarantine by Message-ID+host covers AL-4. False-positive cluster (§4a): (21) A-1204 single success + enrolled device (D4) + extra check done (AUTH-0915) + route matched (V-217) + prior-week precedent (V-215) + coworker context (MORGAN-CTX-01) against one city estimate — close as expected/verified with note.
 
-## 9. Plausible distractors (why each earns its place, why each is safe)
+## 9. Plausible distractors (each tagged with the reason it earns its place)
 
-Garcia 1-fail-then-success (daily typo vs six-fail burst); other-user morning rows (rush/resets, never join Patel keys); service account (labeled job, no user semantics); V-219 second exit (per-connection logic); V-217 shared exit (sharing is normal, ID still required); D6 retired namesake (exact-active-label rule excludes it); D7 other unknown label (different label/date, explicit unrelated note); AL-5/AL-6/AL-7 (benign-true / held-threat / lifecycle-informational, each with own KB match, none joins A-1042); AL-4 duplicate (same campaign keys, one quarantine); 0612 Patel typo (HQ+usual device; single-known vs six-unknown contrast). See content-pack §10 for cut order: A14/A12/D8/SC-RUN-03 group/A9/D7 first; never cut A10-calibration, D6-exactness, V3/V4-route-logic, AL-4-dedup.
+Every filler row below carries one purpose tag: [baseline] normal comparison · [hypothesis] plausible alternative read · [noise] routine texture · [boundary] time-window or state edge · [namesim] entity-name similarity. Rows that were trivially irrelevant, obviously fake, purposeless duplicates, or unfairly misleading have been removed or revised — see removals.
+
+- [baseline] Garcia 1-fail-then-success: daily typo vs six-fail burst; single known-device fail vs six unknown-source fails.
+- [baseline] 0612 Patel typo: HQ + usual device; single-known vs six-unknown contrast.
+- [baseline] 0745 Patel HQ: baseline continues past the incident window; expected device/account combination.
+- [baseline] 0835 Okonkwo VPN: ordinary remote work through the shared exit; reinforces V-217.
+- [baseline] AL-5 backup spike / AL-9 scan re-alert: benign-true shapes with their own KB/run-log matches.
+- [baseline] D9 Garcia MacBook: enrolled device resolving the Garcia auth rows.
+- [hypothesis] V-219 second exit: per-connection logic; shared city ≠ shared route.
+- [hypothesis] V-217 shared exit: sharing is normal infrastructure; connection ID still required.
+- [hypothesis] V-221 Garcia session: third shared-exit instance; same user ordinary remote work.
+- [hypothesis] AL-6 spray-blocked: real-threat shape where controls held; failed ≠ incident.
+- [hypothesis] Rivera VPN + reporter rows: ordinary day with two unrelated touchpoints.
+- [noise] Morning-rush rows (Okonkwo 0733): same HQ pattern, different person; never join Patel keys.
+- [noise] Service account: labeled scheduled job; no user-session semantics.
+- [noise] 0722 Garcia lone fail: single-fail rows with no follow-through are daily life.
+- [noise] AL-4 duplicate: same campaign keys; one quarantine covers both.
+- [noise] AL-7 first-seen-enrolled / AL-8 newsletter: lifecycle-informational and benign-known texture.
+- [noise] D7 other unknown label: different label/date, explicit unrelated note; unknown ≠ compromise.
+- [boundary] V-216 Patel yesterday: same user, normal day, outside the target window; window filters exclude it.
+- [boundary] V-220 provisioning: status reading; not a route for anything under review.
+- [boundary] D10 stale Nguyen endpoint: assigned ≠ recently seen.
+- [boundary] D8 loaner lifecycle: checkout/return states exist.
+- [namesim] D6 retired namesake: exact-active-label rule excludes it; "patel macbook" search returns two rows.
+
+Removals: AUTH-0901-NGUYEN-RESET cut to hold the 16-row auth cap — weakest of the set (tested the same user-field reading as the rush rows; "no Patel resets" contrast already carried by canonical C9). D7 retained but demoted to first device cut. See content-pack §10 for the inherited cut order; never cut Garcia-calibration, D6-exactness, V-217/V-219 route logic, or AL-4-dedup.
+
+## 9a. Coverage table (Work Item × dataset)
+
+| Work Item | Auth | VPN | Device | Alerts | Human context | Intended ambiguity |
+|---|---|---|---|---|---|---|
+| A-1042 central login case | A1/A2-group/A3/A4 + baseline A5–A8, 0612-TYPO, 0745-HQ | V-218 + VPN-ABSENCE-0741 + V-219/V-217/V-214/V-216 | D1/D2/D3 + D6 namesim | AL-1 | Employee report (C10, report not proof); HR register limits (C11); Morgan handoff context | Six fails + password success + unenrolled device + no route vs ordinary baseline; verdict never in rows |
+| Routine scanner work | — (no auth join) | — | — | AL-2 + AL-9 | Infra-ops change owner; queue-delay memo | Delivery time vs event time; window-bound closure vs real incident |
+| False-positive candidate A-1204 | AUTH-0915 + zero-failure window | V-217 + V-215 precedent | D4 enrolled | AL-3 | MORGAN-CTX-01 (one fact, delayed, report not proof) | Unseen IP + surprising city vs enrolled + check done + route matched + precedent; close-with-note is the reasonable read |
+| Phishing (future/deferred) | — | — | D5 reporter devices | AL-4 duplicate | Rivera reporter words; reporter-reply template | Same-campaign duplicate vs new report; scope (Message-ID + host) determines one quarantine |
+
+Dashes mean no join by design: the routine and phishing clusters stay disjoint from the login keys so correlation skill transfers without cross-contamination.
 
 ## 10. Absence-proof scenarios (coverage-gated; no exact-query match)
 
@@ -190,22 +250,23 @@ Per canonical absence semantics: a stored query establishes absence iff normaliz
 
 | System | Rows | Composition | Rationale |
 |---|---|---|---|
-| Authentication | 14 (grouped) | 4 central + 5 baseline/boundary + 5 filler | History + timeline + typo contrast + rush; 19-row per-attempt variant only if UI needs row-level fails |
-| VPN | 5 rows + 1 absence | 1 canonical + 4 neighbors | Catalogue not haystack; needs 2+ exits + 1 shared-exit case |
-| Device | 8 | 3 canonical + 2 supporting + 3 filler | Exact-label (D6) + unknown-is-normal (D7) + lifecycle (D8); D4–D5 stay, D6–D8 cuttable |
-| Alerts | 5 (4 min / 8 max) | A-1042 + A-1180 + AL-3 if confirmed + 2 neighbors | Central + routine + contrast + texture; >8 = triage fatigue |
+| Authentication | 16 (grouped) | 4 central + 5 baseline/boundary + 7 routine/noise | History + timeline + typo contrast + rush + collection-edge baseline; 19-row per-attempt variant only if UI needs row-level fails; NGUYEN-RESET cut for cap |
+| VPN | 7 rows + 1 absence | 1 canonical + 4 neighbors + 2 routine (V-221 remote, V-216 boundary) | Catalogue not haystack; 3+ exits incl. 3 shared-exit instances + 1 out-of-window case |
+| Device | 10 | 3 canonical + 2 supporting + 5 filler | Exact-label (D6) + unknown-is-normal (D7) + lifecycle (D8) + active-known (D9) + stale (D10); D4–D5/D9 stay, D6–D8/D10 cuttable |
+| Alerts | 6 (4 min / 9 max) | A-1042 + A-1180 + AL-3 cluster (§4a) + AL-4 + AL-5/AL-8 routine | Central + routine + contrast + texture; >9 = triage fatigue; AL-9 first alert cut |
 | Phishing | 4 records + 1 report | Report + message + headers + link (+ AL-4 shared) | Bounded by design; shorter than A-1042 |
 | Scanner | 2–3 | RUN-FIN-031 + prior-week + optional storage run | Recurrence without corpus |
 | KB | 9–12 | 3 canonical bodies + 6–9 proposed (reading-sign-in, VPN-route, device-coverage, triage-basics, phishing-runbook, sender-auth, scan-closure, case-note, backup stub) | One per tool verb; no article names central verdict except labeled format examples |
 | Tickets | 2 keys | `suspicious-login-1`, `routine-alert-1` (+ phishing status in report) | No new ticket types for beta |
 | People | ≤6 named | Patel, Morgan, Jules, Rivera, Okonkwo, Garcia (+ unlabeled service/system senders) | Every name in ≥2 datasets or cut |
 
-Total queryable beta corpus: ~40–48 rows + ~12 KB bodies + 16 existing prose artifacts. Fits 20–25-minute shift with one interruption and one optional duplicate.
+Total queryable beta corpus: ~50–56 rows + FP cluster (1 alert + 1 auth + 1 VPN + 1 Morgan fact, reusing V-217/D4) + ~12 KB bodies + 16 existing prose artifacts. Fits 20–25-minute shift with one interruption and one optional duplicate; overage absorbed by the §1/§9 cut orders.
 
 ## 12. What must NOT be exposed directly to the player
 
 - Restricted fact C16 (private Montreal travel) in any form — rows, results, dialogue, fallback, globs, logs.
 - Verdict fields ("malicious"/"benign"/"attacker"/"compromised"), importance ranks, clue counters, "required" flags, correct-query strings, answer keys.
+- Leakage-token audit (case-insensitive; §12 discussion and the §9a column header excepted): no record row, note, reply template, or glossary entry in this document may carry a field or value named `malicious`, `suspicious`, `relevant`, `clue`, `answer`, or `escalationNeeded` (or boolean/string equivalents such as `is_suspicious`, `needs_escalation`). Designer rationale — including the §4a read and §9 purpose tags — lives only in labeled designer-note prose, never as a row field. Check: `grep -inE "malicious|suspicious|relevant|clue|answer|escalationNeeded" <file>` returns hits only in (a) pre-existing canonical pack names (`suspicious-login-alert`, `suspicious-login-1`), (b) pre-existing section prose and the §9 purpose-tag legend, and (c) §12 itself. No new hit may sit inside a record row, note, reply template, or glossary entry as a field or value. Record prose says "unusual-looking" or "unexpected" where a surface needs naming; the read stays the player's job.
 - `templateId`-style authoring joins and exhaustive related-record lists outside the record view that surfaced them (pre-answers which records matter).
 - Undiscovered evidence definitions, consequence predicates, branch labels, hidden outcomes, future-phase content (e.g. AL-3 before T+43 confirmation).
 - Exact personal data beyond authored fictional accounts; real-world domains in phishing URLs (use `.example.net` documentation domain).
@@ -215,4 +276,4 @@ Total queryable beta corpus: ~40–48 rows + ~12 KB bodies + 16 existing prose a
 
 ## 13. Handoff to implementers
 
-Translate each row into the approved structured schema when it exists, keeping ID prefixes stable (`AUTH-`, `V-`, `D-`, `AL-`, `PH-`, `SC-`, `KB-`), preserving `pack.yaml` body prose as the detail view, enforcing §10 coverage before any absence fact becomes representable, and keeping every classification label above intact through translation. Canonical truth changes nowhere; PROPOSED/OPTIONAL rows are confined as marked.
+Translate each row into the approved structured schema when it exists, keeping ID prefixes stable (`AUTH-`, `V-`, `D-`, `AL-`, `PH-`, `SC-`, `KB-`, plus FP-cluster `MORGAN-CTX-`), preserving `pack.yaml` body prose as the detail view, enforcing §10 coverage before any absence fact becomes representable, and keeping every classification label above intact through translation. Canonical truth changes nowhere; PROPOSED/OPTIONAL rows are confined as marked. New IDs added by this expansion: AUTH-0745-PATEL-HQ, AUTH-0835-OKONKWO-VPN, AUTH-0722-GARCIA-FAIL, AUTH-0915-OKONKWO-CHI, V-221, V-216, V-215, D9, D10, AL-8, AL-9, MORGAN-CTX-01. Removed: AUTH-0901-NGUYEN-RESET.
