@@ -14,5 +14,8 @@
   "dependencies": {
     "@sim/schemas": "workspace:*",
     "yaml": "^2.8.0"
+  },
+  "peerDependencies": {
+    "@sim/core": "workspace:*"
   }
 }
