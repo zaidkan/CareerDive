@@ -2017,7 +2017,7 @@ section[aria-labelledby="structured-title"],
 
 .room-canvas {
   width: 100%;
-  height: min(72vh, 38rem);
+  height: min(78vh, 46rem);
 }
 
 .room-desk-hud {
@@ -2051,13 +2051,35 @@ section[aria-labelledby="structured-title"],
   bottom: 0;
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 1rem;
-  padding: 1rem 1.2rem;
-  background: linear-gradient(180deg, transparent, rgb(6 5 4 / 94%) 35%);
+  gap: 0.45rem 0.9rem;
+  padding: 0.6rem 0.9rem 0.7rem;
+  background: linear-gradient(180deg, transparent, rgb(6 5 4 / 82%) 55%);
   color: var(--fog);
-  backdrop-filter: blur(2px);
+  pointer-events: none;
   z-index: 6;
+}
+
+.room-hud button,
+.room-hud summary,
+.room-hud details {
+  pointer-events: auto;
+}
+
+.room-hud-brief {
+  display: grid;
+  gap: 0.1rem;
+  max-width: min(34rem, 62%);
+  order: 1;
+}
+
+.room-hud-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  align-items: center;
+  order: 2;
 }
 
 .room-hud .start-shift,
@@ -2068,15 +2090,151 @@ section[aria-labelledby="structured-title"],
 .room-hud-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.55rem;
+  gap: 0.45rem;
   align-items: center;
+  order: 3;
 }
 
 .room-hud-step {
-  margin: 0.15rem 0 0.2rem;
+  margin: 0;
   color: var(--paper);
-  font-size: 1.02rem;
+  font-size: 0.98rem;
   font-weight: 600;
+  line-height: 1.25;
+}
+
+.room-hud-count {
+  margin-right: 0.4rem;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid rgb(79 208 200 / 40%);
+  color: var(--signal);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: 0.12rem;
+}
+
+.room-hud-line {
+  margin: 0;
+  color: var(--fog);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.room-hud-details {
+  position: relative;
+  color: var(--mute);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+}
+
+.room-hud-details > summary {
+  display: inline-block;
+  padding: 0.18rem 0.5rem;
+  border: 1px solid var(--line);
+  background: rgb(10 7 6 / 70%);
+  color: var(--mute);
+  cursor: pointer;
+  list-style: none;
+  text-transform: uppercase;
+}
+
+.room-hud-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.room-hud-details[open] > summary {
+  color: var(--signal);
+}
+
+.room-hud-details > summary::before {
+  content: "＋ ";
+}
+
+.room-hud-details[open] > summary::before {
+  content: "− ";
+}
+
+.room-hud-details > *:not(summary) {
+  display: block;
+  margin-top: 0.45rem;
+}
+
+.controls-help {
+  position: relative;
+}
+
+.controls-help-toggle {
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgb(10 7 6 / 80%);
+  color: var(--phosphor);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.controls-help-toggle:hover,
+.controls-help-toggle[aria-expanded="true"] {
+  border-color: rgb(79 208 200 / 60%);
+  color: var(--signal);
+}
+
+.controls-help-panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.5rem);
+  width: min(17rem, 78vw);
+  padding: 0.7rem 0.8rem;
+  border: 1px solid rgb(79 208 200 / 45%);
+  background: rgb(8 10 9 / 96%);
+  box-shadow: 0 14px 34px rgb(0 0 0 / 55%);
+  color: var(--fog);
+  z-index: 9;
+}
+
+.controls-help-heading {
+  margin: 0 0 0.4rem;
+  color: var(--signal);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.controls-help-list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 0 0.55rem;
+}
+
+.controls-help-row {
+  display: grid;
+  grid-template-columns: 7.5rem 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.controls-help-row dt {
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.controls-help-row dd {
+  margin: 0;
+  color: var(--mute);
+  font-size: 0.74rem;
+  line-height: 1.3;
 }
 
 .room-desk-hud .room-hud-step {
@@ -2088,16 +2246,16 @@ section[aria-labelledby="structured-title"],
 }
 
 .room-hud-nearby {
-  margin: 0.3rem 0 0;
+  margin: 0;
   color: var(--signal);
-  font-size: 0.88rem;
+  font-size: 0.82rem;
 }
 
 .room-hud-compass {
-  margin: 0.35rem 0 0;
+  margin: 0;
   color: var(--phosphor);
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.03em;
 }
@@ -2110,6 +2268,37 @@ section[aria-labelledby="structured-title"],
   margin-top: 0.55rem;
   min-width: 10.5rem;
   max-width: 16rem;
+}
+
+.room-hud .energy-meter {
+  grid-template-columns: auto auto minmax(3.5rem, 1fr);
+  gap: 0.35rem;
+  margin-top: 0;
+  min-width: 8.5rem;
+  max-width: 12rem;
+}
+
+.room-hud .energy-meter-label,
+.room-hud .energy-meter-value {
+  font-size: 0.6rem;
+}
+
+.room-hud .energy-meter-track {
+  height: 0.35rem;
+}
+
+.room-hud .energy-recovery {
+  font-size: 0.68rem;
+}
+
+.room-hud .break-room-panel {
+  margin-top: 0.4rem;
+  padding-top: 0.35rem;
+}
+
+.room-hud .break-room-status,
+.room-hud .break-room-actions {
+  font-size: 0.72rem;
 }
 
 .energy-meter-value {
@@ -2204,36 +2393,30 @@ section[aria-labelledby="structured-title"],
   font-size: 0.72rem;
 }
 
-.room-hud-controls {
-  margin: 0.35rem 0 0;
-  color: var(--mute);
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.03em;
-}
-
 .room-look-hint {
   position: absolute;
   left: 50%;
-  top: 1.05rem;
+  top: 0.9rem;
   z-index: 6;
   margin: 0;
-  padding: 0.38rem 0.8rem;
+  padding: 0.26rem 0.65rem;
   transform: translateX(-50%);
-  border: 1px solid var(--line);
-  background: rgb(10 7 6 / 82%);
+  border: 1px solid rgb(79 208 200 / 28%);
+  border-radius: 999px;
+  background: rgb(10 7 6 / 62%);
   color: var(--phosphor);
   font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
   pointer-events: none;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
 .room-flavor {
-  margin: 0.4rem 0 0;
+  margin: 0.35rem 0 0;
   color: var(--phosphor);
-  font-size: 0.95rem;
+  font-size: 0.86rem;
 }
 
 .jules-dialogue {

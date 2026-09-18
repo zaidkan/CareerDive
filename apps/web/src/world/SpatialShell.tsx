@@ -17,7 +17,6 @@ import {
   julesDialogueFromClientView,
   type JulesDialogueReply,
 } from "@sim/core";
-import { COMPANY } from "./company.js";
 import { MutationStatus } from "../components/MutationStatus.js";
 import {
   BreakRoomPanel,
@@ -26,6 +25,7 @@ import {
   EnergyMeter,
 } from "./BreakRoomPanel.js";
 import { coffeeControl, fridgeControl } from "./breakRoom.js";
+import { ControlsHelp } from "./ControlsHelp.js";
 import { LaptopOverlay } from "./deskOs/LaptopOverlay.js";
 import { FloorMap } from "./FloorMap.js";
 import { JulesDialogue } from "./JulesDialogue.js";
@@ -394,10 +394,7 @@ export function SpatialShell({
           />
         ) : null}
         {walking && !pointerLocked ? (
-          <p className="room-look-hint">
-            Click to look around, or hold and drag · WASD / arrows to move · F
-            fullscreen · Esc to release
-          </p>
+          <p className="room-look-hint">Click to look around</p>
         ) : null}
         {walking && julesOpen ? (
           <JulesDialogue
@@ -416,24 +413,38 @@ export function SpatialShell({
         ) : null}
         {walking ? (
           <div className="room-hud">
-            <div>
-              <MutationStatus
-                state={mutationState}
-                {...(onRetryMutation ? { onRetry: onRetryMutation } : {})}
-              />
-              <p className="eyebrow">
-                {COMPANY.name} · {roomLabel} · {stepLabel}
+            <div className="room-hud-brief">
+              {mutationState.error ||
+              mutationState.pendingKey ||
+              mutationState.success ? (
+                <MutationStatus
+                  state={mutationState}
+                  {...(onRetryMutation ? { onRetry: onRetryMutation } : {})}
+                />
+              ) : null}
+              <p className="room-hud-step">
+                <span className="room-hud-count">{stepLabel}</span>
+                {journey.title}
               </p>
-              <p className="room-hud-step">{journey.title}</p>
-              <p>
+              <p className="room-hud-line">
                 {nearbyIsTarget && nearbyPrompt ? nearbyPrompt : journey.body}
               </p>
               {compass ? <p className="room-hud-compass">{compass}</p> : null}
               {!nearbyIsTarget && nearbyPrompt ? (
                 <p className="room-hud-nearby">{nearbyPrompt}</p>
               ) : null}
-              <EnergyMeter workplace={view.workplace} />
-              <EmergencyRecoveryControl workplace={view.workplace} onSubmit={requestWorkplaceInteraction} pending={resourcePending || !onWorkplaceInteraction} />
+              {spatial.flavorMessage ? (
+                <p className="room-flavor">{spatial.flavorMessage}</p>
+              ) : null}
+              {walkBlocked ? (
+                <div className="room-flavor" role="status">
+                  Route blocked. Return to the aisle to continue safely.
+                  <button className="guidance-secondary" type="button" onClick={() => {
+                    window.dispatchEvent(new Event("soc-recover-aisle"));
+                    setWalkBlocked(false);
+                  }}>Return to aisle</button>
+                </div>
+              ) : null}
               {breakStation ? (
                 <BreakRoomPanel
                   onSubmit={requestWorkplaceInteraction}
@@ -442,26 +453,18 @@ export function SpatialShell({
                   workplace={view.workplace}
                 />
               ) : null}
-              <CarriedSnackControl
-                onSubmit={requestWorkplaceInteraction}
-                pending={resourcePending || !onWorkplaceInteraction}
-                workplace={view.workplace}
-              />
-              <p className="room-hud-controls">
-                WASD / arrows to move · E to interact · F fullscreen
-              </p>
-              {spatial.flavorMessage ? (
-                <p className="room-flavor">{spatial.flavorMessage}</p>
-              ) : null}
-              {walkBlocked ? (
-                <div role="status" className="room-flavor">
-                  Route blocked. Return to the aisle to continue safely.
-                  <button className="guidance-secondary" type="button" onClick={() => {
-                    window.dispatchEvent(new Event("soc-recover-aisle"));
-                    setWalkBlocked(false);
-                  }}>Return to aisle</button>
-                </div>
-              ) : null}
+            </div>
+            <div className="room-hud-status">
+              <EnergyMeter workplace={view.workplace} />
+              <details className="room-hud-details">
+                <summary>Supplies</summary>
+                <EmergencyRecoveryControl workplace={view.workplace} onSubmit={requestWorkplaceInteraction} pending={resourcePending || !onWorkplaceInteraction} />
+                <CarriedSnackControl
+                  onSubmit={requestWorkplaceInteraction}
+                  pending={resourcePending || !onWorkplaceInteraction}
+                  workplace={view.workplace}
+                />
+              </details>
             </div>
             <div className="room-hud-actions">
               {nearbyHotspotId && !breakStation ? (
@@ -496,6 +499,7 @@ export function SpatialShell({
               >
                 Floor map
               </button>
+              <ControlsHelp />
             </div>
           </div>
         ) : null}
