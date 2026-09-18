@@ -303,19 +303,34 @@ export function RecordQueryTool({
             anything already on file.
           </p>
         ) : (
-          results.map((result) => (
+          results.map((result, index) => {
+            // Only the most recent (last-appended) result carries a live
+            // role="status". Older results keep the same visible text as plain
+            // paragraphs so screen readers announce only the newest query and
+            // getByRole("status") stays unambiguous across repeated queries.
+            const isLatest = index === results.length - 1;
+            return (
             <article key={result.queryId} aria-label={resultHeading(result)}>
               <h4>{resultHeading(result)}</h4>
               {result.truncated ? (
-                <p className="tool-subtle">
-                  Showing the first {String(result.records.length)} of{" "}
-                  {String(result.totalCount)}. Narrow the filters to see more.
-                </p>
+                isLatest ? (
+                  <p role="status" className="tool-subtle">
+                    Showing the first {String(result.records.length)} of{" "}
+                    {String(result.totalCount)}. Narrow the filters to see more.
+                  </p>
+                ) : (
+                  <p className="tool-subtle">
+                    Showing the first {String(result.records.length)} of{" "}
+                    {String(result.totalCount)}. Narrow the filters to see more.
+                  </p>
+                )
               ) : null}
               {result.records.length === 0 ? (
-                <p role="status">
-                  No matching records for these filters.
-                </p>
+                isLatest ? (
+                  <p role="status">No matching records for these filters.</p>
+                ) : (
+                  <p>No matching records for these filters.</p>
+                )
               ) : (
                 <ol>
                   {result.records.map((record) => (
@@ -338,7 +353,8 @@ export function RecordQueryTool({
                 </ol>
               )}
             </article>
-          ))
+            );
+          })
         )}
       </div>
     </section>
