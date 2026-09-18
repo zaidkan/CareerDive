@@ -557,3 +557,262 @@ Reject any interaction that: reveals hidden evidence (`employee-private-travel`,
 ### 14.9 Canonical-fact conflict audit (this section)
 
 No conflicts introduced. Checked against `pack.yaml`: Morgan sole NPC with `memoryFactIds: [alert-visible]` preserved; private travel stays `notKnownBy: [manager, user]` — Section 14.5 travel intent cites only employee report + HR coverage limit; Jules stays peer who defers to Morgan, no new NPC entry, no manager-title reassignment; handoff incompleteness (device check unfinished, scanner ref forgotten, "Ping Morgan") preserved as Morgan's stated limit; location-estimate-only-lead, single-source rule (A-1042 = login-context-1), collection-ends-07:45, and report-not-proof qualifier all restated as limits, never as verdicts. Reporter identity A. Rivera confined to phishing texture (T-7) with no link to login keys.
+
+---
+
+## 15. Arrival / handoff beat (shift-flow content)
+
+**Status:** PROPOSED shift-flow content. No new canonical truth. Restates `handoff-email` (07:55), queue state, and scanner context already defined in Sections 1–7. Morgan/Jules dialogue payloads live in Section 14 and are referenced, not duplicated, here.
+
+### 15.1 What the player walks into — PROPOSED SUPPORTING RECORD
+
+Shift starts mid-story. Queue already has texture before A-1042 arrives:
+
+- **Handoff note (EXISTING CANONICAL FACT, `handoff-email`):** night analyst still watching unfamiliar login thread; device inventory check unfinished; scanner schedule reference forgotten; "Ping Morgan if the login expands."
+- **Queue state at T+00–T+02 (PROPOSED):** handoff Work Item queued; routine scanner context reachable (A-1180 arrives per beat sheet at T+05; run/window records SC-RUN-01/SC-WIN-01 exist to check); no central incident demanding immediate action yet.
+- **Prior-shift status context (PROPOSED SUPPORTING RECORD, consistent with handoff):** overnight saw two scanner-noise alerts that closed as authorized; one unfamiliar login thread left open with login time only checked. This gives the "two things named that recur later" shape: (1) scanner noise as familiar pattern, (2) login thread as open question. Neither names S-0741, 203.0.113.44, or unknown-laptop-17 before the player opens A-1042.
+
+### 15.2 Concrete workplace activity (player verbs)
+
+Arrival is work, not exposition. Player may in any order:
+
+1. **Read handoff** — open `handoff-email`; note three gaps: unfinished device check, missing scanner ref, open login thread.
+2. **Check queue** — open work queue; see handoff + routine context; observe severity/age ordering (high-severity first, oldest-first within severity per realism reference).
+3. **Skim routine outstanding work** — open scanner window SC-WIN-01 and prior run SC-RUN-02 to confirm "Mondays 10:00–12:00 finance VLAN" is a real weekly pattern before today's items land.
+4. **Decide what to inspect first** — no forced order. Natural first moves: re-read handoff gap, check inventory coverage (KB-DEVICE-01), or skim KB triage basics (KB-ALERT-01). All are legal; none is marked correct.
+
+### 15.3 What stays uncertain after arrival
+
+- Whether the open login thread is the same scanner noise or something different (timing looks different — stated as observation, not verdict).
+- Whether the device check the night shift skipped matters (unknown until inventory opened).
+- What today's queue will add (A-1042 has not arrived yet; phishing has not arrived yet).
+
+Morgan/Jules hooks: if the player asks Morgan about handoff now, use Section 14.1 M-EARLY payloads. Jules status intent is not yet meaningful (no A-1042 state to brief); texture T-1/T-2 may fire once each at most.
+
+---
+
+## 16. Routine scanner work depth (low-intensity SOC work)
+
+**Status:** PROPOSED shift-flow content built on EXISTING CANONICAL FACTS (AL-2, SC-RUN-01, SC-WIN-01, ticket key `routine-alert-1`) plus PROPOSED supporting rows (SC-RUN-02, SC-NOTE-01). No new verdicts.
+
+### 16.1 What appears on screen
+
+- Alert row AL-2 (A-1180): low severity, connection monitoring, delayed delivery, recorded activity Monday 10:18, vuln-scan-03 across finance VLAN.
+- Run record SC-RUN-01 (RUN-FIN-031): 10:05–10:32, finance VLAN, completed, discovery connections only, change ref SCAN-FIN-MON.
+- Window record SC-WIN-01 (SCAN-FIN-MON): approved Mondays 10:00–12:00, finance VLAN discovery, owner infrastructure operations, in/out scope rules.
+- Queue-delay memo SC-NOTE-01: "forwarded after queue delay; event time unchanged."
+- Optional recurrence row SC-RUN-02 (prior Monday 10:06–10:31) for "weekly is real" texture.
+
+### 16.2 What the analyst actually checks
+
+1. **Event time vs delivery time:** recorded 10:18 within run 10:05–10:32 within window 10:00–12:00. Arrival time in queue is later; compare recorded event time even when monitoring delivers late (canonical window wording).
+2. **Scope match:** vuln-scan-03 + finance VLAN in all three records (alert, run, window). No scope drift.
+3. **Coverage cap:** discovery connections only — licensed close reason cites this cap, never broader safety.
+4. **Change ref:** SCAN-FIN-MON present in run and window; owner infrastructure operations.
+
+KB support: KB-SCAN-01 (routine scan closure) + KB-ALERT-01 (severity vs finding). Neither names A-1042's path.
+
+### 16.3 Benign findings and closure
+
+- Finding: authorized scheduled scan; alert fired correctly on real connections; no threat. This is the benign-true-positive shape (detection correct, activity authorized).
+- Closure action: acknowledge → attach run + window record refs → short note citing event time, scope, coverage cap → close `routine-alert-1` with reason "authorized scan."
+- Simulated work cost: approximately 5–10 minutes. Deliberately low intensity: skim, match three fields, document, close.
+
+### 16.4 What does not happen
+
+- No escalation path authored for the routine match. If scope/finding diverged (not authored in beta), the licensed response would be monitor + note, never a forced incident.
+- If ignored, the item sits visibly aging and may acquire one reminder state (see Section 18). No numeric penalty, no fail state.
+
+---
+
+## 17. A-1042 multi-path investigation (no secret correct path)
+
+**Status:** PROPOSED shift-flow content. All facts referenced already exist in Sections 2–4, 11–12. No new records. No path is marked correct. Every path returns mixed benign + central results and leaves genuine uncertainty.
+
+Convention per path: **player does → information becomes available → remains uncertain → sensible next actions.**
+
+### 17.1 Path A — auth first
+
+- **Does:** opens A-1042, filters auth by user j.patel, opens A1 (S-0731 baseline), A2-group (six fails 07:38–07:40), A3 (S-0741 07:41 password, extra-check absent), A4 (07:43 refresh continuation). Optionally opens A5–A8 baseline rows and A13 typo boundary.
+- **Becomes available:** sequence (fails precede success from same source); S-0741 password-ok ≠ MFA-ok; refresh verifies nothing; baseline HQ Wi-Fi + enrolled MacBook + two prior V-218 sessions (facts 1, 2, 5, 12).
+- **Remains uncertain:** who controlled S-0741; whether source 203.0.113.44 has any approved route; whether unknown-laptop-17 is enrolled; what was accessed (collection ends 07:45, fact 11).
+- **Next actions:** check device inventory for exact label; run VPN covering query for user + window + source; read employee report + HR coverage limit; update ticket with sequence + open questions.
+
+### 17.2 Path B — device first
+
+- **Does:** opens A-1042, pivots on device label unknown-laptop-17, opens D3, compares D1 (active MacBook, 07:30 check-in, cert match) and D2 (active phone); encounters near-miss D6 (retired namesake) and unrelated D7 (different unknown label).
+- **Becomes available:** D3 not enrolled, never MDM check-in; inventory covers registered work devices only; exact-active-label discipline (D6 excluded); unknown ≠ malicious in general (D7), but this label's state is enrollment-absent (facts 3, 4).
+- **Remains uncertain:** who used the device; whether the session rode an approved route; whether the failure burst + password sequence matters; travel question untouched.
+- **Next actions:** pull auth history for the account to see burst + baseline; run VPN covering query; read employee report; note exact label + coverage caveat in ticket.
+
+### 17.3 Path C — VPN first
+
+- **Does:** opens A-1042, pivots on source IP / session connection ID, opens V1 (V-218 → 198.51.100.20, S-0731) and VPN catalogue neighbors V3 (second exit), V4 (shared exit IP, different connection ID), V5 (last-week row); runs covering query for (user=j.patel, window ⊇ 07:25–07:45, source=203.0.113.44).
+- **Becomes available:** S-0731 route explained by V-218; 203.0.113.44 not an approved exit in NET-VPN-04 snapshot 07:45; shared city ≠ shared route; shared exit IP ≠ shared connection (facts 6, 7; absence 1 subject to Section 12 coverage).
+- **Remains uncertain:** everything the catalogue cannot say: personal connections out of scope; absence ≠ route identification; device enrollment, auth sequence, travel, and access questions untouched.
+- **Next actions:** open auth rows for sequence + baseline; open inventory for exact label; read runbook KB-VPN-01 for what absence does/does not mean; document query coverage (filters + window + zero qualifying rows) before claiming absence.
+
+### 17.4 Path D — Morgan first after partial evidence
+
+- **Does:** opens A-1042 plus at least one record (alert body or one auth/device/VPN row), then asks Morgan about handoff or a specific mismatch. Uses Section 14.2/14.3 payloads only.
+- **Becomes available:** at most one bounded prior-shift detail per exchange (watched login thread, checked time only, did not pull history/inventory; scanner noise timing looked different); procedural pointer (which system holds which field; compare identifier + address; exact-label match).
+- **Remains uncertain:** everything Morgan does not know: no verdict, no enrollment result supplied, no VPN absence asserted, no travel finding, no decision recommendation. Player must still open the records Morgan points at.
+- **Next actions:** follow the pointer (open the named system), verify in records, write the mismatch in own words in the ticket. If Morgan says "haven't looked at that," treat as normal peer limit, not a block.
+
+### 17.5 Path-equivalence rule
+
+All four paths can reach the same discovered-fact set (facts 1–12 subject to coverage rules). Order changes discovery sequence only. Content must never reward one entry point or punish another with exclusive information, faster clocks, or hidden flags.
+
+---
+
+## 18. Interruptions (deterministic, deferable, natural)
+
+**Status:** PROPOSED shift-flow content. Reuses records already defined (PH cluster, AL-4, A-1180 follow-up, Section 14 intents/texture). No new mechanics. At most one reminder state per item; texture never gates work.
+
+| # | Interruption | Trigger condition (public state) | Why natural | Optional / deferable | Return-later behavior |
+|---|---|---|---|---|---|
+| I-1 | Employee phishing report (PH-RPT-01) | T+20 beat; A-1042 already open/investigating | User reports land mid-investigation in real SOCs; creates overlap, forces park-and-resort with notes | Yes — acknowledge now, triage after current A-1042 check | Report stays open/unreviewed; no decay; headers/link/scope all still available; reporter waits without repeat nudges |
+| I-2 | Jules status request | T+25 beat; predicates: A-1042 opened (J-STATUS-1) or ticket thin while decision pending (J-DOC-1) | Lead checks status mid-shift; asks for ticket currency, never for the answer | Yes — brief short status now or after finishing current record | Jules re-asks once at most; acknowledgement reflects whatever state exists then; no grade for delay |
+| I-3 | Routine scanner notification / follow-up | T+23 beat; predicates: A-1180 acknowledged → normal follow-up arrives; ignored → one reminder state | Scheduled-scan pipeline posts follow-ups; ignored items age visibly | Yes — open now or leave; no fail state | Follow-up waits in queue; reminder does not repeat; close path from Section 16 unchanged whenever player returns |
+| I-4 | Coworker / Morgan interaction | Delayed reply to earlier Morgan question (one phase later) or texture T-3/T-4/T-7 moment | Replies take time; teammate mentions scanner noise or duplicate lure in passing | Yes — read now, reply optional, no reply required | Delayed answer arrives mid-investigation where it reframes; unread state persists; nothing expires |
+
+Rules: never stack interruptions (one at a time, focused windows between); never interrupt input or pull focus mid-record; never attach fake urgency to routine items; never require fast clicking. Queue always shows what is open, waiting, or has follow-up.
+
+---
+
+## 19. Resume-work behavior (calm beats between drama)
+
+**Status:** PROPOSED shift-flow content. Maps to beat-sheet T+30–T+40 and pacing rule `focus → interruption → short routine → return → decision → calm → fallout`. No new records.
+
+After any major action on A-1042 (ticket update, monitor/escalate/close decision, Morgan/Jules exchange, phishing triage step), the shift deliberately returns the player to normal work before the next consequence beat:
+
+1. **Mundane queue check** — re-open queue; confirm what is open / waiting / has follow-up; re-sort severity-then-age (OPTIONAL REALISM FILLER behavior, teaches prioritization visibly).
+2. **Documentation** — add timestamped ticket note: facts checked, record IDs cited, gap named, next check stated (KB-NOTE-01 shape). Amend earlier note if new evidence changed it; correction shows in history, no penalty.
+3. **Routine alert** — advance A-1180 closure (Section 16) or phishing sub-step (headers → destination → scope count) or false-positive review sub-step (Section 21).
+4. **Monitoring state** — if player chose monitor, item enters monitoring/waiting with explicit re-surface condition ("flag if second session appears"); player sees the state, not a grade.
+5. **Short waiting period through other work** — delayed replies (Morgan answer, escalation acknowledgement) arrive while the player does 2–4 above. No literal idle waiting; calm is housekeeping time (notes, KB skim per texture T-6).
+
+Purpose stated for implementers: this delay breaks the quiz pattern where every decision earns immediate correctness feedback. Consequences fire on consequence beats (Section 20), not instantly.
+
+---
+
+## 20. Delayed consequences (world feedback, not grades)
+
+**Status:** PROPOSED consequence content. Engine owns firing; content below defines only the world-facing text shapes and their trigger states. No scores, no "correct/incorrect," no stars. Every outcome keeps the shift continuable.
+
+### 20.1 Timely handling (evidence-backed ticket + decision)
+
+- **Trigger state:** ticket cites record IDs + sequence + coverage caveats; attached/discovered refs present; decision taken (monitor or escalate with package).
+- **World feedback:** clean operational acknowledgement. Escalation: "Senior review has the session IDs and the open question; case with Tier 2." Monitor: "Monitoring through end of shift; flag if a second session appears." Ticket noted as readable for next shift.
+- **Later payoff:** handoff references the player's notes; Morgan/Jules acknowledgement names the open question back (Section 14.4/14.6 shapes).
+
+### 20.2 Delayed handling (parked, then completed)
+
+- **Trigger state:** player acknowledged A-1042, handled phishing/scanner first, returned later; ticket updated late but before handoff.
+- **World feedback:** one polite nudge at most (Jules doc-request or queue reminder), then same clean acknowledgement as 20.1 once documentation lands. Reminder text frames delay as normal re-sorting ("Two in the queue now — oldest-highest first"), never as failure.
+- **Later payoff:** no lasting penalty; handoff shows completion time honestly. Teaches parking work with notes as a skill.
+
+### 20.3 Insufficiently supported escalation (thin package)
+
+- **Trigger state:** escalation with zero attached/discovered refs, or with auth-only and no device/VPN check, or with single-source double-count (A-1042 + login-context-1 cited as two corroborations).
+- **World feedback:** escalation accepted but returned with specific evidence requests: "Accepted — can you add what you checked for device and route before Tier 2 picks up?" or "What ties the session to the account?" Player does the enrichment late; it was always available. Costs a round-trip, never points.
+- **Later payoff:** resubmitted package with added refs earns the clean acknowledgement from 20.1. Ticket history shows the correction.
+
+### 20.4 Monitoring / waiting state
+
+- **Trigger state:** player sets A-1042 to monitor with stated re-surface condition.
+- **World feedback:** case stays open in monitoring; queue shows waiting state; no news is valid news for a stretch. If related activity is authored to arrive (follow-up alert or record per beat sheet T+40+), it re-surfaces with history intact and cites the monitored condition.
+- **Later payoff:** player meets the signal they chose to watch. If nothing arrives before handoff, handoff lists the watch as an open monitoring item with its condition — an honest, complete ending.
+
+### 20.5 Dismissed / closed (with reason recorded)
+
+- **Trigger state:** player closes A-1042 with a stated reason.
+- **World feedback:** "Closed for now with your reason recorded. If related activity arrives the case reopens with history intact." No praise/blame at close time.
+- **Later payoff:** if canonical follow-up activity warrants it, the case reopens visibly (same ticket, history preserved); if not, it stays closed and handoff records the disposition + residual uncertainty. Single-signal closure (e.g., MFA-active therefore fine, history unexamined) is designed to meet the unexamined signal later via the reopen path — the lesson lands as process, not punishment.
+
+---
+
+## 21. False-positive review Work Item (compact, SHOULD-ship)
+
+**Status:** PROPOSED SUPPORTING RECORD item. Confirms the Section 5.2 AL-3 design as the T+43 SHOULD-ship contrast case, scoped to reuse existing mechanics only. Discardable if T+43 is cut; if cut, delete this section with AL-3 and its one auth row, keeping V4/D4 (still needed for route logic).
+
+### 21.1 Item shape
+
+- **Alert row AL-3 (A-1204):** medium-low rule severity with auto-note: single successful login for `c.okonkwo@example.com` from previously unseen residential IP, geo estimate "Chicago" vs assigned Toronto.
+- **Cost:** 1 alert row + 1 auth row (single success, enrolled device, extra check completed, VPN V-217 exit matched, zero prior failures) + reuse of V4 (V-217 shared-exit connection) and D4 (corp-macbook-okonkwo enrolled/active). No new systems, no new mechanics, no discrimination minigame.
+- **Size bound:** strictly smaller than A-1042 and shorter than phishing. Target: 2–3 record opens + 1 note + 1 close.
+
+### 21.2 Player verbs (same as everywhere else)
+
+Record query (filter by user/time; open the one auth row) → evidence correlation (enrolled + MFA-complete + route-matched all agree; geo estimate alone disagrees) → ticket/documentation (close with reason "expected/verified: enrolled device + completed extra check + matched route; city estimate alone is not suspicion") → bounded decision (close as expected/verified). KB-ALERT-01 + KB-VPN-01 + KB-DEVICE-01 support; no article names this verdict.
+
+### 21.3 Teaching point
+
+`unusual != malicious.` Shares A-1042's surface (unseen IP + surprising city) but inverts every load-bearing signal:
+
+| Signal | A-1042 | A-1204 (this item) |
+|---|---|---|
+| Device | unenrolled unknown-laptop-17 | enrolled corp-macbook-okonkwo |
+| Extra check | absent for S-0741 after 6 fails | completed, zero prior fails |
+| Route | no matching VPN row (absence 1) | V-217 exit matched |
+| Geo estimate | Montreal hint, estimate only | Chicago hint, estimate only |
+
+Lesson lands by doing the same checks and reaching a different disposition with reasons — which also blocks "always escalate" as a winning strategy.
+
+### 21.4 What stays out
+
+No new ticket type (close inside existing ticket/notes pattern); no new NPC knowledge (Morgan/Jules use existing 14.4/14.6 acknowledgement shapes); no new consequence type (clean close acknowledgement + handoff line only).
+
+---
+
+## 22. End-of-shift handoff (work product, not assessment)
+
+**Status:** PROPOSED shift-flow content. No canonical fields exist yet; content below defines the fields and their sources. System must not grade writing style.
+
+### 22.1 What the analyst actually does (T+60 shape)
+
+1. **Review open work** — open queue; list each item's state: open / monitoring / escalated / closed with reason. Sources: Work Item states + ticket keys `suspicious-login-1`, `routine-alert-1`, phishing report status, AL-3 disposition if shipped.
+2. **Update ticket status** — ensure each ticket has current status, attached/discovered record refs, and disposition or pending follow-up. Missing update draws at most one Jules doc-reminder (J-DOC-1 shape), never a block.
+3. **Write handoff note** — concise fields (short text each):
+   - items still open and who holds them;
+   - actions taken this shift (queries run, records opened, notes written, decisions taken);
+   - evidence attached (record/fact IDs);
+   - pending follow-ups with re-surface conditions (monitoring watches, expected replies);
+   - current disposition per item;
+   - important unresolved uncertainty stated plainly (e.g., "access unverified — export ends 07:45"; "no entry in approved-trips register is not a travel finding").
+4. **Mention monitoring items** — every monitoring/waiting state appears with its condition so next shift can continue without re-work.
+5. **Summarize unresolved questions** — gaps named as gaps (who controlled S-0741; what was accessed; travel question limits). Report-not-proof and coverage-limit qualifiers preserved verbatim in meaning.
+
+### 22.2 Handoff quality rule
+
+A good handoff lets the next analyst continue without re-reading every record. Content requirement: record IDs + states + open questions present. Prose elegance not evaluated. Free text never becomes world truth; structured refs carry the state.
+
+### 22.3 Shift ends mid-story (T+65 shape)
+
+Two things may still be open, both documented, both handed off — the intended end-of-shift feeling. Post-shift reflection/debrief stays secondary and must not retroactively score the shift.
+
+---
+
+## 23. Content-density and plausibility filter (applies to Sections 15–22)
+
+- **Time budget:** most of the shift spent investigating, correlating, documenting, communicating, monitoring, deciding, and resuming routine work. Per realism reference: 1 major investigation, 3–5 routine items, 2–4 interruptions, 2–4 Morgan exchanges, 2–3 Jules exchanges, 5–9 attachable findings for the major case, 3–5 meaningful decisions, 2–4 delayed-consequence beats.
+- **Avoid:** long exposition, quiz prompts, dramatic event after dramatic event, excessive dialogue, fake hacking, arbitrary minigames, jargon gates, hidden pixel hunts, exact-syntax demands, raw log walls.
+- **Final pass per beat:** *Is the player doing something a junior SOC analyst plausibly does?* If not, remove or redesign the beat. Mundane actions must teach, change state, or set up a later payoff — otherwise cut.
+
+---
+
+## Complete content inventory — shift-flow additions (Sections 15–23)
+
+| ID | Content | Provenance | Depends on | Notes |
+|---|---|---|---|---|
+| SH-ARR-01 | Arrival / handoff beat | PROPOSED (restates EXISTING handoff-email) | Sec 1.1, 7, 14.1 | Read handoff, check queue, skim routine, choose inspect order |
+| SH-SCAN-01 | Routine scanner depth | PROPOSED on EXISTING AL-2/SC rows | Sec 5.1, 7, 8, 13 | Event-vs-delivery, scope, coverage cap; 5–10 min close |
+| SH-A1042-A..D | Four investigation paths | PROPOSED flow over EXISTING rows | Sec 2–4, 11–12, 14.2–14.3 | Auth / device / VPN / Morgan-after-partial; equivalence rule |
+| SH-INT-01..04 | Interruptions I-1..I-4 | PROPOSED | Sec 5–6, 14.6–14.7 | Phishing, Jules, scanner follow-up, coworker; deferable |
+| SH-RES-01 | Resume-work calm beats | PROPOSED | Beat T+30–T+40 | Queue, docs, routine, monitor state, wait-through-work |
+| SH-CON-01..05 | Delayed consequences | PROPOSED text shapes | Sec 11, 14.4, 14.6 | Timely / delayed / thin / monitor / close; world feedback only |
+| SH-FP-01 | False-positive WI (AL-3) | PROPOSED SUPPORTING RECORD | Sec 5.2, V4, D4 | Confirms SHOULD-ship scope; 1 alert + 1 auth row + reuse |
+| SH-HAND-01 | End-of-shift handoff | PROPOSED fields | Tickets, 14.6 handoff | Open items, actions, evidence, follow-ups, uncertainty |
+| SH-FILT-01 | Density / plausibility filter | Derived | Realism ref Sec 13–14 | Budget + avoid-list + per-beat question |
+
+**Non-goals honored in Sections 15–23:** no schema, no engine semantics, no required-query strings, no answer keys, no verdict changes, no scoring, no new NPC knowledge beyond Section 14 bounds, no private-travel exposure, no real-world phishing domains, no absolute dates invented.
