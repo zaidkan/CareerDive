@@ -2,6 +2,14 @@ import { z } from "zod";
 
 import { ActionDefinitionSchema, type SimulationActionId } from "./actions.js";
 import { PackEventTemplateSchema } from "./events.js";
+import {
+  DATASET_FILTER_FIELDS,
+  DatasetIdSchema,
+  DatasetRecordSchema,
+  RuntimeDatasetSchema,
+  TIME_WINDOW_FILTER_FIELDS,
+  type DatasetId,
+} from "./records.js";
 import { WorkSystemIdSchema } from "./session.js";
 import {
   PackNotificationDefinitionSchema,
@@ -20,6 +28,35 @@ export const ScenarioRhythmSchema = z.enum([
   "quiet_investigation",
 ]);
 export type ScenarioRhythm = z.infer<typeof ScenarioRhythmSchema>;
+
+/**
+ * P2-T02 — Pack-authored structured dataset.
+ *
+ * Records reuse the frozen per-dataset shapes via `DatasetRecordSchema`
+ * (records.ts); `allowedFilterFields` is the authored filter-dimension
+ * config, cross-validated in `CareerPackSchema.superRefine` against the
+ * frozen `DATASET_FILTER_FIELDS` allowlist + time-window dimensions.
+ *
+ * Duplicate-id / datasetId-vs-key consistency reuses `RuntimeDatasetSchema`
+ * inside the pack-level cross-check (see superRefine); the pack-authoring
+ * shape here deliberately omits the redundant `datasetId` field because the
+ * map key is authoritative.
+ */
+export const PackDatasetSchema = z
+  .object({
+    records: z.array(DatasetRecordSchema).default([]),
+    allowedFilterFields: z.array(z.string()).default([]),
+  })
+  .strict();
+export type PackDataset = z.infer<typeof PackDatasetSchema>;
+
+/** Fields authorable as filter dimensions per dataset (allowlist + windows). */
+function authorableFilterFields(datasetId: DatasetId): ReadonlySet<string> {
+  return new Set<string>([
+    ...DATASET_FILTER_FIELDS[datasetId],
+    ...TIME_WINDOW_FILTER_FIELDS,
+  ]);
+}
 
 export const CareerPackSchema = z
   .object({
@@ -56,6 +93,9 @@ export const CareerPackSchema = z
       tasks: z.array(PackTaskDefinitionSchema).default([]),
       notifications: z.array(PackNotificationDefinitionSchema).default([]),
       workplaceDefaults: PackWorkplaceDefaultsSchema,
+      // P2-T02: authored structured datasets, keyed by DatasetId. Default {}
+      // keeps pre-Phase-2 packs valid (backward compatibility).
+      datasets: z.record(DatasetIdSchema, PackDatasetSchema).default({}),
     }),
   })
   .superRefine((pack, ctx) => {
@@ -370,6 +410,52 @@ export const CareerPackSchema = z
             path: ["scenario", "artifacts"],
           });
         }
+      }
+    }
+    // P2-T02 pack/dataset validation (Phase 2 invariants; composes with the
+    // P1-T05 rules above, never replaces them). Frozen contract:
+    //  - each dataset key is a valid DatasetId (guaranteed by the record-keyed
+    //    schema; the key here is authoritative for record consistency);
+    //  - each record validates against its per-dataset schema + record-id
+    //    uniqueness + datasetId/key match — reuse RuntimeDatasetSchema so the
+    //    frozen P2-T01 logic is the single source of truth;
+    //  - authored filter fields reference only the closed DATASET_FILTER_FIELDS
+    //    allowlist plus the time-window dimensions.
+    for (const [key, dataset] of Object.entries(pack.scenario.datasets)) {
+      const datasetId = key as DatasetId;
+      // Reuse the frozen runtime validator for record shape, duplicate ids,
+      // and record.datasetId-vs-key consistency (the map key is authoritative).
+      const runtime = RuntimeDatasetSchema.safeParse({
+        datasetId,
+        records: dataset.records,
+      });
+      if (!runtime.success) {
+        for (const issue of runtime.error.issues) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Dataset "${key}": ${issue.message}`,
+            path: ["scenario", "datasets", key, ...issue.path],
+          });
+        }
+      }
+      const allowed = authorableFilterFields(datasetId);
+      const seenFilterFields = new Set<string>();
+      for (const field of dataset.allowedFilterFields) {
+        if (!allowed.has(field)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Dataset "${key}" authorizes filter field "${field}", which is not a valid filter dimension for this dataset`,
+            path: ["scenario", "datasets", key, "allowedFilterFields"],
+          });
+        }
+        if (seenFilterFields.has(field)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Dataset "${key}" duplicates authored filter field "${field}"`,
+            path: ["scenario", "datasets", key, "allowedFilterFields"],
+          });
+        }
+        seenFilterFields.add(field);
       }
     }
   });
