@@ -11,3 +11,6 @@ playwright-report/
 test-results/
 .orca-overnight/
 .orca-opencode/
+
+# Local code-intelligence / editor settings
+.kiro/settings/
