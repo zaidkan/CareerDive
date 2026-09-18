@@ -440,6 +440,41 @@ The shift passes only if ALL hold:
 9. No quiz UX dominates: §4 anti-quiz checks pass with zero hits across a full session.
 10. No renderer changes career-relevant capability: §13 + parity-matrix scenarios pass; debrief renderer-blind.
 
+# 16. Occupational-understanding interview (PT-UNDERSTAND — product release gate)
+
+Automated + "feels like work" checks prove the shift *functions and reads as work*. This gate proves it *communicates the career* (canonical spec Top-Level Product Goal + §17.9 + §17A). Run after a 30–60 minute unaided session. Ask, and record answers verbatim:
+
+- U-1 What do you think a SOC analyst spends most of their time doing?
+- U-2 What surprised you about the work?
+- U-3 What felt repetitive or routine?
+- U-4 Which decisions were difficult, and why?
+- U-5 What information did you wish you had?
+- U-6 Which tools did you keep returning to?
+- U-7 What role did coworkers / your manager play?
+- U-8 Why did you document things?
+- U-9 What happened after you made decisions?
+- U-10 Would you want to do this work professionally — why or why not?
+
+Scoring is qualitative (no numeric realism score). Compare each answer to the intended understanding in spec §17A:
+
+- U-1/U-3 should reference routine/monitoring/investigation/documentation — NOT "solving one hacking puzzle."
+- U-2/U-4/U-5 should surface ambiguity, incomplete confidence, evidence-vs-proof.
+- U-6 should name the record-query tool and documentation/queue.
+- U-7 should describe coworkers as bounded context (report-not-proof), not answer-givers.
+- U-8 should connect to continuity/handoff/accountability.
+- U-9 should describe a later, non-instant world change.
+- U-10 must be answerable **either way** with reasons drawn from what the player did.
+
+**PASS condition:** a majority of players produce §17A-aligned answers for U-1, U-4, U-6, U-8, U-9 **and** give a reasoned U-10. A build passing every automated test and §15 but failing PT-UNDERSTAND is **not beta-complete** — treat gaps as content/UX product work (orientation, texture, closing reflection), routed via the §18B vertical slices.
+
+**Product-review distortion checks (binding, per canonical spec intent block).** Two answers are treated as failure signals regardless of the rest:
+
+- If U-1/U-3 describe the job as "solving/answering to unlock the next step" or "picking the right clue," the **quiz-gate distortion** (review finding #1) is present — fail; route to the V1 investigation-driven flow, not more content.
+- If U-1 describes the job as "investigating attacks all day" with no routine/benign/monitoring texture, the **every-alert-is-an-attack distortion** (review finding #4) is present — fail; route to V2 (routine false positive).
+- U-9 must describe a *later, non-instant* consequence (review finding #2); U-8 must connect documentation to another analyst/continuity/justification (review finding #3); U-7 must describe coworkers as bounded context, never graders/oracles (review finding #5).
+
+**The final product test (single question):** *A student plays for 30–60 minutes, then meets a real SOC analyst — could they hold a meaningful conversation about how the shift flows, the tools, how they investigate, why evidence is ambiguous, why false positives happen, why documentation matters, how coworkers fit, what routine feels like, which decisions are stressful, and whether they personally enjoyed it?* If not, the shift is not done, regardless of test status.
+
 # Appendix A. Content gaps (do NOT fix other workers' files)
 
 Write `CONTENT GAP: …` here when a test needs content that does not exist yet. Current known gaps (read-only observations, no edits made):

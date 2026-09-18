@@ -25,6 +25,42 @@ For this beta:
 
 ---
 
+## Top-Level Product Goal (binding; supersedes narrower framings above where they conflict)
+
+Career Expo exists so a person can **experience a career well enough to decide whether it is for them.** After completing the simulation, the player should be able to confidently explain: what the job actually *feels* like; what they would spend their time doing; which parts are routine; which parts are ambiguous or stressful; which tools and people they depend on; what decisions they make; what they might enjoy; and what might make them decide the career is not for them.
+
+For the current Cybersecurity Analyst beta, the single top-level success criterion is:
+
+> **After this shift, the player has a meaningful and reasonably accurate understanding of what working as a junior SOC analyst feels like — enough to hold a real conversation with a working analyst about the shift, the tools, the investigation, the ambiguity, the documentation, the coworkers, the routine, the stressful decisions, and whether they personally enjoyed it.**
+
+It is explicitly **not** success to merely: learn cybersecurity concepts; play cybersecurity-themed tasks; render a realistic office; or complete the "correct" investigation path.
+
+### Core product principle — Career Understanding Through Doing
+
+Every substantial feature is judged by one question:
+
+> **Does this make the player better understand what it actually feels like to do this job?**
+
+A feature that does not must either (a) directly support a feature that does, (b) drop in priority, (c) be redesigned to do so, or (d) be removed. Reaching feature-completion or architectural elegance is not, by itself, product value. This principle governs the roadmap (§18), the beta cut line (§19), the Feature Filter (§18A), and final acceptance (§17.9 / playtest pack).
+
+### Both self-discovery outcomes are successful
+
+A player concluding "I would enjoy this work" and a player concluding "I would not want to do this every day" are **both** successful product outcomes. The simulation must not steer toward liking the career; it must let the player feel the real texture — including the tedious and ambiguous parts — and decide for themselves.
+
+### Incorporating external product-review evidence (binding)
+
+An independent player-perspective review ("would I actually enjoy this job?") is treated as major product evidence. Its findings, folded in here and driving §18B ordering:
+
+1. **Quiz-like comprehension is the largest distortion (highest priority).** The handoff/alert-comprehension flow sometimes proves understanding through `requiredOptionIds`/expected-option gates rather than through investigation. The player must reach understanding by *doing* (receive handoff → inspect alert/context → search records → compare auth/device/VPN → form understanding → continue), never by selecting the expected clue to unlock progression. This is the largest distortion because it changes what the player believes the job *is*. Addressed by the in-flight **P3-T01 investigation-driven flow** lane; V1 depends on it.
+2. **Decisions feel too obvious and immediate.** The player needs at least one incomplete/ambiguous situation where they make a judgment, the system does **not** immediately tell them if they were right, and a **later deterministic** consequence gives the decision meaning. A thin vertical-slice consequence suffices — the general Phase 5 system is not a prerequisite.
+3. **Documentation has weak occupational value.** Notes exist but do not yet feel like "another analyst may need this; my action needs justification; this work may continue." A **ticket-lite** structured documentation step is pulled into V1 early so the investigation ends in real analyst work. Serves the in-flight Phase 4 ticket foundation; V1 pulls a thin slice.
+4. **Too little routine work / realistic rhythm.** Too much reads as important/suspicious. The player needs routine queue checks, benign/noisy alerts, zero-yield queries, "did this happen before?" checks, documenting a non-event, and returning to normal — or the mental model collapses to "SOC analyst = investigate attacks all day." Drives V2 (routine false positive) to NEXT-critical.
+5. **Morgan/Jules risk feeling decorative.** Coworkers should sometimes carry bounded operational value (partial history, a human observation, priority/context, uncertainty, follow-up) but never become answer oracles or graders. Coworker context is **pulled into the slices** (V1/V2/V3), and the general NPC runtime is generalized *later* from what the slices actually need.
+
+Where any assumption in this document conflicts with this evidence about the felt experience, the review evidence wins and the assumption is superseded in place.
+
+---
+
 # 1. Experience Target
 
 The player should feel like they have temporarily stepped into a junior cybersecurity analyst shift, not like they are taking a cybersecurity assessment.
@@ -83,6 +119,18 @@ The redesign succeeds when:
 - the interface does not reveal “correct answer” state;
 - the same canonical work can be completed through 3D, desk-only, and accessible renderers;
 - replaying the same action sequence produces the same simulation outcome.
+
+### Occupational-understanding outcomes (observable, per §17.9)
+
+Beyond the mechanical criteria above, the shift succeeds only if it produces the felt understanding in the Top-Level Product Goal. Each of the following must be created **through the player's own experience**, verified by the occupational playtest (§17.9), not by explanatory text:
+
+- **Orientation:** within the first minutes the player can state who they are, where they sit, what the shift is, and what "doing the job well" looks like — before being asked to perform investigation.
+- **Rhythm:** the player experiences the arc arrival → handoff → routine queue → interruption → investigation → return to routine → follow-up → end-of-shift handoff, and can describe it afterward as "a shift," not "a puzzle."
+- **Routine vs. signal:** the player personally handles at least one genuinely routine/benign item and at least one item that turns out to matter, and can articulate the difference in how they *felt* to work.
+- **Ambiguity & judgment:** the player reaches at least one decision under incomplete confidence, can name what they could and could not establish, and does so without the system pre-labeling the answer.
+- **Emotional texture:** the player can describe a felt moment — the low-grade "is this nothing or something?" tension, the relief of clearing a false positive, or the weight of escalating.
+- **Dependency:** the player can explain how a coworker/manager and their tools were part of getting the work done.
+- **Closing reflection:** at end of shift the player is given a reflective debrief that names what the day was and invites the "would I want to do this?" judgment — and can answer it either way with reasons drawn from what they did.
 
 ---
 
@@ -1844,9 +1892,146 @@ Implementation is not considered complete because UI “looks right.”
 
 The core deterministic behavior must be proven first.
 
+## 17.9 Occupational-understanding playtest (product acceptance)
+
+Automated tests prove the simulation *functions*. They cannot prove it *communicates the career*. Final beta acceptance additionally requires an occupational playtest whose questions target understanding, not correctness. After a 30–60 minute play session, ask the player, in their own words:
+
+- What do you think a SOC analyst spends most of their time doing?
+- What surprised you about the work?
+- What felt repetitive or routine?
+- Which decisions were difficult, and why?
+- What information did you wish you had?
+- Which tools did you keep returning to?
+- What role did coworkers/your manager play?
+- Why did you document things?
+- What happened after you made decisions?
+- Would you want to do this work professionally — why or why not?
+
+Acceptance is met when a majority of players' answers align with the intended career understanding (the §17A model) **and** the player can give a reasoned yes/no to the last question drawn from what they actually did. This is a qualitative gate, recorded in the playtest/acceptance pack (`interactivity-playtest-and-acceptance-pack.md`), not a numeric score. A build that passes every automated test but fails this gate is **not** beta-complete.
+
+---
+
+# 17A. Career-Experience Model (what the shift must teach through doing)
+
+The simulation is complete only when the player experiences the following, first-hand. This is the coverage checklist behind §1's occupational-understanding outcomes and the target for the §17.9 playtest. Each item names the experience and a binding, observable acceptance criterion (no "N/10 realism" scores).
+
+**Work rhythm** — arrival, handoff, routine queue work, interruption, investigation, return to routine, follow-up, end-of-shift handoff.
+- *Acceptance:* the shift presents all eight beats in a believable order (see §4), and the player performs an action in at least the arrival, routine, investigation, interruption, documentation, and handoff beats.
+
+**Information flow** — work arriving unbidden; incomplete information; multiple tools/sources; noise; missing evidence; contradictory signals; zero-result searches.
+- *Acceptance:* at least one work item arrives without the player asking; during one investigation the player must consult **two independent sources** because neither resolves the situation alone; at least one legitimate **zero-result** search occurs and is treated as information, not error.
+
+**Judgment** — deciding what matters, what to investigate next, acting under uncertainty, recognizing false positives, incomplete confidence, escalation/closure.
+- *Acceptance:* the shift contains a believable item that initially warrants attention but resolves as benign **through the player's investigation**, without the system pre-labeling it; the player reaches at least one disposition under incomplete confidence and can state what they could/could not establish.
+
+**Tools** — repeated real tool use: record searches, queue/work items, knowledge lookup, notes/tickets, communication.
+- *Acceptance:* the player uses the record-query tool **more than once across more than one dataset**, and creates/updates a real work product (ticket/notebook) that persists.
+
+**Human dependency** — coworkers, manager, bounded context, needing info from another person, communicating findings.
+- *Acceptance:* at least one piece of useful context is obtained from Morgan/Jules (bounded, report-not-proof), and the player communicates a finding to a person (brief/handoff/ticket) at least once.
+
+**Documentation** — why notes/tickets exist: continuity, handoff, accountability, evidence attachment.
+- *Acceptance:* the player's documentation is what a later beat / the end-of-shift handoff draws on; documentation is never a graded quiz field.
+
+**Consequence** — actions have later effects; feedback is not always instant; follow-up; unresolved work.
+- *Acceptance:* at least one earlier decision produces a **later** deterministic world change the player did not receive immediately; unresolved work is visibly carried into the handoff.
+
+**Career texture** — repetition, concentration, ambiguity, interruption, satisfaction, tedious portions, stress, context switching.
+- *Acceptance:* the player experiences at least one genuine context-switch (leave item A for item B, resume A later) and at least one deliberately ordinary/tedious stretch; the shift is not wall-to-wall incident.
+
+**Self-discovery** — the player can conclude "I'd like this" **or** "I wouldn't want this daily," both successful.
+- *Acceptance:* the closing reflection (§4 Phase F / §17.9) invites this judgment and the player can answer it with reasons drawn from the shift.
+
+---
+
+# 17B. Career-Experience Loops (playable structure, not systems)
+
+The architecture is described elsewhere as systems (records, query, discovery, tickets, decisions, consequences, NPCs). For content and product work, the shift is authored as repeatable **experience loops**. Every substantial content unit should slot into one loop. Loops are derived from §3 (Canonical Work Loop), §4 (Beat Sheet), §9 (Interruptions), and the realism reference.
+
+- **Routine triage loop:** work arrives → inspect summary → quick validation → judge benign/nonurgent → document briefly → return to queue. *(Teaches: routine texture, most-of-the-job reality, that "nothing happened" is a normal outcome.)*
+- **Investigation loop:** alert arrives → form a question → search records → compare sources → hit uncertainty → seek added context (tool or person) → decide under incomplete confidence → document → later consequence/follow-up. *(Teaches: the core intellectual work, ambiguity, correlation, evidence-vs-proof.)*
+- **Interruption / context-switch loop:** working item A → item B or message arrives → assess urgency → decide whether to switch → resume A's context later. *(Teaches: attention management, that work is concurrent and interrupt-driven.)*
+- **Documentation & continuity loop:** finding exists → record it as work product → it persists and feeds a later beat or teammate. *(Teaches: why documentation matters, accountability, handoff continuity.)*
+- **Handoff loop:** shift ending → identify unresolved work → summarize what matters → preserve evidence/context → next analyst can continue. *(Teaches: the shift is one link in an ongoing operation; closure ≠ everything solved.)*
+
+Content authoring (§14, §7, Phase 7) should state which loop(s) each item serves. An item serving no loop is a candidate for cutting.
+
+---
+
+# 17C. Feature Filter (permanent; apply before any substantial feature enters the roadmap)
+
+Before adding or expanding any substantial feature, answer all six. A feature that fails should not automatically enter the roadmap.
+
+1. **Career value** — What will the player understand about the occupation because this exists?
+2. **Experience** — Does the player *experience* that understanding, or merely read about it?
+3. **Frequency** — Does the real worker encounter this often enough to deserve simulation time?
+4. **Distortion** — Could it create a misleading impression of the career?
+5. **Integration** — Does it connect to existing experience loops (§17B), or is it an isolated minigame?
+6. **Opportunity cost** — Would the effort deepen an existing career experience more than adding this?
+
+This filter operationalizes the Core Product Principle and governs §18/§19 priority decisions.
+
 ---
 
 # 18. Phased Implementation Plan
+
+## 18-pre. Product-direction reconciliation (binding; supersedes phase ordering below where they conflict)
+
+The phase list in this section (0–9) remains the **capability decomposition** and its per-phase acceptance criteria stay valid. However, the *execution ordering* is now governed by **vertical experience slices**, not by finishing each general-purpose system before the next. Rationale: the Top-Level Product Goal is reached by making **one complete investigation feel like the job**, which requires a thin slice of records + discovery + documentation + one decision + one delayed consequence + one human dependency + a closing reflection — not by completing every phase's general machinery first.
+
+Preserved as-is: all completed foundations (Phase 1 Work Item state, Phase 2 records/query engine — both shipped and green), the deterministic-backend authority model, replay/hidden-state/parity contracts, and every per-mechanic acceptance criterion in §5.
+
+Changed: the assumption that Phases 3→4→5→6→7 must each fully complete before the next begins. Instead, build **minimum vertical slices** (§18B) that each deliver a felt experience end-to-end, pulling just enough of each system.
+
+### §18A — Feature Filter gate
+
+Every task entering the roadmap must pass §17C. Tasks that are architecturally sophisticated but low on career value (per the filter) are deferred or removed, even if technically interesting.
+
+### §18B — Vertical experience slices (the new unit of delivery)
+
+The beta is delivered as a small set of complete experiences. **Priority is driven by the external product review (see intent block): the largest gap is that comprehension still feels quiz-like, so the core investigation experience (V1) is the highest priority — it is the proof that Career Expo can make someone *feel* the occupation.** A slice is complete only when its occupational experience exists end-to-end (verified by a §17.9 walkthrough), never merely because its APIs/components exist.
+
+**Per-slice authoring rule.** Every slice must specify all ten: (1) career understanding created; (2) what the player physically/mentally *does*; (3) what uncertainty they encounter; (4) what tools/data they use; (5) what human interaction matters; (6) what they document; (7) what decision they make; (8) what happens later; (9) what the player can explain afterward; (10) what might make the player realize they do/don't enjoy this work.
+
+**Slice V1 — A-1042 complete investigation experience (HIGHEST PRIORITY).**
+Receive alert → read handoff → inspect alert/context → query auth/device/VPN records → hit genuine ambiguity → optionally consult Morgan for bounded context → discover Evidence Facts through provenance (investigation-driven, **not** expected-option selection) → document a ticket-lite work product → choose a disposition under incomplete confidence → the system does **not** immediately grade it → a later deterministic follow-up gives the decision meaning → unresolved work is carried into the handoff.
+- *(1) Understanding:* what the core analyst workday intellectually *is*. *(2) Does:* forms a question, searches multiple datasets, correlates, writes justification, decides. *(3) Uncertainty:* device/VPN/auth don't line up cleanly; can't fully prove attribution. *(4) Tools:* record-query tool across ≥2 datasets, ticket-lite. *(5) Human:* Morgan gives partial history / a human observation (bounded, report-not-proof). *(6) Documents:* a ticket that justifies the disposition and could be read by another analyst. *(7) Decision:* monitor / escalate / close-with-note under incomplete confidence. *(8) Later:* a deterministic follow-up (e.g. senior review acknowledgement, re-surface, or handoff carry-over) arrives later, not instantly. *(9) Can explain:* what arrived, what they looked at, why multiple systems, what stayed uncertain, what they decided, what they documented, what happened after. *(10) Enjoy/not:* "I like piecing evidence together under uncertainty" vs. "the ambiguity/never-fully-sure part would wear on me."*
+- *Serves:* investigation + documentation + consequence + dependency loops; seeds the closing reflection. *Pulls thin slices of Phases 3/4/5/6.* *Reconciles with in-flight:* P3-T01 investigation-driven flow (kills the quiz gate — review finding #1), P3 Evidence Fact foundation (shipped/green), Phase 4 ticket-lite RED contract, a thin single consequence (not the general Phase 5 scheduler).
+
+**Slice V2 — Routine false-positive experience (NEXT — critical for mental model).**
+Player takes something seriously → checks records/context → realizes it is benign → documents/closes it → returns to work. Never pre-labeled benign by the system.
+- *Serves:* routine triage loop, judgment, false-positive texture; directly corrects "SOC = investigate attacks all day" (review finding #4).
+
+**Slice V3 — Interruption / context-switch experience (NEXT).**
+Player is mid-work → a new item/message arrives → assesses urgency → decides whether to switch → resumes prior context later.
+- *Serves:* interruption loop, the real rhythm of operational work, career texture.
+
+**Slice V4 — Orientation & closing-reflection experience (NOW / PARALLEL, supporting).**
+A cold-open orientation beat (who you are / where you sit / what the shift is / what "good" looks like) and a closing reflective debrief that names the day and invites the "is this for me?" judgment.
+- *Role (revised per review):* framing/reflection is **supporting, not primary**. It contextualizes the work experience and supports self-discovery; it must **not** compensate for missing occupational depth in V1. It may run in parallel with V1 because it is comparatively light (content + light web), but it does not outrank the actual work experience.
+
+**Coworker dependency (pulled into slices, not a prerequisite).** Morgan/Jules may provide bounded, useful context inside V1/V2/V3 now; do **not** wait for a generalized NPC framework. The NPC runtime is generalized *later* from what the slices actually require. Coworkers never become answer oracles or graders (review finding #5, consistent with §11).
+
+### §18C — Reconciled NOW / NEXT / LATER / DEFER (supersedes any earlier ordering)
+
+- **NOW — V1 complete A-1042 investigation experience.** Core proof of the product goal. Depends on: Phase 2 (shipped), P3 Evidence Fact foundation (shipped), in-flight P3-T01 investigation-driven flow, a thin Phase 4 ticket-lite, one thin deterministic consequence, bounded Morgan context. Completion = V1 contract below.
+- **NOW / PARALLEL — V4 orientation + closing reflection.** Light content + web; parallelizable with V1; supporting role only.
+- **NEXT — V2 routine false positive** (corrects the "every alert is an attack" model), then **V3 interruption / context-switch** (teaches operational rhythm). Coworker bounded context continues to be pulled into these slices.
+- **LATER — generalization, only after slices prove what's needed:** generalized structured ticket system, generalized conditional consequences (full Phase 5), generalized NPC intent runtime (Phase 6), broader content abstractions, extra renderer/UX polish (Phase 8).
+- **DEFER / REMOVE — anything failing the §17C Feature Filter,** plus everything already in §19.3 (second career, sandbox, NL query, AI grading, autonomous NPCs, procedural incidents, multiplayer, scoring, rankings). Do not build general-purpose systems ahead of the occupational experience they serve.
+
+### §18D — V1 completion contract (binding)
+
+V1 is complete only when a **new** player can investigate A-1042 end-to-end and afterward explain, unprompted: what arrived; what they looked at; why they had to check multiple systems; what remained uncertain; what decision they made; what they documented and why; and what happened afterward — **without the experience reducing to answer selection**. Additionally: no `requiredOptionIds`-style gate stands between the player and progression on the investigation path; at least one legitimate zero-yield query occurs; the disposition is not immediately graded; and a later deterministic follow-up references the player's decision/documentation. Verified by a §17.9 walkthrough, not by unit tests alone.
+
+### Do-not-duplicate (in-flight lanes; reconcile, do not restart)
+
+- P3 Evidence Fact foundation — **shipped and green**; V1 builds on it.
+- P3-T01 investigation-driven flow — **in flight**; it is the vehicle for review finding #1; V1 depends on it rather than re-authoring the comprehension flow.
+- Phase 4 structured-ticket foundation / RED contract — **assigned/in flight**; V1 pulls a ticket-lite slice from it.
+- Desk OS / UI and visual/dialogue work — **separate lanes**; coordinate, don't absorb.
+
+Completed foundations (Phase 1 Work Item state, Phase 2 records/query) are preserved; sequencing changes never cancel them.
 
 The order matters. Do not dispatch large content/UI work before the canonical mechanics exist.
 
