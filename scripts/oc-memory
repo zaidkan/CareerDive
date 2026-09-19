@@ -27,7 +27,9 @@
 #     is unreachable or auth fails, every command DEGRADES (logs + exit 3).
 #   OC_NEO4J_MODE=local (rollback): docker exec orca-neo4j cypher-shell, the
 #     historical path, unchanged.
-# NEO4J_PASSWORD from env only, never printed/defaulted. If Neo4j is
+# NEO4J_PASSWORD from env only, never printed/defaulted and never passed on the
+# cypher-shell command line. The client reads NEO4J_USERNAME/NEO4J_PASSWORD from
+# its environment, so no credential appears in `ps`/process args. If Neo4j is
 # unavailable, every command DEGRADES (logs + exit 3) and never aborts the
 # caller — orchestration must not hard-depend on the brain.
 #
@@ -66,13 +68,15 @@ mem_available() {
   esac
 }
 cy() { # run read/write cypher; prints plain output; caller checks availability first
+  # Credentials reach cypher-shell via env (NEO4J_USERNAME/NEO4J_PASSWORD), never
+  # as -u/-p CLI args: CLI args are visible in `ps`/process listings.
   case "$MODE" in
     local)
-      docker exec -i "$CONTAINER" cypher-shell -u neo4j -p "$NEO4J_PASSWORD" --format plain "$1" 2>&1
+      docker exec -i -e NEO4J_USERNAME=neo4j -e NEO4J_PASSWORD "$CONTAINER" cypher-shell --format plain "$1" 2>&1
       ;;
     remote)
       local client; client="$(command -v cypher-shell 2>/dev/null)"
-      if [ -n "$client" ]; then "$client" -a "$BOLT" -u "$USER" -p "$NEO4J_PASSWORD" --format plain "$1" 2>&1
+      if [ -n "$client" ]; then NEO4J_USERNAME="$USER" NEO4J_PASSWORD="${NEO4J_PASSWORD:-}" "$client" -a "$BOLT" --format plain "$1" 2>&1
       else echo "MEMORY_DEGRADED: remote mode needs cypher-shell on PATH (manual prerequisite; install cypher-shell)"; return 3; fi
       ;;
     *) echo "MEMORY_DEGRADED: unknown OC_NEO4J_MODE='$MODE'" >&2; return 3;;
