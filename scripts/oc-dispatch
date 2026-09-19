@@ -31,17 +31,30 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-OC_WORKER="$REPO_ROOT/scripts/oc-worker"
+OC_WORKER="${OC_WORKER:-$REPO_ROOT/scripts/oc-worker}"
 STATE_DIR="$REPO_ROOT/.orca-opencode"
 RUNS_DIR="$STATE_DIR/runs"
 SPECS_DIR="$STATE_DIR/specs"
 WORKTREE_ROOT="${OC_WORKTREE_ROOT:-$(cd "$REPO_ROOT/.." && pwd)/workspaces/Career-Expo}"
 MAX_CONCURRENT="${OC_MAX_CONCURRENT:-4}"
 MAX_FALLBACK="${OC_MAX_FALLBACK:-3}"
+OC_MEMORY="${OC_MEMORY:-$REPO_ROOT/scripts/oc-memory}"
+MEM_TELEMETRY="$STATE_DIR/memory-telemetry.jsonl"
+OC_MEM_ENABLED="${OC_MEM_ENABLED:-1}"   # set 0 to disable the coordination brain entirely
 mkdir -p "$RUNS_DIR" "$SPECS_DIR"
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 iso_now() { date -u "+%Y-%m-%dT%H:%M:%SZ"; }
+
+# --- coordination-memory bridge (degrades silently if brain offline/disabled) ---
+mem_on() { [ "$OC_MEM_ENABLED" = "1" ] && [ -x "$OC_MEMORY" ] && "$OC_MEMORY" available >/dev/null 2>&1; }
+mem_write() { mem_on || return 0; "$OC_MEMORY" write "$@" >/dev/null 2>&1 || true; }
+mem_tel() { # append one telemetry record: run task event detail
+  RUN="$1" TASK="$2" EVENT="$3" DETAIL="${4:-}" TS="$(iso_now)" python3 - >>"$MEM_TELEMETRY" <<'PY'
+import json,os
+print(json.dumps({"ts":os.environ["TS"],"run":os.environ["RUN"],"task":os.environ["TASK"],"event":os.environ["EVENT"],"detail":os.environ["DETAIL"]}))
+PY
+}
 
 # --- run record helpers (JSON via python for safe quoting) ---
 rec_path() { echo "$RUNS_DIR/$1.json"; }
@@ -70,7 +83,7 @@ next_run_id() {
   echo "oc-$day-$(printf '%03d' "$n")"
 }
 
-count_running() { ls "$RUNS_DIR"/*.json >/dev/null 2>&1 || { echo 0; return; }; grep -l '"state": "RUNNING"' "$RUNS_DIR"/*.json 2>/dev/null | wc -l | tr -d ' '; }
+count_running() { local n=0; if ls "$RUNS_DIR"/*.json >/dev/null 2>&1; then n="$(grep -l "\"state\": \"RUNNING\"" "$RUNS_DIR"/*.json 2>/dev/null | wc -l | tr -d " ")"; fi; echo "${n:-0}"; }
 
 task_active() { # task-id -> 0 if a non-terminal run exists
   for f in "$RUNS_DIR"/*.json; do
@@ -102,7 +115,9 @@ $obj
 ## Startup (required)
 1. Read AGENTS.md and the applicable canonical spec under docs/superpowers/specs/.
 2. Confirm you are in worktree $wt on branch $br; inspect \`git status\` and \`git log --oneline -5\`.
-3. Query project-memory for relevant prior context before coding.
+3. Any coordination context you need has been injected by orchestration under
+   "SHARED COORDINATION CONTEXT" below (if present). Do NOT query project-memory
+   yourself; the orchestrator performs targeted retrieval.
 
 ## Scope
 - Work ONLY inside this worktree. Do NOT touch main or other worktrees.
@@ -134,12 +149,14 @@ EOF
 cmd_dispatch() {
   local task="" cls="" reason="" base="main" force_model="" effort="xhigh" \
         spec="" objective="" existing_dir=""
+  local mem_keys=()
   while [ $# -gt 0 ]; do case "$1" in
     --task) task="$2"; shift 2;; --class) cls="$2"; shift 2;;
     --reason) reason="$2"; shift 2;; --base) base="$2"; shift 2;;
     --model) force_model="$2"; shift 2;; --effort) effort="$2"; shift 2;;
     --spec) spec="$2"; shift 2;; --objective) objective="$2"; shift 2;;
     --dir) existing_dir="$2"; shift 2;;
+    --mem-key) mem_keys+=("$2"); shift 2;;
     *) die "unknown arg: $1";; esac; done
   [ -n "$task" ] || die "--task required"
   [ -n "$reason" ] || die "--reason required"
@@ -168,12 +185,34 @@ cmd_dispatch() {
   if [ -n "$spec" ]; then [ -f "$spec" ] || die "spec not found: $spec"; [ "$(cd "$(dirname "$spec")" && pwd)/$(basename "$spec")" = "$specfile" ] || cp "$spec" "$specfile"
   else write_default_spec "$rid" "$task" "${cls:-forced}" "$reason" "$base_sha" "$wt" "$br" "$objective" "$specfile"; fi
 
+  # AUTO-READ (targeted): ask the coordination brain if anything another worker
+  # discovered materially affects THIS task. Keys = task ID + any --mem-key.
+  # Inject only relevant, non-superseded facts. Degrades silently if offline.
+  local injected=0 mem_state="degraded"
+  if mem_on; then
+    mem_state="connected"
+    local hits; hits="$("$OC_MEMORY" relevant "$task" ${mem_keys[@]+"${mem_keys[@]}"} 2>/dev/null | tail -n +2)"
+    if [ -n "$hits" ]; then
+      injected="$(printf '%s\n' "$hits" | grep -c .)"
+      { echo ""; echo "## SHARED COORDINATION CONTEXT (auto-injected by orchestration; do not re-query the graph)";
+        echo "The following relevant coordination memories were written by earlier work. Use them; note if any conflicts with current Git (Git is authoritative for code).";
+        printf '%s\n' "$hits" | sed 's/^/- /'; } >>"$specfile"
+    fi
+  fi
+  mem_tel "$rid" "$task" "context_injected" "count=$injected mem=$mem_state"
+
   # Record + launch in background (non-blocking). oc-worker does model routing.
   local log="$STATE_DIR/run-$rid.out"
   setkv "$rid" run_id "$rid" task "$task" task_class "${cls:-}" forced_model "${force_model:-}" \
         reason "$reason" base "$base" base_sha "$base_sha" worktree "$wt" branch "$br" \
         spec "$specfile" log "$log" effort "$effort" state "STARTING" \
-        fallback_used "0" created "$(iso_now)"
+        fallback_used "0" mem_injected "$injected" mem_state "$mem_state" created "$(iso_now)"
+
+  # AUTO-WRITE: coordinator checkpoint at the dispatch boundary (compact; spec by
+  # reference, never the giant prompt). No-op if brain offline.
+  mem_write COORDINATOR_CHECKPOINT "$task" "dispatched" \
+    "run=$rid class=${cls:-forced} branch=$br base=$base_sha model=$([ -n "$force_model" ] && echo "$force_model" || echo "auto:$cls") spec=$specfile injected_memories=$injected" \
+    open
 
   local model_args=(); [ -n "$force_model" ] && model_args=(--model "$force_model") || model_args=(--class "$cls")
   ( "$OC_WORKER" run "${model_args[@]}" --task "$task" --reason "$reason" \
@@ -183,6 +222,7 @@ cmd_dispatch() {
   setkv "$rid" pid "$pid" state "RUNNING" started "$(iso_now)"
 
   cmd_report_dispatch "$rid"
+  echo "MEMORY: $mem_state; injected $injected coordination memory(ies) into spec"
 }
 
 cmd_report_dispatch() {
@@ -298,7 +338,7 @@ handle_rate_limit() {
 
 inspect_completion() {
   local rid="$1"; local f; f="$(rec_path "$rid")"
-  local wt br; wt="$(rec_get "$f" worktree)"; br="$(rec_get "$f" branch)"
+  local wt br task; wt="$(rec_get "$f" worktree)"; br="$(rec_get "$f" branch)"; task="$(rec_get "$f" task)"
   local head; head="$(git -C "$wt" rev-parse --short HEAD 2>/dev/null || echo "?")"
   local base_sha; base_sha="$(rec_get "$f" base_sha)"
   local newcommit="none"; [ "$head" != "$base_sha" ] && newcommit="$head"
@@ -307,12 +347,58 @@ inspect_completion() {
   echo "worktree: $wt  branch: $br  base:$base_sha -> head:$head  new_commit:$newcommit"
   echo "git status:"; git -C "$wt" status -s | head
   [ "$newcommit" != "none" ] && { echo "diffstat:"; git -C "$wt" show --stat --oneline "$head" | head -15; }
+
+  # Worker-reported outcome from its RETURN block (authoritative status is Git+reap).
+  local log wstatus wnotes; log="$(rec_get "$f" log)"
+  wstatus="$(grep -iE "^status:" "$log" 2>/dev/null | tail -1 | sed 's/^[Ss]tatus:[[:space:]]*//')"
+  wnotes="$(grep -iE "^notes:" "$log" 2>/dev/null | tail -1 | sed 's/^[Nn]otes:[[:space:]]*//' | cut -c1-200)"
+
+  # AUTO-WRITE TASK_OUTCOME (compact: what happened + what next worker needs; NOT a diff dump).
+  mem_write TASK_OUTCOME "$task" "completed" \
+    "run=$rid model=$(rec_get "$f" resolved_model) branch=$br new_commit=$newcommit worker_status=${wstatus:-unknown} notes=${wnotes:-none}" \
+    "$( [ "$newcommit" != none ] && echo integrated_pending || echo no_commit )"
+
+  # If the worker reported BLOCKED, record an open BLOCKER for coordination.
+  if printf '%s' "$wstatus" | grep -qi "BLOCKED"; then
+    mem_write BLOCKER "$task" "worker_blocked" "run=$rid branch=$br: ${wnotes:-worker reported BLOCKED}" open
+    echo "[reap] $rid worker reported BLOCKED -> BLOCKER memory written"
+  fi
+
+  # ACT evidence: did the worker actually use injected coordination context?
+  local inj; inj="$(rec_get "$f" mem_injected)"
+  if [ "${inj:-0}" -gt 0 ] 2>/dev/null; then
+    if grep -qiE "SHARED COORDINATION CONTEXT|coordination memory|per (the )?(injected|shared) context|prior worker" "$log" 2>/dev/null; then
+      mem_tel "$rid" "$task" "act_consumed" "injected=$inj referenced=yes"
+      echo "[reap] $rid ACT: worker referenced injected coordination context ($inj memory(ies))"
+    else
+      mem_tel "$rid" "$task" "act_consumed" "injected=$inj referenced=unclear"
+    fi
+  fi
 }
 
 cmd_cancel() {
   local rid="$1"; local f; f="$(rec_path "$rid")"; [ -f "$f" ] || die "no such run $rid"
   local pid; pid="$(rec_get "$f" pid)"; [ -n "$pid" ] && kill "$pid" 2>/dev/null || true
   setkv "$rid" state "CANCELLED" finished "$(iso_now)"; echo "[cancel] $rid CANCELLED (worktree preserved)"
+}
+
+cmd_memory_status() {
+  if [ -x "$OC_MEMORY" ]; then "$OC_MEMORY" status; else echo "NEO4J: oc-memory helper missing"; fi
+  echo ""
+  echo "recent worker context injections:"
+  if [ -f "$MEM_TELEMETRY" ]; then
+    MEM_TEL="$MEM_TELEMETRY" python3 - <<'PY'
+import json,os
+rows=[json.loads(l) for l in open(os.environ["MEM_TEL"]) if l.strip()]
+inj=[r for r in rows if r.get("event")=="context_injected"][-5:]
+act=[r for r in rows if r.get("event")=="act_consumed"][-5:]
+for r in inj: print(f"- {r['run']} ({r['task']}) {r['detail']}")
+if not inj: print("(none)")
+print("WRITE->READ->ACT evidence:")
+for r in act: print(f"- {r['run']} ({r['task']}) {r['detail']}")
+if not act: print("(none)")
+PY
+  else echo "(no telemetry yet)"; fi
 }
 
 sub="${1:-}"; shift || true
@@ -324,13 +410,18 @@ case "$sub" in
   watch) cmd_watch "$@";;
   reap) cmd_reap "$@";;
   cancel) cmd_cancel "$@";;
+  memory-status) cmd_memory_status;;
+  hazard) shift 0; mem_write INTEGRATION_HAZARD "${1:-general}" "${2:-hazard}" "${3:-unspecified integration hazard}" open && echo "hazard recorded (or degraded)";;
   *) cat >&2 <<EOF
 oc-dispatch — autonomous headless OpenCode worker orchestration (never merges)
 usage:
   scripts/oc-dispatch dispatch --task <ID> --class <task_class> --reason "<why>" \\
      [--base <ref>] [--model <alias>] [--effort <tier>] [--dir <worktree>] \\
-     ( --spec <file> | --objective "<text>" )
+     [--mem-key <key>]... ( --spec <file> | --objective "<text>" )
   scripts/oc-dispatch active | list | status <run-id> | watch <run-id> | reap [run-id|--all] | cancel <run-id>
+  scripts/oc-dispatch memory-status
+  scripts/oc-dispatch hazard <task> <predicate> <detail>
 EOF
     exit 64;;
 esac
+

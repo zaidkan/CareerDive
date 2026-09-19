@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+#
+# oc-memory — deterministic COORDINATION-memory layer over the Neo4j "shared
+# brain" for Career-Expo orchestration (Kiro + oc-dispatch). This is NOT a
+# knowledge store and NOT a Git duplicate: it holds coordination state that Git
+# cannot cleanly represent (checkpoints, blockers, integration hazards,
+# corrections, task outcomes). Git remains authoritative for code/commits/tests.
+#
+# Storage model: coordination memories are Fact nodes (reusing the existing
+# graph's Fact label) with props:
+#   mtype     COORDINATOR_CHECKPOINT|BLOCKER|INTEGRATION_HAZARD|
+#             VERIFIED_CORRECTION|IMPLEMENTATION_CHECKPOINT|DECISION|HANDOFF|TASK_OUTCOME
+#   subject   short key (usually the task ID)
+#   predicate short relation/verb
+#   object    compact human-readable coordination detail (NEVER a giant diff/log)
+#   status    open|resolved|superseded|active  (for blockers/hazards/corrections)
+#   task, run_id, branch, worktree, base_sha, model  (optional provenance)
+#   supersedes  id of an older memory this replaces (kept, not deleted)
+#   ns          fixed namespace "career-expo"
+#   created_at  datetime()
+#
+# Transport: docker exec orca-neo4j cypher-shell. NEO4J_PASSWORD from env only,
+# never printed. If Neo4j is unavailable, every command DEGRADES (logs + exit 3)
+# and never aborts the caller — orchestration must not hard-depend on the brain.
+#
+# Secrets: values matching credential patterns are refused before any write.
+
+set -uo pipefail
+NS="career-expo"
+CONTAINER="${OC_NEO4J_CONTAINER:-orca-neo4j}"
+STATE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.orca-opencode"
+MEM_LOG="$STATE_DIR/memory.log"
+mkdir -p "$STATE_DIR"
+
+log() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $*" >>"$MEM_LOG"; }
+iso_now() { date -u "+%Y-%m-%dT%H:%M:%SZ"; }
+
+# --- reachability (degrade, never fail the caller) ---
+mem_available() {
+  [ -n "${NEO4J_PASSWORD:-}" ] || { log "NEO4J: no password in env (degraded)"; return 1; }
+  docker exec "$CONTAINER" true 2>/dev/null || { log "NEO4J: container $CONTAINER not running (degraded)"; return 1; }
+  return 0
+}
+cy() { # run read/write cypher; prints plain output; caller checks availability first
+  docker exec -i "$CONTAINER" cypher-shell -u neo4j -p "$NEO4J_PASSWORD" --format plain "$1" 2>&1
+}
+
+# --- secrets filter: refuse writing credential-looking values ---
+looks_secret() {
+  printf '%s' "$1" | grep -qiE '(password|passwd|secret|api[_-]?key|token|bearer|authorization|-----BEGIN|AKIA[0-9A-Z]{16}|xox[baprs]-|ghp_[0-9A-Za-z]{20,})' && return 0
+  return 1
+}
+
+esc() { printf '%s' "$1" | sed "s/\\\\/\\\\\\\\/g; s/'/\\\\'/g"; }  # escape for cypher single-quote
+
+gen_id() { echo "mem-$(date +%s)-$RANDOM"; }
+
+# write <mtype> <subject> <predicate> <object> [status] [k=v ...]
+cmd_write() {
+  local mtype="$1" subject="$2" predicate="$3" object="$4" status="${5:-}"; shift 5 2>/dev/null || shift $#
+  [ -n "$mtype" ] && [ -n "$subject" ] && [ -n "$object" ] || { echo "ERROR: write needs <mtype> <subject> <predicate> <object>"; return 2; }
+  # secrets guard (object + any extra values)
+  if looks_secret "$object"; then echo "REFUSED: object looks like a secret; not written"; log "REFUSED secret write subject=$subject"; return 4; fi
+  local extra_props=""
+  for kv in "$@"; do
+    local k="${kv%%=*}" v="${kv#*=}"
+    if looks_secret "$v"; then echo "REFUSED: prop $k looks like a secret; not written"; return 4; fi
+    [ -n "$k" ] && extra_props="$extra_props, f.$k='$(esc "$v")'"
+  done
+  mem_available || { echo "MEMORY_DEGRADED: write skipped (mtype=$mtype subject=$subject)"; return 3; }
+  local id; id="$(gen_id)"
+  local q="CREATE (f:Fact {id:'$id', ns:'$NS', mtype:'$(esc "$mtype")', subject:'$(esc "$subject")', predicate:'$(esc "$predicate")', object:'$(esc "$object")', status:'$(esc "$status")', created_at: datetime()}) RETURN f.id AS id"
+  local out; out="$(cy "$q")"
+  if printf '%s' "$out" | grep -q "$id"; then
+    # apply extra props in a second statement (keeps quoting simple)
+    if [ -n "$extra_props" ]; then cy "MATCH (f:Fact {id:'$id'}) SET ${extra_props#, } RETURN f.id" >/dev/null; fi
+    echo "WROTE $mtype id=$id subject=$subject status=${status:-none}"; log "WROTE $mtype id=$id subject=$subject"
+  else echo "MEMORY_DEGRADED: write failed (mtype=$mtype subject=$subject)"; log "WRITE FAIL subject=$subject :: $out"; return 3; fi
+}
+
+# supersede <old-id> <mtype> <subject> <predicate> <object> [status]
+# writes a new memory and marks the old one status=superseded (never deleted).
+cmd_supersede() {
+  local old="$1"; shift
+  mem_available || { echo "MEMORY_DEGRADED: supersede skipped"; return 3; }
+  local id; id="$(gen_id)"
+  local mtype="$1" subject="$2" predicate="$3" object="$4" status="${5:-active}"
+  if looks_secret "$object"; then echo "REFUSED: secret"; return 4; fi
+  cy "CREATE (n:Fact {id:'$id', ns:'$NS', mtype:'$(esc "$mtype")', subject:'$(esc "$subject")', predicate:'$(esc "$predicate")', object:'$(esc "$object")', status:'$(esc "$status")', supersedes:'$(esc "$old")', created_at: datetime()}) RETURN n.id" >/dev/null
+  cy "MATCH (o:Fact {id:'$(esc "$old")'}) SET o.status='superseded' RETURN o.id" >/dev/null
+  echo "SUPERSEDED old=$old -> new=$id"; log "SUPERSEDE $old -> $id"
+}
+
+# resolve <id> [note] — mark a blocker/hazard resolved (kept, not deleted)
+cmd_resolve() {
+  local id="$1" note="${2:-}"
+  mem_available || { echo "MEMORY_DEGRADED: resolve skipped"; return 3; }
+  cy "MATCH (f:Fact {id:'$(esc "$id")'}) SET f.status='resolved', f.resolved_at=datetime()$([ -n "$note" ] && echo ", f.resolution='$(esc "$note")'") RETURN f.id" | grep -q "$id" \
+    && { echo "RESOLVED $id"; log "RESOLVE $id"; } || echo "MEMORY_DEGRADED: resolve failed $id"
+}
+
+# --- reads (current/non-superseded by default) ---
+q_rows() { mem_available || { echo "MEMORY_DEGRADED"; return 3; }; cy "$1"; }
+
+cmd_open_blockers() {
+  q_rows "MATCH (f:Fact {ns:'$NS', mtype:'BLOCKER'}) WHERE f.status='open' RETURN f.subject AS task, f.object AS detail, f.created_at AS at ORDER BY f.created_at DESC LIMIT 20;"
+}
+cmd_open_hazards() {
+  q_rows "MATCH (f:Fact {ns:'$NS', mtype:'INTEGRATION_HAZARD'}) WHERE coalesce(f.status,'open')<>'resolved' RETURN f.subject AS task, f.object AS detail, f.created_at AS at ORDER BY f.created_at DESC LIMIT 20;"
+}
+cmd_latest_checkpoint() {
+  q_rows "MATCH (f:Fact {ns:'$NS', mtype:'COORDINATOR_CHECKPOINT'}) RETURN f.subject AS task, f.object AS detail, f.created_at AS at ORDER BY f.created_at DESC LIMIT 5;"
+}
+cmd_corrections() {
+  q_rows "MATCH (f:Fact {ns:'$NS', mtype:'VERIFIED_CORRECTION'}) WHERE coalesce(f.status,'active')<>'superseded' RETURN f.subject AS task, f.object AS detail, f.created_at AS at ORDER BY f.created_at DESC LIMIT 10;"
+}
+cmd_recent_outcomes() {
+  q_rows "MATCH (f:Fact {ns:'$NS', mtype:'TASK_OUTCOME'}) RETURN f.subject AS task, f.object AS detail, f.created_at AS at ORDER BY f.created_at DESC LIMIT 10;"
+}
+
+# task-relevant: targeted read for a specific task/feature/subsystem key(s).
+# Excludes superseded. Matches subject or object containing any key (case-insens).
+# Args: one or more keys.
+cmd_relevant() {
+  [ "$#" -ge 1 ] || { echo "ERROR: relevant needs >=1 key"; return 2; }
+  local where=""
+  for k in "$@"; do local kk; kk="$(esc "$k")"; where="$where OR toLower(f.subject) CONTAINS toLower('$kk') OR toLower(f.object) CONTAINS toLower('$kk')"; done
+  where="${where# OR }"
+  q_rows "MATCH (f:Fact {ns:'$NS'}) WHERE coalesce(f.status,'')<>'superseded' AND ($where) RETURN f.mtype AS mtype, f.subject AS task, f.object AS detail, coalesce(f.status,'') AS status, f.created_at AS at ORDER BY f.created_at DESC LIMIT 12;"
+}
+
+cmd_status() {
+  if ! mem_available; then echo "NEO4J: UNAVAILABLE (degraded — orchestration continues without shared context)"; return 0; fi
+  echo "NEO4J: CONNECTED (container=$CONTAINER, ns=$NS)"
+  echo ""; echo "recent writes:"; cy "MATCH (f:Fact {ns:'$NS'}) RETURN f.mtype, f.subject, f.created_at ORDER BY f.created_at DESC LIMIT 6;" | tail -n +2 | sed 's/^/- /'
+  echo ""; local ob oh; ob="$(cy "MATCH (f:Fact {ns:'$NS', mtype:'BLOCKER'}) WHERE f.status='open' RETURN count(f)" | tail -1)"; oh="$(cy "MATCH (f:Fact {ns:'$NS', mtype:'INTEGRATION_HAZARD'}) WHERE coalesce(f.status,'open')<>'resolved' RETURN count(f)" | tail -1)"
+  echo "open blockers: ${ob:-0}"; echo "open hazards: ${oh:-0}"
+}
+
+sub="${1:-}"; shift || true
+case "$sub" in
+  write) cmd_write "$@";;
+  supersede) cmd_supersede "$@";;
+  resolve) cmd_resolve "$@";;
+  open-blockers) cmd_open_blockers;;
+  open-hazards) cmd_open_hazards;;
+  latest-checkpoint) cmd_latest_checkpoint;;
+  corrections) cmd_corrections;;
+  recent-outcomes) cmd_recent_outcomes;;
+  relevant) cmd_relevant "$@";;
+  status) cmd_status;;
+  available) mem_available && echo "AVAILABLE" || { echo "UNAVAILABLE"; exit 3; };;
+  *) cat >&2 <<EOF
+oc-memory — coordination-memory over Neo4j (degrades if offline; Git stays authoritative for code)
+usage:
+  scripts/oc-memory write <MTYPE> <subject> <predicate> <object> [status] [k=v ...]
+  scripts/oc-memory supersede <old-id> <MTYPE> <subject> <predicate> <object> [status]
+  scripts/oc-memory resolve <id> [note]
+  scripts/oc-memory open-blockers | open-hazards | latest-checkpoint | corrections | recent-outcomes
+  scripts/oc-memory relevant <key> [key ...]
+  scripts/oc-memory status | available
+MTYPE: COORDINATOR_CHECKPOINT BLOCKER INTEGRATION_HAZARD VERIFIED_CORRECTION IMPLEMENTATION_CHECKPOINT DECISION HANDOFF TASK_OUTCOME
+EOF
+    exit 64;;
+esac

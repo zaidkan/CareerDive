@@ -203,6 +203,22 @@ print(json.dumps({
 PY
 }
 
+# classify_result <out-file> <exit_code> <timed_out> -> prints "<result> <throttled>"
+# AUTHORITATIVE: keyed on opencode exit code + timeout, NOT the worker's answer
+# prose. On failure it inspects ONLY opencode/provider runner-error framing
+# lines (start-of-line error markers), never generated answer text. This is why
+# a SUCCESSFUL run whose answer merely mentions "connection closed"/"-32000"/
+# "rate limit" stays success.
+classify_result() {
+  local out="$1" exit_code="$2" timed_out="$3"
+  if [ "$timed_out" = 1 ]; then echo "timeout 0"; return; fi
+  if [ "$exit_code" = "0" ]; then echo "success 0"; return; fi
+  local errlines; errlines="$(grep -iE '^(error|Error|ERROR|✖|API Error|opencode:|provider error|request failed|status (429|401|403|5[0-9][0-9]))' "$out" 2>/dev/null || true)"
+  if printf '%s' "$errlines" | grep -qiE "rate.?limit|too many requests|429|quota|throttl"; then echo "throttled 1"; return; fi
+  if printf '%s' "$errlines" | grep -qiE "connection closed|-32000|mcp"; then echo "mcp_cold_start_error 0"; return; fi
+  echo "error 0"
+}
+
 # Dispatch one slot. Returns the run result code; sets RESULT_STR global.
 dispatch_slot() {
   local slot="$1" task="$2" tag="$3" reason="$4" tclass="$5" dir="$6" effort="$7" prompt="$8"
@@ -219,16 +235,19 @@ dispatch_slot() {
 
   echo "ROUTE dispatch worker=$slot model=${model#opencode/} task=$task task_class=${tclass:-forced} cost_class=free ${variant_args[*]:-}"
   local out; out="$LOG_DIR/run-$slot-$task-$(date +%Y%m%d-%H%M%S).out"
+  local ec_file="$LOG_DIR/.run.ec"; rm -f "$ec_file"
   local start; start="$(now_epoch)"
-  ( "$OC_BIN" run --auto --dir "$dir" -m "$model" ${variant_args[@]+"${variant_args[@]}"} "$prompt" >"$out" 2>&1 & echo $! >"$LOG_DIR/.run.pid" )
+  # Capture the AUTHORITATIVE opencode exit code (not worker prose). The answer
+  # body is delimited so classification never scans generated text for error words.
+  ( { "$OC_BIN" run --auto --dir "$dir" -m "$model" ${variant_args[@]+"${variant_args[@]}"} "$prompt"; echo "$?" >"$ec_file"; } >"$out" 2>&1 & echo $! >"$LOG_DIR/.run.pid" )
   local pid; pid="$(cat "$LOG_DIR/.run.pid")"; local w=0 timed_out=0
   while kill -0 "$pid" 2>/dev/null; do sleep 5; w=$((w+5)); if [ "$w" -ge "$MAX_RUN_SECONDS" ]; then kill "$pid" 2>/dev/null; timed_out=1; break; fi; done
   local dur=$(( $(now_epoch) - start )) throttled=0 result="success"
+  local exit_code; exit_code="$(cat "$ec_file" 2>/dev/null || echo "")"
 
-  if grep -qiE "rate.?limit|too many requests|429|quota|throttl" "$out"; then throttled=1; result="throttled"; fi
-  if grep -qiE "connection closed|-32000" "$out"; then result="mcp_cold_start_error"; fi
-  [ "$timed_out" = 1 ] && result="timeout"
-  if grep -qiE "^Error:|\bError\b.*failed" "$out" && [ "$result" = "success" ]; then result="error"; fi
+  # AUTHORITATIVE classification (pure fn; unit-tested via `oc-worker classify`).
+  local cr; cr="$(classify_result "$out" "$exit_code" "$timed_out")"
+  result="${cr%% *}"; throttled="${cr##* }"
   # Paid-leak audit: only the four free ids may appear in a session header.
   if grep -qE "> build ·" "$out" && grep -E "> build ·" "$out" | grep -qvE "muse-spark-1.3-contributor-free|muse-spark-1.2-contributor-free|big-pickle|nemotron-3-ultra-free"; then
     result="PAID_MODEL_LEAK"; echo "!! ALERT: non-free model header in $out" >&2
@@ -297,6 +316,7 @@ case "$sub" in
   cooldowns) cmd_cooldowns;;
   warm) cmd_warm "$@";;
   run) cmd_run "$@";;
+  classify) classify_result "$1" "$2" "${3:-0}";;   # <out-file> <exit_code> [timed_out] — testing hook
   *)
     cat >&2 <<EOF
 oc-worker — ephemeral OpenCode free-model dispatcher (muse13>muse12>pickle>nemotron; no paid fallback)
