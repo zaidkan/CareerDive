@@ -881,8 +881,6 @@ The existence or name of a required secret may be documented.
 
 Its value must never be stored.
 
----
-
 ## 26. End-of-task sequence
 
 For substantial implementation, use this sequence:
@@ -1051,3 +1049,58 @@ A qualified future worker should be able to determine:
 without needing access to the original Kiro, Codex, Cursor, or Gemini conversations.
 
 If project-memory enables that while remaining concise, structured, and verifiable, it is serving its purpose.
+
+---
+
+## 33. Connectivity: remote Neo4j transport
+
+The coordination-memory graph runs on a Windows PC reachable over Tailscale, not
+on the local Mac. Keep the local `orca-neo4j` Docker container stopped as a
+rollback copy; do not start it. Remote mode never falls back to it.
+
+### Environment
+
+`scripts/oc-memory` and the `project-memory` MCP servers are transport-agnostic
+and get their settings from the environment. There is no committed password.
+
+```text
+OC_NEO4J_MODE=remote            # default; remote = Windows Neo4j via cypher-shell client
+OC_NEO4J_BOLT=bolt://100.99.119.124:7687   # Windows Tailscale Bolt URL (default when unset)
+OC_NEO4J_USER=neo4j             # default when unset
+NEO4J_PASSWORD=<value>          # NEVER committed, never echoed, never defaulted
+```
+
+`OC_NEO4J_MODE=local` restores the historical Docker path
+(`docker exec orca-neo4j cypher-shell`) as a rollback; it is otherwise unused.
+
+### Client prerequisite
+
+Remote mode requires a `cypher-shell` binary on `PATH` (the Neo4j server
+distribution ships it under `bin/`, or `brew install neo4j`). If it is missing,
+`oc-memory` does not start the stopped container and does not fall back; it logs
+a manual-prerequisite message and degrades. `oc-memory available` exits
+non-zero, reads/writes print `MEMORY_DEGRADED`.
+
+Example sourcing:
+
+```bash
+# session start (shell profile or interactive export)
+export NEO4J_PASSWORD="$(security find-generic-password -s neo4j-memory -w)"
+```
+
+or add `export NEO4J_PASSWORD="..."` to `~/.zshrc` (restricted to the user's
+own account, never committed).
+
+### Degrade contract
+
+Remote mode degrades exactly like the old local path: if Bolt is unreachable or
+authentication fails, `mem_available()` returns non-zero, callers see
+`MEMORY_DEGRADED`, orchestration continues, and nothing crashes. The Mac never
+silently redirects writes/reads to the local Docker DB.
+
+### Verification
+
+- `scripts/oc-memory available` — authenticated probe (`RETURN 1`); exit 0 only
+  when Bolt is reachable and the password authenticates.
+- `scripts/tests/memory-remote.test.sh` — stubbed remote/local transport tests
+  (no live DB required).

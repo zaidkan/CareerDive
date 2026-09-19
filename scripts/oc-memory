@@ -19,15 +19,26 @@
 #   ns          fixed namespace "career-expo"
 #   created_at  datetime()
 #
-# Transport: docker exec orca-neo4j cypher-shell. NEO4J_PASSWORD from env only,
-# never printed. If Neo4j is unavailable, every command DEGRADES (logs + exit 3)
-# and never aborts the caller — orchestration must not hard-depend on the brain.
+# Transport (env-driven; NO silent fallback between modes):
+#   OC_NEO4J_MODE=remote (default): run a local cypher-shell CLIENT against
+#     OC_NEO4J_BOLT — the Windows Neo4j over Tailscale. Requires a cypher-shell
+#     binary on PATH (manual prerequisite; oc-memory never starts the stopped
+#     local orca-neo4j container, and NEVER silently falls back to it). If Bolt
+#     is unreachable or auth fails, every command DEGRADES (logs + exit 3).
+#   OC_NEO4J_MODE=local (rollback): docker exec orca-neo4j cypher-shell, the
+#     historical path, unchanged.
+# NEO4J_PASSWORD from env only, never printed/defaulted. If Neo4j is
+# unavailable, every command DEGRADES (logs + exit 3) and never aborts the
+# caller — orchestration must not hard-depend on the brain.
 #
 # Secrets: values matching credential patterns are refused before any write.
 
 set -uo pipefail
 NS="career-expo"
 CONTAINER="${OC_NEO4J_CONTAINER:-orca-neo4j}"
+MODE="${OC_NEO4J_MODE:-remote}"
+BOLT="${OC_NEO4J_BOLT:-bolt://100.99.119.124:7687}"
+USER="${OC_NEO4J_USER:-neo4j}"
 STATE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/.orca-opencode"
 MEM_LOG="$STATE_DIR/memory.log"
 mkdir -p "$STATE_DIR"
@@ -36,13 +47,36 @@ log() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $*" >>"$MEM_LOG"; }
 iso_now() { date -u "+%Y-%m-%dT%H:%M:%SZ"; }
 
 # --- reachability (degrade, never fail the caller) ---
+# remote mode: success only if Bolt reachable AND auth works AND a cypher-shell
+# client exists. Any failure -> non-zero so callers degrade exactly as before.
 mem_available() {
   [ -n "${NEO4J_PASSWORD:-}" ] || { log "NEO4J: no password in env (degraded)"; return 1; }
-  docker exec "$CONTAINER" true 2>/dev/null || { log "NEO4J: container $CONTAINER not running (degraded)"; return 1; }
-  return 0
+  case "$MODE" in
+    local)
+      docker exec "$CONTAINER" true 2>/dev/null || { log "NEO4J: container $CONTAINER not running (degraded)"; return 1; }
+      return 0
+      ;;
+    remote)
+      command -v cypher-shell >/dev/null 2>&1 || { log "NEO4J: remote mode needs cypher-shell on PATH (manual prerequisite) (degraded)"; return 1; }
+      local out; out="$(cy "RETURN 1" 2>&1)" && printf '%s' "$out" | grep -q "1" \
+        || { log "NEO4J: remote $BOLT unreachable or auth failed (degraded)"; return 1; }
+      return 0
+      ;;
+    *) log "NEO4J: unknown OC_NEO4J_MODE='$MODE' (expected remote|local) (degraded)"; return 1;;
+  esac
 }
 cy() { # run read/write cypher; prints plain output; caller checks availability first
-  docker exec -i "$CONTAINER" cypher-shell -u neo4j -p "$NEO4J_PASSWORD" --format plain "$1" 2>&1
+  case "$MODE" in
+    local)
+      docker exec -i "$CONTAINER" cypher-shell -u neo4j -p "$NEO4J_PASSWORD" --format plain "$1" 2>&1
+      ;;
+    remote)
+      local client; client="$(command -v cypher-shell 2>/dev/null)"
+      if [ -n "$client" ]; then "$client" -a "$BOLT" -u "$USER" -p "$NEO4J_PASSWORD" --format plain "$1" 2>&1
+      else echo "MEMORY_DEGRADED: remote mode needs cypher-shell on PATH (manual prerequisite; install cypher-shell)"; return 3; fi
+      ;;
+    *) echo "MEMORY_DEGRADED: unknown OC_NEO4J_MODE='$MODE'" >&2; return 3;;
+  esac
 }
 
 # --- secrets filter: refuse writing credential-looking values ---
@@ -130,8 +164,9 @@ cmd_relevant() {
 }
 
 cmd_status() {
+  local target; if [ "$MODE" = local ]; then target="$CONTAINER"; else target="$BOLT"; fi
   if ! mem_available; then echo "NEO4J: UNAVAILABLE (degraded — orchestration continues without shared context)"; return 0; fi
-  echo "NEO4J: CONNECTED (container=$CONTAINER, ns=$NS)"
+  echo "NEO4J: CONNECTED (mode=$MODE, target=$target, ns=$NS)"
   echo ""; echo "recent writes:"; cy "MATCH (f:Fact {ns:'$NS'}) RETURN f.mtype, f.subject, f.created_at ORDER BY f.created_at DESC LIMIT 6;" | tail -n +2 | sed 's/^/- /'
   echo ""; local ob oh; ob="$(cy "MATCH (f:Fact {ns:'$NS', mtype:'BLOCKER'}) WHERE f.status='open' RETURN count(f)" | tail -1)"; oh="$(cy "MATCH (f:Fact {ns:'$NS', mtype:'INTEGRATION_HAZARD'}) WHERE coalesce(f.status,'open')<>'resolved' RETURN count(f)" | tail -1)"
   echo "open blockers: ${ob:-0}"; echo "open hazards: ${oh:-0}"
