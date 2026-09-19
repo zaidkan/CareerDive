@@ -1,0 +1,336 @@
+#!/usr/bin/env bash
+#
+# oc-dispatch — autonomous headless OpenCode worker orchestration for Career-Expo.
+#
+# Kiro calls this to dispatch an approved worker task WITHOUT the user acting as
+# a message bus: it creates an isolated worktree+branch, writes the spec, picks
+# the model via scripts/oc-worker routing, launches the OpenCode worker in the
+# BACKGROUND (non-blocking), tracks a run record, and supports
+# active/status/watch/reap. Rate-limits auto-resume in the SAME worktree with
+# the next eligible free model. It NEVER merges into main.
+#
+# Subcommands
+#   dispatch --task <ID> --class <task_class> --reason "<why>" \
+#            [--base <ref>] [--model <alias>] [--effort <tier>] \
+#            [--dir <existing worktree>] \
+#            ( --spec <file> | --objective "<text>" )
+#   active                       # list non-terminal runs
+#   list                         # list all runs
+#   status <run-id>
+#   watch  <run-id>              # stream worker output (no hidden reasoning)
+#   reap  [run-id|--all]         # detect finished/rate-limited; auto-resume RL
+#   cancel <run-id>
+#
+# States: QUEUED STARTING RUNNING COMPLETE FAILED RATE_LIMITED COOLDOWN_WAIT
+#         RESUMING BLOCKED CANCELLED
+#
+# Safety: max 4 concurrent RUNNING; unique task IDs; unique worktree/branch per
+# task; never two models on one worktree at once; bounded auto-fallback
+# attempts; never merges/cherry-picks.
+
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+OC_WORKER="$REPO_ROOT/scripts/oc-worker"
+STATE_DIR="$REPO_ROOT/.orca-opencode"
+RUNS_DIR="$STATE_DIR/runs"
+SPECS_DIR="$STATE_DIR/specs"
+WORKTREE_ROOT="${OC_WORKTREE_ROOT:-$(cd "$REPO_ROOT/.." && pwd)/workspaces/Career-Expo}"
+MAX_CONCURRENT="${OC_MAX_CONCURRENT:-4}"
+MAX_FALLBACK="${OC_MAX_FALLBACK:-3}"
+mkdir -p "$RUNS_DIR" "$SPECS_DIR"
+
+die() { echo "ERROR: $*" >&2; exit 1; }
+iso_now() { date -u "+%Y-%m-%dT%H:%M:%SZ"; }
+
+# --- run record helpers (JSON via python for safe quoting) ---
+rec_path() { echo "$RUNS_DIR/$1.json"; }
+rec_get() { python3 - "$1" "$2" <<'PY'
+import json,sys
+try: print(json.load(open(sys.argv[1])).get(sys.argv[2],""))
+except Exception: print("")
+PY
+}
+rec_set() { # run-id key value  (repeatable pairs after run-id)
+  local rid="$1"; shift; local f; f="$(rec_path "$rid")"
+  RID="$rid" FILE="$f" ARGS="$*" python3 - <<'PY'
+import json,os,sys
+f=os.environ["FILE"]
+d=json.load(open(f)) if os.path.exists(f) else {}
+a=os.environ["ARGS"].split("\x1f")
+for i in range(0,len(a)-1,2): d[a[i]]=a[i+1]
+json.dump(d,open(f,"w"),indent=2)
+PY
+}
+setkv() { local rid="$1"; shift; local ifs_joined; ifs_joined="$(printf '%s\x1f' "$@")"; rec_set "$rid" "${ifs_joined%$'\x1f'}"; }
+
+next_run_id() {
+  local day; day="$(date +%Y%m%d)"; local n=1
+  while [ -f "$RUNS_DIR/oc-$day-$(printf '%03d' "$n").json" ]; do n=$((n+1)); done
+  echo "oc-$day-$(printf '%03d' "$n")"
+}
+
+count_running() { ls "$RUNS_DIR"/*.json >/dev/null 2>&1 || { echo 0; return; }; grep -l '"state": "RUNNING"' "$RUNS_DIR"/*.json 2>/dev/null | wc -l | tr -d ' '; }
+
+task_active() { # task-id -> 0 if a non-terminal run exists
+  for f in "$RUNS_DIR"/*.json; do
+    [ -f "$f" ] || continue
+    local t s; t="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("task",""))' "$f")"
+    s="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("state",""))' "$f")"
+    if [ "$t" = "$1" ]; then case "$s" in COMPLETE|FAILED|CANCELLED|BLOCKED) ;; *) return 0;; esac; fi
+  done
+  return 1
+}
+
+slug() { echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g; s/--*/-/g; s/^-//; s/-$//'; }
+
+write_default_spec() { # run-id task class reason base worktree branch objective specfile
+  local rid="$1" task="$2" cls="$3" reason="$4" base="$5" wt="$6" br="$7" obj="$8" sf="$9"
+  cat >"$sf" <<EOF
+# Worker Task Spec — $task
+
+- Run ID: $rid
+- Task class: $cls
+- Reason: $reason
+- Base commit/ref: $base
+- Worktree (work ONLY here): $wt
+- Branch: $br
+
+## Objective
+$obj
+
+## Startup (required)
+1. Read AGENTS.md and the applicable canonical spec under docs/superpowers/specs/.
+2. Confirm you are in worktree $wt on branch $br; inspect \`git status\` and \`git log --oneline -5\`.
+3. Query project-memory for relevant prior context before coding.
+
+## Scope
+- Work ONLY inside this worktree. Do NOT touch main or other worktrees.
+- Make the smallest correct change for the objective. If an adjacent change is
+  required for correctness, make the minimum and note it in your report.
+
+## Forbidden
+- Do NOT merge, cherry-pick, push, or rebase onto main.
+- Do NOT edit files outside the stated scope. If you must, STOP and report the dependency.
+
+## Verification
+- Run the focused tests relevant to your change, then the package build/typecheck.
+- Do NOT claim complete without fresh passing evidence.
+
+## Commit
+- Commit your coherent change on branch $br with a clear message. One commit unless the work is genuinely multi-part.
+
+## Return format (end your run with this block)
+WORKER RESULT
+task: $task
+status: <COMPLETE|BLOCKED|FAILED>
+commit: <sha or none>
+files: <changed files>
+tests: <what you ran + result>
+notes: <scope adherence, blockers, follow-ups>
+EOF
+}
+
+cmd_dispatch() {
+  local task="" cls="" reason="" base="main" force_model="" effort="xhigh" \
+        spec="" objective="" existing_dir=""
+  while [ $# -gt 0 ]; do case "$1" in
+    --task) task="$2"; shift 2;; --class) cls="$2"; shift 2;;
+    --reason) reason="$2"; shift 2;; --base) base="$2"; shift 2;;
+    --model) force_model="$2"; shift 2;; --effort) effort="$2"; shift 2;;
+    --spec) spec="$2"; shift 2;; --objective) objective="$2"; shift 2;;
+    --dir) existing_dir="$2"; shift 2;;
+    *) die "unknown arg: $1";; esac; done
+  [ -n "$task" ] || die "--task required"
+  [ -n "$reason" ] || die "--reason required"
+  [ -n "$cls" ] || [ -n "$force_model" ] || die "--class or --model required"
+  [ -n "$spec" ] || [ -n "$objective" ] || die "--spec or --objective required"
+  task_active "$task" && die "task '$task' already has an active run (reject duplicate)"
+  local running; running="$(count_running)"
+  [ "$running" -lt "$MAX_CONCURRENT" ] || die "max concurrent workers ($MAX_CONCURRENT) reached; reap/cancel first"
+
+  local rid; rid="$(next_run_id)"
+  local br="worker/$(slug "$task")"
+  local wt
+  if [ -n "$existing_dir" ]; then
+    wt="$existing_dir"; [ -d "$wt" ] || die "existing --dir not found: $wt"
+  else
+    wt="$WORKTREE_ROOT/$(slug "$task")"
+    [ -e "$wt" ] && die "worktree path exists: $wt (task collision?)"
+    git -C "$REPO_ROOT" show-ref --verify --quiet "refs/heads/$br" && die "branch $br already exists"
+    echo "[dispatch] creating worktree $wt on new branch $br from $base"
+    git -C "$REPO_ROOT" worktree add -b "$br" "$wt" "$base" >/dev/null 2>&1 || die "worktree add failed"
+  fi
+  local base_sha; base_sha="$(git -C "$wt" rev-parse --short HEAD)"
+
+  # Spec: use provided, else generate.
+  local specfile="$SPECS_DIR/$task.md"
+  if [ -n "$spec" ]; then [ -f "$spec" ] || die "spec not found: $spec"; [ "$(cd "$(dirname "$spec")" && pwd)/$(basename "$spec")" = "$specfile" ] || cp "$spec" "$specfile"
+  else write_default_spec "$rid" "$task" "${cls:-forced}" "$reason" "$base_sha" "$wt" "$br" "$objective" "$specfile"; fi
+
+  # Record + launch in background (non-blocking). oc-worker does model routing.
+  local log="$STATE_DIR/run-$rid.out"
+  setkv "$rid" run_id "$rid" task "$task" task_class "${cls:-}" forced_model "${force_model:-}" \
+        reason "$reason" base "$base" base_sha "$base_sha" worktree "$wt" branch "$br" \
+        spec "$specfile" log "$log" effort "$effort" state "STARTING" \
+        fallback_used "0" created "$(iso_now)"
+
+  local model_args=(); [ -n "$force_model" ] && model_args=(--model "$force_model") || model_args=(--class "$cls")
+  ( "$OC_WORKER" run "${model_args[@]}" --task "$task" --reason "$reason" \
+        --dir "$wt" --effort "$effort" --spec "$specfile" >"$log" 2>&1; \
+    echo "OC_WORKER_EXIT=$?" >>"$log" ) &
+  local pid=$!
+  setkv "$rid" pid "$pid" state "RUNNING" started "$(iso_now)"
+
+  cmd_report_dispatch "$rid"
+}
+
+cmd_report_dispatch() {
+  local rid="$1"; local f; f="$(rec_path "$rid")"
+  local fm cls; fm="$(rec_get "$f" forced_model)"; cls="$(rec_get "$f" task_class)"
+  local model_desc; [ -n "$fm" ] && model_desc="forced:$fm" || model_desc="auto(class=$cls)"
+  echo "TASK: $(rec_get "$f" task)"
+  echo "RUN: $rid"
+  echo "MODEL: $model_desc"
+  echo "TASK_CLASS: $cls"
+  echo "WORKTREE: $(rec_get "$f" worktree)"
+  echo "BRANCH: $(rec_get "$f" branch)"
+  echo "PID: $(rec_get "$f" pid)"
+  echo "LOG: $(rec_get "$f" log)"
+  echo "STATE: $(rec_get "$f" state)"
+  echo ""
+  echo "Watch:"
+  echo "scripts/oc-dispatch watch $rid"
+}
+
+cmd_active() {
+  printf '%-18s %-26s %-14s %-8s %s\n' RUN TASK STATE PID BRANCH
+  for f in "$RUNS_DIR"/*.json; do [ -f "$f" ] || continue
+    local s; s="$(rec_get "$f" state)"
+    case "$s" in COMPLETE|FAILED|CANCELLED|BLOCKED) continue;; esac
+    printf '%-18s %-26s %-14s %-8s %s\n' "$(rec_get "$f" run_id)" "$(rec_get "$f" task)" "$s" "$(rec_get "$f" pid)" "$(rec_get "$f" branch)"
+  done
+}
+
+cmd_list() {
+  printf '%-18s %-26s %-14s %s\n' RUN TASK STATE MODEL
+  for f in "$RUNS_DIR"/*.json; do [ -f "$f" ] || continue
+    printf '%-18s %-26s %-14s %s\n' "$(rec_get "$f" run_id)" "$(rec_get "$f" task)" "$(rec_get "$f" state)" "$(rec_get "$f" resolved_model)"
+  done
+}
+
+cmd_status() { local rid="$1"; local f; f="$(rec_path "$rid")"; [ -f "$f" ] || die "no such run $rid"; cat "$f"; }
+
+cmd_watch() {
+  local rid="$1"; local log; log="$(rec_get "$(rec_path "$rid")" log)"
+  [ -n "$log" ] || die "no such run $rid"
+  echo "[watch] streaming $log (Ctrl-C to stop). Worker tool output only; no hidden reasoning."
+  # Filter any provider 'reasoning'/'thinking' framing defensively.
+  tail -n +1 -f "$log" 2>/dev/null | grep --line-buffered -viE "^(reasoning|thinking|<think)" || true
+}
+
+# Classify a finished run from its log; set RESULT global.
+# Keys off oc-worker's authoritative "ROUTE result ... result=<x>" token (the
+# LAST one, since a resumed run appends another). Avoids false matches on the
+# telemetry field name "throttled=0".
+classify_log() {
+  local log="$1"; RESULT="unknown"
+  grep -q "OC_WORKER_EXIT=" "$log" || { RESULT="still_running"; return; }
+  local last; last="$(grep -oE "result=[a-zA-Z_]+" "$log" | tail -1 | cut -d= -f2)"
+  case "$last" in
+    success) RESULT="success";;
+    throttled) RESULT="rate_limited";;
+    timeout) RESULT="timeout";;
+    *) if grep -q "PAID_MODEL_LEAK" "$log"; then RESULT="paid_leak"; else RESULT="failed"; fi;;
+  esac
+}
+
+cmd_reap() {
+  local target="${1:-}"
+  for f in "$RUNS_DIR"/*.json; do [ -f "$f" ] || continue
+    local rid; rid="$(rec_get "$f" run_id)"
+    [ -n "$target" ] && [ "$target" != "--all" ] && [ "$target" != "$rid" ] && continue
+    local s pid log; s="$(rec_get "$f" state)"; pid="$(rec_get "$f" pid)"; log="$(rec_get "$f" log)"
+    case "$s" in COMPLETE|FAILED|CANCELLED|BLOCKED) continue;; esac
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then continue; fi   # still running
+    classify_log "$log"
+    case "$RESULT" in
+      success) setkv "$rid" state "COMPLETE" finished "$(iso_now)"; echo "[reap] $rid COMPLETE"; inspect_completion "$rid";;
+      rate_limited) handle_rate_limit "$rid";;
+      timeout) setkv "$rid" state "FAILED" finished "$(iso_now)" failure "timeout"; echo "[reap] $rid FAILED (timeout)";;
+      paid_leak) setkv "$rid" state "BLOCKED" finished "$(iso_now)" failure "paid_model_leak"; echo "[reap] $rid BLOCKED (paid leak — investigate)";;
+      failed) setkv "$rid" state "FAILED" finished "$(iso_now)" failure "worker_error"; echo "[reap] $rid FAILED";;
+      still_running) ;;
+    esac
+  done
+}
+
+handle_rate_limit() {
+  local rid="$1"; local f; f="$(rec_path "$rid")"
+  local used; used="$(rec_get "$f" fallback_used)"; used="${used:-0}"
+  setkv "$rid" state "RATE_LIMITED"
+  if [ "$used" -ge "$MAX_FALLBACK" ]; then
+    setkv "$rid" state "BLOCKED" failure "rate_limited_max_fallback"
+    echo "[reap] $rid BLOCKED (rate-limited, max fallback $MAX_FALLBACK reached)"; return
+  fi
+  # oc-worker already marked the model's cooldown. Resume SAME worktree with next
+  # eligible model in the class chain (its cooldown routing skips the RL'd slot).
+  local cls wt task reason effort; cls="$(rec_get "$f" task_class)"; wt="$(rec_get "$f" worktree)"
+  task="$(rec_get "$f" task)"; reason="$(rec_get "$f" reason)"; effort="$(rec_get "$f" effort)"
+  [ -n "$cls" ] || { setkv "$rid" state "BLOCKED" failure "rate_limited_forced_model"; echo "[reap] $rid BLOCKED (forced model rate-limited; no auto-fallback)"; return; }
+  local next; next="$("$OC_WORKER" route --class "$cls" 2>/dev/null | awk -F': ' '/effective/{print $2}')"
+  if [ -z "$next" ] || echo "$next" | grep -qi "cooling"; then
+    setkv "$rid" state "COOLDOWN_WAIT" failure "all_free_cooling"; echo "[reap] $rid COOLDOWN_WAIT (all eligible free slots cooling down)"; return
+  fi
+  echo "[reap] $rid RATE_LIMITED -> RESUMING on next free slot ($next) in SAME worktree $wt"
+  setkv "$rid" state "RESUMING" fallback_used "$((used+1))"
+  # Takeover spec: inspect partial work rather than restart.
+  local specfile; specfile="$(rec_get "$f" spec)"
+  { echo ""; echo "## TAKEOVER (resume after rate-limit; fallback #$((used+1)))";
+    echo "A previous model was rate-limited on this SAME worktree. Do NOT restart from scratch.";
+    echo "First run: \`git status\` and \`git diff\` in $wt to see partial work, then CONTINUE it to completion."; } >>"$specfile"
+  local log; log="$(rec_get "$f" log)"
+  ( "$OC_WORKER" run --class "$cls" --task "$task" --reason "$reason (resume#$((used+1)))" \
+        --dir "$wt" --effort "$effort" --spec "$specfile" >>"$log" 2>&1; \
+    echo "OC_WORKER_EXIT=$?" >>"$log" ) &
+  setkv "$rid" pid "$!" state "RUNNING"
+}
+
+inspect_completion() {
+  local rid="$1"; local f; f="$(rec_path "$rid")"
+  local wt br; wt="$(rec_get "$f" worktree)"; br="$(rec_get "$f" branch)"
+  local head; head="$(git -C "$wt" rev-parse --short HEAD 2>/dev/null || echo "?")"
+  local base_sha; base_sha="$(rec_get "$f" base_sha)"
+  local newcommit="none"; [ "$head" != "$base_sha" ] && newcommit="$head"
+  setkv "$rid" resulting_head "$head" new_commit "$newcommit"
+  echo "--- completion inspection $rid ---"
+  echo "worktree: $wt  branch: $br  base:$base_sha -> head:$head  new_commit:$newcommit"
+  echo "git status:"; git -C "$wt" status -s | head
+  [ "$newcommit" != "none" ] && { echo "diffstat:"; git -C "$wt" show --stat --oneline "$head" | head -15; }
+}
+
+cmd_cancel() {
+  local rid="$1"; local f; f="$(rec_path "$rid")"; [ -f "$f" ] || die "no such run $rid"
+  local pid; pid="$(rec_get "$f" pid)"; [ -n "$pid" ] && kill "$pid" 2>/dev/null || true
+  setkv "$rid" state "CANCELLED" finished "$(iso_now)"; echo "[cancel] $rid CANCELLED (worktree preserved)"
+}
+
+sub="${1:-}"; shift || true
+case "$sub" in
+  dispatch) cmd_dispatch "$@";;
+  active) cmd_active;;
+  list) cmd_list;;
+  status) cmd_status "$@";;
+  watch) cmd_watch "$@";;
+  reap) cmd_reap "$@";;
+  cancel) cmd_cancel "$@";;
+  *) cat >&2 <<EOF
+oc-dispatch — autonomous headless OpenCode worker orchestration (never merges)
+usage:
+  scripts/oc-dispatch dispatch --task <ID> --class <task_class> --reason "<why>" \\
+     [--base <ref>] [--model <alias>] [--effort <tier>] [--dir <worktree>] \\
+     ( --spec <file> | --objective "<text>" )
+  scripts/oc-dispatch active | list | status <run-id> | watch <run-id> | reap [run-id|--all] | cancel <run-id>
+EOF
+    exit 64;;
+esac
