@@ -119,32 +119,53 @@ Separate usage pool from Codex Plus (zk/hamza): **`usagePool = opencode-free`**.
 context per task, no persistent TUI. Dispatch via **`scripts/oc-worker`** (allow-list enforced;
 route telemetry in `.orca-opencode/route.log`).
 
-### Approved $0 model slots (probed & cost-verified; NO paid fallback)
+### Approved $0 model slots (probed & cost-verified 2026-09-19; NO paid fallback)
 
-| Slot | Model ID | Context / Output | Image | Reasoning variants |
-|---|---|---|---|---|
-| `muse1` (PRIMARY) | `opencode/muse-spark-1.3-contributor-free` | 1,048,576 / 131,072 | text+image+video+pdf+audio | effort: minimal·low·medium·high·**xhigh** |
-| `union1` (2nd executor) | `opencode/union-alpha` | 262,144 / 131,072 | text+image | none (reasoning on, no tiers) |
-| `nemotron1` (3rd / long-text) | `opencode/nemotron-3-ultra-free` | 1,000,000 / 128,000 | **text only** | none (reasoning on, no tiers) |
+| Slot | Model ID | Reasoning variants |
+|---|---|---|
+| `muse13` | `opencode/muse-spark-1.3-contributor-free` | effort: minimal·low·medium·high·**xhigh** |
+| `muse12` | `opencode/muse-spark-1.2-contributor-free` | effort: minimal·low·medium·high·**xhigh** |
+| `pickle1` | `opencode/big-pickle` | none (reasoning on, no tiers) |
+| `nemotron1` | `opencode/nemotron-3-ultra-free` | none (reasoning on, no tiers) |
 
-All three confirmed `input=0 output=0 cache_read=0` in `~/.cache/opencode/models.json`. All support
-tool_call (MCP). No stored OpenCode credentials are required for the `opencode/*` free provider.
+All four confirmed `input=0 output=0` in `~/.cache/opencode/models.json` and present in
+`opencode models` (verified via `scripts/oc-worker models`). **`union-alpha` was removed upstream
+and is no longer used.** WARNING: `opencode/muse-spark-1.3` and `opencode/muse-spark-1.2` (without
+`-contributor-free`) are PAID (in=1.25/out=4.25) and are NOT allow-listed; the `--model
+muse13`/`muse12` aliases resolve to the FREE contributor ids only.
 
-**Reasoning-variant policy:** `muse1` uses `--variant xhigh` for substantial/important
-implementation, `--variant high` for ordinary implementation; do NOT waste xhigh on trivial
-mechanical work. `union1`/`nemotron1` expose NO discrete effort tiers — never invent `high`/`xhigh`
-for them (`scripts/oc-worker` suppresses `--variant` for those slots).
+**Muse 1.3 ≠ Muse 1.2.** They are two distinct routable models with independent availability, rate
+limits, cooldowns, and local performance history. Never pool their stats. When Muse is preferred,
+always try **muse13 → muse12** before the rest. If muse13 rate-limits mid-task, mark `muse13`
+cooldown, prefer **muse12** for takeover (same worktree); only continue to pickle/nemotron if muse12
+is also unavailable. Rate-limit failures are NOT quality failures (excluded from performance ranking).
 
-**Preferred free execution order:** `muse1 → union1 → nemotron1`. This is NOT mandatory
-retry-through-all: if the task itself is conceptually stuck, do NOT re-send the same broken task
-through every free model — return to **Sol High** for diagnosis/replanning, then hand the revised
-implementation packet back to a free executor.
+**Reasoning-variant policy:** `muse13`/`muse12` use `--variant xhigh` for substantial work
+(default), lower tiers for lighter work. `pickle1`/`nemotron1` have NO discrete tiers — `--effort`
+is ignored for them.
 
-**HARD COST RULE — no paid fallback.** Kiro may ONLY dispatch these three $0 IDs through OpenCode.
-If a free model disappears, becomes paid, is rate-limited, or fails resolution: **STOP.** Do NOT
-substitute Sol/GLM/Kimi/paid-Muse/any Zen model through OpenCode. `scripts/oc-worker` refuses any
-non-allow-listed model and flags a `PAID_MODEL_LEAK` if a non-free header ever appears. On
-`throttled`, it stops and asks Kiro to route to another APPROVED free slot or tell the user.
+### Default routing matrix (task_class → ordered slot preference)
+
+Encoded in `scripts/oc-worker route_chain`; `scripts/oc-worker route --class <c>` prints the live
+chain (post-cooldown).
+
+| task_class | preference order |
+|---|---|
+| `ui_design` / `frontend_ux` / `game_feel` / `content_ux` | muse13 → muse12 → pickle1 → nemotron1 |
+| `repo_implementation` | pickle1 → muse13 → muse12 → nemotron1 |
+| `backend_runtime` / `integration` / `repo_exploration` / `debugging` | pickle1 → nemotron1 → muse13 → muse12 |
+| `architecture` / `constraint_heavy` / `test_contract` / `review` / `verification` | nemotron1 → pickle1 → muse13 → muse12 |
+| `large_context` | nemotron1 → muse13 → muse12 → pickle1 |
+
+Initial prior for UI/design/game-feel/product-facing frontend: **muse13 > muse12 > big-pickle >
+nemotron**. Local measured route telemetry (`.orca-opencode/route.log`, per model×task_class, with
+rate-limits excluded) may alter this after enough Career Expo history.
+
+**HARD COST RULE — no paid fallback.** Kiro may ONLY dispatch these four $0 IDs through OpenCode.
+On `throttled` the adapter marks an independent per-slot cooldown and advances **only** through the
+APPROVED free chain (never Sol/GLM/Kimi/paid-Muse/any Zen model). `scripts/oc-worker` refuses any
+non-allow-listed model and flags `PAID_MODEL_LEAK` if a non-free header ever appears. Forcing
+`--model <alias>` disables auto-fallback (single explicit model, still allow-list-guarded).
 
 ### Shared brain (project-memory) on OpenCode
 
@@ -154,18 +175,19 @@ hardcoded secret, same `--user-id career-expo` namespace as Kiro's `.kiro/settin
 Cross-agent read/write verified (Kiro↔OpenCode, same Neo4j graph). **Cold-start gotcha:** the first
 MCP tool call in a fresh `opencode run` can fail once with `-32000 Connection closed` while `uvx`
 resolves the package + loads the embedding model; mitigations = `timeout:60000` in `opencode.json`,
-`scripts/oc-worker warm` before relying on it, or retry once. Keep the MCP tool surface focused;
-query only relevant memories (MCP tools add to model context).
+`scripts/oc-worker warm` before relying on it, or retry once. Keep the MCP tool surface focused.
 
 ### Dispatch adapter (`scripts/oc-worker`)
 
 `worker-start --agent opencode` does NOT reliably deliver the Orca preamble. Use the ephemeral
-adapter instead: Kiro mints the task packet → `scripts/oc-worker run --slot <muse1|union1|nemotron1>
---task <id> --class <...> --reason "<why>" --dir <worktree> [--effort <tier>] (--prompt|--spec)`
-→ the worker edits/tests/commits under `--auto` → Kiro Git/test verifies → integration. Every
-dispatch appends a ROUTE record (worker, model, task, class, cost_class=free, result,
-success/throttled/failure, duration, throttled, retries) to `.orca-opencode/route.log` so we can
-empirically rank Muse/Union/Nemotron on THIS repo rather than trusting internet benchmarks.
+adapter instead: Kiro mints the task packet → `scripts/oc-worker run ( --class <task_class> |
+--model <muse13|muse12|big-pickle|nemotron> ) --task <id> --reason "<why>" [--class-tag <...>]
+--dir <worktree> [--effort <tier>] (--prompt|--spec)` → the worker edits/tests/commits under
+`--auto` → Kiro Git/test verifies → integration. `--class` auto-resolves + auto-falls-through the
+free chain (honoring cooldowns); `--model` forces one slot with no auto-fallback. Every dispatch
+appends a ROUTE record (worker, model, task, class_tag, task_class, cost_class=free, result,
+duration, throttled) to `.orca-opencode/route.log`. Cooldown state lives in
+`.orca-opencode/cooldown/<slot>`; inspect via `scripts/oc-worker cooldowns`.
 
 **Routing role:** faithful execution of a STRONG specification (conceptual problem already solved by
 Sol). Multi-file is fine — the boundary is "conceptual problem solved," NOT "one file." ESCALATE
