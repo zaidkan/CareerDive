@@ -549,6 +549,31 @@ def create_server() -> FastMCP:
         ops = _get_concurrency_ops(ctx)
         return json.dumps(oc.claim_task(ops, task_id=task_id, owner=owner), default=str)
 
+    # ── oc-brain extension: T5 task_reclaim ─────────────────────────────
+    @mcp.tool(annotations=WRITE_ANNOTATIONS)
+    async def task_reclaim(
+        ctx: Context,
+        task_id: str,
+        expected_owner: str,
+        new_owner: str,
+    ) -> str:
+        """Reclaim a crashed worker's active claim using owner compare-and-set.
+
+        The single authoritative dispatcher decides recovery is warranted; the
+        privileged transaction succeeds only while the stored active owner is
+        still ``expected_owner``. Wrong or stale recovery requests are denied.
+        """
+        ops = _get_concurrency_ops(ctx)
+        return json.dumps(
+            oc.reclaim_task(
+                ops,
+                task_id=task_id,
+                expected_owner=expected_owner,
+                new_owner=new_owner,
+            ),
+            default=str,
+        )
+
     # ── oc-brain extension: T5 task_complete ────────────────────────────
     @mcp.tool(annotations=WRITE_ANNOTATIONS)
     async def task_complete(

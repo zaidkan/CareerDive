@@ -48,8 +48,12 @@ resolve_python() {
 # Run harness preflight; exit 42 (INFRA_FAIL) unchanged so callers never
 # mistake an infrastructure outage for an assertion failure.
 preflight() {
-  if ! OUT="$("$HARNESS" preflight)"; then
-    local rc=$?
+  local rc
+  set +e
+  OUT="$("$HARNESS" preflight)"
+  rc=$?
+  set -e
+  if [ "$rc" -ne 0 ]; then
     printf '%s\n' "$OUT" >&2
     exit "$rc"
   fi

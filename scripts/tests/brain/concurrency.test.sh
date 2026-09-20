@@ -17,9 +17,9 @@
 #          exactly M increments — no lost update, losers retry within the
 #          bounded jittered backoff budget and converge, and exactly one
 #          Counter + one CounterLock node exist;
-#   * F8   fail-closed schema gate: write_once/claim self-verify their
-#          constraints (SHOW CONSTRAINTS) and refuse if one is missing, and
-#          the module carries no legacy filesystem-only dispatcher lock;
+#   * F8   fail-closed schema gate: write/claim/CAS paths self-verify exact
+#          constraint signatures (SHOW CONSTRAINTS) and refuse missing or
+#          same-named-but-wrong constraints before mutation;
 #   * F7   negative controls: WITHOUT the gate the documented failure modes
 #          still manifest — bare MERGE mints duplicate nodes and bare
 #          MATCH-WHERE-SET loses acknowledged writes (24-reported/23-final and
@@ -27,7 +27,8 @@
 #
 # Mandatory setup order (a missing prerequisite is a SETUP failure = exit 42
 # INFRA_FAIL, never an assertion failure): preflight -> up if needed -> apply
-# -> ensure-concurrency-schema which must report CONCURRENCY_SCHEMA_OK (6/6).
+# -> ensure-concurrency-schema which must report CONCURRENCY_SCHEMA_OK 4/4
+# plus the two optional F7 hardening constraints.
 #
 # Entity prefixes used by this test: ctest-. Everything test-owned is deleted
 # on exit.
@@ -44,8 +45,11 @@ source "$HERE/_env.sh"
 # CONCURRENCY_SCHEMA_OK with all six T4/T5/F7 constraints.
 harness_setup() {
   local out rc
-  if ! out="$("$HARNESS" preflight 2>&1)"; then
-    rc=$?
+  set +e
+  out="$("$HARNESS" preflight 2>&1)"
+  rc=$?
+  set -e
+  if [ "$rc" -ne 0 ]; then
     printf '%s\n' "$out" >&2
     if printf '%s' "$out" | grep -q "not running"; then
       if ! out="$("$HARNESS" up 2>&1)"; then
@@ -53,7 +57,11 @@ harness_setup() {
         echo "INFRA_FAIL: could not start disposable harness" >&2
         exit "$INFRA_FAIL"
       fi
-      if ! out="$("$HARNESS" preflight 2>&1)"; then
+      set +e
+      out="$("$HARNESS" preflight 2>&1)"
+      rc=$?
+      set -e
+      if [ "$rc" -ne 0 ]; then
         printf '%s\n' "$out" >&2
         echo "INFRA_FAIL: harness not reachable after up" >&2
         exit "$INFRA_FAIL"
@@ -75,7 +83,7 @@ harness_setup() {
     exit "$INFRA_FAIL"
   fi
   printf '%s\n' "$out"
-  if [[ "$out" != *CONCURRENCY_SCHEMA_OK* ]]; then
+  if [[ "$out" != *"CONCURRENCY_SCHEMA_OK 4/4"* ]]; then
     echo "INFRA_FAIL: concurrency schema gate did not report OK" >&2
     exit "$INFRA_FAIL"
   fi
@@ -123,8 +131,78 @@ for NAME in operation_op_id task_claim_task_id counter_name counter_lock_name fa
   [ "$C" = "1" ] && ok "constraint $NAME present" || bad "constraint $NAME missing"
 done
 
+# F8 must be behavioral: remove each write-path authority constraint and prove
+# the operation refuses before creating any row. Restore immediately so later
+# concurrency proofs run against the required schema.
+F8_OP="ctest-f8-op-$("$PYTHON" -c 'import uuid; print(uuid.uuid4().hex)')"
+"$HARNESS" cypher "DROP CONSTRAINT operation_op_id IF EXISTS" >/dev/null
+set +e
+F8_WRITE=$("$PYTHON" oc_brain_concurrency.py write-once --op "$F8_OP" --subject s --predicate p --object o 2>&1)
+F8_WRITE_RC=$?
+set -e
+F8_WRITE_ROWS=$("$HARNESS" cypher "MATCH (o:Operation {op_id: '$F8_OP'}) RETURN count(o) AS c" | (read -r _; read -r n; echo "$n"))
+if [ "$F8_WRITE_RC" = "3" ] && [[ "$F8_WRITE" == *CONSTRAINT_GATE* ]] && [ "$F8_WRITE_ROWS" = "0" ]; then
+  ok "write path refuses before mutation when operation_op_id is absent"
+else
+  bad "write fail-closed broken (rc=$F8_WRITE_RC rows=$F8_WRITE_ROWS out=$F8_WRITE)"
+fi
+"$HARNESS" ensure-concurrency-schema >/dev/null
+
+# A same-named constraint on the wrong schema shape must not spoof the gate.
+F8_SPOOF_OP="ctest-f8-spoof-$("$PYTHON" -c 'import uuid; print(uuid.uuid4().hex)')"
+"$HARNESS" cypher "DROP CONSTRAINT operation_op_id IF EXISTS" >/dev/null
+"$HARNESS" cypher "CREATE CONSTRAINT operation_op_id FOR (n:WrongOperation) REQUIRE n.wrong IS UNIQUE" >/dev/null
+set +e
+F8_SPOOF=$("$PYTHON" oc_brain_concurrency.py write-once --op "$F8_SPOOF_OP" --subject s --predicate p --object o 2>&1)
+F8_SPOOF_RC=$?
+set -e
+F8_SPOOF_ROWS=$("$HARNESS" cypher "MATCH (o:Operation {op_id: '$F8_SPOOF_OP'}) RETURN count(o) AS c" | (read -r _; read -r n; echo "$n"))
+if [ "$F8_SPOOF_RC" = "3" ] && [[ "$F8_SPOOF" == *CONSTRAINT_GATE* ]] && [ "$F8_SPOOF_ROWS" = "0" ]; then
+  ok "write path rejects same-named constraint with wrong label/property signature"
+else
+  bad "constraint-name spoof bypassed gate (rc=$F8_SPOOF_RC rows=$F8_SPOOF_ROWS out=$F8_SPOOF)"
+fi
+"$HARNESS" cypher "DROP CONSTRAINT operation_op_id IF EXISTS" >/dev/null
+"$HARNESS" ensure-concurrency-schema >/dev/null
+
+F8_TASK="ctest-f8-task-$("$PYTHON" -c 'import uuid; print(uuid.uuid4().hex)')"
+"$HARNESS" cypher "DROP CONSTRAINT task_claim_task_id IF EXISTS" >/dev/null
+set +e
+F8_CLAIM=$("$PYTHON" oc_brain_concurrency.py claim "$F8_TASK" dispatcher-f8 2>&1)
+F8_CLAIM_RC=$?
+set -e
+F8_CLAIM_ROWS=$("$HARNESS" cypher "MATCH (c:TaskClaim {task_id: '$F8_TASK'}) RETURN count(c) AS c" | (read -r _; read -r n; echo "$n"))
+if [ "$F8_CLAIM_RC" = "3" ] && [[ "$F8_CLAIM" == *CONSTRAINT_GATE* ]] && [ "$F8_CLAIM_ROWS" = "0" ]; then
+  ok "claim path refuses before mutation when task_claim_task_id is absent"
+else
+  bad "claim fail-closed broken (rc=$F8_CLAIM_RC rows=$F8_CLAIM_ROWS out=$F8_CLAIM)"
+fi
+"$HARNESS" ensure-concurrency-schema >/dev/null
+
+F8_COUNTER="ctest-f8-counter-$("$PYTHON" -c 'import uuid; print(uuid.uuid4().hex)')"
+"$HARNESS" cypher "DROP CONSTRAINT counter_name IF EXISTS" >/dev/null
+set +e
+F8_CAS=$("$PYTHON" oc_brain_concurrency.py cas "$F8_COUNTER" writer-f8 2>&1)
+F8_CAS_RC=$?
+set -e
+F8_CAS_ROWS=$("$HARNESS" cypher "MATCH (n:Counter {name: '$F8_COUNTER'}) RETURN count(n) AS c" | (read -r _; read -r n; echo "$n"))
+if [ "$F8_CAS_RC" = "3" ] && [[ "$F8_CAS" == *CONSTRAINT_GATE* ]] && [ "$F8_CAS_ROWS" = "0" ]; then
+  ok "CAS path refuses before mutation when counter_name is absent"
+else
+  bad "CAS fail-closed broken (rc=$F8_CAS_RC rows=$F8_CAS_ROWS out=$F8_CAS)"
+fi
+"$HARNESS" ensure-concurrency-schema >/dev/null
+
 # ── T5a. single-host flock lock ───────────────────────────────────────────
 step "T5a: single-host dispatch lock (flock, no stale pid files)"
+
+if LOCK_RESULT=$("$TESTS_BRAIN/lock.test.sh" 2>&1); then
+  printf '%s\n' "$LOCK_RESULT"
+  ok "real oc-dispatch entrypoint denies a second dispatcher and reacquires after release"
+else
+  printf '%s\n' "$LOCK_RESULT"
+  bad "real oc-dispatch lock authority failed"
+fi
 
 LOCK_DIR="$ROOT/.orca-opencode"
 mkdir -p "$LOCK_DIR"
@@ -141,7 +219,7 @@ HOLD_OUT="$(mktemp)"
 # $! on a bash pipeline is the PID of the LAST element = the python holder
 # itself; killing any earlier subshell would leave the pipeline orphaned and
 # holding the lock (stale-lock false negatives).
-sleep 60 | "$PYTHON" "$TESTS_BRAIN/brain_lock.py" acquire "$LOCKF" >"$HOLD_OUT" 2>&1 &
+"$PYTHON" "$TESTS_BRAIN/brain_lock.py" hold "$LOCKF" >"$HOLD_OUT" 2>&1 &
 HOLDER=$!
 for _ in $(seq 1 40); do
   grep -q LOCK_ACQUIRED "$HOLD_OUT" 2>/dev/null && break
@@ -173,7 +251,7 @@ rm -f "$HOLD_OUT"
 step "T5a-crash: SIGKILLed dispatcher releases the kernel flock (no stale lock)"
 
 HOLD2_OUT="$(mktemp)"
-sleep 60 | "$PYTHON" "$TESTS_BRAIN/brain_lock.py" acquire "$LOCKF" >"$HOLD2_OUT" 2>&1 &
+"$PYTHON" "$TESTS_BRAIN/brain_lock.py" hold "$LOCKF" >"$HOLD2_OUT" 2>&1 &
 HOLDER2=$!
 for _ in $(seq 1 40); do
   grep -q LOCK_ACQUIRED "$HOLD2_OUT" 2>/dev/null && break
@@ -252,14 +330,31 @@ else
   bad "denied write mutated status (got '$STACTIVE')"
 fi
 
-CO="$("$PYTHON" oc_brain_concurrency.py complete "$TID" "$WINNER" | jget status)"
-if [ "$CO" = "done" ]; then
-  ok "owner complete succeeded (status=$CO)"
+RECOVERY_OWNER="dispatcher-recovery"
+RR_DENIED="$("$PYTHON" oc_brain_concurrency.py reclaim "$TID" intruder-0 "$RECOVERY_OWNER" | jget status)"
+if [ "$RR_DENIED" = "denied" ]; then
+  ok "reclaim with wrong expected owner denied inside transaction"
 else
-  bad "owner complete status='$CO'"
+  bad "wrong-owner reclaim status='$RR_DENIED'"
 fi
-CS="$("$PYTHON" oc_brain_concurrency.py claim "$TID" "$WINNER" | jget status)"
-echo "info: re-claim after done by winner -> $CS"
+RR="$("$PYTHON" oc_brain_concurrency.py reclaim "$TID" "$WINNER" "$RECOVERY_OWNER" | jget status)"
+if [ "$RR" = "reclaimed" ]; then
+  ok "crashed worker claim reclaimed by replacement dispatcher"
+else
+  bad "claim reclaim status='$RR'"
+fi
+OLD_COMPLETE="$("$PYTHON" oc_brain_concurrency.py complete "$TID" "$WINNER" | jget status)"
+if [ "$OLD_COMPLETE" = "denied" ]; then
+  ok "reclaimed claim rejects stale prior owner"
+else
+  bad "stale prior owner completed reclaimed task (status='$OLD_COMPLETE')"
+fi
+CO="$("$PYTHON" oc_brain_concurrency.py complete "$TID" "$RECOVERY_OWNER" | jget status)"
+if [ "$CO" = "done" ]; then
+  ok "replacement owner completes reclaimed claim (status=$CO)"
+else
+  bad "replacement owner complete status='$CO'"
+fi
 
 # ── T5c. CAS version transitions ──────────────────────────────────────────
 step "T5c: M parallel writers, exactly M increments (no lost update, bounded retry)"
@@ -269,7 +364,7 @@ W=12
 K=4
 EXPECT=$((W * K))
 for i in $(seq 1 "$W"); do
-  "$PYTHON" oc_brain_concurrency.py cas "$CN" "w-$i" --increments "$K" >"/tmp/t5c_cas_$i.out" 2>&1 &
+  "$PYTHON" oc_brain_concurrency.py cas "$CN" "w-$i" --increments "$K" >"/tmp/t5c_cas_$i.out" 2>"/tmp/t5c_cas_$i.err" &
 done
 wait
 
@@ -316,7 +411,7 @@ if [ "$DMIN" -ge 1 ] && [ "$DMAX" -le 16 ]; then
 else
   bad "attempt budget exceeded (attempts min=$DMIN max=$DMAX)"
 fi
-rm -f /tmp/t5c_cas_*.out
+rm -f /tmp/t5c_cas_*.out /tmp/t5c_cas_*.err
 
 CNODE=$("$HARNESS" cypher "MATCH (n:Counter {name: '$CN'}) RETURN count(n) AS c" | (read -r _; read -r n; echo "$n"))
 LNODE=$("$HARNESS" cypher "MATCH (l:CounterLock {name: '$CN'}) RETURN count(l) AS c" | (read -r _; read -r n; echo "$n"))
@@ -351,19 +446,18 @@ else
 fi
 
 # ── rollback guard ────────────────────────────────────────────────────────
-step "rollback guard: no legacy filesystem-only dispatcher lock in module"
+step "rollback guard: real dispatcher flock present; no unsafe unlocked fallback"
 
-if "$PYTHON" - "$BRAIN_DIR/oc_brain_concurrency.py" <<'EOF'
+if "$PYTHON" - "$ROOT/scripts/oc-dispatch" <<'EOF'
 import sys
 src = open(sys.argv[1]).read()
-banned = ("fcntl", "flock", "LOCK_EX", "dispatcher.lock")
-hits = [b for b in banned if b in src]
-raise SystemExit(0 if not hits else 1)
+required = ("brain_lock.py", "DISPATCH_LOCK_FILE", "run", "exit 75")
+raise SystemExit(0 if all(token in src for token in required) else 1)
 EOF
 then
-  ok "module has no fcntl/flock/dispatcher.lock (authority lives in DB constraints + lock node)"
+  ok "oc-dispatch requires kernel flock and fails closed if authority is unavailable"
 else
-  bad "module references a filesystem-only lock; rollback must fail-closed to DB"
+  bad "oc-dispatch can bypass required single-host flock authority"
 fi
 
 # ── summary ───────────────────────────────────────────────────────────────

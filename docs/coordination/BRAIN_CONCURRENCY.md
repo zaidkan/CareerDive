@@ -23,8 +23,8 @@ refuses any env that points at it.
      uniqueness constraint is absent (observed: 8 Counter + 8 CounterLock
      nodes for one name and an unwound version).
 2. **Fail-closed.** If the gate cannot be proven, nothing is written and the
-   caller is told it lost/conflicted. There is no optimistic side channel and
-   no legacy filesystem-only fallback lock inside the concurrency module.
+   caller is told it lost/conflicted. There is no optimistic side channel or
+   unlocked dispatcher fallback.
 3. **Identity ≠ content.** For T4 the `op_id` is the identity; the payload
    SHA-256 is a separate integrity binding, never the key.
 4. **Ownership is re-verified inside the privileged write.** A stale or
@@ -68,11 +68,21 @@ omitted. Conflict returns `{"error": "OP_CONFLICT", "op_id", "detail",
 
 ## T5a — Single-host dispatch lock (flock)
 
-`scripts/tests/brain/brain_lock.py` wraps `fcntl.flock` (macOS lacks
-`flock(1)`). macOS: kernel-managed advisory lock released on process death —
-no stale PID file. Lock path `.orca-opencode/dispatcher.lock` (gitignored).
-Wrappers: `acquire <lockfile>` (holds until stdin EOF / signal),
-`try <lockfile>` (0 when free-and-acquired-then-released, 1 while held).
+`scripts/oc-dispatch` wraps every state-mutating `dispatch`, `reap`, and
+`cancel` command with `scripts/tests/brain/brain_lock.py`, which owns a
+kernel-backed `fcntl.flock` (macOS lacks `flock(1)`). The helper acquires the
+lock and `exec`s the dispatcher, so lock owner and dispatcher are the same PID;
+SIGKILL cannot strand an unlocked child. The dispatcher verifies the inherited
+locked file descriptor and refuses with exit 75 if another dispatcher owns the
+lock or the authority descriptor is invalid. Background workers explicitly
+close the inherited descriptor before launch, so they cannot keep the
+dispatcher lock after the dispatch command exits. Lock path
+`.orca-opencode/dispatcher.lock` is gitignored and released by the kernel on
+normal exit or process death; no stale PID file exists.
+
+`scripts/tests/brain/lock.test.sh` proves first acquisition, second-dispatcher
+denial, normal release/reacquisition, and SIGKILL release/reacquisition through
+the real `oc-dispatch` entrypoint.
 
 ## T5b — Atomic task claim
 
@@ -87,6 +97,11 @@ MERGE (c:TaskClaim {task_id: $task_id})
 - `TaskClaim.task_id` uniqueness constraint → only the ON-CREATE writer wins.
 - Outcomes: `claimed` (this attempt wrote), `reaffirmed` (same owner), or
   `taken_by` (another dispatcher holds it, nothing written).
+- Crash recovery uses explicit `task_reclaim(task_id, expected_owner,
+  new_owner)`. The single-host dispatcher lock authorizes recovery; the DB
+  transaction compares the stored active owner before replacement. A wrong or
+  stale expected owner is denied without mutation, and the prior owner cannot
+  complete after a successful reclaim.
 - Privileged write (`task_complete`) re-verifies ownership inline:
 
 ```
@@ -136,16 +151,20 @@ NOT modified.
   `fact_id` and `fact_op_id` uniqueness live in `concurrency-schema.cypher`
   (and the module's own `SCHEMA_STATEMENTS`), so idempotency no longer leans on
   an external fact-identity constraint living only in `schema-snapshot.cypher`.
-- **F8 (VALID):** `write_once` and `claim_task` self-verify their required
-  constraints with an in-transaction-call `SHOW CONSTRAINTS` preflight and
-  **REFUSE** (fail-closed) by raising `ConstraintGateError` if any is absent —
-  a misconfigured DB is never allowed to silently duplicate. `ensure-schema`
-  likewise refuses to report `SCHEMA_OK` unless all six constraints persisted.
-  Primitives now require: `write_once` → `operation_op_id` + `fact_id` +
-  `fact_op_id`; `claim_task` → `task_claim_task_id`.
-- The F8 gate makes the rollback story complete: authority lives in DB
-  constraints + the `CounterLock` CAS node; there is no optimistic side channel
-  and no legacy filesystem-only fallback lock in the module.
+- **F8 (VALID):** `write_once`, `claim_task`, `complete_task`, and
+  `cas_increment` self-verify their required constraints with a
+  `SHOW CONSTRAINTS` preflight and **REFUSE** (fail-closed) by raising
+  `ConstraintGateError` before mutation if a constraint is absent or its type,
+  entity, label, or property signature is wrong. A same-named constraint on a
+  different label/property cannot spoof the gate. `ensure-schema` likewise
+  refuses to report `SCHEMA_OK` unless all six exact signatures persist.
+  Primitives require: `write_once` → `operation_op_id` + `fact_id` +
+  `fact_op_id`; claim/complete → `task_claim_task_id`; CAS → `counter_name` +
+  `counter_lock_name`.
+- The F8 gate and required process flock make rollback fail closed: DB
+  constraints + the `CounterLock` CAS node protect writes, while the OS lock
+  protects single-host dispatcher authority. The local JSON `task_active`
+  check was renamed `local_task_record_active` and remains advisory only.
 
 ## Verification
 
@@ -153,16 +172,20 @@ NOT modified.
   (`idempotency_probe.py` over `oc_brain_server.py`): created → replayed
   (byte-identical) → conflict (nothing written); M concurrent first-writers →
   1 created / M-1 replayed; exactly one Operation and one Fact per op_id.
+- `scripts/tests/brain/lock.test.sh` — real `oc-dispatch` flock authority:
+  deny second dispatcher with exit 75, release/reacquire, and crash release.
 - `scripts/tests/brain/concurrency.test.sh` — T5a flock deny-second-holder,
   deny-after-SIGKILL (crash-safe: kernel-released, no stale pid file) and
   free-after-release; T5b exactly one claim winner + atomic fully-formed claim
-  row + non-owner complete denied; T5c W×K increments land exactly at version
+  row + non-owner complete denied + wrong-owner reclaim denied + crashed-owner
+  claim reclaimed and completed by replacement; T5c W×K increments land exactly at version
   W×K with all 1..N distinct, retries within the bounded backoff budget, one
-  Counter + one CounterLock; F7/F8 schema gate (6/6 constraints present,
-  write_once/claim refuse when absent via `ConstraintGateError`); negative
+  Counter + one CounterLock; schema gate (core `4/4`, F7 hardening `2/2`;
+  write/claim/CAS refuse missing or spoofed constraints via
+  `ConstraintGateError`); negative
   controls proving bare MERGE mints duplicates and bare MATCH-WHERE-SET loses
   updates on deliberately-unconstrained `NcCounter`/`NcCounterLock` labels;
-  static rollback guard (no fcntl/flock/dispatcher.lock inside the module).
+  static rollback guard requiring the `oc-dispatch` flock wrapper.
 - Both tests call `harness.sh preflight` first; exit 42 (INFRA_FAIL) is an
   infrastructure outage, never reported as an assertion failure. Test rows use
   `itest-` / `ctest-` prefixes and are deleted on exit.
@@ -176,10 +199,11 @@ e.g. `final version exactly 48 … successes=48 unique=48 complete=True`.
 
 ## Runtime
 
-- Run from the repo root: `bash scripts/tests/brain/idempotency.test.sh` and
-  `bash scripts/tests/brain/concurrency.test.sh`
+- Run from the repo root: `bash scripts/tests/brain/idempotency.test.sh`,
+  `scripts/tests/brain/lock.test.sh`, and
+  `scripts/tests/brain/concurrency.test.sh`.
 - Context package: `oc_brain_concurrency.py` (module) exports `write_once`,
-  `claim_task`, `complete_task`, `claim_status`, `cas_increment`,
+  `claim_task`, `reclaim_task`, `complete_task`, `claim_status`, `cas_increment`,
   `counter_read`, `ensure_constraints`, `payload_sha256` plus a supervisor
   CLI and both `DriverOps` (raw driver) and `SdkOps` (Agent Memory client)
   adapters. `oc_brain_server.py` exposes `task_claim`, `task_complete`,

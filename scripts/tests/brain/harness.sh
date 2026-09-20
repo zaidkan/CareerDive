@@ -88,12 +88,17 @@ cmd_cypher() { cy "$1"; }
 cmd_ensure_concurrency_schema() {
   [ -f "$HERE/concurrency-schema.cypher" ] || { echo "INFRA_FAIL: concurrency-schema.cypher missing" >&2; exit $INFRA_FAIL; }
   cy "$(cat "$HERE/concurrency-schema.cypher")" >/dev/null 2>&1
-  local n
-  n="$(cy "SHOW CONSTRAINTS YIELD name WHERE name IN ['operation_op_id','task_claim_task_id','counter_name','counter_lock_name','fact_id','fact_op_id'] RETURN count(*) AS c" | tail -1 | tr -dc '0-9')"
-  if [ "${n:-0}" != "6" ]; then
-    echo "INFRA_FAIL: concurrency constraints not established (found ${n:-0}/6)" >&2; exit $INFRA_FAIL
+  local core hardening
+  core="$(cy "SHOW CONSTRAINTS YIELD name WHERE name IN ['operation_op_id','task_claim_task_id','counter_name','counter_lock_name'] RETURN count(*) AS c" | tail -1 | tr -dc '0-9')"
+  hardening="$(cy "SHOW CONSTRAINTS YIELD name WHERE name IN ['fact_id','fact_op_id'] RETURN count(*) AS c" | tail -1 | tr -dc '0-9')"
+  if [ "${core:-0}" != "4" ]; then
+    echo "INFRA_FAIL: concurrency constraints not established (found ${core:-0}/4)" >&2; exit $INFRA_FAIL
   fi
-  echo "CONCURRENCY_SCHEMA_OK (6/6 constraints)"
+  if [ "${hardening:-0}" != "2" ]; then
+    echo "INFRA_FAIL: idempotency hardening constraints not established (found ${hardening:-0}/2)" >&2; exit $INFRA_FAIL
+  fi
+  echo "CONCURRENCY_SCHEMA_OK 4/4"
+  echo "IDEMPOTENCY_HARDENING_SCHEMA_OK 2/2"
 }
 
 cmd_down() {

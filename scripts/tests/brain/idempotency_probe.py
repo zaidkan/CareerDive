@@ -80,7 +80,13 @@ async def run(args: argparse.Namespace) -> int:
             await session.initialize()
 
             tools = {t.name for t in (await session.list_tools()).tools}
-            expected = {"memory_add_fact", "task_claim", "task_complete", "counter_increment"}
+            expected = {
+                "memory_add_fact",
+                "task_claim",
+                "task_reclaim",
+                "task_complete",
+                "counter_increment",
+            }
             report.check(
                 "discover: T4/T5 oc-brain tools registered",
                 expected.issubset(tools),

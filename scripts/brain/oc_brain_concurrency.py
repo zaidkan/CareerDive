@@ -45,6 +45,7 @@ Run either library-style (import) or as a CLI for supervisor tests::
     python3 oc_brain_concurrency.py ensure-schema
     python3 oc_brain_concurrency.py write-once --op <op_id> --subject s --predicate p --object o [--payload-sha sha] [--result json] [--max-char N]
     python3 oc_brain_concurrency.py claim <task_id> <owner>
+    python3 oc_brain_concurrency.py reclaim <task_id> <expected_owner> <new_owner>
     python3 oc_brain_concurrency.py complete <task_id> <owner>
     python3 oc_brain_concurrency.py cas <counter_name> <writer> [--increments N]
     python3 oc_brain_concurrency.py counter <counter_name>
@@ -144,6 +145,19 @@ SET c.status = 'done', c.completed_at = datetime()
 RETURN c.status AS status
 """
 
+# Crash recovery under the single-dispatcher authority boundary. Replacement
+# is explicit compare-and-set on the prior owner and active status, inside the
+# same privileged transaction; a stale recovery request matches nothing.
+RECLAIM_QUERY = """
+MATCH (c:TaskClaim {task_id: $task_id})
+WHERE c.claimed_by = $expected_owner AND c.status = 'active'
+SET c.claimed_by = $new_owner,
+    c.claimed_at = datetime(),
+    c.recovered_from = $expected_owner,
+    c.attempt_token = $attempt_token
+RETURN c.claimed_by AS claimed_by, c.status AS status
+"""
+
 COUNTER_READ_QUERY = """
 MATCH (n:Counter {name: $name})
 RETURN n.version AS version
@@ -209,30 +223,60 @@ SCHEMA_STATEMENTS = [
 # duplicate rows. The gate is a cheap read (SHOW CONSTRAINTS) run once per
 # call, before the write retry loop.
 CONSTRAINT_NAMES_QUERY = """
-SHOW CONSTRAINTS YIELD name
-RETURN name AS name
+SHOW CONSTRAINTS YIELD name, type, entityType, labelsOrTypes, properties
+RETURN name AS name,
+       type AS type,
+       entityType AS entity_type,
+       labelsOrTypes AS labels_or_types,
+       properties AS properties
 """
 
 # Constraints each primitive depends on (subset of SCHEMA_STATEMENTS / the
 # harness concurrency-schema.cypher file).
 REQUIRED_WRITE_ONCE_CONSTRAINTS = {"operation_op_id", "fact_id", "fact_op_id"}
 REQUIRED_CLAIM_CONSTRAINTS = {"task_claim_task_id"}
+REQUIRED_CAS_CONSTRAINTS = {"counter_name", "counter_lock_name"}
+REQUIRED_CONSTRAINT_SIGNATURES = {
+    "operation_op_id": ("UNIQUENESS", "NODE", ("Operation",), ("op_id",)),
+    "task_claim_task_id": ("UNIQUENESS", "NODE", ("TaskClaim",), ("task_id",)),
+    "counter_name": ("UNIQUENESS", "NODE", ("Counter",), ("name",)),
+    "counter_lock_name": ("UNIQUENESS", "NODE", ("CounterLock",), ("name",)),
+    "fact_id": ("UNIQUENESS", "NODE", ("Fact",), ("id",)),
+    "fact_op_id": ("UNIQUENESS", "NODE", ("Fact",), ("op_id",)),
+}
 
 
 class ConstraintGateError(RuntimeError):
     """Fail-closed: a required uniqueness constraint is absent."""
 
 
-def constraint_names(ops: Ops) -> set[str]:
-    return {str(r.get("name")) for r in ops.execute_read(CONSTRAINT_NAMES_QUERY, {})}
+def constraint_signatures(
+    ops: Ops,
+) -> dict[str, tuple[str, str, tuple[str, ...], tuple[str, ...]]]:
+    signatures = {}
+    for row in ops.execute_read(CONSTRAINT_NAMES_QUERY, {}):
+        signatures[str(row.get("name"))] = (
+            str(row.get("type")),
+            str(row.get("entity_type")),
+            tuple(row.get("labels_or_types") or ()),
+            tuple(row.get("properties") or ()),
+        )
+    return signatures
 
 
 def require_constraints(ops: Ops, required: set[str], *, purpose: str) -> None:
-    missing = required - constraint_names(ops)
-    if missing:
+    actual = constraint_signatures(ops)
+    missing = required - actual.keys()
+    invalid = {
+        name
+        for name in required - missing
+        if actual[name] != REQUIRED_CONSTRAINT_SIGNATURES[name]
+    }
+    if missing or invalid:
         raise ConstraintGateError(
-            f"{purpose}: required uniqueness constraint(s) missing: "
-            f"{sorted(missing)}; refusing to write (fail-closed). Install the "
+            f"{purpose}: required uniqueness constraint(s) missing or invalid: "
+            f"missing={sorted(missing)} invalid={sorted(invalid)}; refusing to "
+            "write (fail-closed). Install the "
             "concurrency schema first (ensure-schema / harness "
             "ensure-concurrency-schema)."
         )
@@ -467,12 +511,37 @@ def complete_task(ops: Ops, *, task_id: str, owner: str) -> dict[str, Any]:
 
     A non-owner or stale caller matches nothing -> ``denied`` with no effect.
     """
+    require_constraints(ops, REQUIRED_CLAIM_CONSTRAINTS, purpose="complete_task")
     rows = ops.execute_write(
         COMPLETE_QUERY, {"task_id": task_id, "owner": owner}
     )
     if rows:
         return {"owner": owner, "status": rows[0].get("status") or "done"}
     return {"owner": owner, "status": "denied"}
+
+
+def reclaim_task(
+    ops: Ops, *, task_id: str, expected_owner: str, new_owner: str
+) -> dict[str, Any]:
+    """Reclaim an active crashed-worker claim with inline owner CAS.
+
+    Single-host dispatcher flock is the authority to decide that recovery is
+    warranted. This DB transaction then proves the claim still belongs to the
+    expected crashed owner before replacing it; stale/wrong requests are denied.
+    """
+    require_constraints(ops, REQUIRED_CLAIM_CONSTRAINTS, purpose="reclaim_task")
+    rows = ops.execute_write(
+        RECLAIM_QUERY,
+        {
+            "task_id": task_id,
+            "expected_owner": expected_owner,
+            "new_owner": new_owner,
+            "attempt_token": uuid.uuid4().hex,
+        },
+    )
+    if rows:
+        return {"owner": rows[0].get("claimed_by") or new_owner, "status": "reclaimed"}
+    return {"owner": new_owner, "status": "denied"}
 
 
 def claim_status(ops: Ops, *, task_id: str) -> dict[str, Any]:
@@ -500,6 +569,7 @@ def cas_increment(
 
     Returns ``{"version", "writer", "attempts"}``.
     """
+    require_constraints(ops, REQUIRED_CAS_CONSTRAINTS, purpose="cas_increment")
     for attempt in range(1, max_attempts + 1):
         read = ops.execute_read(COUNTER_READ_QUERY, {"name": name})
         if read:
@@ -533,7 +603,9 @@ def ensure_constraints(ops: Ops) -> None:
     # later duplicate.
     require_constraints(
         ops,
-        REQUIRED_WRITE_ONCE_CONSTRAINTS | REQUIRED_CLAIM_CONSTRAINTS,
+        REQUIRED_WRITE_ONCE_CONSTRAINTS
+        | REQUIRED_CLAIM_CONSTRAINTS
+        | REQUIRED_CAS_CONSTRAINTS,
         purpose="ensure-schema",
     )
 
@@ -624,6 +696,19 @@ def _run(argv: list[str]) -> int:
     if cmd == "complete":
         task_id, owner = rest[0], rest[1]
         print(json.dumps(complete_task(ops, task_id=task_id, owner=owner)))
+        return 0
+    if cmd == "reclaim":
+        task_id, expected_owner, new_owner = rest[0], rest[1], rest[2]
+        print(
+            json.dumps(
+                reclaim_task(
+                    ops,
+                    task_id=task_id,
+                    expected_owner=expected_owner,
+                    new_owner=new_owner,
+                )
+            )
+        )
         return 0
     if cmd == "cas":
         name, writer = rest[0], rest[1]

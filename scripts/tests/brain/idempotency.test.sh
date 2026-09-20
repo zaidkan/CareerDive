@@ -29,8 +29,11 @@ source "$HERE/_env.sh"
 # CONCURRENCY_SCHEMA_OK for all four T4/T5 constraints.
 harness_setup() {
   local out rc
-  if ! out="$("$HARNESS" preflight 2>&1)"; then
-    rc=$?
+  set +e
+  out="$("$HARNESS" preflight 2>&1)"
+  rc=$?
+  set -e
+  if [ "$rc" -ne 0 ]; then
     printf '%s\n' "$out" >&2
     if printf '%s' "$out" | grep -q "not running"; then
       if ! out="$("$HARNESS" up 2>&1)"; then
@@ -38,7 +41,11 @@ harness_setup() {
         echo "INFRA_FAIL: could not start disposable harness" >&2
         exit "$INFRA_FAIL"
       fi
-      if ! out="$("$HARNESS" preflight 2>&1)"; then
+      set +e
+      out="$("$HARNESS" preflight 2>&1)"
+      rc=$?
+      set -e
+      if [ "$rc" -ne 0 ]; then
         printf '%s\n' "$out" >&2
         echo "INFRA_FAIL: harness not reachable after up" >&2
         exit "$INFRA_FAIL"
