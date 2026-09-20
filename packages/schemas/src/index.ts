@@ -23,6 +23,7 @@ export * from "./pathway.js";
 export * from "./npc.js";
 export * from "./evidence-facts.js";
 export * from "./ticket.js";
+export * from "./ticket-update.js";
 export * from "./npc-intent.js";
 export * from "./safety.js";
 export * from "./extension-points.js";

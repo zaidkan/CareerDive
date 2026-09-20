@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { QueryRecordsPayloadSchema } from "./query.js";
 import { WorkSystemIdSchema } from "./session.js";
+import { TicketUpdatePayloadSchema } from "./ticket-update.js";
 
 export const SimulationActionIdSchema = z.enum([
   "read_handoff",
@@ -38,6 +39,7 @@ export const SimulationActionSchema = z.object({
    * enforced in the reducer, keeping the envelope back-compatible.
    */
   queryPayload: QueryRecordsPayloadSchema.optional(),
+  ticketPayload: TicketUpdatePayloadSchema.optional(),
 });
 export type SimulationAction = z.infer<typeof SimulationActionSchema>;
 

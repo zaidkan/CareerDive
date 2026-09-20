@@ -17,6 +17,7 @@ import {
 } from "./tasks.js";
 import { WorkplaceStateSchema } from "./workplace.js";
 import { EvidenceFactDefinitionSchema } from "./evidence-facts.js";
+import { StructuredTicketSchema } from "./ticket.js";
 
 export const LocationSchema = z.object({
   id: z.string(),
@@ -132,6 +133,9 @@ export const WorldStateSchema = z.object({
   artifacts: z.record(z.string(), WorkArtifactSchema),
   observedArtifactIds: z.array(z.string()).default([]),
   ticketNotes: z.record(z.string(), z.string()).default({}),
+  structuredTickets: z
+    .record(z.string(), StructuredTicketSchema)
+    .default({}),
   notebook: z.string().default(""),
   kbQuery: z.string().default(""),
   taskProgress: z.record(z.string(), TaskProgressSchema).default({}),
