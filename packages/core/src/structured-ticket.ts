@@ -1,45 +1,53 @@
-import { StructuredTicketSchema, WorldState } from "@sim/schemas";
-import type { StructuredTicket } from "@sim/schemas";
+import type { StructuredTicket, WorldState } from "@sim/schemas";
+import { StructuredTicketSchema } from "@sim/schemas";
+
+import { discoverEvidenceFacts } from "./evidence-facts.js";
 
 /**
- * P4 additive reader over the canonical `state.structuredTickets` store.
+ * P4 additive reader + legality validator over the canonical
+ * `state.structuredTickets` store.
  *
- * Pure reader: re-parses every enrolled ticket through
- * `StructuredTicketSchema` (`.strict()`), so any authoring-only field a
- * Phase-4 action may have sneaked past the legality gate is dropped here and
- * never reaches the player projection. The reducer lands legality BEFORE
- * mutation (mirroring `applyQueryRecords`); this reader is the replay-stable
- * surface the serializer and the discovery attachment projection both read
- * from, so they can never disagree about canonical ticket state.
+ * Two pure exports (no mutation, no prose grading):
+ *
+ * - `readStructuredTickets(state)` — the canonical reader. Re-parses every
+ *   enrolled ticket through the `.strict()` `StructuredTicketSchema`, so any
+ *   authoring-only field that slipped past a legality gate is dropped here
+ *   and never reaches the player projection or the discovery attachment
+ *   projection. This is the replay-stable surface the serializer and the
+ *   validator both read from, so they can never disagree about canonical
+ *   ticket state.
+ *
+ * - `validateStructuredTicket(state, ticketId)` — legality BEFORE mutation.
+ *   The backend validates only structural/legal constraints (spec §5.3):
+ *     - referenced linked work items exist in canonical state (unknown work
+ *       items are illegal — P4-1b);
+ *     - every referenced evidence fact is DISCOVERED in the canonical
+ *       discovery store (never silently infers an undiscovered fact — P4-2b)
+ *       and is a real fact id, never raw authoring metadata posing as a
+ *       reference (P4-2d);
+ *     - no duplicate evidence attachment (P4-2c);
+ *     - no transition out of the terminal `closed` status.
+ *   It NEVER grades prose semantically (spec §5.3 "The backend must not
+ *   grade prose") and never emits grading vocabulary, so the player
+ *   projection never marks a record by a verdict. Returns `[]` for a fully
+ *   legal ticket.
  */
 export function readStructuredTickets(state: WorldState): Record<
   string,
   StructuredTicket
 > {
-  const store = state.structuredTickets ?? {};
   return Object.fromEntries(
-    Object.entries(store).map(([ticketId, ticket]) => [
+    Object.entries(state.structuredTickets).map(([ticketId, ticket]) => [
       ticketId,
       StructuredTicketSchema.parse(ticket),
     ]),
   );
 }
 
-/**
- * PHASE 4 CONTRACT VALIDATOR — pure structural/legal legality over the
- * canonical ticket store. Backend validates only:
- *   - referenced evidence facts are discovered (spec §5.3 "referenced evidence
- *     must have been discovered"; never silently infers an undiscovered fact)
- *   - referenced linked work items exist in canonical rules state
- *   - status transition is legal (no transition out of the terminal `closed`);
- *     terminal/ticket-status legality is structural, never a prose grade
- *   - no duplicate evidence attachment
- *
- * It NEVER grades prose semantically (spec §5.3 "The backend must not grade
- * prose") and never emits grading vocabulary (score/expectedEvidence/ideal
- * disposition), so the player projection never marks a record by a verdict.
- * Returns `[]` for a fully legal ticket.
- */
+/** Authoring-metadata key refs that must never pose as evidence-fact ids. */
+const AUTHORING_METADATA_REF =
+  /(?:^|[/.])(statements?|expected|ideal|correct|incorrect|score)(?:\b|$)/i;
+
 export function validateStructuredTicket(
   state: WorldState,
   ticketId: string,
@@ -47,45 +55,55 @@ export function validateStructuredTicket(
   const ticket = readStructuredTickets(state)[ticketId];
   if (!ticket) {
     return [
-      `structured ticket "${ticketId}" is not documented: no canonical record ` +
-        "source. Legality-before-mutation rejects documentation of an " +
+      `structured ticket "${ticketId}" is not documented in the canonical ` +
+        "store; legality-before-mutation rejects documenting an " +
         "undocumented ticket.",
     ];
   }
 
   const violations: string[] = [];
 
-  const evidenceFactIds = ticket.evidenceFactIds ?? [];
-  const discovered = new Set(
-    Object.values(state.evidenceFactDiscovery ?? {}).map(
-      (entry) => entry.factId,
-    ),
-  );
-  for (const factId of evidenceFactIds) {
-    if (!discovered.has(factId)) {
+  for (const workItemId of ticket.linkedWorkItemIds) {
+    const known = state.events.some((event) => event.id === workItemId);
+    if (!known) {
       violations.push(
-        `evidence fact "${factId}" is undiscovered in the canonical discovery ` +
-          "store; attachment of an undiscovered fact is illegal (Phase 4 " +
-          "legality-before-mutation).",
+        `ticket "${ticketId}" references work item "${workItemId}" that ` +
+          "does not exist in canonical state; referencing an unknown work " +
+          "item is illegal.",
       );
     }
   }
 
-  const duplicateIds = new Set<string>();
-  for (const factId of evidenceFactIds) {
-    if (duplicateIds.has(factId)) {
+  const discoveredFactIds = new Set(
+    discoverEvidenceFacts(state).map((entry) => entry.factId),
+  );
+  for (const factId of ticket.evidenceFactIds) {
+    if (discoveredFactIds.has(factId)) continue;
+    violations.push(
+      AUTHORING_METADATA_REF.test(factId)
+        ? `"${factId}" is authoring metadata posing as an evidence-fact ` +
+          "reference; non-canonical references are illegal."
+        : `evidence fact "${factId}" is undiscovered in the canonical ` +
+          "discovery store; attachment of an undiscovered fact is illegal.",
+    );
+  }
+
+  const attested = new Set<string>();
+  for (const factId of ticket.evidenceFactIds) {
+    if (attested.has(factId)) {
       violations.push(
-        `evidence fact "${factId}" is attached more than once to "${ticketId}"; ` +
-          "duplicate attachment is illegal.",
+        `evidence fact "${factId}" is attached more than once to ` +
+          `"${ticketId}"; duplicate attachment is illegal.`,
       );
+    } else {
+      attested.add(factId);
     }
-    duplicateIds.add(factId);
   }
 
   if (ticket.status === "closed") {
     violations.push(
-      `ticket "${ticketId}" is closed; closed is terminal and " + "accepts no " +
-        "further transition (legality-before-mutation).`,
+      `ticket "${ticketId}" is closed; closed is terminal and accepts no ` +
+        "further transition.",
     );
   }
 

@@ -121,7 +121,7 @@ function requireRoutineGatesReleased(state: WorldState): object {
   );
   if (
     routineTasks.length > 0 &&
-    routineTasks.every((task) => task.releasesActionGate === true)
+    routineTasks.every((task) => task.releasesActionGate)
   ) {
     return routineTasks;
   }
@@ -154,7 +154,7 @@ function requireStructuredTicketSubstrate(state: WorldState): Record<string, unk
 function requireTopicScopedCoworkerGuidance(): object {
   const coreAny = core as unknown as { managerDialogueForQuestion?: unknown };
   if (typeof coreAny.managerDialogueForQuestion === "function") {
-    return coreAny.managerDialogueForQuestion as object;
+    return coreAny.managerDialogueForQuestion;
   }
   throw new Error(
     "RED[social-slice §9]: coworker guidance must be scoped to the player's actual " +
@@ -341,7 +341,7 @@ describe("section 3 · multi-source investigation", () => {
 
 describe("section 4 · order-independent investigation", () => {
   function runPath(order: "A" | "B"): WorldState {
-    let state = perform(
+    const state = perform(
       world(),
       action("read_handoff", HANDOFF),
       action("acknowledge_handoff", HANDOFF),
@@ -388,7 +388,7 @@ describe("section 4 · order-independent investigation", () => {
 
 describe("section 5 · zero-result search is real work", () => {
   it("an absence query is accepted, recorded canonically, and never graded", () => {
-    let state = perform(
+    const state = perform(
       world(),
       action("read_handoff", HANDOFF),
       action("acknowledge_handoff", HANDOFF),

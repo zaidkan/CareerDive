@@ -6,7 +6,6 @@ import { OperationalMessages, type ModeProps } from "./shared.js";
 import { getShiftGuidance, getTutorialStep } from "../guidance.js";
 import { WORK_SYSTEMS, formatShiftClock, systemLabel } from "../systems.js";
 import {
-  activeCases,
   deriveSystemState,
   eventsForSystem,
   remainingMinutes,
@@ -59,9 +58,6 @@ export function WorkSurface({
   const { systemEvents, selectedEvent, contextualActions, highlightActionId } =
     deriveSystemState(view, systemId, { selectedEventId, guidance });
   const openCounts = systemOpenCounts(view);
-  const allActive = activeCases(view);
-  const queueSelectedId = selectedEvent?.id ?? systemEvents[0]?.id;
-  const activeQueueId = allActive.find((e) => e.id === queueSelectedId)?.id ?? allActive[0]?.id;
 
   return (
     <section className="workplace-shell" aria-labelledby="workspace-title">

@@ -21,5 +21,5 @@ export function isLegalEventTransition(
   from: EventStatus,
   to: EventStatus,
 ): boolean {
-  return EVENT_TRANSITIONS[from]?.includes(to) ?? false;
+  return EVENT_TRANSITIONS[from].includes(to);
 }

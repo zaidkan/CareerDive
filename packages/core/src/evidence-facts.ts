@@ -47,7 +47,7 @@ function normalizeRequiredFilters(
       normalized[key] = value;
     }
   }
-  return normalized as NormalizedQueryFilter;
+  return normalized;
 }
 
 function hasRequiredFilterCoverage(

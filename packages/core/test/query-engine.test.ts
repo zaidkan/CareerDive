@@ -349,7 +349,7 @@ describe("Q-NORM normalization", () => {
       runQuery(datasets, {
         datasetId: "auth",
         // sessionId valid on auth, but `status` is not in the auth allowlist.
-        filters: { status: "active" } as never,
+        filters: { status: "active" },
       });
     } catch (error) {
       expect(error).toBeInstanceOf(QueryValidationError);
@@ -522,7 +522,7 @@ describe("Q-FILT filtering", () => {
     try {
       runQuery(datasets, {
         datasetId: "auth",
-        filters: { urlHost: "mailbox-check.example.net" } as never,
+        filters: { urlHost: "mailbox-check.example.net" },
       });
     } catch (error) {
       expect(error).toBeInstanceOf(QueryValidationError);
@@ -692,7 +692,7 @@ function queryAction(
   return {
     id: "query_records",
     actorId: "player",
-    queryPayload: { datasetId, filters: filters as never },
+    queryPayload: { datasetId, filters },
   };
 }
 

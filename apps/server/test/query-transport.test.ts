@@ -14,6 +14,12 @@ import {
  * valid query, zero rows, malformed payload, unknown dataset, invalid
  * filter, invalid time window, and a legacy-action regression.
  */
+function errorMessage(cause: unknown): string {
+  if (typeof cause === "string") return cause;
+  if (cause instanceof Error) return cause.message;
+  return JSON.stringify(cause);
+}
+
 function queryTestPack(): CareerPack {
   const pack = structuredClone(loadDefaultCybersecurityPack());
   pack.scenario.actions.push({
@@ -220,8 +226,8 @@ describe("query_records server transport", () => {
         ...QUERY,
         queryPayload: { datasetId: "vpn", filters: {} },
       })
-      .catch((cause: unknown) => cause as Error);
-    expect(String(error)).toMatch("Query rejected (unknown_dataset)");
+      .catch((cause: unknown) => cause);
+    expect(errorMessage(error)).toMatch("Query rejected (unknown_dataset)");
 
     const stored = await repository.getSession("user-1", sessionId);
     expect(stored.actionLog).toHaveLength(0);
@@ -288,8 +294,8 @@ describe("query_records server transport", () => {
     for (const queryPayload of probes) {
       const error = await caller.simulation
         .performAction({ sessionId, ...QUERY, queryPayload })
-        .catch((cause: unknown) => cause as Error);
-      const text = String(error);
+        .catch((cause: unknown) => cause);
+      const text = errorMessage(error);
       expect(text).toMatch("Query rejected");
       for (const leaked of [
         "ZodError",

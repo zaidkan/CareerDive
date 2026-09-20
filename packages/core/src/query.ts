@@ -92,7 +92,7 @@ function normalizeFilters(
   if (keys.length > MAX_FILTER_KEYS) {
     throw new QueryValidationError(
       "invalid_filter",
-      `Too many filter dimensions (${keys.length})`,
+      `Too many filter dimensions (${String(keys.length)})`,
     );
   }
 
@@ -167,7 +167,7 @@ function normalizeFilters(
     );
   }
 
-  return normalized as NormalizedQueryFilter;
+  return normalized;
 }
 
 /** Read a string field off a record row (undefined if absent). */

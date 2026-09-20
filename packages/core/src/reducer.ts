@@ -137,7 +137,7 @@ function applyQueryRecords(
 
   const seq = state.queryHistory.length + 1;
   const entry: QueryHistoryEntry = {
-    queryId: `${state.sessionId}-q${seq}`,
+    queryId: `${state.sessionId}-q${String(seq)}`,
     seq,
     datasetId: result.datasetId,
     normalizedFilters: result.normalizedFilters,

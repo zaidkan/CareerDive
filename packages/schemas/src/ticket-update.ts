@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { StructuredTicketSchema, TicketStatusSchema } from "./ticket.js";
+import { TicketStatusSchema } from "./ticket.js";
 
 /**
  * P4-T01: structured ticket-update payload, paired with the `document_ticket`

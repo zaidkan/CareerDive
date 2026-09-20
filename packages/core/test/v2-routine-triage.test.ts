@@ -63,7 +63,7 @@ describe("V2 routine benign triage slice", () => {
       eventId: routineId,
       actorId: "user",
       queryPayload: { datasetId: "scanner", filters: { scannerId: "vuln-scan-03" } },
-    } as any).state;
+    }).state;
     expect(state.queryHistory.at(-1)?.resultIds.length).toBeGreaterThan(0);
     // Zero-result is legitimate
     const zero = applyAction(state, {
@@ -71,7 +71,7 @@ describe("V2 routine benign triage slice", () => {
       eventId: routineId,
       actorId: "user",
       queryPayload: { datasetId: "scanner", filters: { scannerId: "no-such-scanner" } },
-    } as any).state;
+    }).state;
     expect(zero.queryHistory.at(-1)?.totalCount).toBe(0);
     expect(zero.observedArtifactIds).toEqual(state.observedArtifactIds);
   });
@@ -139,11 +139,11 @@ describe("V2 routine benign triage slice", () => {
       { id: "document_ticket" as const, eventId: routineId, actorId: "user" as const, freeText: "Routine checked" },
       { id: "dismiss_alert" as const, eventId: routineId, actorId: "user" as const },
     ];
-    const first = actions.reduce((s, a) => applyAction(s, a as any).state, world("v2-replay"));
-    const second = actions.reduce((s, a) => applyAction(s, a as any).state, world("v2-replay"));
+    const first = actions.reduce((s, a) => applyAction(s, a).state, world("v2-replay"));
+    const second = actions.reduce((s, a) => applyAction(s, a).state, world("v2-replay"));
     expect(first).toEqual(second);
-    const entries = actions.map((action, i) => ({ sequence: i + 1, interaction: { type: "action" as const, action: action as any } }));
-    expect(foldActionLog(world("v2-replay"), entries as any)).toEqual(first);
+    const entries = actions.map((action, i) => ({ sequence: i + 1, interaction: { type: "action" as const, action } }));
+    expect(foldActionLog(world("v2-replay"), entries)).toEqual(first);
     // After routine resolved, queue still shows login case active
     expect(first.events.find((e) => e.id === routineId)?.status).toBe("resolved");
     expect(first.events.find((e) => e.id === loginId)?.status).toBe("active");

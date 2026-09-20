@@ -204,7 +204,7 @@ function queryAction(
     id: "query_records",
     actorId: "player",
     ...(eventId ? { eventId } : {}),
-    queryPayload: { datasetId, filters: filters as never },
+    queryPayload: { datasetId, filters },
   };
 }
 

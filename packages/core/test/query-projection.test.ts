@@ -169,7 +169,7 @@ function queryAction(
   return {
     id: "query_records",
     actorId: "player",
-    queryPayload: { datasetId, filters: filters as never },
+    queryPayload: { datasetId, filters },
   };
 }
 
@@ -276,8 +276,7 @@ describe("Q-SER query-result projection", () => {
     expect(view).not.toHaveProperty("history");
 
     // Per-query views only: no server-side-only fields leak through.
-    for (const result of (view.queryResults as Record<string, unknown>[]) ??
-      []) {
+    for (const result of view.queryResults as Record<string, unknown>[]) {
       expect(result).not.toHaveProperty("seq");
       expect(result).not.toHaveProperty("normalizedFilters");
       expect(result).not.toHaveProperty("actorEventId");
@@ -320,7 +319,7 @@ describe("Q-HIDE hidden-state gating on projected query results", () => {
     // The natural-join field is the record's own (bounded) list, never an
     // enumerated map of every joinable row.
     expect(row?.relatedRecordIds).toEqual(["V-218"]);
-    expect(row?.relatedRecordIds?.length).toBeLessThan(3);
+    expect(row?.relatedRecordIds.length).toBeLessThan(3);
   });
 
   it("Q-HIDE-02 exposes no Evidence Fact IDs / provenance / attachable flags", () => {
@@ -369,7 +368,7 @@ describe("Q-HIDE hidden-state gating on projected query results", () => {
     );
     expect(row).toBeDefined();
     // ...but no matching artifact was marked observed by the projection.
-    expect(view.artifacts.every((a) => a.observed === false || a.observed === true)).toBe(
+    expect(view.artifacts.every((a) => typeof a.observed === "boolean")).toBe(
       true,
     );
     expect(state.observedArtifactIds).toEqual([]);

@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import {
   applyAction,
-  applyWorkplaceInteraction,
-  availableActions,
   createInitialWorldState,
   foldActionLog,
   toClientView,
@@ -94,7 +92,7 @@ describe("P3-T01 handoff + alert comprehension through investigation", () => {
       eventId: "suspicious-login-1",
       actorId: "user",
       queryPayload: { datasetId: "auth", filters: { sessionId: "S-0741" } },
-    } as any).state;
+    }).state;
     expect(state.queryHistory.at(-1)?.resultIds).toContain("AUTH-0741-PATEL");
     // Query does not equal observation.
     expect(state.observedArtifactIds).not.toContain("AUTH-0741-PATEL");
@@ -120,8 +118,8 @@ describe("P3-T01 handoff + alert comprehension through investigation", () => {
       s = applyAction(s, { id: "inspect_login_context", eventId: "suspicious-login-1", actorId: "user" }).state;
       s = applyAction(s, { id: "inspect_account_history", eventId: "suspicious-login-1", actorId: "user" }).state;
       s = applyAction(s, { id: "check_device_inventory", eventId: "suspicious-login-1", actorId: "user" }).state;
-      s = applyAction(s, { id: "query_records", eventId: "suspicious-login-1", actorId: "user", queryPayload: { datasetId: "auth", filters: { user: "j.patel@example.com" } } } as any).state;
-      s = applyAction(s, { id: "query_records", eventId: "suspicious-login-1", actorId: "user", queryPayload: { datasetId: "devices", filters: { deviceLabel: "unknown-laptop-17" } } } as any).state;
+      s = applyAction(s, { id: "query_records", eventId: "suspicious-login-1", actorId: "user", queryPayload: { datasetId: "auth", filters: { user: "j.patel@example.com" } } }).state;
+      s = applyAction(s, { id: "query_records", eventId: "suspicious-login-1", actorId: "user", queryPayload: { datasetId: "devices", filters: { deviceLabel: "unknown-laptop-17" } } }).state;
       return s;
     })();
     const deviceFirst = (() => {
@@ -130,8 +128,8 @@ describe("P3-T01 handoff + alert comprehension through investigation", () => {
       s = applyAction(s, { id: "inspect_login_context", eventId: "suspicious-login-1", actorId: "user" }).state;
       s = applyAction(s, { id: "check_device_inventory", eventId: "suspicious-login-1", actorId: "user" }).state;
       s = applyAction(s, { id: "inspect_account_history", eventId: "suspicious-login-1", actorId: "user" }).state;
-      s = applyAction(s, { id: "query_records", eventId: "suspicious-login-1", actorId: "user", queryPayload: { datasetId: "devices", filters: { deviceLabel: "unknown-laptop-17" } } } as any).state;
-      s = applyAction(s, { id: "query_records", eventId: "suspicious-login-1", actorId: "user", queryPayload: { datasetId: "auth", filters: { user: "j.patel@example.com" } } } as any).state;
+      s = applyAction(s, { id: "query_records", eventId: "suspicious-login-1", actorId: "user", queryPayload: { datasetId: "devices", filters: { deviceLabel: "unknown-laptop-17" } } }).state;
+      s = applyAction(s, { id: "query_records", eventId: "suspicious-login-1", actorId: "user", queryPayload: { datasetId: "auth", filters: { user: "j.patel@example.com" } } }).state;
       return s;
     })();
     const authIds = authFirst.events.find((e) => e.id === "suspicious-login-1")?.completedActionIds ?? [];
@@ -157,7 +155,7 @@ describe("P3-T01 handoff + alert comprehension through investigation", () => {
       eventId: "suspicious-login-1",
       actorId: "user",
       queryPayload: { datasetId: "devices", filters: { deviceLabel: "unknown-laptop-17" } },
-    } as any).state;
+    }).state;
     expect(queried.queryHistory.at(-1)?.resultIds).toEqual(["unknown-laptop-17"]);
     expect(queried.observedArtifactIds).toEqual(before);
     const zero = applyAction(queried, {
@@ -173,7 +171,7 @@ describe("P3-T01 handoff + alert comprehension through investigation", () => {
           windowEndSimMinutes: 460,
         },
       },
-    } as any).state;
+    }).state;
     expect(zero.queryHistory.at(-1)?.resultIds).toEqual([]);
     expect(zero.queryHistory.at(-1)?.totalCount).toBe(0);
     expect(zero.queryHistory.at(-1)?.truncated).toBe(false);
@@ -185,7 +183,7 @@ describe("P3-T01 handoff + alert comprehension through investigation", () => {
     state = applyAction(state, { id: "read_handoff", eventId: "handoff-1", actorId: "user" }).state;
     state = applyAction(state, { id: "review_alert", eventId: "suspicious-login-1", actorId: "user" }).state;
     state = applyAction(state, { id: "inspect_login_context", eventId: "suspicious-login-1", actorId: "user" }).state;
-    state = applyAction(state, { id: "query_records", eventId: "suspicious-login-1", actorId: "user", queryPayload: { datasetId: "auth", filters: {} } } as any).state;
+    state = applyAction(state, { id: "query_records", eventId: "suspicious-login-1", actorId: "user", queryPayload: { datasetId: "auth", filters: {} } }).state;
     const view = toClientView(state);
     const serialized = JSON.stringify(view);
     expect(serialized).not.toMatch(/requiredOptionIds|coachOnFailure|successText|templateId/);
@@ -205,11 +203,11 @@ describe("P3-T01 handoff + alert comprehension through investigation", () => {
       { id: "inspect_account_history" as const, eventId: "suspicious-login-1", actorId: "user" as const },
       { id: "check_device_inventory" as const, eventId: "suspicious-login-1", actorId: "user" as const },
     ];
-    const first = actions.reduce((s, a) => applyAction(s, a as any).state, world("p3-replay-a"));
-    const second = actions.reduce((s, a) => applyAction(s, a as any).state, world("p3-replay-a"));
+    const first = actions.reduce((s, a) => applyAction(s, a).state, world("p3-replay-a"));
+    const second = actions.reduce((s, a) => applyAction(s, a).state, world("p3-replay-a"));
     expect(first).toEqual(second);
     expect(toClientView(first)).toEqual(toClientView(second));
-    const entries = actions.map((action, i) => ({ sequence: i + 1, interaction: { type: "action" as const, action: action as any } }));
-    expect(foldActionLog(world("p3-replay-a"), entries as any)).toEqual(first);
+    const entries = actions.map((action, i) => ({ sequence: i + 1, interaction: { type: "action" as const, action } }));
+    expect(foldActionLog(world("p3-replay-a"), entries)).toEqual(first);
   });
 });

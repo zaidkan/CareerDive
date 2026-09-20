@@ -1,3 +1,4 @@
+import type { SimulationAction, SimulationActionId } from "@sim/schemas";
 import { describe, expect, it } from "vitest";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import {
@@ -21,6 +22,17 @@ import {
  * Canonical record A-1159 already exists in the pack with no completed
  * sign-ins and a blocklisted source; this suite asserts only deterministic
  * runtime behavior over real records and canonical actions.
+ *
+ * EXPECTED RED — blocked on content approval, not on runtime.
+ * The scenario content this suite drives (`blocked-spray-1` event,
+ * `spray-alert` / `spray-blocklist-reference` artifacts,
+ * `blocked_spray_review` template, A-1159.linkedWorkItemId = blocked-spray-1)
+ * is PROPOSED/UNAPPROVED in `docs/superpowers/specs/soc-structured-content-pack.md`
+ * §5.3 (AL-6: OPTIONAL REALISM FILLER, excluded from the beta "Recommend 5"
+ * queue). Tests commit before content: this suite runs RED by the repository
+ * `.red.test.ts` convention (same as `structured-ticket-documentation.red.test.ts`)
+ * until the content is authored and approved. Assertions are unchanged; do not
+ * satisfy these tests by deleting or weakening them.
  */
 
 const sprayId = "blocked-spray-1";
@@ -35,12 +47,11 @@ function world(sessionId = "v2-benign") {
 
 function step(
   state: ReturnType<typeof world>,
-  id: string,
+  id: SimulationActionId,
   eventId: string,
-  extra?: Record<string, unknown>,
+  extra?: Pick<SimulationAction, "freeText" | "queryPayload">,
 ): ReturnType<typeof world> {
-  return applyAction(state, { id: id as never, eventId, actorId: "user", ...extra } as never)
-    .state;
+  return applyAction(state, { id, eventId, actorId: "user", ...extra }).state;
 }
 
 function sprayEvent(state: ReturnType<typeof world>) {
@@ -126,7 +137,7 @@ describe("V2 benign routine triage slice (blocked password spray)", () => {
         datasetId: "auth",
         filters: { sourceIp: BLOCKED_SOURCE },
       },
-    } as never).state;
+    }).state;
     const entry = queried.queryHistory.at(-1);
     expect(entry?.totalCount).toBe(0);
     expect(entry?.resultIds).toEqual([]);
@@ -142,7 +153,11 @@ describe("V2 benign routine triage slice (blocked password spray)", () => {
     expect(refBody).toContain("zero-row");
 
     // Canonical alert is linked to this work item, same pattern as A-1042.
-    const alert = state.rules.datasets.alerts.records.find((r) => r.id === "A-1159");
+    const alertRow = state.rules.datasets.alerts?.records.find(
+      (r) => r.id === "A-1159",
+    );
+    const alert =
+      alertRow && alertRow.datasetId === "alerts" ? alertRow : undefined;
     expect(alert?.linkedWorkItemId).toBe("blocked-spray-1");
   });
 
@@ -191,9 +206,11 @@ describe("V2 benign routine triage slice (blocked password spray)", () => {
       state,
       "update_ticket_notes",
       sprayId,
-      "free text that looks like an Evidence Fact: clue found",
+      { freeText: "free text that looks like an Evidence Fact: clue found" },
     );
-    state = step(state, "update_notebook", sprayId, "source is blocked, proof in records");
+    state = step(state, "update_notebook", sprayId, {
+      freeText: "source is blocked, proof in records",
+    });
     // Free text never manufactures world truth.
     expect(Object.keys(state.rules.evidenceFacts ?? {}).length).toBe(0);
 
@@ -220,19 +237,19 @@ describe("V2 benign routine triage slice (blocked password spray)", () => {
         id: "query_records" as const,
         eventId: sprayId,
         actorId: "user" as const,
-        queryPayload: { datasetId: "auth", filters: { sourceIp: BLOCKED_SOURCE } },
+        queryPayload: { datasetId: "auth" as const, filters: { sourceIp: BLOCKED_SOURCE } },
       },
       { id: "dismiss_alert" as const, eventId: sprayId, actorId: "user" as const },
     ];
-    const first = actions.reduce((s, a) => applyAction(s, a as never).state, world("v2-benign-replay"));
-    const second = actions.reduce((s, a) => applyAction(s, a as never).state, world("v2-benign-replay"));
+    const first = actions.reduce((s, a) => applyAction(s, a).state, world("v2-benign-replay"));
+    const second = actions.reduce((s, a) => applyAction(s, a).state, world("v2-benign-replay"));
     expect(first).toEqual(second);
 
     const entries = actions.map((action, i) => ({
       sequence: i + 1,
-      interaction: { type: "action" as const, action: action as never },
+      interaction: { type: "action" as const, action },
     }));
-    expect(foldActionLog(world("v2-benign-replay"), entries as never)).toEqual(first);
+    expect(foldActionLog(world("v2-benign-replay"), entries)).toEqual(first);
 
     // After the spray item resolves, the queue still shows the login case.
     expect(first.events.find((e) => e.id === sprayId)?.status).toBe("resolved");

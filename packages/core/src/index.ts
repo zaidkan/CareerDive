@@ -14,6 +14,10 @@ export { foldActionLog } from "./replay.js";
 export { runQuery, QueryValidationError } from "./query.js";
 export type { QueryEngineResult, QueryRuntimeDatasets } from "./query.js";
 export { discoverEvidenceFacts } from "./evidence-facts.js";
+export {
+  readStructuredTickets,
+  validateStructuredTicket,
+} from "./structured-ticket.js";
 export { toClientView } from "./serializer.js";
 export { julesDialogue, julesDialogueFromClientView } from "./jules.js";
 export type { JulesDialogueReply } from "./jules.js";
