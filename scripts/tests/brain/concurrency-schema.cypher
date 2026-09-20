@@ -5,3 +5,7 @@ CREATE CONSTRAINT operation_op_id    IF NOT EXISTS FOR (n:Operation)   REQUIRE n
 CREATE CONSTRAINT task_claim_task_id IF NOT EXISTS FOR (n:TaskClaim)   REQUIRE n.task_id IS UNIQUE;
 CREATE CONSTRAINT counter_name       IF NOT EXISTS FOR (n:Counter)     REQUIRE n.name    IS UNIQUE;
 CREATE CONSTRAINT counter_lock_name  IF NOT EXISTS FOR (n:CounterLock) REQUIRE n.name    IS UNIQUE;
+// F7: make the T4 Fact write self-contained idempotent (do not rely on an
+// external fact-identity constraint living only in another schema file).
+CREATE CONSTRAINT fact_id IF NOT EXISTS FOR (n:Fact) REQUIRE n.id IS UNIQUE;
+CREATE CONSTRAINT fact_op_id IF NOT EXISTS FOR (n:Fact) REQUIRE n.op_id IS UNIQUE;

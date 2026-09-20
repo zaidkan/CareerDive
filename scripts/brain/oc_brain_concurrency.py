@@ -183,6 +183,10 @@ RETURN n.version AS version
 # Counter.name / CounterLock.name uniqueness is not cosmetic: without a
 # constraint, concurrent MERGE can mint duplicate nodes (observed in the
 # harness), which would silently break both the counter and the lock point.
+# fact_id / fact_op_id (F7) make the T4 fact write SELF-CONTAINED idempotent:
+# the write path no longer leans on an external fact identity constraint in
+# another schema file — the concurrency schema owns it and the preflight gate
+# below verifies it.
 SCHEMA_STATEMENTS = [
     "CREATE CONSTRAINT operation_op_id IF NOT EXISTS "
     "FOR (n:Operation) REQUIRE n.op_id IS UNIQUE",
@@ -192,7 +196,46 @@ SCHEMA_STATEMENTS = [
     "FOR (n:Counter) REQUIRE n.name IS UNIQUE",
     "CREATE CONSTRAINT counter_lock_name IF NOT EXISTS "
     "FOR (n:CounterLock) REQUIRE n.name IS UNIQUE",
+    "CREATE CONSTRAINT fact_id IF NOT EXISTS "
+    "FOR (n:Fact) REQUIRE n.id IS UNIQUE",
+    "CREATE CONSTRAINT fact_op_id IF NOT EXISTS "
+    "FOR (n:Fact) REQUIRE n.op_id IS UNIQUE",
 ]
+
+# ── Fail-closed schema gate (F8) ─────────────────────────────────────────
+# A write primitive must SELF-VERIFY that the uniqueness constraints it
+# depends on actually exist before writing. A misconfigured DB that lost or
+# never received its constraints must be REFUSED, never allowed to silently
+# duplicate rows. The gate is a cheap read (SHOW CONSTRAINTS) run once per
+# call, before the write retry loop.
+CONSTRAINT_NAMES_QUERY = """
+SHOW CONSTRAINTS YIELD name
+RETURN name AS name
+"""
+
+# Constraints each primitive depends on (subset of SCHEMA_STATEMENTS / the
+# harness concurrency-schema.cypher file).
+REQUIRED_WRITE_ONCE_CONSTRAINTS = {"operation_op_id", "fact_id", "fact_op_id"}
+REQUIRED_CLAIM_CONSTRAINTS = {"task_claim_task_id"}
+
+
+class ConstraintGateError(RuntimeError):
+    """Fail-closed: a required uniqueness constraint is absent."""
+
+
+def constraint_names(ops: Ops) -> set[str]:
+    return {str(r.get("name")) for r in ops.execute_read(CONSTRAINT_NAMES_QUERY, {})}
+
+
+def require_constraints(ops: Ops, required: set[str], *, purpose: str) -> None:
+    missing = required - constraint_names(ops)
+    if missing:
+        raise ConstraintGateError(
+            f"{purpose}: required uniqueness constraint(s) missing: "
+            f"{sorted(missing)}; refusing to write (fail-closed). Install the "
+            "concurrency schema first (ensure-schema / harness "
+            "ensure-concurrency-schema)."
+        )
 
 
 class Ops(Protocol):
@@ -313,7 +356,15 @@ def write_once(
     "attempts": int, "committed_payload_sha256": str}``. ``result`` is the
     STORED result string: on replay/conflict it is the previously committed
     result, byte-identical to what the first successful call returned.
+
+    Fail-closed (F8): before any write, self-verifies that the
+    ``operation_op_id`` / ``fact_id`` / ``fact_op_id`` uniqueness constraints
+    exist; if any is missing it raises ``ConstraintGateError`` and writes
+    nothing.
     """
+    require_constraints(
+        ops, REQUIRED_WRITE_ONCE_CONSTRAINTS, purpose="write_once"
+    )
     for attempt in range(1, max_attempts + 1):
         params: dict[str, Any] = {
             "op_id": op_id,
@@ -380,8 +431,13 @@ def claim_task(
     ``claimed`` means this attempt's ON CREATE wrote the row; ``reaffirmed``
     means the row already belonged to this same owner (idempotent re-claim);
     ``taken_by`` means a different dispatcher holds it and no write happened.
+
+    Fail-closed (F8): before any write, self-verifies that the
+    ``task_claim_task_id`` uniqueness constraint exists; if missing it raises
+    ``ConstraintGateError`` and writes nothing.
     """
     attempt_token = uuid.uuid4().hex
+    require_constraints(ops, REQUIRED_CLAIM_CONSTRAINTS, purpose="claim_task")
     for attempt in range(1, max_attempts + 1):
         params = {
             "task_id": task_id,
@@ -471,6 +527,15 @@ def counter_read(ops: Ops, *, name: str) -> int:
 def ensure_constraints(ops: Ops) -> None:
     for statement in SCHEMA_STATEMENTS:
         ops.execute_write(statement, {})
+    # F8: never report SCHEMA_OK unless every concurrency constraint actually
+    # persisted. A constraint creation error or a DB that refuses to create
+    # them is a SETUP failure, surfaced loudly here rather than as a confusing
+    # later duplicate.
+    require_constraints(
+        ops,
+        REQUIRED_WRITE_ONCE_CONSTRAINTS | REQUIRED_CLAIM_CONSTRAINTS,
+        purpose="ensure-schema",
+    )
 
 
 def _from_env() -> DriverOps:
@@ -490,6 +555,16 @@ def _from_env() -> DriverOps:
 
 
 def _main(argv: list[str]) -> int:
+    # Fail-closed CLI: a missing constraint (F8) is reported as a structured
+    # JSON error with exit 3, never as a silent data duplication or crash.
+    try:
+        return _run(argv)
+    except ConstraintGateError as exc:
+        print(json.dumps({"error": "CONSTRAINT_GATE", "detail": str(exc)}, default=str))
+        return 3
+
+
+def _run(argv: list[str]) -> int:
     if not argv:
         print(__doc__)
         return 2

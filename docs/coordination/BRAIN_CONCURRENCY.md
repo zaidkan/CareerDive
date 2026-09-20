@@ -124,9 +124,28 @@ RETURN n.version AS version
 - `task_claim_task_id` — TaskClaim.task_id UNIQUE
 - `counter_name`      — Counter.name UNIQUE
 - `counter_lock_name` — CounterLock.name UNIQUE
+- `fact_id`           — Fact.id UNIQUE (F7, self-contained T4)
+- `fact_op_id`        — Fact.op_id UNIQUE (F7, self-contained T4)
 
 `schema-snapshot.cypher` (production parity: 12 constraints / 33 indexes) is
 NOT modified.
+
+## F7/F8 implemented in T5 (2026-09-20)
+
+- **F7 (ACCEPT-HARDEN):** the T4 `Fact` write is now self-contained idempotent.
+  `fact_id` and `fact_op_id` uniqueness live in `concurrency-schema.cypher`
+  (and the module's own `SCHEMA_STATEMENTS`), so idempotency no longer leans on
+  an external fact-identity constraint living only in `schema-snapshot.cypher`.
+- **F8 (VALID):** `write_once` and `claim_task` self-verify their required
+  constraints with an in-transaction-call `SHOW CONSTRAINTS` preflight and
+  **REFUSE** (fail-closed) by raising `ConstraintGateError` if any is absent —
+  a misconfigured DB is never allowed to silently duplicate. `ensure-schema`
+  likewise refuses to report `SCHEMA_OK` unless all six constraints persisted.
+  Primitives now require: `write_once` → `operation_op_id` + `fact_id` +
+  `fact_op_id`; `claim_task` → `task_claim_task_id`.
+- The F8 gate makes the rollback story complete: authority lives in DB
+  constraints + the `CounterLock` CAS node; there is no optimistic side channel
+  and no legacy filesystem-only fallback lock in the module.
 
 ## Verification
 
@@ -134,11 +153,16 @@ NOT modified.
   (`idempotency_probe.py` over `oc_brain_server.py`): created → replayed
   (byte-identical) → conflict (nothing written); M concurrent first-writers →
   1 created / M-1 replayed; exactly one Operation and one Fact per op_id.
-- `scripts/tests/brain/concurrency.test.sh` — T5a flock deny-second-holder
-  and free-after-release; T5b exactly one claim winner + non-owner complete
-  denied; T5c W×K increments land exactly at version W×K with all 1..N
-  distinct and one Counter + one CounterLock; schema gate + static rollback
-  guard (no fcntl/flock/dispatcher.lock inside the module).
+- `scripts/tests/brain/concurrency.test.sh` — T5a flock deny-second-holder,
+  deny-after-SIGKILL (crash-safe: kernel-released, no stale pid file) and
+  free-after-release; T5b exactly one claim winner + atomic fully-formed claim
+  row + non-owner complete denied; T5c W×K increments land exactly at version
+  W×K with all 1..N distinct, retries within the bounded backoff budget, one
+  Counter + one CounterLock; F7/F8 schema gate (6/6 constraints present,
+  write_once/claim refuse when absent via `ConstraintGateError`); negative
+  controls proving bare MERGE mints duplicates and bare MATCH-WHERE-SET loses
+  updates on deliberately-unconstrained `NcCounter`/`NcCounterLock` labels;
+  static rollback guard (no fcntl/flock/dispatcher.lock inside the module).
 - Both tests call `harness.sh preflight` first; exit 42 (INFRA_FAIL) is an
   infrastructure outage, never reported as an assertion failure. Test rows use
   `itest-` / `ctest-` prefixes and are deleted on exit.
