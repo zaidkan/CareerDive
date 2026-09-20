@@ -160,3 +160,11 @@ e.g. `final version exactly 48 … successes=48 unique=48 complete=True`.
   CLI and both `DriverOps` (raw driver) and `SdkOps` (Agent Memory client)
   adapters. `oc_brain_server.py` exposes `task_claim`, `task_complete`,
   `counter_increment` and the `op_id` path of `memory_add_fact`.
+## T4 independent review adjudication (KIRO-LEAD, 2026-09-20)
+
+Reviewer: BRAINV2-T4-REVIEW (read-only). Verdict: T4 CORRECT vs all six requirements, safe to integrate at harness scope; no INVALID/blocking findings. Independently re-verified: idempotency.test.sh 11/11 (module + real MCP wire; conflict, replay, 8-way race one-winner, atomic no-orphans).
+
+Adjudicated findings (pre-production hardening, NOT harness-integration blockers):
+- F7 SPECULATIVE->ACCEPT-HARDEN: "exactly one durable result" leans on the external fact_id constraint + constraint-error string match. Before production: make the Fact write self-contained idempotent (fact_id/op_id uniqueness in concurrency-schema.cypher).
+- F8 VALID/non-blocking: write_once should self-verify operation_op_id constraint exists (SHOW CONSTRAINTS preflight) so a misconfigured DB REFUSES (fail-closed) rather than silently duplicating. FOLD INTO T5 (same module/schema owner).
+- F9 minor: broad except in _is_constraint_lost_race; driver open/close ordering; blocking write_once in async handler; _secret() zeroing doc drift. Non-blocking.
