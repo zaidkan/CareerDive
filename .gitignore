@@ -12,5 +12,9 @@ test-results/
 .orca-overnight/
 .orca-opencode/
 
+# Brain gateway harness venv
+.venv/
+__pycache__/
+
 # Local code-intelligence / editor settings
 .kiro/settings/
