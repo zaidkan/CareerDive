@@ -82,6 +82,20 @@ cmd_verify() {
 
 cmd_cypher() { cy "$1"; }
 
+# ensure-concurrency-schema: idempotently install + VERIFY the T4/T5 constraints.
+# A missing/failed constraint here is a SETUP failure (exit 42 INFRA_FAIL), never
+# a misleading application-test assertion failure.
+cmd_ensure_concurrency_schema() {
+  [ -f "$HERE/concurrency-schema.cypher" ] || { echo "INFRA_FAIL: concurrency-schema.cypher missing" >&2; exit $INFRA_FAIL; }
+  cy "$(cat "$HERE/concurrency-schema.cypher")" >/dev/null 2>&1
+  local n
+  n="$(cy "SHOW CONSTRAINTS YIELD name WHERE name IN ['operation_op_id','task_claim_task_id','counter_name','counter_lock_name'] RETURN count(*) AS c" | tail -1 | tr -dc '0-9')"
+  if [ "${n:-0}" != "4" ]; then
+    echo "INFRA_FAIL: concurrency constraints not established (found ${n:-0}/4)" >&2; exit $INFRA_FAIL
+  fi
+  echo "CONCURRENCY_SCHEMA_OK (4/4 constraints)"
+}
+
 cmd_down() {
   require_local_context
   docker compose -p "$PROJECT" -f "$COMPOSE_FILE" down -v   # -v wipes the test volume
@@ -96,6 +110,7 @@ cmd_status() {
 case "${1:-}" in
   up) cmd_up;;
   preflight) cmd_preflight;;
+  ensure-concurrency-schema) cmd_ensure_concurrency_schema;;
   apply) cmd_apply;;
   verify) cmd_verify;;
   cypher) shift; cmd_cypher "$1";;
