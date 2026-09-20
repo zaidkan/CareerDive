@@ -11,6 +11,8 @@ playwright-report/
 test-results/
 .orca-overnight/
 .orca-opencode/
+.venv/
+__pycache__/
 
 # Local code-intelligence / editor settings
 .kiro/settings/
