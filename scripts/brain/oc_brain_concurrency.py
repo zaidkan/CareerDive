@@ -257,10 +257,13 @@ class DriverOps:
 
 
 class SdkOps:
-    """Adapter over the Agent Memory SDK's connected Neo4j client.
+    """Adapter over an Agent Memory SDK-style graph client.
 
-    Lets the oc-brain gateway reuse its single authenticated connection pool for
-    the T4/T5 gates instead of opening a second one.
+    Keep for SDK editions whose graph client exposes SYNCHRONOUS
+    ``execute_write``/``execute_read``. The current ``neo4j-agent-memory``
+    client is ASYNC, so the oc-brain gateway opens its own synchronous
+    ``DriverOps`` driver (same credentials) instead of reusing the SDK pool —
+    the async methods cannot feed the sync gate functions directly.
     """
 
     def __init__(self, sdk_graph_client: Any) -> None:

@@ -144,7 +144,7 @@ async def run(args: argparse.Namespace) -> int:
                 "fact: same op_id + different payload refused (OP_CONFLICT)",
                 conflict.get("error") == "OP_CONFLICT"
                 and conflict.get("op_id") == args.op_id
-                and conflict.get("committed_payload_sha256"),
+                and bool(conflict.get("committed_payload_sha256")),
                 json.dumps(conflict)[:240],
             )
 

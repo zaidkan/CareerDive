@@ -22,8 +22,52 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/tests/brain/_env.sh
 source "$HERE/_env.sh"
 
+# Mandatory setup order. A missing prerequisite is a SETUP failure (exit 42 =
+# INFRA_FAIL), never an assertion failure: (1) preflight; (2) up the disposable
+# harness only when preflight found the container not up; (3) apply the schema
+# snapshot + synthetic seed; (4) ensure-concurrency-schema, which must report
+# CONCURRENCY_SCHEMA_OK for all four T4/T5 constraints.
+harness_setup() {
+  local out rc
+  if ! out="$("$HARNESS" preflight 2>&1)"; then
+    rc=$?
+    printf '%s\n' "$out" >&2
+    if printf '%s' "$out" | grep -q "not running"; then
+      if ! out="$("$HARNESS" up 2>&1)"; then
+        printf '%s\n' "$out" >&2
+        echo "INFRA_FAIL: could not start disposable harness" >&2
+        exit "$INFRA_FAIL"
+      fi
+      if ! out="$("$HARNESS" preflight 2>&1)"; then
+        printf '%s\n' "$out" >&2
+        echo "INFRA_FAIL: harness not reachable after up" >&2
+        exit "$INFRA_FAIL"
+      fi
+    else
+      exit "$rc"
+    fi
+  fi
+  printf '%s\n' "$out"
+  if ! out="$("$HARNESS" apply 2>&1)"; then
+    printf '%s\n' "$out" >&2
+    echo "INFRA_FAIL: harness apply failed" >&2
+    exit "$INFRA_FAIL"
+  fi
+  printf '%s\n' "$out"
+  if ! out="$("$HARNESS" ensure-concurrency-schema 2>&1)"; then
+    printf '%s\n' "$out" >&2
+    echo "INFRA_FAIL: concurrency schema prerequisite unavailable" >&2
+    exit "$INFRA_FAIL"
+  fi
+  printf '%s\n' "$out"
+  if [[ "$out" != *CONCURRENCY_SCHEMA_OK* ]]; then
+    echo "INFRA_FAIL: concurrency schema gate did not report OK" >&2
+    exit "$INFRA_FAIL"
+  fi
+}
+
 echo "[t4] root: $ROOT"
-preflight
+harness_setup
 
 if ! resolve_python; then
   echo "FATAL: no python with neo4j+mcp+fastmcp (set BRAINV2_PYTHON)" >&2
@@ -40,14 +84,10 @@ ok()   { PASS=$((PASS + 1)); printf 'PASS: %s\n' "$1"; }
 bad()  { FAIL=$((FAIL + 1)); printf 'FAIL: %s\n' "$1"; }
 step() { STEP_SEQ=$((STEP_SEQ + 1)); echo; echo "== $STEP_SEQ. $* =="; }
 
-# parse a JSON field from stdin
-jget() { "$PYTHON" - "$1" <<'EOF'
-import json, sys
-d = json.load(sys.stdin)
-key = sys.argv[1]
-print(d[key] if key in d else "")
-EOF
-}
+# parse a JSON field from stdin. Script must come from -c (not a heredoc):
+# a heredoc on stdin would override the piped JSON payload and json.load would
+# read nothing.
+jget() { "$PYTHON" -c 'import json,sys; d=json.load(sys.stdin); k=sys.argv[1]; print(d[k] if k in d else "")' "$1"; }
 
 cleanup() {
   "$HARNESS" cypher "MATCH (o:Operation) WHERE o.op_id STARTS WITH 'itest-' DETACH DELETE o" >/dev/null
@@ -181,6 +221,19 @@ if [ "$OPDM" = "1" ] && [ "$FACM" = "1" ] && [ "$OBJ" = "carbon-fiber bicycle fr
   ok "conflict attempt wrote nothing over MCP (op=$OPDM fact=$FACM object=$OBJ)"
 else
   bad "MCP conflict leaked a write (op=$OPDM fact=$FACM object=$OBJ)"
+fi
+
+# ── E. atomicity: Operation row + its Fact commit all-or-nothing ──────────
+# A single write transaction creates (o)-[:WROTE]->(f) together; neither side
+# may ever appear alone for any test op_id (covers module-level AND MCP rows).
+step "atomicity: Operation record and Fact commit all-or-nothing"
+
+ORPHAN_OP=$("$HARNESS" cypher "MATCH (o:Operation) WHERE o.op_id STARTS WITH 'itest-' AND NOT EXISTS { MATCH (o)-[:WROTE]->(:Fact) } RETURN count(o) AS c" | (read -r _; read -r n; echo "$n"))
+ORPHAN_FA=$("$HARNESS" cypher "MATCH (f:Fact) WHERE f.op_id STARTS WITH 'itest-' AND NOT EXISTS { MATCH (:Operation)-[:WROTE]->(f) } RETURN count(f) AS c" | (read -r _; read -r n; echo "$n"))
+if [ "$ORPHAN_OP" = "0" ] && [ "$ORPHAN_FA" = "0" ]; then
+  ok "no orphan Operation/Fact rows across every test op_id (orphans op=$ORPHAN_OP fact=$ORPHAN_FA)"
+else
+  bad "atomicity broken: orphan rows leaked (op=$ORPHAN_OP fact=$ORPHAN_FA)"
 fi
 
 # ── summary ──────────────────────────────────────────────────────────────

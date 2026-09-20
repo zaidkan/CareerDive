@@ -146,13 +146,18 @@ def _get_client(ctx: Context) -> "MemoryClient":
     return context["client"]
 
 
-def _get_concurrency_ops(ctx: Context) -> oc.SdkOps:
-    """T4/T5 Bolt surface over the SDK's single authenticated connection.
+def _get_concurrency_ops(ctx: Context) -> oc.Ops:
+    """T4/T5 Bolt surface (raw driver opened in the lifespan context).
 
-    Reuses the gateway's one Neo4j connection pool for the idempotency gate,
-    task claims, and CAS primitives instead of opening a parallel driver.
+    The gateway's SDK Bolt client exposes ASYNC ``execute_write``/``execute_read``
+    while the T4/T5 gates run synchronously, so an async adapter cannot feed them
+    directly. The lifespan opens its own synchronous ``neo4j`` driver with the
+    same harness credentials; the context owns it and closes it at shutdown.
     """
-    return oc.SdkOps(_get_client(ctx).long_term._client)
+    context: dict[str, Any] = ctx.lifespan_context
+    if not context:
+        raise RuntimeError("oc-brain lifespan context unavailable")
+    return context["ops"]
 
 
 def _fact_to_dict(
@@ -196,16 +201,26 @@ def create_server() -> FastMCP:
                 fh.write(str(os.getpid()))
 
         settings = _build_settings()
+        ops = oc.DriverOps.connect(
+            uri=settings.neo4j.uri,
+            user=settings.neo4j.username,
+            password=_secret(),  # plain str; settings.neo4j.password is pydantic SecretStr
+            database=settings.neo4j.database,
+        )
         async with MemoryClient(settings) as client:
             integration = MemoryIntegration(
                 client,
                 session_strategy="per_conversation",
                 auto_preferences=False,
             )
-            yield {
-                "client": client,
-                "integration": integration,
-            }
+            try:
+                yield {
+                    "client": client,
+                    "integration": integration,
+                    "ops": ops,
+                }
+            finally:
+                ops.close()
 
     mcp = FastMCP(
         name="oc-brain",
