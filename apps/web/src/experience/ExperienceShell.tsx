@@ -43,10 +43,10 @@ type ExperienceShellProps = {
   view: ClientView;
 };
 
-const MODES: ReadonlyArray<{ id: ExperienceMode; label: string }> = [
-  { id: "walk", label: "Walk the office" },
-  { id: "desk", label: "Desk only" },
-  { id: "list", label: "Simple list" },
+const MODES: ReadonlyArray<{ id: ExperienceMode; label: string; hint: string }> = [
+  { id: "walk", label: "Walk the office", hint: "3D floor, same actions" },
+  { id: "desk", label: "Desk only", hint: "Direct workstation, no WebGL" },
+  { id: "list", label: "Simple list", hint: "Structured, keyboard-first" },
 ];
 
 /** Chooses a peer renderer without owning simulation state or mutations. */
@@ -83,10 +83,11 @@ export function ExperienceShell({
         className="experience-modes"
         aria-label="Choose how to experience the shift"
       >
-        {MODES.map(({ id, label }) => (
+        {MODES.map(({ id, label, hint }) => (
           <button
             aria-pressed={mode === id}
             key={id}
+            title={hint}
             onClick={() => {
               onModeChange(id);
               movement.resetDistance();
@@ -94,9 +95,20 @@ export function ExperienceShell({
             type="button"
           >
             {label}
+            <span
+              aria-hidden="true"
+              style={{ display: "block", fontSize: "0.72rem", fontWeight: 400 }}
+            >
+              {hint}
+            </span>
           </button>
         ))}
       </nav>
+      <p className="mode-note" role="note">
+        Same actions in every mode. <strong>Desk only</strong> is fastest if
+        your device struggles with 3D. Navigation speed never creates career
+        evidence.
+      </p>
 
       {mode === "walk" ? (
         <SpatialModeBoundary

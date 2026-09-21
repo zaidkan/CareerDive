@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /start
+
+Sitemap: https://careerexpo.example.com/sitemap.xml
