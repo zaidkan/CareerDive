@@ -24,10 +24,6 @@ const outcomes = new Map<Mode, StoredSession>();
 const traces = new Map<Mode, unknown[]>();
 const suspicious = "suspicious-login-1";
 const routine = "routine-alert-1";
-const suspiciousNote =
-  "unknown-laptop-17 is not enrolled in inventory; the successful login is " +
-  "suspected, not yet proven; the 07:45 export has no file-access or mailbox " +
-  "activity and cannot confirm what was accessed; ask Morgan the open question.";
 
 function required<T>(value: T | null | undefined, description: string): T {
   if (value === null || value === undefined) throw new Error(`Missing ${description}`);
@@ -186,7 +182,7 @@ describe("rendered workplace golden path", () => {
       expect([...found].sort()).toEqual([...new Set(view.availableActions.map(({ id, eventId }) => `${id}:${eventId}`))].sort());
       expect([...foundTasks].sort()).toEqual(view.tasks.map(({ id, eventId, stepIndex }) => `${id}:${eventId}:${String(stepIndex)}`).sort());
     }
-    async function perform(id: SimulationActionId, eventId: string, freeText?: string) {
+    async function perform(id: SimulationActionId, eventId: string) {
       const action = toClientView(state).availableActions.find((entry) => entry.id === id && entry.eventId === eventId);
       if (!action) throw new Error(`Unavailable ${id}:${eventId}`);
       await openSystem(action.systemId);
@@ -194,19 +190,50 @@ describe("rendered workplace golden path", () => {
       const eventTitle = state.events.find(({ id }) => id === eventId)?.title;
       const item = Array.from(queue?.querySelectorAll<HTMLButtonElement>("button") ?? []).find((button) => eventTitle && button.textContent.includes(eventTitle));
       if (item) await user.click(item);
-      if (id === "update_ticket_notes") {
-        const textarea = required(container.querySelector<HTMLTextAreaElement>(`#notes-update_ticket_notes-${eventId}`), `${id} notes editor`);
-        await user.clear(textarea);
-        await user.type(textarea, required(freeText, "saved note text"));
-        await activate(required(container.querySelector<HTMLElement>(`[data-action-id="update_ticket_notes"][data-event-id="${eventId}"]`), `${id} save button`));
+      if (!action.taskId) {
+        if ((id === "dismiss_alert" && eventId === routine) || id === "escalate_alert") {
+          const note = required(state.ticketNotes[eventId], "saved handoff before decision");
+          expect(Array.from(container.querySelectorAll("pre.artifact-body")).some((node) => node.textContent === note)).toBe(true);
+          expect(note).toContain(eventId === routine ? "RUN-FIN-031" : "file-access or mailbox activity");
+        }
+        await activate(required(container.querySelector<HTMLElement>(`button[data-action-id="${id}"][data-event-id="${eventId}"]`), `${id} action button`));
         return;
       }
-      if (id === "escalate_alert") {
-        const note = required(state.ticketNotes[eventId], "saved note before decision");
-        expect(Array.from(container.querySelectorAll("pre.artifact-body")).some((node) => node.textContent === note)).toBe(true);
-        expect(note).toContain("file-access or mailbox activity");
+      const taskId = action.taskId;
+      while (!state.taskProgress[`${eventId}:${taskId}`]?.completed) {
+        const stepIndex = state.taskProgress[`${eventId}:${taskId}`]?.currentStep ?? 0;
+        // Answer fixtures stay in tests; only toClientView(state) enters the renderer.
+        const taskRule = required(state.rules.tasks[taskId], `task rule ${taskId}`);
+        const step = required(taskRule.steps[stepIndex], `task step ${taskId}:${String(stepIndex)}`);
+        const panel = () => required(container.querySelector<HTMLElement>(`[data-task-id="${taskId}"][data-event-id="${eventId}"]`), `${taskId} task panel`);
+        if (step.id === "scanner-run-cross-check") {
+          expect(within(panel()).getByRole("button", { name: "Submit findings" })).toBeDisabled();
+          expect(panel().querySelector('[data-option-id="run-identity-scope"]')).toBeNull();
+        }
+        for (const artifactId of step.relatedArtifactIds) {
+          if (!state.observedArtifactIds.includes(artifactId)) {
+            const taskContainer = required(panel().parentElement, `${taskId} task container`);
+            await activate(required(taskContainer.querySelector<HTMLElement>(`[data-interaction-id="open_artifact"][data-artifact-id="${artifactId}"]`), `${artifactId} artifact open button`));
+          }
+        }
+        expect(panel().dataset.stepIndex).toBe(String(stepIndex));
+        for (const optionId of step.requiredOptionIds) await activate(required(panel().querySelector<HTMLElement>(`[data-option-id="${optionId}"]`), `${optionId} task option`));
+        await activate(within(panel()).getByRole("button", { name: /Submit findings|Check my work/ }));
       }
-      await activate(required(container.querySelector<HTMLElement>(`button[data-action-id="${id}"][data-event-id="${eventId}"]`), `${id} action button`));
+    }
+    async function saveTicketNote(eventId: string, note: string) {
+      await openSystem("ticket_queue");
+      const queue = container.querySelector(mode === "os" ? ".desk-os-queue" : ".work-queue");
+      const eventTitle = state.events.find(({ id }) => id === eventId)?.title;
+      const item = Array.from(queue?.querySelectorAll<HTMLButtonElement>("button") ?? []).find((button) => eventTitle && button.textContent.includes(eventTitle));
+      if (item) await user.click(item);
+      const button = required(container.querySelector<HTMLButtonElement>(`button[data-action-id="update_ticket_notes"][data-event-id="${eventId}"]`), `${eventId} save note button`);
+      const editor = required(button.closest("form"), `${eventId} note editor`);
+      const field = within(editor).getByRole("textbox");
+      await user.clear(field);
+      await user.type(field, note);
+      await activate(button);
+      expect(state.ticketNotes[eventId]).toBe(note);
     }
     await verifyAvailableTargets();
     await perform("read_handoff", "handoff-1");
@@ -215,6 +242,11 @@ describe("rendered workplace golden path", () => {
     await perform("inspect_login_context", suspicious);
     await verifyAvailableTargets();
     await activate(screen.getByRole("button", { name: "Handle now" }));
+    await perform("review_alert", routine);
+    await perform("search_knowledge_base", routine);
+    await saveTicketNote(routine, "A-1180 matches RUN-FIN-031 and SCAN-FIN-MON at the recorded event time. The log covers discovery connections only.");
+    await perform("document_ticket", routine);
+    await perform("dismiss_alert", routine);
     await perform("inspect_account_history", suspicious);
     await perform("check_device_inventory", suspicious);
     await verifyAvailableTargets();
@@ -224,7 +256,7 @@ describe("rendered workplace golden path", () => {
     if (mode !== "os") await activate(screen.getByRole("button", { name: /^Close$/ }));
     await perform("ask_manager", suspicious);
     expect(screen.getByRole("complementary", { name: "Morgan guidance" })).toBeVisible();
-    await perform("update_ticket_notes", suspicious, suspiciousNote);
+    await perform("document_ticket", suspicious);
     expect(state.ticketNotes[suspicious]).toContain("unknown-laptop-17 is not enrolled");
     expect(state.ticketNotes[suspicious]).toContain("suspected, not yet proven");
     await perform("escalate_alert", suspicious);
@@ -234,8 +266,8 @@ describe("rendered workplace golden path", () => {
     expect(state.workplace).toMatchObject({ fridgeSnackBars: 1, carriedSnackBites: 2, coffeeServings: 1, julesTopicsSeen: ["current_work"] });
     expect(state.events.find(({ id }) => id === suspicious)?.status).toBe("resolved");
     expect(state.events.find(({ id }) => id === routine)?.status).toBe("resolved");
-    expect([...failures].sort()).toEqual(["action", "notification"]);
-    expect(recovered.size).toBe(2);
+    expect([...failures].sort()).toEqual(["action", "artifact", "notification", "task"]);
+    expect(recovered.size).toBe(4);
     expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
     const stored = await repository.getSession("user-1", "golden");
     expect(stored.evidence.length).toBeGreaterThan(0);
@@ -268,34 +300,46 @@ describe("rendered workplace golden path", () => {
     expect(comparable("os")).toEqual(comparable("desk"));
   });
 
-  it("drives the released action lane in tutorial and stays free of assessment evidence", async () => {
+  it("keeps tutorial tasks and breaks free of assessment evidence", async () => {
     let state = createInitialWorldState("tutorial-golden", 24, { sessionKind: "tutorial" }, pack);
     const repository = new InMemoryRepository();
     await repository.createSession("user-1", state);
     const caller = createAppRouter(repository).createCaller({ userId: "user-1" });
     const sessionId = state.sessionId;
-    const sequence: Array<[SimulationActionId, string]> = [
-      ["read_handoff", "handoff-1"],
-      ["acknowledge_handoff", "handoff-1"],
-      ["review_alert", suspicious],
-      ["inspect_login_context", suspicious],
-      ["inspect_account_history", suspicious],
-      ["check_device_inventory", suspicious],
-      ["ask_manager", suspicious],
-      ["complete_shift", "shift"],
-    ];
-    for (const [actionId, eventId] of sequence) {
+    const tutorialActions = [
+      ["handoff-1", "read_handoff"],
+      ["handoff-1", "acknowledge_handoff"],
+      [suspicious, "review_alert"],
+      [suspicious, "inspect_login_context"],
+      [routine, "review_alert"],
+      [routine, "search_knowledge_base"],
+      [routine, "document_ticket"],
+      [routine, "dismiss_alert"],
+      [suspicious, "inspect_account_history"],
+      [suspicious, "check_device_inventory"],
+      [suspicious, "document_ticket"],
+      [suspicious, "escalate_alert"],
+      ["shift", "complete_shift"],
+    ] as const;
+    for (const [eventId, actionId] of tutorialActions) {
       const view = toClientView(state);
       assertPublicView(view);
-      const action = view.availableActions.find(
-        ({ id, eventId: event }) => id === actionId && event === eventId,
-      );
-      if (!action) throw new Error(`Unavailable in tutorial ${actionId}:${eventId}`);
-      await caller.simulation.performAction({ sessionId, actionId, eventId });
+      const action = required(view.availableActions.find(({ id, eventId: target }) => id === actionId && target === eventId), `tutorial action ${actionId}:${eventId}`);
+      if (action.taskId) {
+        while (!state.taskProgress[`${eventId}:${action.taskId}`]?.completed) {
+          const stepIndex = state.taskProgress[`${eventId}:${action.taskId}`]?.currentStep ?? 0;
+          const step = required(state.rules.tasks[action.taskId]?.steps[stepIndex], `tutorial task step ${action.taskId}:${String(stepIndex)}`);
+          for (const artifactId of step.relatedArtifactIds) if (!state.observedArtifactIds.includes(artifactId)) await caller.simulation.performWorkplaceInteraction({ sessionId, interaction: { type: "open_artifact", artifactId } });
+          await caller.simulation.submitTaskAttempt({ sessionId, taskId: action.taskId, eventId, selectedOptionIds: step.requiredOptionIds });
+          state = (await repository.getSession("user-1", sessionId)).state;
+        }
+      } else {
+        await caller.simulation.performAction({ sessionId, actionId: action.id, eventId: action.eventId });
+      }
       state = (await repository.getSession("user-1", sessionId)).state;
       expect(repository.evidenceFor("user-1", sessionId)).toEqual([]);
-      if (actionId === "complete_shift") break;
     }
+    await caller.simulation.performWorkplaceInteraction({ sessionId, interaction: { type: "movement_exertion", distanceMeters: 5 } });
     for (const interaction of [{ type: "open_fridge" }, { type: "take_snack" }, { type: "eat_snack_bite" }, { type: "close_fridge" }, { type: "talk_to_jules", topic: "first_day" }] satisfies WorkplaceInteraction[]) await caller.simulation.performWorkplaceInteraction({ sessionId, interaction });
     state = (await repository.getSession("user-1", sessionId)).state;
     expect(state.completedActionIds).toContain("complete_shift");

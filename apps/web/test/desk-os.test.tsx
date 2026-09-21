@@ -288,25 +288,45 @@ describe("Desk OS mutation coordination", () => {
     });
   });
 
-  it("applies a slow assessed action response to the current session", async () => {
+  it("keeps a late response from an old session from replacing the newer view", async () => {
     const user = userEvent.setup();
-    const pending = deferred<ClientView>();
-    const initialView = makeView({
-      sessionKind: "assessed",
-      pacingMode: "standard",
+    const oldAction = deferred<ClientView>();
+    const tutorialView = makeView();
+    const staleView = makeView({
+      events: [
+        {
+          ...first(tutorialView.events),
+          title: "Stale tutorial response",
+        },
+      ],
     });
-    const reviewedView = makeView({
+    const assessedView = makeView({
+      sessionId: "assessed-session",
       sessionKind: "assessed",
       pacingMode: "standard",
       events: [
         {
-          ...first(initialView.events),
-          title: "Reviewed login case",
+          ...first(tutorialView.events),
+          title: "Current assessed case",
         },
       ],
     });
-    const performAction = vi.fn(() => pending.promise);
-    render(<App client={makeClient(initialView, { performAction })} />);
+    const createSession = vi.fn(
+      (input: Parameters<SimulationClient["createSession"]>[0]) =>
+        Promise.resolve(
+          input.sessionKind === "tutorial"
+            ? { sessionId: tutorialView.sessionId, view: tutorialView }
+            : { sessionId: assessedView.sessionId, view: assessedView },
+        ),
+    );
+    render(
+      <App
+        client={makeClient(tutorialView, {
+          createSession,
+          performAction: () => oldAction.promise,
+        })}
+      />,
+    );
     await enterDesk(user);
     await user.click(screen.getByRole("tab", { name: /^Alerts/ }));
     await user.click(
@@ -314,17 +334,111 @@ describe("Desk OS mutation coordination", () => {
         name: /Review alert/i,
       }),
     );
-    expect(screen.getByText("Saving Review alert…")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: /Skip practice/i }));
+    await screen.findByText("Assessed shift");
 
     await act(async () => {
-      pending.resolve(reviewedView);
-      await pending.promise;
+      oldAction.resolve(staleView);
+      await oldAction.promise;
     });
+    await enterDesk(user);
+    await user.click(screen.getByRole("tab", { name: /^Alerts/ }));
 
     expect(
-      screen.getByRole("heading", { name: "Reviewed login case" }),
+      screen.getByRole("heading", { name: "Current assessed case" }),
     ).toBeVisible();
-    expect(performAction).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Stale tutorial response")).toBeNull();
+  });
+
+  it("revokes queued workplace continuations before an assessed session starts", async () => {
+    const user = userEvent.setup();
+    const tutorialOpen =
+      deferred<
+        Awaited<ReturnType<SimulationClient["performWorkplaceInteraction"]>>
+      >();
+    const tutorialView = makeView();
+    const openedTutorialView = makeView({
+      workplace: { ...tutorialView.workplace, fridgeOpen: true },
+    });
+    const staleClosedView = makeView({
+      events: [
+        {
+          ...first(tutorialView.events),
+          title: "Stale tutorial close response",
+        },
+      ],
+    });
+    const assessedView = makeView({
+      sessionId: "assessed-session",
+      sessionKind: "assessed",
+      pacingMode: "standard",
+      events: [
+        {
+          ...first(tutorialView.events),
+          title: "Current assessed case",
+        },
+      ],
+    });
+    const createSession = vi.fn(
+      (input: Parameters<SimulationClient["createSession"]>[0]) =>
+        Promise.resolve(
+          input.sessionKind === "tutorial"
+            ? { sessionId: tutorialView.sessionId, view: tutorialView }
+            : { sessionId: assessedView.sessionId, view: assessedView },
+        ),
+    );
+    const performWorkplaceInteraction = vi
+      .fn<SimulationClient["performWorkplaceInteraction"]>()
+      .mockImplementationOnce(() => tutorialOpen.promise)
+      .mockResolvedValue({
+        view: staleClosedView,
+        sequence: 2,
+        feedback: "fridge_closed",
+      });
+    render(
+      <App
+        client={makeClient(tutorialView, {
+          createSession,
+          performWorkplaceInteraction,
+        })}
+      />,
+    );
+    await user.click(
+      await screen.findByRole("button", { name: /Enter the Verdaly floor/i }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Security Operations" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Open fridge" }),
+    );
+    await user.click(screen.getByRole("button", { name: "Exit break room" }));
+
+    await user.click(screen.getByRole("button", { name: /Skip practice/i }));
+    await screen.findByText("Assessed shift");
+
+    await act(async () => {
+      tutorialOpen.resolve({
+        view: openedTutorialView,
+        sequence: 1,
+        feedback: "fridge_opened",
+      });
+      await tutorialOpen.promise;
+    });
+
+    await waitFor(() => {
+      expect(performWorkplaceInteraction).toHaveBeenCalledTimes(1);
+    });
+    expect(performWorkplaceInteraction).toHaveBeenCalledWith("session-1", {
+      type: "open_fridge",
+    });
+
+    await enterDesk(user);
+    await user.click(screen.getByRole("tab", { name: /^Alerts/ }));
+    expect(
+      screen.getByRole("heading", { name: "Current assessed case" }),
+    ).toBeVisible();
+    expect(screen.queryByText("Stale tutorial close response")).toBeNull();
   });
 
   it("keeps failed canonical state unchanged and retries only the failed operation", async () => {
