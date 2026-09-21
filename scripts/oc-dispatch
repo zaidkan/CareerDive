@@ -39,9 +39,28 @@ WORKTREE_ROOT="${OC_WORKTREE_ROOT:-$(cd "$REPO_ROOT/.." && pwd)/workspaces/Caree
 MAX_CONCURRENT="${OC_MAX_CONCURRENT:-4}"
 MAX_FALLBACK="${OC_MAX_FALLBACK:-3}"
 OC_MEMORY="${OC_MEMORY:-$REPO_ROOT/scripts/oc-memory}"
+DISPATCH_LOCK_HELPER="$REPO_ROOT/scripts/tests/brain/brain_lock.py"
+DISPATCH_LOCK_FILE="$STATE_DIR/dispatcher.lock"
 MEM_TELEMETRY="$STATE_DIR/memory-telemetry.jsonl"
 OC_MEM_ENABLED="${OC_MEM_ENABLED:-1}"   # set 0 to disable the coordination brain entirely
 mkdir -p "$RUNS_DIR" "$SPECS_DIR"
+
+# T5 MVP authority boundary. Every dispatch mutation runs under one real,
+# kernel-backed fcntl.flock for this host. The helper process owns the lock for
+# this command's full lifetime; process death releases it automatically. There
+# is deliberately no unlocked fallback.
+case "${1:-}" in
+dispatch|reap|cancel|_lock-probe)
+  [ -x "$DISPATCH_LOCK_HELPER" ] || {
+    echo "ERROR: dispatcher lock helper missing or not executable: $DISPATCH_LOCK_HELPER" >&2
+    exit 75
+  }
+  if [ -z "${OC_DISPATCH_LOCK_FD:-}" ]; then
+    exec python3 "$DISPATCH_LOCK_HELPER" run "$DISPATCH_LOCK_FILE" "$0" "$@"
+  fi
+  python3 "$DISPATCH_LOCK_HELPER" verify "$DISPATCH_LOCK_FILE" "$OC_DISPATCH_LOCK_FD" || exit 75
+  ;;
+esac
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 iso_now() { date -u "+%Y-%m-%dT%H:%M:%SZ"; }
@@ -85,7 +104,7 @@ next_run_id() {
 
 count_running() { local n=0; if ls "$RUNS_DIR"/*.json >/dev/null 2>&1; then n="$(grep -l "\"state\": \"RUNNING\"" "$RUNS_DIR"/*.json 2>/dev/null | wc -l | tr -d " ")"; fi; echo "${n:-0}"; }
 
-task_active() { # task-id -> 0 if a non-terminal run exists
+local_task_record_active() { # advisory mirror; DB TaskClaim remains claim authority
   for f in "$RUNS_DIR"/*.json; do
     [ -f "$f" ] || continue
     local t s; t="$(python3 -c 'import json,sys;print(json.load(open(sys.argv[1])).get("task",""))' "$f")"
@@ -162,7 +181,7 @@ cmd_dispatch() {
   [ -n "$reason" ] || die "--reason required"
   [ -n "$cls" ] || [ -n "$force_model" ] || die "--class or --model required"
   [ -n "$spec" ] || [ -n "$objective" ] || die "--spec or --objective required"
-  task_active "$task" && die "task '$task' already has an active run (reject duplicate)"
+  local_task_record_active "$task" && die "task '$task' already has an active run (reject duplicate)"
   local running; running="$(count_running)"
   [ "$running" -lt "$MAX_CONCURRENT" ] || die "max concurrent workers ($MAX_CONCURRENT) reached; reap/cancel first"
 
@@ -215,7 +234,8 @@ cmd_dispatch() {
     open
 
   local model_args=(); [ -n "$force_model" ] && model_args=(--model "$force_model") || model_args=(--class "$cls")
-  ( "$OC_WORKER" run "${model_args[@]}" --task "$task" --reason "$reason" \
+  ( eval "exec ${OC_DISPATCH_LOCK_FD}>&-"
+    "$OC_WORKER" run "${model_args[@]}" --task "$task" --reason "$reason" \
         --dir "$wt" --effort "$effort" --spec "$specfile" >"$log" 2>&1; \
     echo "OC_WORKER_EXIT=$?" >>"$log" ) &
   local pid=$!
@@ -330,7 +350,8 @@ handle_rate_limit() {
     echo "A previous model was rate-limited on this SAME worktree. Do NOT restart from scratch.";
     echo "First run: \`git status\` and \`git diff\` in $wt to see partial work, then CONTINUE it to completion."; } >>"$specfile"
   local log; log="$(rec_get "$f" log)"
-  ( "$OC_WORKER" run --class "$cls" --task "$task" --reason "$reason (resume#$((used+1)))" \
+  ( eval "exec ${OC_DISPATCH_LOCK_FD}>&-"
+    "$OC_WORKER" run --class "$cls" --task "$task" --reason "$reason (resume#$((used+1)))" \
         --dir "$wt" --effort "$effort" --spec "$specfile" >>"$log" 2>&1; \
     echo "OC_WORKER_EXIT=$?" >>"$log" ) &
   setkv "$rid" pid "$!" state "RUNNING"
@@ -404,6 +425,13 @@ PY
 sub="${1:-}"; shift || true
 case "$sub" in
   dispatch) cmd_dispatch "$@";;
+  _lock-probe)
+    [ -n "${OC_DISPATCH_LOCK_FD:-}" ] || die "lock probe reached without dispatcher lock"
+    echo "DISPATCH_PROBE_ACTIVE"
+    probe_until=$((SECONDS + ${1:-0}))
+    while [ "$SECONDS" -lt "$probe_until" ]; do :; done
+    echo "DISPATCH_LOCK_RELEASED"
+    ;;
   active) cmd_active;;
   list) cmd_list;;
   status) cmd_status "$@";;
@@ -424,4 +452,3 @@ usage:
 EOF
     exit 64;;
 esac
-
