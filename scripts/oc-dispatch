@@ -369,6 +369,14 @@ inspect_completion() {
   echo "git status:"; git -C "$wt" status -s | head
   [ "$newcommit" != "none" ] && { echo "diffstat:"; git -C "$wt" show --stat --oneline "$head" | head -15; }
 
+  # A worker's COMPLETE claim is authoritative only when Git advanced from
+  # the recorded base. Uncommitted edits, or a no-op worker, cannot promote
+  # completion and remain visible as a blocked run for coordinator review.
+  if [ "$newcommit" = "none" ]; then
+    setkv "$rid" state "BLOCKED" failure "completion_requires_new_commit"
+    echo "[reap] $rid BLOCKED (completion requires a new Git commit)"
+  fi
+
   # Worker-reported outcome from its RETURN block (authoritative status is Git+reap).
   local log wstatus wnotes; log="$(rec_get "$f" log)"
   wstatus="$(grep -iE "^status:" "$log" 2>/dev/null | tail -1 | sed 's/^[Ss]tatus:[[:space:]]*//')"

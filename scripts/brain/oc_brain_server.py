@@ -55,6 +55,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import subprocess
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
@@ -88,6 +89,98 @@ WRITE_ANNOTATIONS = {
     "destructive_hint": False,
     "idempotent_hint": False,
 }
+
+PROVENANCE_SCOPES = {
+    "PROJECT_ARCHITECTURE",
+    "BRANCH_OBSERVATION",
+    "HISTORICAL_DECISION",
+    "TASK_STATUS",
+}
+
+
+def _git_context() -> dict[str, str]:
+    """Return the trusted repository context used for default provenance."""
+    try:
+        root = os.environ.get("OC_BRAIN_REPO", os.getcwd())
+        branch = subprocess.run(
+            ["git", "-C", root, "rev-parse", "--abbrev-ref", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        commit = subprocess.run(
+            ["git", "-C", root, "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        return {"branch": branch, "commit_sha": commit}
+    except (OSError, subprocess.SubprocessError):
+        return {"branch": "unknown", "commit_sha": "unknown"}
+
+
+def _provenance(
+    metadata: dict[str, Any] | None,
+    *,
+    scope: str | None = None,
+    verified: bool | None = None,
+    commit_sha: str | None = None,
+    branch: str | None = None,
+    agent_id: str | None = None,
+) -> dict[str, Any]:
+    """Merge explicit provenance into metadata on every fact writer path."""
+    context = _git_context()
+    chosen_scope = scope or (metadata or {}).get("scope") or "BRANCH_OBSERVATION"
+    if chosen_scope not in PROVENANCE_SCOPES:
+        raise ValueError(
+            f"scope must be one of {sorted(PROVENANCE_SCOPES)}; got {chosen_scope!r}"
+        )
+    merged = dict(metadata or {})
+    merged.update(
+        {
+            "scope": chosen_scope,
+            "verified": bool(
+                verified if verified is not None else merged.get("verified", False)
+            ),
+            "commit_sha": commit_sha or merged.get("commit_sha") or context["commit_sha"],
+            "branch": branch or merged.get("branch") or context["branch"],
+            "agent_id": agent_id
+            or merged.get("agent_id")
+            or os.environ.get("OC_BRAIN_AGENT_ID", "unknown"),
+        }
+    )
+    return merged
+
+
+def _reachable_from_current_branch(commit_sha: str) -> bool:
+    if not commit_sha or commit_sha == "unknown":
+        return False
+    try:
+        root = os.environ.get("OC_BRAIN_REPO", os.getcwd())
+        return subprocess.run(
+            ["git", "-C", root, "merge-base", "--is-ancestor", commit_sha, "HEAD"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        ).returncode == 0
+    except OSError:
+        return False
+
+
+def _annotate_staleness(payload: dict[str, Any]) -> dict[str, Any]:
+    """Flag stale branch-scoped candidates while retaining the result."""
+    metadata = payload.get("metadata")
+    if not isinstance(metadata, dict):
+        return payload
+    scope = metadata.get("scope")
+    if scope == "PROJECT_ARCHITECTURE":
+        return payload
+    commit_sha = metadata.get("commit_sha")
+    if commit_sha and not _reachable_from_current_branch(str(commit_sha)):
+        flags = payload.setdefault("flags", [])
+        if "STALENESS_CANDIDATE" not in flags:
+            flags.append("STALENESS_CANDIDATE")
+        metadata["staleness"] = "STALENESS_CANDIDATE"
+    return payload
 
 
 def _secret() -> str:
@@ -182,7 +275,7 @@ def _fact_to_dict(
         payload["similarity"] = metadata.pop("similarity")
     if "deduplicated" in metadata:
         payload["deduplicated"] = metadata.pop("deduplicated")
-    return payload
+    return _annotate_staleness(payload)
 
 
 def create_server() -> FastMCP:
@@ -245,6 +338,11 @@ def create_server() -> FastMCP:
         valid_until: str | None = None,
         metadata: dict[str, Any] | None = None,
         op_id: str | None = None,
+        scope: str | None = None,
+        verified: bool | None = None,
+        commit_sha: str | None = None,
+        branch: str | None = None,
+        agent_id: str | None = None,
     ) -> str:
         """Store a subject-predicate-object fact triple.
 
@@ -269,6 +367,14 @@ def create_server() -> FastMCP:
             metadata: Additional metadata (e.g., scope, stack_tags, temporality).
             op_id: Optional client-generated UUID reused on retry (T4 idempotency).
         """
+        metadata = _provenance(
+            metadata,
+            scope=scope,
+            verified=verified,
+            commit_sha=commit_sha,
+            branch=branch,
+            agent_id=agent_id,
+        )
         if op_id:
             payload = {
                 "subject": subject,
@@ -453,6 +559,11 @@ def create_server() -> FastMCP:
         new_object: str,
         confidence: float = 1.0,
         reason: str | None = None,
+        scope: str | None = None,
+        verified: bool | None = None,
+        commit_sha: str | None = None,
+        branch: str | None = None,
+        agent_id: str | None = None,
     ) -> str:
         """Supersede the currently valid fact for a subject/predicate.
 
@@ -472,6 +583,14 @@ def create_server() -> FastMCP:
         client = _get_client(ctx)
         integration = _get_integration(ctx)
         now = datetime.now(timezone.utc)
+        replacement_metadata = _provenance(
+            {"reason": reason} if reason else None,
+            scope=scope,
+            verified=verified,
+            commit_sha=commit_sha,
+            branch=branch,
+            agent_id=agent_id,
+        )
 
         targets = [
             f
@@ -486,7 +605,7 @@ def create_server() -> FastMCP:
             confidence=confidence,
             valid_from=now,
             generate_embedding=True,
-            metadata={"reason": reason} if reason else None,
+            metadata=replacement_metadata,
         )
         replacement_id = str(replacement.id)
 
