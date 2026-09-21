@@ -14,3 +14,22 @@ test-results/
 
 # Local code-intelligence / editor settings
 .kiro/settings/
+
+# Personal developer/orchestration infra — NOT part of the public product.
+# Lives on the private brain branch; must never re-enter the public main line.
+.codex/
+.kiro/
+.cursor/
+.opencode/
+opencode.json
+AGENTS.md
+AGENT_CONTEXT.md
+scripts/oc-memory
+scripts/oc-dispatch
+scripts/oc-worker
+scripts/slot
+scripts/overnight-queue
+scripts/brain/
+scripts/tests/brain/
+docs/coordination/
+docs/superpowers/
