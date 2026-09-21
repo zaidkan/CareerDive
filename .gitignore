@@ -14,3 +14,7 @@ test-results/
 
 # Local code-intelligence / editor settings
 .kiro/settings/
+
+# BrainV2 harness python venvs / bytecode
+.venv/
+__pycache__/

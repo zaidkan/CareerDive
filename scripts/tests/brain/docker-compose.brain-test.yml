@@ -1,0 +1,32 @@
+# BrainV2 disposable, synthetic-only Neo4j test harness.
+# ISOLATION GUARANTEES:
+#   - Unique compose project name: brainv2-test (set via `docker compose -p brainv2-test`).
+#   - Dedicated named volume brainv2_test_data (NOT any production volume).
+#   - Localhost-only ports (127.0.0.1) on non-default 7688/7475 to avoid clashing
+#     with any local/production Neo4j.
+#   - Test-only credentials (overridden via BRAINV2_TEST_PW env; default is a test-only value).
+#   - Neo4j 5.26 Community to match production engine.
+#   - Never mounts production volumes; never uses neo4j-backup/neo4j.dump.
+# Only this isolated DB may be reset/destroyed.
+services:
+  neo4j-brain-test:
+    image: neo4j:5.26-community
+    container_name: brainv2-neo4j-test
+    environment:
+      NEO4J_AUTH: "neo4j/${BRAINV2_TEST_PW:-brainv2testpw}"
+      NEO4J_server_memory_heap_initial__size: "256m"
+      NEO4J_server_memory_heap_max__size: "512m"
+      NEO4J_server_memory_pagecache_size: "256m"
+    ports:
+      - "127.0.0.1:7688:7687"   # Bolt, localhost only
+      - "127.0.0.1:7475:7474"   # HTTP, localhost only
+    volumes:
+      - brainv2_test_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:7474 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+volumes:
+  brainv2_test_data:
+    name: brainv2_test_data
