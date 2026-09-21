@@ -43,6 +43,7 @@ Env vars:
   * ``OC_BRAIN_NEO4J_PASSWORD_FILE``(path to 0600 secret file; preferred)
   * ``OC_BRAIN_EMBEDDING_MODEL``    (default ``BAAI/bge-small-en-v1.5``)
   * ``OC_BRAIN_EMBEDDING_DEVICE``   (default ``cpu``)
+  * ``OC_BRAIN_PROJECT_ID``         (trusted server scope; default ``career-expo``)
   * ``OC_BRAIN_PID_FILE``           (optional; write own pid for tests)
 
 Run (stdio MCP server, credential-less clients):
@@ -96,6 +97,75 @@ PROVENANCE_SCOPES = {
     "HISTORICAL_DECISION",
     "TASK_STATUS",
 }
+
+# T8 retrieval queries. Exact/full-text/graph filter by project before LIMIT.
+# Vector uses Neo4j 5.26's scalar cosine function over a project-scoped candidate
+# set: this preserves scoped top-k without the lossy global-top-k-then-filter
+# pattern. Keeping the queries public at module level lets the disposable
+# benchmark exercise the exact production statements.
+_LEGACY_SCOPE = """
+  (f.project_id = $project_id OR
+   (f.project_id IS NULL AND NOT EXISTS {
+      MATCH (scoped:Fact) WHERE scoped.project_id IS NOT NULL
+   }))
+"""
+
+SCOPED_FACT_QUERIES = {
+    "exact": f"""
+MATCH (f:Fact)
+WHERE {_LEGACY_SCOPE}
+  AND (toLower(coalesce(f.id, '')) = $query_lower
+    OR toLower(coalesce(f.subject, '')) = $query_lower
+    OR toLower(coalesce(f.predicate, '')) = $query_lower
+    OR toLower(coalesce(f.object, '')) = $query_lower)
+RETURN properties(f) AS fact, 1.0 AS score
+ORDER BY coalesce(f.confidence, 0.0) DESC, f.created_at DESC
+LIMIT $limit
+""",
+    "fulltext": """
+CALL db.index.fulltext.queryNodes('coordination_fulltext', $query)
+YIELD node AS f, score
+WHERE (f.project_id = $project_id OR
+       (f.project_id IS NULL AND NOT EXISTS {
+          MATCH (scoped:Fact) WHERE scoped.project_id IS NOT NULL
+       }))
+RETURN properties(f) AS fact, score
+ORDER BY score DESC
+LIMIT $limit
+""",
+    "vector": f"""
+MATCH (f:Fact)
+WHERE {_LEGACY_SCOPE} AND f.embedding IS NOT NULL
+WITH f, vector.similarity.cosine(f.embedding, $embedding) AS score
+WHERE score >= $threshold
+RETURN properties(f) AS fact, score
+ORDER BY score DESC
+LIMIT $limit
+""",
+    "graph": """
+MATCH (seed:Fact)-[]-(f:Fact)
+WHERE (seed.project_id = $project_id OR
+       (seed.project_id IS NULL AND NOT EXISTS {
+          MATCH (scoped:Fact) WHERE scoped.project_id IS NOT NULL
+       }))
+  AND (f.project_id = $project_id OR
+       (f.project_id IS NULL AND NOT EXISTS {
+          MATCH (scoped:Fact) WHERE scoped.project_id IS NOT NULL
+       }))
+  AND (toLower(coalesce(seed.id, '')) = $query_lower
+    OR toLower(coalesce(seed.subject, '')) = $query_lower
+    OR toLower(coalesce(seed.predicate, '')) = $query_lower
+    OR toLower(coalesce(seed.object, '')) = $query_lower)
+RETURN properties(f) AS fact, 1.0 AS score
+ORDER BY coalesce(f.confidence, 0.0) DESC, f.created_at DESC
+LIMIT $limit
+""",
+}
+
+
+def _server_project_id() -> str:
+    """Trusted scope configured by the gateway supervisor, never the caller."""
+    return os.environ.get("OC_BRAIN_PROJECT_ID", "career-expo")
 
 
 def _git_context() -> dict[str, str]:
@@ -276,6 +346,85 @@ def _fact_to_dict(
     if "deduplicated" in metadata:
         payload["deduplicated"] = metadata.pop("deduplicated")
     return _annotate_staleness(payload)
+
+
+def _fact_record_to_dict(
+    fact: dict[str, Any], score: float, mode: str
+) -> dict[str, Any]:
+    """Serialize a scoped Cypher fact while preserving T7 stale annotation."""
+    metadata = fact.get("metadata") or {}
+    if isinstance(metadata, str):
+        try:
+            metadata = json.loads(metadata)
+        except json.JSONDecodeError:
+            metadata = {"raw": metadata}
+    valid_until = fact.get("valid_until")
+    payload = {
+        "id": str(fact.get("id")),
+        "subject": fact.get("subject"),
+        "predicate": fact.get("predicate"),
+        "object": fact.get("object"),
+        "confidence": fact.get("confidence"),
+        "valid_until": valid_until.isoformat()
+        if hasattr(valid_until, "isoformat")
+        else valid_until,
+        "metadata": dict(metadata),
+        "project_id": fact.get("project_id") or _server_project_id(),
+        "similarity": float(score),
+        "retrieval_modes": [mode],
+    }
+    return _annotate_staleness(payload)
+
+
+async def _search_project_facts(
+    client: "MemoryClient",
+    query: str,
+    *,
+    limit: int,
+    threshold: float,
+    modes: tuple[str, ...] = tuple(SCOPED_FACT_QUERIES),
+) -> list[dict[str, Any]]:
+    """Run project-scoped retrieval modes and fuse duplicate fact IDs."""
+    graph = client.long_term._client
+    embedding = None
+    if "vector" in modes:
+        embedder = client.long_term._embedder
+        if embedder is not None:
+            embedding = await embedder.embed(query)
+
+    fused: dict[str, dict[str, Any]] = {}
+    for mode in modes:
+        if mode == "vector" and embedding is None:
+            continue
+        params = {
+            "project_id": _server_project_id(),
+            "query": query,
+            "query_lower": query.lower(),
+            "embedding": embedding or [],
+            "threshold": threshold,
+            "limit": limit,
+        }
+        try:
+            rows = await graph.execute_read(SCOPED_FACT_QUERIES[mode], params)
+        except Exception as exc:
+            # T3 is a prerequisite, but retaining vector behavior while its
+            # additive full-text migration is pending keeps rollout reversible.
+            if mode == "fulltext" and "coordination_fulltext" in str(exc):
+                continue
+            raise
+        for row in rows:
+            item = _fact_record_to_dict(dict(row["fact"]), row["score"], mode)
+            fact_id = item["id"]
+            existing = fused.get(fact_id)
+            if existing is None:
+                fused[fact_id] = item
+            else:
+                if mode not in existing["retrieval_modes"]:
+                    existing["retrieval_modes"].append(mode)
+                existing["similarity"] = max(existing["similarity"], item["similarity"])
+    return sorted(
+        fused.values(), key=lambda item: item["similarity"], reverse=True
+    )[:limit]
 
 
 def create_server() -> FastMCP:
@@ -473,16 +622,10 @@ def create_server() -> FastMCP:
             limit: Maximum results (default: 10).
             threshold: Minimum similarity threshold 0.0-1.0 (default: 0.7).
         """
-        client = _get_client(ctx)
-        facts = await client.long_term.search_facts(
-            query=query,
-            limit=limit,
-            threshold=threshold,
+        facts = await _search_project_facts(
+            _get_client(ctx), query, limit=limit, threshold=threshold
         )
-        return json.dumps(
-            [_fact_to_dict(f, include_similarity=True) for f in facts],
-            default=str,
-        )
+        return json.dumps(facts, default=str)
 
     # ── Stock-compatible: memory_search ────────────────────────────────
     @mcp.tool(annotations=READ_ANNOTATIONS)
@@ -534,15 +677,14 @@ def create_server() -> FastMCP:
                     threshold=threshold,
                 )
             if include_facts and isinstance(payload, dict) and "error" not in payload:
-                facts = await integration.client.long_term.search_facts(
-                    query=query,
+                facts = await _search_project_facts(
+                    integration.client,
+                    query,
                     limit=limit,
                     threshold=threshold,
                 )
                 results = dict(payload.get("results", {}))
-                results["facts"] = [
-                    _fact_to_dict(f, include_similarity=True) for f in facts
-                ]
+                results["facts"] = facts
                 payload = {"results": results, "query": query}
 
         if isinstance(payload, dict) and "error" in payload:

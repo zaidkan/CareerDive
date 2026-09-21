@@ -1,0 +1,10 @@
+[
+  {"mode":"exact","query":"shared exact subject","project_id":"career-expo","expected_ids":["bench-exact-a"]},
+  {"mode":"exact","query":"shared exact subject","project_id":"other-project","expected_ids":["bench-exact-b"]},
+  {"mode":"fulltext","query":"sharedfulltexttoken","project_id":"career-expo","expected_ids":["bench-fulltext-a"]},
+  {"mode":"fulltext","query":"sharedfulltexttoken","project_id":"other-project","expected_ids":["bench-fulltext-b"]},
+  {"mode":"vector","query":"shared vector query","project_id":"career-expo","expected_ids":["bench-vector-a"]},
+  {"mode":"vector","query":"shared vector query","project_id":"other-project","expected_ids":["bench-vector-b"]},
+  {"mode":"graph","query":"shared graph seed","project_id":"career-expo","expected_ids":["bench-graph-a"]},
+  {"mode":"graph","query":"shared graph seed","project_id":"other-project","expected_ids":["bench-graph-b"]}
+]
