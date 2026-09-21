@@ -47,6 +47,14 @@ mkdir -p "$STATE_DIR"
 
 log() { echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) $*" >>"$MEM_LOG"; }
 iso_now() { date -u "+%Y-%m-%dT%H:%M:%SZ"; }
+git_branch() { git -C "${OC_BRAIN_REPO:-$(pwd)}" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown; }
+git_commit() { git -C "${OC_BRAIN_REPO:-$(pwd)}" rev-parse HEAD 2>/dev/null || echo unknown; }
+valid_scope() {
+  case "$1" in
+    PROJECT_ARCHITECTURE|BRANCH_OBSERVATION|HISTORICAL_DECISION|TASK_STATUS) return 0;;
+    *) return 1;;
+  esac
+}
 
 # --- reachability (degrade, never fail the caller) ---
 # remote mode: success only if Bolt reachable AND auth works AND a cypher-shell
@@ -100,14 +108,25 @@ cmd_write() {
   # secrets guard (object + any extra values)
   if looks_secret "$object"; then echo "REFUSED: object looks like a secret; not written"; log "REFUSED secret write subject=$subject"; return 4; fi
   local extra_props=""
+  local scope="BRANCH_OBSERVATION" verified="false" commit_sha branch agent_id
+  commit_sha="$(git_commit)"; branch="$(git_branch)"; agent_id="${OC_BRAIN_AGENT_ID:-${USER:-unknown}}"
   for kv in "$@"; do
     local k="${kv%%=*}" v="${kv#*=}"
     if looks_secret "$v"; then echo "REFUSED: prop $k looks like a secret; not written"; return 4; fi
-    [ -n "$k" ] && extra_props="$extra_props, f.$k='$(esc "$v")'"
+    case "$k" in
+      scope) scope="$v";;
+      verified) verified="$v";;
+      commit_sha) commit_sha="$v";;
+      branch) branch="$v";;
+      agent_id) agent_id="$v";;
+      *) [ -n "$k" ] && extra_props="$extra_props, f.$k='$(esc "$v")'";;
+    esac
   done
+  valid_scope "$scope" || { echo "REFUSED: invalid provenance scope '$scope'"; return 2; }
+  case "$verified" in true|false) ;; *) echo "REFUSED: verified must be true or false"; return 2;; esac
   mem_available || { echo "MEMORY_DEGRADED: write skipped (mtype=$mtype subject=$subject)"; return 3; }
   local id; id="$(gen_id)"
-  local q="CREATE (f:Fact {id:'$id', ns:'$NS', mtype:'$(esc "$mtype")', subject:'$(esc "$subject")', predicate:'$(esc "$predicate")', object:'$(esc "$object")', status:'$(esc "$status")', created_at: datetime()}) RETURN f.id AS id"
+  local q="CREATE (f:Fact {id:'$id', ns:'$NS', mtype:'$(esc "$mtype")', subject:'$(esc "$subject")', predicate:'$(esc "$predicate")', object:'$(esc "$object")', status:'$(esc "$status")', scope:'$(esc "$scope")', verified:$verified, commit_sha:'$(esc "$commit_sha")', branch:'$(esc "$branch")', agent_id:'$(esc "$agent_id")', created_at: datetime()}) RETURN f.id AS id"
   local out; out="$(cy "$q")"
   if printf '%s' "$out" | grep -q "$id"; then
     # apply extra props in a second statement (keeps quoting simple)
@@ -123,8 +142,28 @@ cmd_supersede() {
   mem_available || { echo "MEMORY_DEGRADED: supersede skipped"; return 3; }
   local id; id="$(gen_id)"
   local mtype="$1" subject="$2" predicate="$3" object="$4" status="${5:-active}"
+  shift 5
+  local scope="BRANCH_OBSERVATION" verified="false" commit_sha branch agent_id
+  commit_sha="$(git_commit)"; branch="$(git_branch)"; agent_id="${OC_BRAIN_AGENT_ID:-unknown}"
+  # Accept the same key=value provenance form as `write`; retain positional
+  # fields for callers that already use the compact supersede form.
+  if [ "$#" -gt 0 ] && [[ "$1" != *=* ]]; then scope="$1"; shift; fi
+  if [ "$#" -gt 0 ] && [[ "$1" != *=* ]]; then verified="$1"; shift; fi
+  if [ "$#" -gt 0 ] && [[ "$1" != *=* ]]; then commit_sha="$1"; shift; fi
+  if [ "$#" -gt 0 ] && [[ "$1" != *=* ]]; then branch="$1"; shift; fi
+  if [ "$#" -gt 0 ] && [[ "$1" != *=* ]]; then agent_id="$1"; shift; fi
+  for kv in "$@"; do
+    local k="${kv%%=*}" v="${kv#*=}"
+    if looks_secret "$v"; then echo "REFUSED: prop $k looks like a secret; not written"; return 4; fi
+    case "$k" in
+      scope) scope="$v";; verified) verified="$v";; commit_sha) commit_sha="$v";;
+      branch) branch="$v";; agent_id) agent_id="$v";;
+    esac
+  done
   if looks_secret "$object"; then echo "REFUSED: secret"; return 4; fi
-  cy "CREATE (n:Fact {id:'$id', ns:'$NS', mtype:'$(esc "$mtype")', subject:'$(esc "$subject")', predicate:'$(esc "$predicate")', object:'$(esc "$object")', status:'$(esc "$status")', supersedes:'$(esc "$old")', created_at: datetime()}) RETURN n.id" >/dev/null
+  valid_scope "$scope" || { echo "REFUSED: invalid provenance scope '$scope'"; return 2; }
+  case "$verified" in true|false) ;; *) echo "REFUSED: verified must be true or false"; return 2;; esac
+  cy "CREATE (n:Fact {id:'$id', ns:'$NS', mtype:'$(esc "$mtype")', subject:'$(esc "$subject")', predicate:'$(esc "$predicate")', object:'$(esc "$object")', status:'$(esc "$status")', supersedes:'$(esc "$old")', scope:'$(esc "$scope")', verified:$verified, commit_sha:'$(esc "$commit_sha")', branch:'$(esc "$branch")', agent_id:'$(esc "$agent_id")', created_at: datetime()}) RETURN n.id" >/dev/null
   cy "MATCH (o:Fact {id:'$(esc "$old")'}) SET o.status='superseded' RETURN o.id" >/dev/null
   echo "SUPERSEDED old=$old -> new=$id"; log "SUPERSEDE $old -> $id"
 }
