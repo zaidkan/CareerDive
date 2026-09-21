@@ -221,6 +221,20 @@ describe("rendered workplace golden path", () => {
         await activate(within(panel()).getByRole("button", { name: /Submit findings|Check my work/ }));
       }
     }
+    async function saveTicketNote(eventId: string, note: string) {
+      await openSystem("ticket_queue");
+      const queue = container.querySelector(mode === "os" ? ".desk-os-queue" : ".work-queue");
+      const eventTitle = state.events.find(({ id }) => id === eventId)?.title;
+      const item = Array.from(queue?.querySelectorAll<HTMLButtonElement>("button") ?? []).find((button) => eventTitle && button.textContent.includes(eventTitle));
+      if (item) await user.click(item);
+      const button = required(container.querySelector<HTMLButtonElement>(`button[data-action-id="update_ticket_notes"][data-event-id="${eventId}"]`), `${eventId} save note button`);
+      const editor = required(button.closest("form"), `${eventId} note editor`);
+      const field = within(editor).getByRole("textbox");
+      await user.clear(field);
+      await user.type(field, note);
+      await activate(button);
+      expect(state.ticketNotes[eventId]).toBe(note);
+    }
     await verifyAvailableTargets();
     await perform("read_handoff", "handoff-1");
     await perform("acknowledge_handoff", "handoff-1");
@@ -230,6 +244,7 @@ describe("rendered workplace golden path", () => {
     await activate(screen.getByRole("button", { name: "Handle now" }));
     await perform("review_alert", routine);
     await perform("search_knowledge_base", routine);
+    await saveTicketNote(routine, "A-1180 matches RUN-FIN-031 and SCAN-FIN-MON at the recorded event time. The log covers discovery connections only.");
     await perform("document_ticket", routine);
     await perform("dismiss_alert", routine);
     await perform("inspect_account_history", suspicious);
@@ -291,25 +306,40 @@ describe("rendered workplace golden path", () => {
     await repository.createSession("user-1", state);
     const caller = createAppRouter(repository).createCaller({ userId: "user-1" });
     const sessionId = state.sessionId;
-    for (let index = 0; index < 80; index += 1) {
+    const tutorialActions = [
+      ["handoff-1", "read_handoff"],
+      ["handoff-1", "acknowledge_handoff"],
+      [suspicious, "review_alert"],
+      [suspicious, "inspect_login_context"],
+      [routine, "review_alert"],
+      [routine, "search_knowledge_base"],
+      [routine, "document_ticket"],
+      [routine, "dismiss_alert"],
+      [suspicious, "inspect_account_history"],
+      [suspicious, "check_device_inventory"],
+      [suspicious, "document_ticket"],
+      [suspicious, "escalate_alert"],
+      ["shift", "complete_shift"],
+    ] as const;
+    for (const [eventId, actionId] of tutorialActions) {
       const view = toClientView(state);
       assertPublicView(view);
-      const task = view.tasks[0];
-      if (task) {
-        const taskRule = required(state.rules.tasks[task.id], `tutorial task rule ${task.id}`);
-        const step = required(taskRule.steps[task.stepIndex], `tutorial task step ${task.id}:${String(task.stepIndex)}`);
-        for (const artifactId of step.relatedArtifactIds) if (!state.observedArtifactIds.includes(artifactId)) await caller.simulation.performWorkplaceInteraction({ sessionId, interaction: { type: "open_artifact", artifactId } });
-        await caller.simulation.submitTaskAttempt({ sessionId, taskId: task.id, eventId: task.eventId, selectedOptionIds: step.requiredOptionIds });
+      const action = required(view.availableActions.find(({ id, eventId: target }) => id === actionId && target === eventId), `tutorial action ${actionId}:${eventId}`);
+      if (action.taskId) {
+        while (!state.taskProgress[`${eventId}:${action.taskId}`]?.completed) {
+          const stepIndex = state.taskProgress[`${eventId}:${action.taskId}`]?.currentStep ?? 0;
+          const step = required(state.rules.tasks[action.taskId]?.steps[stepIndex], `tutorial task step ${action.taskId}:${String(stepIndex)}`);
+          for (const artifactId of step.relatedArtifactIds) if (!state.observedArtifactIds.includes(artifactId)) await caller.simulation.performWorkplaceInteraction({ sessionId, interaction: { type: "open_artifact", artifactId } });
+          await caller.simulation.submitTaskAttempt({ sessionId, taskId: action.taskId, eventId, selectedOptionIds: step.requiredOptionIds });
+          state = (await repository.getSession("user-1", sessionId)).state;
+        }
       } else {
-        const action = view.availableActions.find(({ id }) => id === "escalate_alert" || id === "dismiss_alert" || id === "complete_shift");
-        if (!action) break;
         await caller.simulation.performAction({ sessionId, actionId: action.id, eventId: action.eventId });
-        state = (await repository.getSession("user-1", sessionId)).state;
-        if (action.id === "complete_shift") break;
       }
       state = (await repository.getSession("user-1", sessionId)).state;
       expect(repository.evidenceFor("user-1", sessionId)).toEqual([]);
     }
+    await caller.simulation.performWorkplaceInteraction({ sessionId, interaction: { type: "movement_exertion", distanceMeters: 5 } });
     for (const interaction of [{ type: "open_fridge" }, { type: "take_snack" }, { type: "eat_snack_bite" }, { type: "close_fridge" }, { type: "talk_to_jules", topic: "first_day" }] satisfies WorkplaceInteraction[]) await caller.simulation.performWorkplaceInteraction({ sessionId, interaction });
     state = (await repository.getSession("user-1", sessionId)).state;
     expect(state.completedActionIds).toContain("complete_shift");
