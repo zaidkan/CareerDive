@@ -52,7 +52,7 @@ else bad "oc-memory writer failed: $WOUT"; fi
 
 # Completion hard gate is deliberately local and textual: inspect_completion
 # must transition no-commit worker claims to BLOCKED before recording outcome.
-if rg -q 'completion_requires_new_commit' "$ROOT/scripts/oc-dispatch" && rg -q 'newcommit.*none' "$ROOT/scripts/oc-dispatch"; then
+if grep -q 'completion_requires_new_commit' "$ROOT/scripts/oc-dispatch" && grep -qE 'newcommit.*none' "$ROOT/scripts/oc-dispatch"; then
   ok "inspect_completion refuses COMPLETE without a new commit"
 else bad "completion hard gate missing"; fi
 
