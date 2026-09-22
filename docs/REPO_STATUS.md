@@ -1,6 +1,6 @@
 # Career Expo — repository status (public handoff)
 
-Last reconciliation: **2026-09-22** (experimental consolidation f5d2bff).
+Last reconciliation: **2026-09-22** (experimental consolidation f5d2bff) · **Cleanup pass 2026-09-22 on `zaidkan/product-experimental` (`b71a78c` → post-cleanup)**.
 
 This file is the public-safe map of what is on GitHub, what is draft, and what must stay local. It does **not** document private developer-infrastructure internals.
 
@@ -8,8 +8,9 @@ This file is the public-safe map of what is on GitHub, what is draft, and what m
 
 | Branch | Role |
 | --- | --- |
-| `main` / `origin/main` (`8bf7111`) | **Stable/release.** Desk OS audit docs, structured-ticket substrate notes, v2 benign triage schema. Do not merge product drafts without explicit release decision. |
-| **`zaidkan/product-experimental`** (`f5d2bff`) | **Current integrated development product.** Single place to clone and run. Task8 + site shell + landing de-redundancy + Desk OS lock fix + light theme + briefing prop. See below. |
+| `main` / `origin/main` (`8bf7111`) | **Stable/release.** Desk OS audit docs, structured-ticket substrate notes, v2 benign triage schema. Do not merge product drafts without explicit release decision. **Currently unprotected — protect near release/promotion (not in this task).** |
+| **`zaidkan/product-experimental`** (`b71a78c` → +cleanup) | **Current integrated development product — SINGLE ACTIVE PRODUCT BRANCH.** Single place to clone and run. Task8 + site shell + landing de-redundancy + Desk OS lock fix + light theme + briefing prop + arrival-film fallback + CI/reliability fixes. See below. |
+| **Everything else** | **Historical/draft/source material.** Keep as history; do not treat as parallel active lanes. Do not delete yet (defer until after Task 10 + Windows playtest + Task 11 + promotion to main). |
 
 **Future product work should start from `zaidkan/product-experimental`.**
 
@@ -29,6 +30,15 @@ This file is the public-safe map of what is on GitHub, what is draft, and what m
 
 **Verification on f5d2bff:** `pnpm lint` green, `pnpm typecheck` green, `pnpm build` green (RoomCanvas 1,014 kB warning unchanged), `pnpm test` 84 files 630 pass 6 skipped, `site-entry` 8/8 green. Manual smoke: `/` landing → `/start` film gate (forced watch, doors freeze → DoorHud) → `/start` briefing → `App` Walk/Desk/List modes → Desk OS lock → alerts/email/knowledge/inventory → ticket composer → TeamChat/Morgan → escalation — no blank screens or dead buttons observed.
 
+**Cleanup on `b71a78c` (this pass):**
+- Arrival film soft-lock fixed — `ArrivalFilm.tsx` now handles `onError` / missing `arrival-film.mp4` by falling back to poster + stills/transcript and unlocking `DoorHud` (`film unavailable — continue with the poster…`); reduced-motion behavior preserved; valid film path still plays through to doors freeze. No dead end.
+- CI now runs on pushes to `zaidkan/product-experimental` as well as `main` + PRs (`install → lint → typecheck → test → build`).
+- Reliability workflow no longer uses job-level `secrets` condition (which failed before job creation); now uses preflight `ENABLE_PAID_AI_EVALS` + `ANTHROPIC_API_KEY` + test-file check, skips cleanly with `GITHUB_STEP_SUMMARY`, never prints secrets, never makes paid calls.
+- Stale PR #1 (`experimental → main`, "Fix optional AI workflow…") closed after recovering its reliability fix; its graphics/AGENTS changes remain historical on `origin/experimental` per this handoff.
+- README aligned to canonical pack (`cybersecurity_analyst@1.0.0`, events `incomplete_handoff` / `suspicious_login` / `routine_alert_review`) — removed stale `phishing report` / `false-positive` as live gameplay; phish actions remain quarantined (R1).
+- Public-safe workplace systems plan/design restored to `docs/product/workplace-systems-overhaul-design.md` and `docs/product/workplace-systems-overhaul-plan.md` (Tasks 1–11 preserved; Tasks 10–11 are next; private BrainV2/orchestration remains excluded).
+- Branch hygiene deferred as requested — old branches/tags/worktrees/stashes not deleted.
+
 ## What was deliberately NOT integrated (and why)
 
 | Source | Why excluded |
@@ -44,6 +54,13 @@ This file is the public-safe map of what is on GitHub, what is draft, and what m
 
 - **Task7:** as on `45ff32d` baseline (email/alert tooling, artifact observation, source-bound records, guide/inventory, lock-screen login). Open gaps per `docs/planning/desk-os-audit/` remain (sentence-level source selection proof, legacy gate clean-up, mode consistency) — not regressed.
 - **Task8:** **integrated** — structured ticket composer is canonical, Team Chat `managerGuidance` privacy-preserved, legacy `build_summary` gate remains only for replay. Golden-path asserts ticket composer success.
+- **Task9:** complete per `f5d2bff` (site shell + landing + Desk OS lock + briefing prop + light theme).
+- **Task10:** **NEXT** — Accessibility parity, acceptance, and documentation (`docs/product/workplace-systems-overhaul-plan.md` Task 10). Do not start yet.
+- **Task11:** **FOLLOWS** — Final review and branch verification (`docs/product/workplace-systems-overhaul-plan.md` Task 11).
+
+Product plan/design restored: `docs/product/workplace-systems-overhaul-design.md` and `docs/product/workplace-systems-overhaul-plan.md` — authoritative Task 1–11; private BrainV2 docs remain excluded.
+
+**Legacy tech debt retained (do not clean yet):** `requiredOptionIds`, old `build_summary`/`select`/`compare` authoring, and other compatibility shims — Task 7/8 already routes normal workflow through the newer real-work system; broad schema cleanup deferred.
 
 ## Old branches — keep as history, not active lanes
 
