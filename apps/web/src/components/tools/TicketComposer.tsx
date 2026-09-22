@@ -46,7 +46,9 @@ export function TicketComposer({
   return (
     <form
       aria-label={`Ticket for ${view.events.find(({ id }) => id === action.eventId)?.title ?? action.eventId}`}
-      onSubmit={(event) => event.preventDefault()}
+      onSubmit={(event) => {
+        event.preventDefault();
+      }}
     >
       <h4>Case ticket</h4>
       <p>
@@ -58,7 +60,9 @@ export function TicketComposer({
         <textarea
           maxLength={2000}
           value={verifiedEvidence}
-          onChange={(event) => setVerifiedEvidence(event.target.value)}
+          onChange={(event) => {
+            setVerifiedEvidence(event.target.value);
+          }}
         />
       </label>
       <label>
@@ -66,7 +70,9 @@ export function TicketComposer({
         <textarea
           maxLength={2000}
           value={uncertainty}
-          onChange={(event) => setUncertainty(event.target.value)}
+          onChange={(event) => {
+            setUncertainty(event.target.value);
+          }}
         />
       </label>
       <label>
@@ -74,7 +80,9 @@ export function TicketComposer({
         <textarea
           maxLength={500}
           value={followUp}
-          onChange={(event) => setFollowUp(event.target.value)}
+          onChange={(event) => {
+            setFollowUp(event.target.value);
+          }}
         />
       </label>
       <fieldset>
@@ -85,13 +93,13 @@ export function TicketComposer({
               <input
                 type="checkbox"
                 checked={sourceArtifactIds.includes(source.id)}
-                onChange={(event) =>
+                onChange={(event) => {
                   setSourceArtifactIds((current) =>
                     event.target.checked
                       ? [...current, source.id]
                       : current.filter((id) => id !== source.id),
-                  )
-                }
+                  );
+                }}
               />
               {source.title} ({source.id})
             </label>
@@ -108,7 +116,9 @@ export function TicketComposer({
           disabled={
             Boolean(mutationState.pendingKey) || !sourceArtifactIds.length
           }
-          onClick={() => onAction({ ...draftAction, ticketPayload: payload })}
+          onClick={() => {
+            onAction({ ...draftAction, ticketPayload: payload });
+          }}
         >
           Save draft
         </button>
@@ -118,7 +128,9 @@ export function TicketComposer({
         data-action-id={action.id}
         data-event-id={action.eventId}
         disabled={Boolean(mutationState.pendingKey) || !canSubmit}
-        onClick={() => onAction({ ...action, ticketPayload: payload })}
+        onClick={() => {
+          onAction({ ...action, ticketPayload: payload });
+        }}
       >
         Submit ticket
       </button>
