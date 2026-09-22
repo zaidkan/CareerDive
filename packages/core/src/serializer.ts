@@ -19,6 +19,7 @@ export function workItemCategoryForTemplate(templateId: string): WorkItemCategor
     case "suspicious_login":
       return "main_case";
     case "routine_alert_review":
+    case "blocked_spray_review":
       return "routine";
     case "incomplete_handoff":
       return "handoff";

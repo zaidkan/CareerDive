@@ -27,6 +27,7 @@ career:
     - suspicious_login
     - incomplete_handoff
     - routine_alert_review
+    - blocked_spray_review
   rhythmBiasReview:
     ordinaryWorkRepresented: true
     calmWorkRepresented: true
@@ -684,6 +685,13 @@ scenario:
       body: A routine-looking alert arrived while you were investigating the login. Triage it now, snooze it once, or keep your current view open.
       priority: low
       snoozeMinutes: 15
+    - id: blocked-spray-arrived
+      eventTemplateId: blocked_spray_review
+      systemId: alert_dashboard
+      title: Medium account-spray alert
+      body: A burst of failed sign-ins from one source arrived in the alert queue. Review the burst and confirm what the controls show, or keep your current view open.
+      priority: normal
+      snoozeMinutes: 15
   facts:
     - id: alert-visible
       content: >
@@ -1030,6 +1038,55 @@ scenario:
           hidden:
             taskBacklog: -1
 
+    blocked_spray_review:
+      instanceId: blocked-spray-1
+      title: Repeat failed sign-ins from one source
+      summary: A burst of failed authentication attempts was reported from a single source address. Confirm what the records show before deciding how to close it.
+      priority: normal
+      systemId: alert_dashboard
+      triggerAt: 90
+      deadlineMinutes: 220
+      initialStatus: pending
+      managerGuidance: >
+        Morgan recommends confirming what the records show for the source before closing:
+        whether any completed sign-in exists and whether the address is already covered by a
+        known control. A covered source can produce failed attempts that are not, by
+        themselves, an incident; verify the observable in the export rather than assuming the
+        alert verdict. Keep the source and the outcome you checked visible in the ticket, and
+        keep the mismatch visible if a detail does not line up. When this is recorded, return
+        to the login notes and continue from the step you left there.
+      progression:
+        kind: linear
+        allowManager: true
+        utilityActions: [query_records, update_ticket_notes, update_notebook]
+        sequence:
+          - review_alert
+          - search_knowledge_base
+          - dismiss_alert
+      actionEffects:
+        search_knowledge_base:
+          setKbQueryFromFreeText: true
+          observeArtifactIds: [spray-blocklist-reference]
+        review_alert:
+          observeArtifactIds: [spray-alert]
+          hidden:
+            cognitiveLoad: 1
+        dismiss_alert:
+          resolve: true
+          resolution: >
+            A-1159 reviewed: failed attempts from 192.0.2.71, zero completed sign-ins, and the
+            source already on the boundary blocklist. Documented and closed as a held control;
+            this covers this burst only and does not certify other sign-in activity.
+          consequence:
+            description: >
+              The account-spray alert was reviewed and closed. The burst from 192.0.2.71 was
+              already covered by the boundary blocklist, and the authentication export holds no
+              completed sign-in for that source. This closure applies to this burst only; new
+              sign-in activity from the source would reopen review. Return to the login notes
+              and continue from the next step you left there.
+          hidden:
+            taskBacklog: -1
+
   artifacts:
     - id: login-session-timeline
       systemId: alert_dashboard
@@ -1339,6 +1396,46 @@ scenario:
         Case references to preserve after comparison: A-1042, the two session identifiers, the exact inventory label, and the route-catalogue and work-travel coverage limits. These references are a review checklist, not a finding.
       eventIds: [suspicious-login-1]
       searchableText: ticket investigation notes
+    - id: spray-alert
+      systemId: alert_dashboard
+      kind: alert
+      title: Sign-in burst · A-1159
+      summary: Repeat failed sign-ins from one source · medium priority
+      body: |
+        Alert A-1159 · password-spray monitoring · delivered to the current shift.
+        Burst: forty failed authentication attempts across twelve accounts.
+        Source: 192.0.2.71. Completed sign-ins in the burst: none.
+        The source address appears on the boundary blocklist reference.
+        Verify in the records: whether any completed sign-in exists for 192.0.2.71 and
+        whether the source is covered by a known control before closing. This alert
+        summarizes failed attempts; it does not establish who is behind them or confirm
+        account misuse.
+        Collection covers the burst only. Missing fields may require a fuller record.
+      eventIds: [blocked-spray-1]
+      relatedArtifactIds: [spray-blocklist-reference]
+      searchableText: password spray burst blocklist source
+    - id: spray-blocklist-reference
+      systemId: knowledge_base
+      kind: kb_document
+      title: Boundary blocklist reference
+      summary: How blocked sources are handled and what to verify before closing a burst alert
+      body: |
+        192.0.2.71 is on the boundary blocklist; the entry predates the A-1159 burst.
+        Blocked sources are denied at the network boundary before reaching the
+        authentication service. Expected observable: the monitoring control records the
+        failed attempts, and the authentication export holds no completed sign-in for the
+        source. A zero-row export for a blocklisted address is the expected negative result,
+        not missing data.
+        Prior bursts from blocklisted sources were closed as review-only when no completed
+        sign-in appeared and the blocklist entry stayed active.
+        Escalation trigger: a completed sign-in from a blocklisted source, or any doubt
+        about whether the entry is still in force. Do not extend this reference to unlisted
+        sources or to a different burst.
+        Record the source, the outcome you checked, and the blocklist entry in the closure
+        note. Compare the sign-in export, not just the alert summary.
+      eventIds: [blocked-spray-1]
+      relatedArtifactIds: [spray-alert]
+      searchableText: blocklist boundary denied sign-in negative
 
   # Phase 2 structured datasets translated from
   # docs/superpowers/specs/soc-structured-record-fixtures.md. IDs and values
@@ -1755,6 +1852,7 @@ scenario:
           category: password-spray monitoring
           severity: medium
           state: open
+          linkedWorkItemId: blocked-spray-1
           relatedRecordIds: []
           note: Forty failed attempts across twelve accounts, zero successes; source already blocklisted. Failed attempts are not an incident when controls held.
         - id: A-1210

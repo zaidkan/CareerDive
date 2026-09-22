@@ -43,6 +43,7 @@ import {
   workplaceMutationKey,
   type MutationState,
 } from "../useMutationCoordinator.js";
+import { promptFor } from "./Hotspot.js";
 import {
   loadMouseSensitivity,
   MAX_MOUSE_SENSITIVITY,
@@ -73,6 +74,31 @@ const INTERACT_LABEL: Partial<Record<HotspotId, string>> = {
   jules: "Talk to Jules",
   storage: "Open cabinets",
 };
+
+function contextLabelFor(id: HotspotId, fallback?: string): string {
+  switch (id) {
+    case "desk_player":
+      return "Use workstation";
+    case "alert_wall":
+      return "Inspect terminal";
+    case "morgan_station":
+      return "Talk to Morgan";
+    case "break_door":
+      return fallback ?? "Use door";
+    case "storage":
+      return "Inspect storage";
+    case "door_exit":
+      return "Leave area";
+    case "jules":
+      return "Talk to Jules";
+    case "coffee":
+      return "Use coffee station";
+    case "fridge":
+      return "Open fridge";
+    default:
+      return fallback ?? "Interact";
+  }
+}
 
 export function SpatialShell({
   view,
