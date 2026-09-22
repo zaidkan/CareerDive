@@ -152,6 +152,66 @@ describe("site routes", () => {
     15000,
   );
 
+  it(
+    "start gate fallback shows DoorHud when video fails to load",
+    async () => {
+      const createSession = vi.fn(() =>
+        Promise.resolve({
+          sessionId: "s-1",
+          view: undefined as never,
+        }),
+      );
+      const client = {
+        createSession,
+        performAction: vi.fn(),
+        performWorkplaceInteraction: vi.fn(),
+        submitTaskAttempt: vi.fn(),
+        respondToNotification: vi.fn(),
+        getDebrief: vi.fn(),
+      };
+      render(<StartPage client={client} />);
+      expect(
+        await screen.findByRole("heading", {
+          name: /short preview film/i,
+        }),
+      ).toBeVisible();
+      fireEvent.click(
+        screen.getByRole("button", { name: /play arrival film/i }),
+      );
+      const video = document.querySelector("video");
+      if (!video) throw new Error("arrival video missing for error fallback test");
+      // Simulate missing asset / decode error.
+      fireEvent(video, new Event("error"));
+      // Fallback uses poster/stills and still reveals DoorHud — no dead end.
+      expect(
+        await screen.findByRole("button", {
+          name: /start your first day/i,
+        }),
+      ).toBeVisible();
+      expect(screen.getByRole("dialog", { name: /verdaly doors/i })).toBeVisible();
+      expect(screen.getByText(/film unavailable/i)).toBeVisible();
+      // Poster fallback is present and accessible.
+      expect(
+        screen.getByAltText(/arrival film unavailable/i),
+      ).toBeVisible();
+      // Can still proceed to briefing and sim.
+      fireEvent.click(
+        screen.getByRole("button", { name: /start your first day/i }),
+      );
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: /enter the verdaly floor/i,
+        }),
+      );
+      expect(createSession).toHaveBeenCalledTimes(1);
+      // Transcript/stills remain accessible as fallback.
+      expect(
+        screen.queryByRole("button", { name: /play arrival film/i }),
+      ).toBeNull();
+    },
+    15000,
+  );
+
   it("sets per-route document title", () => {
     render(<SiteApp initialRoute="/trust" />);
     expect(document.title).toMatch(/privacy and safety/i);

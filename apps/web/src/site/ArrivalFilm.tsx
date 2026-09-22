@@ -29,8 +29,15 @@ export function ArrivalFilm({
   const [playing, setPlaying] = useState(false);
   const [reducedMotion] = useState(prefersReducedMotion);
   const [doorHold, setDoorHold] = useState(false);
+  const [mediaError, setMediaError] = useState(false);
 
   function triggerDoorHold() {
+    setDoorHold(true);
+  }
+
+  function handleMediaError() {
+    if (!mediaError) setMediaError(true);
+    // Unlock immediately via fallback poster/stills experience.
     setDoorHold(true);
   }
 
@@ -80,38 +87,71 @@ export function ArrivalFilm({
         {reducedMotion ? <StillsGrid /> : null}
         {playing && !reducedMotion ? (
           <div className="film-hold-wrap">
-            <video
-              controls={!doorHold}
-              autoPlay
-              muted
-              preload="none"
-              poster="/verdaly-tower-doors.svg"
-              aria-label="Arrival at Verdaly: from bedroom to tower doors"
-              onEnded={triggerDoorHold}
-              onTimeUpdate={(e) => {
-                const v = e.currentTarget;
-                if (
-                  !doorHold &&
-                  Number.isFinite(v.duration) &&
-                  v.duration - v.currentTime < 0.5
-                ) {
-                  v.pause();
-                  triggerDoorHold();
-                }
-              }}
-              style={{ marginTop: "1rem" }}
-            >
-              <source src="/arrival-film.mp4" type="video/mp4" />
-              <p>
-                Film file lands at launch. Read the full beat transcript below.
+            {!mediaError ? (
+              <video
+                controls={!doorHold}
+                autoPlay
+                muted
+                preload="metadata"
+                poster="/verdaly-tower-doors.svg"
+                aria-label="Arrival at Verdaly: from bedroom to tower doors"
+                playsInline
+                onEnded={triggerDoorHold}
+                onError={handleMediaError}
+                onTimeUpdate={(e) => {
+                  const v = e.currentTarget;
+                  if (
+                    !doorHold &&
+                    Number.isFinite(v.duration) &&
+                    v.duration - v.currentTime < 0.5
+                  ) {
+                    v.pause();
+                    triggerDoorHold();
+                  }
+                }}
+                style={{ marginTop: "1rem" }}
+              >
+                <source src="/arrival-film.mp4" type="video/mp4" />
+                <p>
+                  Film file lands at launch. Read the full beat transcript below.
+                </p>
+                <track
+                  kind="captions"
+                  srcLang="en"
+                  label="English"
+                  src="/arrival-film.vtt"
+                />
+              </video>
+            ) : (
+              <div
+                style={{
+                  width: "100%",
+                  borderRadius: 8,
+                  overflow: "hidden",
+                  background: "#000",
+                }}
+              >
+                <img
+                  src="/verdaly-tower-doors.svg"
+                  alt="Arrival film unavailable — Verdaly tower doors poster"
+                  width={1600}
+                  height={900}
+                  loading="lazy"
+                  style={{ width: "100%", height: "auto", display: "block" }}
+                />
+              </div>
+            )}
+            {mediaError ? (
+              <p
+                role="status"
+                aria-live="polite"
+                className="mode-note"
+                style={{ marginTop: "0.75rem" }}
+              >
+                Film unavailable — continue with the poster, stills and transcript
+                below.
               </p>
-              <track
-                kind="captions"
-                srcLang="en"
-                label="English"
-                src="/arrival-film.vtt"
-              />
-            </video>
+            ) : null}
             {doorHold ? (
               <DoorHud
                 reducedMotion={false}
