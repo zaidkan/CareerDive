@@ -13,7 +13,12 @@ import { InventoryLookup } from "./tools/InventoryLookup.js";
 import { RecordQueryTool } from "./tools/RecordQueryTool.js";
 import { CaseReview } from "./tools/CaseReview.js";
 import { TeamChatTool } from "./tools/TeamChatTool.js";
-import { AlertRecords, bindAlertAction, selectedAlertSource } from "./tools/AlertRecords.js";
+import { TicketComposer } from "./tools/TicketComposer.js";
+import {
+  AlertRecords,
+  bindAlertAction,
+  selectedAlertSource,
+} from "./tools/AlertRecords.js";
 import { MutationStatus } from "./MutationStatus.js";
 import { CaseRail } from "./CaseRail.js";
 import { NotificationBanner } from "./NotificationBanner.js";
@@ -50,7 +55,10 @@ export function AccessibleMode({
   return (
     <section className="accessible-shell" aria-labelledby="structured-title">
       <h2 id="structured-title">Structured workplace view</h2>
-      <MutationStatus state={mutationState} {...(onRetryMutation ? { onRetry: onRetryMutation } : {})} />
+      <MutationStatus
+        state={mutationState}
+        {...(onRetryMutation ? { onRetry: onRetryMutation } : {})}
+      />
       <p className="accessible-lede">
         Location: {view.currentLocation.name}. Simulated time elapsed:{" "}
         {view.simClock} minutes.
@@ -88,13 +96,19 @@ export function AccessibleMode({
         const events = eventsForSystem(view, system.id);
         const artifacts = filterSystemArtifacts(view, system.id);
         const openArtifact = onWorkplaceInteraction
-          ? (artifactId: string) => onWorkplaceInteraction({ type: "open_artifact", artifactId })
+          ? (artifactId: string) =>
+              onWorkplaceInteraction({ type: "open_artifact", artifactId })
           : undefined;
         if (
           actions.length === 0 &&
           events.length === 0 &&
           artifacts.length === 0 &&
-          !(system.id === "team_chat" && view.operationalMessages.some((message) => message.startsWith("Morgan "))) &&
+          !(
+            system.id === "team_chat" &&
+            view.operationalMessages.some((message) =>
+              message.startsWith("Morgan "),
+            )
+          ) &&
           !(
             system.id === "knowledge_base" &&
             filterKnowledgeBase(view, "").length > 0
@@ -104,7 +118,13 @@ export function AccessibleMode({
         const utilities = utilityActions(actions);
         const primary = primaryActions(actions);
         const interactionActions = actions.filter(
-          (action) => action.taskId !== undefined || (primary.includes(action) && action.id !== "search_knowledge_base"),
+          (action) =>
+            (action.taskId !== undefined ||
+              (primary.includes(action) &&
+                action.id !== "search_knowledge_base")) &&
+            !["document_ticket", "ask_manager", "acknowledge_handoff"].includes(
+              action.id,
+            ),
         );
         return (
           <section className="structured-system" key={system.id}>
@@ -147,36 +167,99 @@ export function AccessibleMode({
                 </li>
               ))}
             </ul>
-            {system.id === "alert_dashboard" && (view.alertRecords?.length ?? 0) > 0 ? <AlertRecords view={view} onOpenRecord={onWorkplaceInteraction ? (recordId) => onWorkplaceInteraction({ type: "open_alert_record", recordId }) : undefined} mutationState={mutationState} /> : null}
-            {system.id === "team_chat" ? <TeamChatTool view={view} onOpenArtifact={openArtifact} mutationState={mutationState} /> : system.id !== "knowledge_base" ? <StructuredArtifacts artifacts={artifacts} {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})} mutationState={mutationState} /> : null}
-            {system.id === "knowledge_base" ? (
-              <>
-              <GuideSearch
+            {system.id === "alert_dashboard" &&
+            (view.alertRecords?.length ?? 0) > 0 ? (
+              <AlertRecords
                 view={view}
-                selectedId={selectedGuide}
-                onSelect={setSelectedGuide}
-                focusArtifactId={selectedGuide}
-                canonicalSearchAction={actions.find(({ id, taskId }) => id === "search_knowledge_base" && !taskId)}
-                onCanonicalSearch={onAction}
-                onOpenArtifact={
+                onOpenRecord={
                   onWorkplaceInteraction
-                    ? (artifactId) =>
+                    ? (recordId) =>
                         onWorkplaceInteraction({
-                          type: "open_artifact",
-                          artifactId,
+                          type: "open_alert_record",
+                          recordId,
                         })
                     : undefined
                 }
                 mutationState={mutationState}
               />
-              {openArtifact ? <InventoryLookup view={view} onOpenArtifact={openArtifact} mutationState={mutationState} /> : null}
-              <RecordQueryTool view={view} mutationState={mutationState} />
+            ) : null}
+            {system.id === "team_chat" ? (
+              <TeamChatTool
+                view={view}
+                onOpenArtifact={openArtifact}
+                mutationState={mutationState}
+                actions={actions}
+                onAction={onAction}
+              />
+            ) : system.id !== "knowledge_base" ? (
+              <StructuredArtifacts
+                artifacts={artifacts}
+                {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
+                mutationState={mutationState}
+              />
+            ) : null}
+            {system.id === "knowledge_base" ? (
+              <>
+                <GuideSearch
+                  view={view}
+                  selectedId={selectedGuide}
+                  onSelect={setSelectedGuide}
+                  focusArtifactId={selectedGuide}
+                  canonicalSearchAction={actions.find(
+                    ({ id, taskId }) =>
+                      id === "search_knowledge_base" && !taskId,
+                  )}
+                  onCanonicalSearch={onAction}
+                  onOpenArtifact={
+                    onWorkplaceInteraction
+                      ? (artifactId) =>
+                          onWorkplaceInteraction({
+                            type: "open_artifact",
+                            artifactId,
+                          })
+                      : undefined
+                  }
+                  mutationState={mutationState}
+                />
+                {openArtifact ? (
+                  <InventoryLookup
+                    view={view}
+                    onOpenArtifact={openArtifact}
+                    mutationState={mutationState}
+                  />
+                ) : null}
+                <RecordQueryTool view={view} mutationState={mutationState} />
               </>
             ) : null}
-            <CaseReview view={view} actions={interactionActions} />
+            <CaseReview view={view} actions={actions} />
+            {system.id === "ticket_queue"
+              ? actions
+                  .filter(({ id }) => id === "document_ticket")
+                  .map((action) => (
+                    <TicketComposer
+                      key={action.eventId}
+                      view={view}
+                      action={action}
+                      draftAction={actions.find(
+                        ({ id, eventId }) =>
+                          id === "update_ticket_notes" &&
+                          eventId === action.eventId,
+                      )}
+                      onAction={onAction}
+                      mutationState={mutationState}
+                    />
+                  ))
+              : null}
             <div className="accessible-actions">
               {interactionActions.map((action) => {
-                const needsAlertSource = system.id === "alert_dashboard" && Boolean(view.alertRecords?.some((record) => record.linkedWorkItemId === action.eventId)) && !selectedAlertSource(view, action.eventId);
+                const needsAlertSource =
+                  system.id === "alert_dashboard" &&
+                  Boolean(
+                    view.alertRecords?.some(
+                      (record) => record.linkedWorkItemId === action.eventId,
+                    ),
+                  ) &&
+                  !selectedAlertSource(view, action.eventId);
                 const task = action.taskId
                   ? view.tasks.find(
                       ({ id, eventId }) =>
@@ -213,7 +296,9 @@ export function AccessibleMode({
                     key={`${action.id}:${action.eventId}`}
                     mutationState={mutationState}
                     disabled={needsAlertSource}
-                    onAction={(selectedAction, freeText) => { onAction(bindAlertAction(view, selectedAction), freeText); }}
+                    onAction={(selectedAction, freeText) => {
+                      onAction(bindAlertAction(view, selectedAction), freeText);
+                    }}
                   />
                 );
               })}
@@ -256,18 +341,18 @@ function StructuredArtifacts({
       {artifacts.map((artifact) => (
         <div key={artifact.id}>
           <ArtifactDetail
-              artifact={artifact}
-              mutationState={mutationState}
-              onOpenArtifact={
-                onWorkplaceInteraction
-                  ? (artifactId) =>
-                      onWorkplaceInteraction({
-                        type: "open_artifact",
-                        artifactId,
-                      })
-                  : undefined
-              }
-            />
+            artifact={artifact}
+            mutationState={mutationState}
+            onOpenArtifact={
+              onWorkplaceInteraction
+                ? (artifactId) =>
+                    onWorkplaceInteraction({
+                      type: "open_artifact",
+                      artifactId,
+                    })
+                : undefined
+            }
+          />
         </div>
       ))}
     </div>
