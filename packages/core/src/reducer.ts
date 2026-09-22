@@ -5,7 +5,7 @@ import type {
   TurnResult,
   WorldState,
 } from "@sim/schemas";
-import { WorldStateSchema } from "@sim/schemas";
+import { TicketUpdatePayloadSchema, WorldStateSchema } from "@sim/schemas";
 import { availableActions } from "./availability.js";
 import { applyResolvedEffect, resolveActionEffect } from "./effects.js";
 import { runQuery } from "./query.js";
@@ -32,6 +32,81 @@ export class TaskRequiredError extends ActionUnavailableError {
   }
 }
 
+function validateTicketPayload(
+  state: WorldState,
+  action: SimulationAction,
+  eventId: string,
+) {
+  if (!action.ticketPayload) return undefined;
+  if (action.id !== "document_ticket" && action.id !== "update_ticket_notes")
+    throw new ActionUnavailableError(action.id);
+  const payload = TicketUpdatePayloadSchema.parse(action.ticketPayload);
+  const event = state.events.find(({ id }) => id === eventId);
+  if (
+    !event ||
+    payload.ticketId !== `ticket-${eventId}` ||
+    !payload.sourceArtifactIds?.length
+  )
+    throw new ActionUnavailableError(action.id);
+  if (
+    new Set(payload.sourceArtifactIds).size !== payload.sourceArtifactIds.length
+  )
+    throw new ActionUnavailableError(action.id);
+  for (const sourceId of payload.sourceArtifactIds) {
+    const artifact = state.artifacts[sourceId];
+    if (
+      !artifact ||
+      !artifact.eventIds.includes(eventId) ||
+      !state.observedArtifactIds.includes(sourceId)
+    )
+      throw new ActionUnavailableError(action.id);
+  }
+  if (
+    action.id === "document_ticket" &&
+    (!payload.verifiedEvidence?.trim() ||
+      !payload.uncertainty?.trim() ||
+      !payload.followUp?.trim())
+  )
+    throw new ActionUnavailableError(action.id);
+  if (
+    payload.status ||
+    payload.entityRefs ||
+    payload.attachEvidenceFactIds ||
+    payload.detachEvidenceFactIds ||
+    payload.disposition ||
+    payload.noteText
+  )
+    throw new ActionUnavailableError(action.id);
+  return payload;
+}
+
+function updateTicket(
+  state: WorldState,
+  eventId: string,
+  actionId: SimulationAction["id"],
+  payload: NonNullable<SimulationAction["ticketPayload"]>,
+) {
+  const ticketId = payload.ticketId;
+  const previous = state.structuredTickets[ticketId];
+  state.structuredTickets[ticketId] = {
+    ticketId,
+    linkedWorkItemIds: [eventId],
+    status: actionId === "document_ticket" ? "pending_review" : "in_progress",
+    entityRefs: previous?.entityRefs ?? [],
+    evidenceFactIds: previous?.evidenceFactIds ?? [],
+    verifiedEvidence:
+      payload.verifiedEvidence ?? previous?.verifiedEvidence ?? "",
+    uncertainty: payload.uncertainty ?? previous?.uncertainty ?? "",
+    followUp: payload.followUp ?? previous?.followUp ?? "",
+    sourceArtifactIds: payload.sourceArtifactIds ?? [],
+  };
+  const ticket = state.structuredTickets[ticketId];
+  state.ticketNotes[eventId] =
+    `Verified evidence: ${ticket.verifiedEvidence ?? ""}\nUncertainty: ${ticket.uncertainty ?? ""}\nNext step: ${ticket.followUp ?? ""}\nSources: ${(ticket.sourceArtifactIds ?? []).join(", ")}`;
+  const event = state.events.find(({ id }) => id === eventId);
+  if (event) event.linkedTicketId = ticketId;
+}
+
 export function applyAction(
   currentState: WorldState,
   action: SimulationAction,
@@ -48,8 +123,19 @@ export function applyAction(
   if (!allowedAction) {
     throw new ActionUnavailableError(action.id);
   }
-  const selectedId = currentState.workplace.selectedAlertIdsByEvent?.[allowedAction.eventId];
-  if ((selectedId && allowedAction.systemId === "alert_dashboard") || action.sourceRecordId || action.sourceArtifactId) {
+  const targetEventId = action.eventId ?? allowedAction.eventId;
+  const ticketPayload = validateTicketPayload(
+    currentState,
+    action,
+    targetEventId,
+  );
+  const selectedId =
+    currentState.workplace.selectedAlertIdsByEvent?.[allowedAction.eventId];
+  if (
+    (selectedId && allowedAction.systemId === "alert_dashboard") ||
+    action.sourceRecordId ||
+    action.sourceArtifactId
+  ) {
     const source = selectedId && alertRecordSource(currentState, selectedId);
     if (
       allowedAction.systemId !== "alert_dashboard" ||
@@ -61,7 +147,10 @@ export function applyAction(
       throw new ActionUnavailableError(action.id);
     }
   }
-  if (allowedAction.taskId) {
+  if (
+    allowedAction.taskId &&
+    !(action.id === "document_ticket" && ticketPayload)
+  ) {
     // P1-T03: released bindings never gate, even if a taskId is present
     // (availability omits it; this covers any divergent caller state).
     const binding = currentState.rules.tasks[allowedAction.taskId];
@@ -91,7 +180,6 @@ export function applyAction(
   state.workplace.energy.current -= definition.energyCost;
   state.simClock += definition.simulatedMinutes;
   state.completedActionIds.push(action.id);
-  const targetEventId = action.eventId ?? allowedAction.eventId;
   const event = state.events.find(({ id }) => id === targetEventId);
 
   if (event) {
@@ -104,6 +192,8 @@ export function applyAction(
     const effect = resolveActionEffect(state, event, action.id);
     applyResolvedEffect({ state, event, action, effect, effects });
   }
+  if (ticketPayload)
+    updateTicket(state, targetEventId, action.id, ticketPayload);
 
   activatePendingEvents(state, action.id, effects);
   wakeSnoozedNotifications(state);

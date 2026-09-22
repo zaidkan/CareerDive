@@ -24,6 +24,7 @@ import {
   WorkplaceInteractionSchema,
   type CareerPack,
   type QueryRecordsPayload,
+  type SimulationAction,
 } from "@sim/schemas";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -118,6 +119,7 @@ export function createAppRouter(
             freeText: z.string().max(2_000).optional(),
             sourceRecordId: z.string().min(1).optional(),
             sourceArtifactId: z.string().min(1).optional(),
+            ticketPayload: z.unknown().optional(),
             /**
              * P2-T06: structured payload for `query_records`, carried
              * opaquely through transport (`z.unknown`) so the canonical
@@ -147,13 +149,22 @@ export function createAppRouter(
             ...(input.freeText === undefined
               ? {}
               : { freeText: input.freeText }),
-            ...(input.sourceRecordId === undefined ? {} : { sourceRecordId: input.sourceRecordId }),
-            ...(input.sourceArtifactId === undefined ? {} : { sourceArtifactId: input.sourceArtifactId }),
+            ...(input.sourceRecordId === undefined
+              ? {}
+              : { sourceRecordId: input.sourceRecordId }),
+            ...(input.sourceArtifactId === undefined
+              ? {}
+              : { sourceArtifactId: input.sourceArtifactId }),
+            ...(input.ticketPayload === undefined
+              ? {}
+              : {
+                  ticketPayload:
+                    input.ticketPayload as SimulationAction["ticketPayload"],
+                }),
             ...(input.queryPayload === undefined
               ? {}
               : {
-                  queryPayload:
-                    input.queryPayload as QueryRecordsPayload,
+                  queryPayload: input.queryPayload as QueryRecordsPayload,
                 }),
           };
           let turn: ReturnType<typeof applyAction>;

@@ -9,6 +9,7 @@ import {
   type Debrief,
   type NotificationResponse,
   type SimulationActionId,
+  type TicketUpdatePayload,
   type WorkplaceFeedbackCode,
   type WorkplaceInteraction,
 } from "@sim/schemas";
@@ -31,6 +32,7 @@ export interface SimulationClient {
     eventId: string,
     freeText?: string,
     source?: { sourceRecordId: string; sourceArtifactId: string },
+    ticketPayload?: TicketUpdatePayload,
   ): Promise<ClientView>;
   performWorkplaceInteraction(
     sessionId: string,
@@ -103,6 +105,7 @@ export class HttpSimulationClient implements SimulationClient {
     eventId: string,
     freeText?: string,
     source?: { sourceRecordId: string; sourceArtifactId: string },
+    ticketPayload?: TicketUpdatePayload,
   ): Promise<ClientView> {
     return TurnResultSchema.parse(
       await this.#client.mutation("simulation.performAction", {
@@ -111,6 +114,7 @@ export class HttpSimulationClient implements SimulationClient {
         eventId,
         ...(freeText === undefined ? {} : { freeText }),
         ...source,
+        ...(ticketPayload ? { ticketPayload } : {}),
       }),
     ).view;
   }

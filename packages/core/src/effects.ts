@@ -153,6 +153,21 @@ export function applyResolvedEffect(input: {
     state.notebook = action.freeText;
   }
 
+  if (
+    ["ask_manager", "acknowledge_handoff"].includes(action.id) &&
+    action.freeText?.trim()
+  ) {
+    state.teamMessages ??= [];
+    state.teamMessages.push({
+      id: `${state.sessionId}-chat-${state.teamMessages.length + 1}`,
+      eventId: event.id,
+      author: "player",
+      body: action.freeText.trim(),
+      actionId: action.id,
+      simMinutes: state.simClock,
+    });
+  }
+
   if (action.id === "ask_manager") {
     event.managerConsulted = true;
     const template = state.rules.eventTemplates[event.templateId];
@@ -167,6 +182,15 @@ export function applyResolvedEffect(input: {
     const entry = consequence(state, event.id, action.id, guidance);
     state.ledger.push(entry);
     effects.push({ type: "consequence_recorded", consequenceId: entry.id });
+    state.teamMessages ??= [];
+    state.teamMessages.push({
+      id: `${state.sessionId}-chat-${state.teamMessages.length + 1}`,
+      eventId: event.id,
+      author: "morgan",
+      body: guidance,
+      actionId: action.id,
+      simMinutes: state.simClock,
+    });
     return;
   }
 
