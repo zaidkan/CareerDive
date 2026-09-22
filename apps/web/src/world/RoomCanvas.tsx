@@ -5,6 +5,7 @@ import {
   useWorldQuality,
   WorldQualityProvider,
 } from "./effects/useAdaptiveQuality.js";
+import { perfModeEnabled, PerfOverlay } from "./effects/perfDiagnostics.js";
 import { SocRoom } from "./rooms/SocRoom.js";
 import type { HotspotId } from "./worldTypes.js";
 
@@ -12,6 +13,9 @@ const SceneEffects = lazy(async () => {
   const mod = await import("./effects/SceneEffects.js");
   return { default: mod.SceneEffects };
 });
+
+const PERF_ENABLED =
+  typeof window !== "undefined" ? perfModeEnabled() : false;
 
 /**
  * Seated = player is reading desk OS HTML. Bloom on that overlay smears text,
@@ -26,6 +30,12 @@ function AdaptiveSceneEffects() {
       <SceneEffects grain={grain} />
     </Suspense>
   );
+}
+
+function PerfDiagnostics() {
+  const quality = useWorldQuality();
+  if (!PERF_ENABLED) return null;
+  return <PerfOverlay quality={quality} />;
 }
 
 export const RoomCanvas = memo(function RoomCanvas({
@@ -85,6 +95,7 @@ export const RoomCanvas = memo(function RoomCanvas({
             />
           </Suspense>
           <AdaptiveSceneEffects />
+          <PerfDiagnostics />
         </WorldQualityProvider>
       </Canvas>
     </div>
