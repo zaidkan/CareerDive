@@ -110,7 +110,7 @@ export function DeskOs({
               Leave desk
             </button>
           </div>
-          <LockScreen onLoginSuccess={onLoginSuccess} onStand={onStand} />
+          <LockScreen onLoginSuccess={onLoginSuccess} />
         </div>
       ) : (
         <Taskbar

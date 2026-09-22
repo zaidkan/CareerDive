@@ -4,10 +4,8 @@ import { DESK_LOGIN } from "../deskLogin.js";
 
 export function LockScreen({
   onLoginSuccess,
-  onStand,
 }: {
   onLoginSuccess: () => void;
-  onStand: () => void;
 }) {
   const [user, setUser] = useState("");
   const [pass, setPass] = useState("");
@@ -103,9 +101,6 @@ export function LockScreen({
               type="submit"
             >
               {signingIn ? "Signing in…" : "Login"}
-            </button>
-            <button className="desk-os-ghost" onClick={onStand} type="button">
-              Stand up
             </button>
           </div>
         </form>
