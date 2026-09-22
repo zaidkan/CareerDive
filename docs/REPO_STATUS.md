@@ -14,9 +14,9 @@ Do **not** merge product draft branches into `main` without an explicit release 
 
 ## Best Career Expo product baseline
 
-| Branch | SHA | Role |
+| Branch | Authoritative product-code tip | Role |
 | --- | --- | --- |
-| **`zaidkan/product-consolidation-baseline`** | **`8ec4c70`** | **Authoritative green product tip** (product code tip still `45ff32d`, plus this handoff doc). Public cleanup, Desk OS login lock screen, golden-path/test repairs, RED-lane separation, lock-screen cleanup, source-bound alert records, privacy fix (manager-only context out of guidance). Verified green at preservation. |
+| **`zaidkan/product-consolidation-baseline`** | **`45ff32d`** | **Authoritative green product tip** for application code. Public cleanup, Desk OS login lock screen, golden-path/test repairs, RED-lane separation, lock-screen cleanup, source-bound alert records (Task 7), privacy fix (manager-only context out of guidance). Verified green at preservation. Later commits on this branch are public handoff/documentation updates only — do not treat those SHAs as the product-code tip. |
 
 Prefer this branch for product work, review, and “what should ship next” discussions.
 
@@ -24,9 +24,9 @@ Prefer this branch for product work, review, and “what should ship next” dis
 
 | Branch | SHA | Role |
 | --- | --- | --- |
-| `zaidkan/chore-product-consolidation` | `8a846dd` | Baseline **plus** structured ticket composer and Team Chat flow. **Review-only** until ticket-gate / composer policy is resolved. Do not treat as release candidate. |
+| `zaidkan/chore-product-consolidation` | `8a846dd` | Baseline **plus** completed Task 8 structured ticket composer and Team Chat flow. **Implemented and complete** on this tip (`285eccc` is an ancestor). **Review-only** for promotion into the release baseline until the ticket-gate **policy** decision is made. Not unfinished work — not yet included in the release baseline. |
 
-Related schema WIP:
+Related schema draft (supporting material; not a second Task 8 implementation lane):
 
 | Branch | SHA |
 | --- | --- |
@@ -51,27 +51,29 @@ These drafts intentionally diverge (especially landing copy). Do not auto-merge 
 
 ## Task 7 status
 
-**Partial / unfinished relative to the original overhaul promise.**
+**COMPLETE.**
 
-Shipped on the product baseline (and earlier Task branches absorbed into it): Email/Alert tooling, artifact observation paths, source-bound alert records, guide/inventory lookup surfaces, Desk OS lock-screen login.
+Accepted source-bound alert/email workflow lands via `e94c68a`, an ancestor of the authoritative product-code tip `45ff32d` on `zaidkan/product-consolidation-baseline`. That workflow is preserved on the release baseline.
 
-Still open vs historical Task 7 intent (`docs/2026-09-06-workspace-audit.md` and Desk OS audit set):
+Older audit prose that still says Task 7 is partial is historical and superseded by this implementation history. Separate Desk OS overhaul / entry-mode questions are **not** unfinished Task 7 work.
 
-- Sentence/row-level source interactions and tests that prove real record selection (not only structured-task wrappers).
-- Clearing remaining “legacy gate / missing initial task” mismatches called out in the Desk OS audit handoff.
-- Mode-selection / App-entry consistency where drafts disagree (assessed-first vs tutorial-first).
-
-Authoritative audit reading order: `docs/planning/desk-os-audit/DESK_OS_AUDIT.md` → architecture map → gap matrix → `DESK_OS_AUDIT_HANDOFF.md`.
+Authoritative Desk OS audit reading order (architecture context, not Task 7 status): `docs/planning/desk-os-audit/DESK_OS_AUDIT.md` → architecture map → gap matrix → `DESK_OS_AUDIT_HANDOFF.md`.
 
 ## Task 8 status
 
-**Partially present on baseline; composer/chat policy still unresolved.**
+**COMPLETE on `zaidkan/chore-product-consolidation` @ `8a846dd`.**
 
-On **`zaidkan/product-consolidation-baseline`**: Guide search, inventory lookup, Team Chat tool surface, and related workstation tooling from the Task 8 line are in tree (Task 8 tip `e2de9de` is an ancestor of the baseline).
+Structured ticket composer and Team Chat flow are implemented there; `285eccc` is an ancestor of that tip. The open ticket-gate question is a **product/promotion policy** decision about whether to include that completed work in the release baseline — **not** unfinished Task 8 implementation.
 
-On **`zaidkan/chore-product-consolidation`** (review-only): stronger structured **ticket composer** + Team Chat flow wiring. Blocked on product policy for ticket gates / canonical documentation path.
+Distinguish carefully:
 
-Do not merge the ticket-composer branch to `main` or treat it as baseline until that policy is decided.
+| Meaning | Status |
+| --- | --- |
+| Task 8 implemented | Yes — on `zaidkan/chore-product-consolidation` @ `8a846dd` |
+| Included in release baseline (`45ff32d`) yet | No — held for ticket-gate policy |
+| Unfinished Task 8 coding | No |
+
+Keep `zaidkan/chore-product-consolidation` **review-only** until that policy decision. Do not merge it to `main` or fast-forward the release baseline without an explicit promotion decision.
 
 ## Expected-RED / future contracts
 
@@ -88,11 +90,11 @@ In-flight chrome/content on `zaidkan/blocked-spray-deskos-draft` must not be mis
 
 ## Known unresolved product decisions
 
-1. **Ticket composer / ticket-gate policy** — blocks promoting `zaidkan/chore-product-consolidation`.
+1. **Ticket-gate promotion policy** — whether completed Task 8 on `zaidkan/chore-product-consolidation` @ `8a846dd` is included in the release baseline (implementation is done; promotion is not).
 2. **Landing / marketing copy** — website draft vs frontend-experience draft.
 3. **Simulation entry** — assessed-first proposal on `zaidkan/simulation-entry-draft`.
 4. **V2 blocked-spray content approval** — whether A-1159 / `blocked_spray_review` enters the beta queue.
-5. **Desk OS overhaul scope** — see audit handoff questions.
+5. **Desk OS overhaul scope** — see audit handoff questions (separate from completed Task 7/8).
 6. **When/whether to fast-forward `main`** to the product baseline.
 
 ## What is intentionally private / local (do not put on public product branches)
