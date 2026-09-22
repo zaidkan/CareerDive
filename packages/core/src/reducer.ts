@@ -91,7 +91,10 @@ function updateTicket(
   state.structuredTickets[ticketId] = {
     ticketId,
     linkedWorkItemIds: [eventId],
-    status: actionId === "document_ticket" ? "pending_review" : "in_progress",
+    status:
+      actionId === "document_ticket" || previous?.status === "pending_review"
+        ? "pending_review"
+        : "in_progress",
     entityRefs: previous?.entityRefs ?? [],
     evidenceFactIds: previous?.evidenceFactIds ?? [],
     verifiedEvidence:

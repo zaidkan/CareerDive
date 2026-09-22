@@ -80,6 +80,18 @@ describe("source-backed ticket composer", () => {
     expect(toClientView(final).structuredTickets?.[payload.ticketId]).toEqual(
       final.structuredTickets[payload.ticketId],
     );
+    const revised = applyAction(final, {
+      ...draft,
+      ticketPayload: {
+        ...payload,
+        followUp: "Review the flagged session with Morgan.",
+      },
+    }).state;
+    expect(revised.structuredTickets[payload.ticketId]).toMatchObject({
+      status: "pending_review",
+      followUp: "Review the flagged session with Morgan.",
+      sourceArtifactIds: ["device-inventory-1"],
+    });
     expect(
       foldActionLog(initial, [
         { sequence: 1, interaction: { type: "action", action: draft } },
@@ -124,6 +136,63 @@ describe("source-backed ticket composer", () => {
         ticketPayload: payload,
       }),
     ).toThrow(ActionUnavailableError);
+    const unrelated = structuredClone(initial);
+    unrelated.observedArtifactIds.push("handoff-email");
+    expect(() =>
+      applyAction(unrelated, {
+        id: "document_ticket",
+        actorId: "user",
+        eventId,
+        ticketPayload: { ...payload, sourceArtifactIds: ["handoff-email"] },
+      }),
+    ).toThrow(ActionUnavailableError);
     expect(initial).toEqual(before);
+  });
+
+  it("records clarification and escalation in a replayable team thread", () => {
+    const initial = ready();
+    const ask: SimulationAction = {
+      id: "ask_manager",
+      actorId: "user",
+      eventId,
+      freeText: "What check should a reviewer make next?",
+    };
+    const asked = applyAction(initial, ask).state;
+    expect(asked.teamMessages?.map(({ author }) => author)).toEqual([
+      "player",
+      "morgan",
+    ]);
+    expect(asked.teamMessages?.[0]?.body).toBe(ask.freeText);
+    expect(asked.teamMessages?.[1]?.body).not.toContain("personal travel");
+    const document: SimulationAction = {
+      id: "document_ticket",
+      actorId: "user",
+      eventId,
+      ticketPayload: payload,
+    };
+    const documented = applyAction(asked, document).state;
+    const escalate: SimulationAction = {
+      id: "escalate_alert",
+      actorId: "user",
+      eventId,
+    };
+    const escalated = applyAction(documented, escalate).state;
+    expect(escalated.teamMessages?.at(-1)).toMatchObject({
+      author: "player",
+      actionId: "escalate_alert",
+      eventId,
+    });
+    expect(escalated.teamMessages?.at(-1)?.body).toContain(
+      "device-inventory-1",
+    );
+    expect(
+      foldActionLog(
+        initial,
+        [ask, document, escalate].map((action, index) => ({
+          sequence: index + 1,
+          interaction: { type: "action" as const, action },
+        })),
+      ),
+    ).toEqual(escalated);
   });
 });
