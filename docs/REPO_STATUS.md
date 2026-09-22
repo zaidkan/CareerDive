@@ -16,7 +16,7 @@ Do **not** merge product draft branches into `main` without an explicit release 
 
 | Branch | SHA | Role |
 | --- | --- | --- |
-| **`zaidkan/product-consolidation-baseline`** | **`45ff32d`** | **Authoritative green product tip.** Public cleanup, Desk OS login lock screen, golden-path/test repairs, RED-lane separation, lock-screen cleanup, source-bound alert records, privacy fix (manager-only context out of guidance). Verified green at preservation. |
+| **`zaidkan/product-consolidation-baseline`** | **`8ec4c70`** | **Authoritative green product tip** (product code tip still `45ff32d`, plus this handoff doc). Public cleanup, Desk OS login lock screen, golden-path/test repairs, RED-lane separation, lock-screen cleanup, source-bound alert records, privacy fix (manager-only context out of guidance). Verified green at preservation. |
 
 Prefer this branch for product work, review, and “what should ship next” discussions.
 
@@ -47,7 +47,7 @@ These drafts intentionally diverge (especially landing copy). Do not auto-merge 
 
 | Branch | SHA | Role |
 | --- | --- | --- |
-| `zaidkan/blocked-spray-deskos-draft` | `d123ea5` | **WIP.** Recovers stash work: `blocked_spray_review` / A-1159 pack content, HUD context prompts, Desk OS chrome polish. Incomplete; needs content approval and Desk OS overhaul decisions. **Not** a release candidate. |
+| `zaidkan/blocked-spray-deskos-draft` | `0233530` | **WIP.** Recovers stash work: `blocked_spray_review` / A-1159 pack content, HUD context prompts, Desk OS chrome polish. V2 benign-triage RED suite goes green on this tip, but normal suite still has 12 Jules/golden-path failures until tests adapt to the fourth event. Needs content approval and Desk OS overhaul decisions. **Not** a release candidate. |
 
 ## Task 7 status
 
