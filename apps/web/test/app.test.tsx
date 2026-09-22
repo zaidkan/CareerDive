@@ -413,8 +413,8 @@ describe("parallel simulation views", () => {
   });
 });
 
-describe("tutorial and debrief", () => {
-  it("starts with a separate practice session before assessed play", async () => {
+describe("assessed shift and debrief", () => {
+  it("starts directly with an assessed session and no practice gate", async () => {
     const calls: Array<{ sessionKind: string; pacingMode: string }> = [];
     const client = {
       ...clientInteractionStubs,
@@ -451,10 +451,16 @@ describe("tutorial and debrief", () => {
     ).toBeVisible();
     expect(calls[0]).toEqual(
       expect.objectContaining({
-        sessionKind: "tutorial",
-        pacingMode: "practice",
+        sessionKind: "assessed",
+        pacingMode: "standard",
       }),
     );
+    expect(
+      screen.queryByRole("button", { name: /Skip practice/i }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /Start real shift/i }),
+    ).toBeNull();
   });
 
   it("does not ask for desk work before the player reaches the desk", async () => {
@@ -477,7 +483,7 @@ describe("tutorial and debrief", () => {
     expect(screen.queryByText(/Check your inbox/i)).toBeNull();
   });
 
-  it("labels tutorial as practice and offers peer modes from the dashboard", async () => {
+  it("labels the shift as assessed and offers peer modes from the dashboard", async () => {
     const user = userEvent.setup();
     const client = {
       ...clientInteractionStubs,
@@ -487,7 +493,7 @@ describe("tutorial and debrief", () => {
     };
 
     render(<App client={client} />);
-    expect(await screen.findByText("Practice shift")).toBeVisible();
+    expect(await screen.findByText("Assessed shift")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Simple list" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Desk only" })).toBeNull();
 
@@ -517,9 +523,6 @@ describe("tutorial and debrief", () => {
     };
 
     render(<App client={client} />);
-    await user.click(
-      await screen.findByRole("button", { name: /Skip practice/i }),
-    );
 
     expect(
       await screen.findByRole("heading", {
@@ -631,9 +634,6 @@ describe("tutorial and debrief", () => {
     };
 
     render(<App client={client} />);
-    await user.click(
-      await screen.findByRole("button", { name: /Skip practice/i }),
-    );
     await user.click(
       await screen.findByRole("button", { name: /Enter the Verdaly floor/i }),
     );

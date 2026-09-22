@@ -414,6 +414,7 @@ Privacy is architecture, not a setting, because the platform may serve minors.
 - **Enforcement: Postgres Row-Level Security.** Each data category gets RLS policies that encode the matrix. Reflection rows are default-deny to anyone but the owner; sharing is an explicit grant row. School-managed accounts get their own policies (what the school sees, summaries vs raw reflections, whether sim data becomes an educational record, retention, guardian rights). RLS is the boundary; application code is a convenience on top, never the gate.
 - **Deletion and export.** Users can delete sessions and reflections, export their data, reset longitudinal evidence, and revoke sharing. Implement these as first-class operations, tested.
 - **Institutional gate.** Before any school deployment, route through privacy, education-law, accessibility, and child-safety review. Encode "not approved for institutional use" as a deployment flag until that review passes.
+- **Pre-launch web gate.** The public `/trust` page ships as an honest beta engineering summary only. Before public launch, replace it with finalized legal copy after spec plus legal review, live Supabase RLS proof against staging, retention/deletion runner rehearsal, and finalized data-category table.
 
 ---
 
@@ -528,7 +529,7 @@ One **`SimulationClient`** holds the connection to the server and dispatches act
 **Build order for the frontend.** Build the work surface and the accessible mode first, because they carry the depth and are what prove the engine. Add the low-poly navigation shell as a later rendering layer, once the slice works (see Section 14). For desk careers the shell is light framing and could even be deferred; for embodied careers (a hospital floor, a construction site) it matters more and is where the asset budget should go.
 
 - **No numeric meters** anywhere (G1). Hidden state is communicated experientially (piling notifications, a colleague's growing reluctance), never as a bar.
-- **Tutorial** is mandatory before any assessed simulation and produces no evidence.
+- **No mandatory practice gate.** The client boots directly into the assessed shift so the first run is raw: a practice run replays the same shift, which spoils the raw experience and skews scoring. The `tutorial` session kind remains server-side for optional non-assessed onboarding and produces no evidence.
 - **Debrief view** renders the eight sections and the next-step options (another shift, a related career, a comparison, a skill activity, pathway info, practitioner accounts, informational-interview prep, job-shadowing, a counselor or mentor, or saving to an exploration list).
 
 ---

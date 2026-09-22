@@ -14,7 +14,6 @@ import {
   ExperienceShell,
   type ExperienceMode,
 } from "./experience/ExperienceShell.js";
-import { getTutorialStep } from "./guidance.js";
 import { ShiftBriefing } from "./components/shell.js";
 import { COMPANY } from "./world/company.js";
 import {
@@ -25,21 +24,58 @@ import {
   workplaceMutationKey,
 } from "./useMutationCoordinator.js";
 
-export function App({ client = defaultClient }: { client?: SimulationClient }) {
+const MOVEMENT_LIMITED = "Movement submissions are temporarily limited";
+const SESSION_MISSING = "Session not found";
+
+function workplaceFailureMessage(cause: unknown): string {
+  let current: unknown = cause;
+  const seen = new Set<unknown>();
+  while (current instanceof Error && !seen.has(current)) {
+    seen.add(current);
+    const message = current.message;
+    if (message === MOVEMENT_LIMITED) {
+      return "You moved a little too quickly — try that again in a moment.";
+    }
+    if (message === SESSION_MISSING) {
+      return "Your shift session ended. Start a new shift to continue.";
+    }
+    current = current.cause;
+  }
+  return "That workplace interaction could not be completed.";
+}
+
+export function App({
+  client = defaultClient,
+  briefing = "shown",
+}: {
+  client?: SimulationClient;
+  briefing?: "shown" | "hidden";
+}) {
   const [view, setView] = useState<ClientView>();
   const [sessionId, setSessionId] = useState<string>();
   const [debrief, setDebrief] = useState<Debrief>();
   const [error, setError] = useState<string>();
   const [sessionRequest, setSessionRequest] = useState({
-    kind: "tutorial" as "tutorial" | "assessed",
+    kind: "assessed" as "tutorial" | "assessed",
     attempt: 0,
   });
   const [debriefStatus, setDebriefStatus] = useState<"loading" | "failed">();
-  const [phase, setPhase] = useState<"tutorial" | "assessed">("tutorial");
+  const [phase, setPhase] = useState<"tutorial" | "assessed">("assessed");
   const [activeSurface, setActiveSurface] = useState<
     "briefing" | "dashboard" | "manager"
-  >("briefing");
-  const [experienceMode, setExperienceMode] = useState<ExperienceMode>("walk");
+  >(briefing === "hidden" ? "dashboard" : "briefing");
+  const [experienceMode, setExperienceMode] = useState<ExperienceMode>(() => {
+    if (typeof window === "undefined") return "walk";
+    try {
+      const stored = window.localStorage.getItem("career-expo-mode");
+      if (stored === "walk" || stored === "desk" || stored === "list") {
+        return stored;
+      }
+    } catch {
+      // Storage unavailable; fall through to default.
+    }
+    return "walk";
+  });
   const sessionGenerationRef = useRef(0);
   const currentSessionRef = useRef<
     { generation: number; sessionId: string } | undefined
@@ -99,13 +135,6 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
     ) {
       throw new Error("Session is no longer current.");
     }
-  }
-
-  function startAssessedShift() {
-    setSessionRequest((current) => ({
-      kind: "assessed",
-      attempt: current.attempt + 1,
-    }));
   }
 
   async function loadDebrief(session: {
@@ -276,23 +305,21 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
             : { success: "Workplace updated." }),
         };
       } catch (cause) {
-        throw new Error("That workplace interaction could not be completed.", {
+        throw new Error(workplaceFailureMessage(cause), {
           cause,
         });
       }
     });
   }
 
-  const tutorialComplete =
-    phase === "tutorial" && view && !getTutorialStep(view);
   const phaseLabel = phase === "tutorial" ? "Practice shift" : "Assessed shift";
 
   return (
     <main>
       <header className="site-header">
         <div className="site-brand">
-          <p className="brand-mark">Career Expo</p>
-          <h1>Junior Cybersecurity Analyst</h1>
+          <p className="eyebrow">First Shift · Verdaly Technologies</p>
+          <h1>Your workstation is ready</h1>
           <p className="site-lede">
             Day one at {COMPANY.name} — try the job for a shift. Read, decide,
             and learn what the work is really like.
@@ -320,32 +347,6 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
               Retry starting shift
             </button>
           ) : null}
-        </div>
-      ) : null}
-
-      {phase === "tutorial" && view ? (
-        <div className="shift-cta-row">
-          {tutorialComplete ? (
-            <button
-              className="start-shift"
-              onClick={() => {
-                startAssessedShift();
-              }}
-              type="button"
-            >
-              Start real shift
-            </button>
-          ) : (
-            <button
-              className="skip-tutorial"
-              onClick={() => {
-                startAssessedShift();
-              }}
-              type="button"
-            >
-              Skip practice — start real shift
-            </button>
-          )}
         </div>
       ) : null}
 
@@ -381,6 +382,11 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
         <ShiftBriefing
           onOpen={() => {
             setActiveSurface("dashboard");
+            requestAnimationFrame(() => {
+              document
+                .querySelector<HTMLElement>(".experience-modes button")
+                ?.focus();
+            });
           }}
         />
       ) : (
@@ -388,7 +394,14 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
           guided={phase === "tutorial"}
           mode={experienceMode}
           onAction={(action, freeText) => void perform(action, freeText)}
-          onModeChange={setExperienceMode}
+          onModeChange={(next) => {
+            setExperienceMode(next);
+            try {
+              window.localStorage.setItem("career-expo-mode", next);
+            } catch {
+              // Storage unavailable; mode still applies this session.
+            }
+          }}
           onNotification={respondToWorkNotification}
           onTaskAttempt={submitTaskAttempt}
           onWorkplaceInteraction={performWorkplaceInteraction}

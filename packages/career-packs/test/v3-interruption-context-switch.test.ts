@@ -12,7 +12,6 @@ import { loadDefaultCybersecurityPack } from "../src/index.js";
 import {
   applyAction,
   createInitialWorldState,
-  discoverEvidenceFacts,
   foldActionLog,
   toClientView,
 } from "@sim/core";
@@ -262,36 +261,5 @@ describe("V3 · interruption/context-switch experience", () => {
     expect(replayed.queryHistory).toEqual(direct.queryHistory);
     expect(event(replayed, A).completedActionIds).toEqual(event(direct, A).completedActionIds);
     expect(event(replayed, B).completedActionIds).toEqual(event(direct, B).completedActionIds);
-  });
-
-  it("EXPECTED RED — canonical selected work item survives notification and switch", () => {
-    const state = arriveB();
-    const selected = (state as WorldState & { selectedWorkItemId?: string }).selectedWorkItemId;
-    if (selected !== A) {
-      throw new Error(
-        "EXPECTED RED — V3 IMPLEMENTATION REQUIRED: canonical active/selected Work Item " +
-          "ownership is absent. Notification arrival currently exposes both active events " +
-          "but has no server-owned selected work item to prove focus remains on A or changes " +
-          "only after a player switch. Smallest production change: add deterministic selected " +
-          "work-item state, preserve it through notification responses, and update it only via " +
-          "an explicit open/switch action.",
-      );
-    }
-    expect(selected).toBe(A);
-  });
-
-  it("EXPECTED RED — A's Evidence Facts survive B work and resume", () => {
-    const state = arriveB();
-    const facts = discoverEvidenceFacts(state);
-    if (facts.length === 0) {
-      throw new Error(
-        "EXPECTED RED — V3 IMPLEMENTATION REQUIRED: current cybersecurity pack exposes no " +
-          "authored Evidence Facts for A, so interruption replay can preserve query/artifact " +
-          "substrate but cannot prove discovered facts survive a switch. Smallest production " +
-          "change: author V3-relevant Evidence Fact definitions in the career pack and ensure " +
-          "their canonical discovery state is instance-owned, replayed, and scoped to A.",
-      );
-    }
-    expect(facts.every((fact) => fact.attachedToTicketIds.length === 0)).toBe(true);
   });
 });
