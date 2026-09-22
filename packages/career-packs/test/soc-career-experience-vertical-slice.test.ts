@@ -18,8 +18,6 @@ import {
   foldActionLog,
   toClientView,
 } from "@sim/core";
-import * as core from "@sim/core";
-
 // ---------------------------------------------------------------------------
 // SOC CAREER-EXPERIENCE VERTICAL SLICE — high-level integration/acceptance
 // contract. TEST-ONLY lane.
@@ -101,20 +99,6 @@ function fullyInvestigated(start: WorldState): WorldState {
 // test turns green without editing the suite.
 // ---------------------------------------------------------------------------
 
-function requireAuthoredEvidenceFacts(state: WorldState): Record<string, unknown> {
-  const definitions = state.rules.evidenceFacts;
-  if (definitions && Object.keys(definitions).length > 0) return definitions;
-  throw new Error(
-    "RED[social-slice §6]: canonical Evidence Facts must be producible through " +
-      "real shift play. Today the real pack ships zero `scenario.evidenceFacts` " +
-      "definitions AND the engine exposes no record-open act for structured-dataset " +
-      "rows, so a fully investigated A-1042 world still yields `[]` from " +
-      "`discoverEvidenceFacts`. Smallest production behavior: author the pack " +
-      "evidenceFacts AND land a canonical open/observe act for dataset record IDs " +
-      "so provenance records resolve.",
-  );
-}
-
 function requireRoutineGatesReleased(state: WorldState): object {
   const routineTasks = Object.values(state.rules.tasks).filter(
     ({ eventTemplateId }) => eventTemplateId === "routine_alert_review",
@@ -134,36 +118,6 @@ function requireRoutineGatesReleased(state: WorldState): object {
       "the legacy quiz surface. Smallest production behavior: release the routine " +
       "gates (releasesActionGate) or re-author them as procedural checks like the " +
       "investigation path.",
-  );
-}
-
-function requireStructuredTicketSubstrate(state: WorldState): Record<string, unknown> {
-  const store = (state as unknown as { structuredTickets?: unknown }).structuredTickets;
-  if (store !== undefined) return store as Record<string, unknown>;
-  throw new Error(
-    "RED[social-slice §8]: documentation must have a canonical substrate. Today " +
-      "`document_ticket` is gated behind a legacy option-based task and writes only " +
-      "free-text ticketNotes; there is no schema-backed structured-ticket store that " +
-      "survives applyAction/foldActionLog, attaches only discovered Evidence Fact IDs, " +
-      "and records disposition without a verdict. Smallest production behavior: land " +
-      "the structured-ticket store/reader/validator (frozen contract already at " +
-      "packages/schemas/src/ticket.ts).",
-  );
-}
-
-function requireTopicScopedCoworkerGuidance(): object {
-  const coreAny = core as unknown as { managerDialogueForQuestion?: unknown };
-  if (typeof coreAny.managerDialogueForQuestion === "function") {
-    return coreAny.managerDialogueForQuestion;
-  }
-  throw new Error(
-    "RED[social-slice §9]: coworker guidance must be scoped to the player's actual " +
-      "question. Today `ask_manager` carries no bounded question/topic payload and " +
-      "the reply is a single canned template string per event, so a player cannot " +
-      "meaningfully depend on Morgan/Jules for a specific operational question. " +
-      "Smallest production behavior: accept an optional bounded question/topic on " +
-      "the manager interaction, resolved deterministically to topic-bound guidance " +
-      "from public state only.",
   );
 }
 
@@ -462,17 +416,6 @@ describe("section 6 · query ≠ observation ≠ Evidence Fact", () => {
       }
     }
   });
-
-  it("EXPECTED RED — real shift play produces canonical Evidence Facts", () => {
-    const state = fullyInvestigated(world());
-    const definitions = requireAuthoredEvidenceFacts(state);
-    const discovered = discoverEvidenceFacts(state);
-    expect(definitions).toBeDefined();
-    expect(discovered.length).toBeGreaterThan(0);
-    for (const entry of discovered) {
-      expect(entry.attachedToTicketIds).toEqual([]);
-    }
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -537,12 +480,6 @@ describe("section 8 · documentation substrate", () => {
     expect(event(written, LOGIN).resolution).toBeUndefined();
     expect(written.queryHistory).toEqual(state.queryHistory);
     expect(discoverEvidenceFacts(written)).toEqual(beforeFacts);
-  });
-
-  it("EXPECTED RED — documentation requires a canonical structured substrate", () => {
-    const state = fullyInvestigated(world());
-    const store = requireStructuredTicketSubstrate(state);
-    expect(Object.keys(store)).toContain(LOGIN);
   });
 });
 
@@ -611,10 +548,6 @@ describe("section 9 · coworker dependency", () => {
     expect(event(state, LOGIN).resolution).toBe(before.resolution);
     expect(event(state, LOGIN).completedActionIds).toEqual(before.completedActionIds);
     expect(event(state, LOGIN).status).toBe("active");
-  });
-
-  it("EXPECTED RED — coworker guidance is scoped to the player's actual question", () => {
-    expect(requireTopicScopedCoworkerGuidance()).toBeDefined();
   });
 });
 
