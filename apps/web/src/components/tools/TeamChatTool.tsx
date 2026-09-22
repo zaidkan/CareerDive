@@ -105,12 +105,12 @@ export function TeamChatTool({
               <textarea
                 maxLength={2000}
                 value={draft}
-                onChange={(event) =>
+                onChange={(event) => {
                   setDrafts((current) => ({
                     ...current,
                     [key]: event.target.value,
-                  }))
-                }
+                  }));
+                }}
               />
             </label>
             <button
