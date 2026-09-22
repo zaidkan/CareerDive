@@ -164,6 +164,10 @@ describe("source-backed ticket composer", () => {
     ]);
     expect(asked.teamMessages?.[0]?.body).toBe(ask.freeText);
     expect(asked.teamMessages?.[1]?.body).not.toContain("personal travel");
+    const restrictedContext =
+      initial.facts["manager-managed-device-context"]?.content;
+    expect(restrictedContext).toBeTruthy();
+    expect(asked.teamMessages?.[1]?.body).not.toContain(restrictedContext);
     const document: SimulationAction = {
       id: "document_ticket",
       actorId: "user",
