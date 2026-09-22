@@ -1,6 +1,6 @@
 # Desk OS audit handoff for architecture
 
-Audit date: 2026-09-20. Checkout verified through Orca: `/Users/zaid/orca/Career-Expo`, `main`, HEAD `3e8fe62382ed1b9d7aa83a8fab47bb28c66500ba`. Audit covers current local working tree, not a clean release. No application code changed; no branch, dependency install or redesign created.
+Audit date: 2026-09-20. Checkout verified on branch `main`, HEAD `3e8fe62382ed1b9d7aa83a8fab47bb28c66500ba`. Audit covers current local working tree, not a clean release. No application code changed; no branch, dependency install or redesign created.
 
 Read [current-state audit](DESK_OS_AUDIT.md), [architecture map](DESK_OS_ARCHITECTURE_MAP.md), then [gap matrix](DESK_OS_GAP_MATRIX.md).
 
