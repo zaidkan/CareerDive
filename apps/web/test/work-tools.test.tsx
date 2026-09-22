@@ -3,9 +3,13 @@ import "@testing-library/jest-dom/vitest";
 import { useState } from "react";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ClientTaskView, ClientView } from "@sim/schemas";
+import type { AvailableAction, ClientTaskView, ClientView } from "@sim/schemas";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SystemToolPanel } from "../src/components/SystemToolPanel.js";
+import { AccessibleMode } from "../src/components/AccessibleMode.js";
+import { loadDefaultCybersecurityPack } from "@sim/career-packs";
+import { applyAction, applyWorkplaceInteraction, createInitialWorldState, toClientView } from "@sim/core";
+import type { WorldState } from "@sim/schemas";
 
 const openArtifact = vi.fn();
 afterEach(() => {
@@ -104,6 +108,48 @@ function EmailToolHarness() {
 }
 
 describe("work tools", () => {
+  it.each(["desk", "structured"] as const)("opens real alert record and binds %s career action to its source", async (mode) => {
+    const user = userEvent.setup();
+    const initial = createInitialWorldState(`alert-${mode}`, 42, {}, loadDefaultCybersecurityPack());
+    const onAction = vi.fn();
+    const onInteraction = vi.fn();
+    function Harness() {
+      const [state, setState] = useState<WorldState>(initial);
+      const view = toClientView(state);
+      const open = async (interaction: Parameters<typeof applyWorkplaceInteraction>[1]) => {
+        onInteraction(interaction);
+        setState((current) => applyWorkplaceInteraction(current, interaction).state);
+        return { view, sequence: 1, feedback: "alert_record_opened" as const };
+      };
+      const act = (action: AvailableAction) => {
+        onAction(action);
+        setState((current) => applyAction(current, { ...action, actorId: "user" }).state);
+      };
+      return mode === "desk" ? (
+        <SystemToolPanel
+          actions={view.availableActions.filter(({ eventId, systemId }) => eventId === "suspicious-login-1" && systemId === "alert_dashboard")}
+          onAction={act}
+          onWorkplaceInteraction={open}
+          selectedEventId="suspicious-login-1"
+          systemId="alert_dashboard"
+          view={view}
+        />
+      ) : <AccessibleMode view={view} onAction={act} onWorkplaceInteraction={open} />;
+    }
+    render(<Harness />);
+    expect(screen.getByRole("button", { name: /A-1042 · sign-in monitoring/i })).toBeVisible();
+    expect(screen.queryByText(/Six failed extra checks 07:38-07:40/)).toBeNull();
+    await user.click(screen.getByRole("button", { name: /A-1042 · sign-in monitoring/i }));
+    expect(onInteraction).toHaveBeenCalledWith({ type: "open_alert_record", recordId: "A-1042" });
+    expect(await screen.findByText(/Six failed extra checks 07:38-07:40/)).toBeVisible();
+    await user.click(screen.getByRole("button", { name: /Review alert/i }));
+    expect(onAction).toHaveBeenCalledWith(expect.objectContaining({
+      id: "review_alert",
+      eventId: "suspicious-login-1",
+      sourceRecordId: "A-1042",
+      sourceArtifactId: "suspicious-login-alert",
+    }));
+  });
   it.each(["knowledge_base", "ticket_queue", "team_chat"] as const)(
     "offers canonical opening for unread %s records",
     async (systemId) => {

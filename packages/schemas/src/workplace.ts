@@ -23,6 +23,7 @@ export const WorkplaceStateSchema = z.object({
   coffeeStage: CoffeeStageSchema,
   julesTopicsSeen: z.array(JulesTopicSchema),
   emergencyRecoveryUsed: z.boolean(),
+  selectedAlertIdsByEvent: z.record(z.string(), z.string()).optional(),
 });
 export type WorkplaceState = z.infer<typeof WorkplaceStateSchema>;
 
@@ -41,6 +42,7 @@ export const WorkplaceInteractionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("drink_coffee") }),
   z.object({ type: z.literal("talk_to_jules"), topic: JulesTopicSchema }),
   z.object({ type: z.literal("open_artifact"), artifactId: z.string().min(1) }),
+  z.object({ type: z.literal("open_alert_record"), recordId: z.string().min(1) }),
   z.object({ type: z.literal("emergency_recovery") }),
 ]);
 export type WorkplaceInteraction = z.infer<typeof WorkplaceInteractionSchema>;
@@ -65,6 +67,7 @@ export const WorkplaceFeedbackCodeSchema = z.enum([
   "coffee_drunk",
   "jules_replied",
   "artifact_opened",
+  "alert_record_opened",
   "energy_recovered",
 ]);
 export type WorkplaceFeedbackCode = z.infer<typeof WorkplaceFeedbackCodeSchema>;

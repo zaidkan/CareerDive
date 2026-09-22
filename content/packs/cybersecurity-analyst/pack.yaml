@@ -1266,6 +1266,8 @@ scenario:
       eventIds: [routine-alert-1]
       relatedArtifactIds: [scanner-window, scanner-run-log]
       searchableText: vuln-scan finance VLAN
+      metadata:
+        alertId: A-1180
     - id: scanner-run-log
       systemId: alert_dashboard
       kind: alert

@@ -119,6 +119,7 @@ export function createInitialWorldState(
       coffeeStage: "idle",
       julesTopicsSeen: [],
       emergencyRecoveryUsed: false,
+      selectedAlertIdsByEvent: {},
     },
     hidden: {
       stress: 0,

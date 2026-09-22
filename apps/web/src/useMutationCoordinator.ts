@@ -59,6 +59,8 @@ export function workplaceMutationKey(
     ? `workplace:${interaction.type}:${interaction.topic}`
     : interaction.type === "open_artifact"
       ? `workplace:${interaction.type}:${interaction.artifactId}`
+      : interaction.type === "open_alert_record"
+        ? `workplace:${interaction.type}:${interaction.recordId}`
       : `workplace:${interaction.type}`;
 }
 

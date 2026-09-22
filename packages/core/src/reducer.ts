@@ -9,6 +9,7 @@ import { WorldStateSchema } from "@sim/schemas";
 import { availableActions } from "./availability.js";
 import { applyResolvedEffect, resolveActionEffect } from "./effects.js";
 import { runQuery } from "./query.js";
+import { alertRecordSource } from "./workplace.js";
 import {
   activatePendingEvents,
   applyDueConsequences,
@@ -46,6 +47,19 @@ export function applyAction(
   );
   if (!allowedAction) {
     throw new ActionUnavailableError(action.id);
+  }
+  const selectedId = currentState.workplace.selectedAlertIdsByEvent?.[allowedAction.eventId];
+  if ((selectedId && allowedAction.systemId === "alert_dashboard") || action.sourceRecordId || action.sourceArtifactId) {
+    const source = selectedId && alertRecordSource(currentState, selectedId);
+    if (
+      allowedAction.systemId !== "alert_dashboard" ||
+      !source ||
+      action.sourceRecordId !== source.record.id ||
+      action.sourceArtifactId !== source.artifact.id ||
+      !currentState.observedArtifactIds.includes(source.artifact.id)
+    ) {
+      throw new ActionUnavailableError(action.id);
+    }
   }
   if (allowedAction.taskId) {
     // P1-T03: released bindings never gate, even if a taskId is present

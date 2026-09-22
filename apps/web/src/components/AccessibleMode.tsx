@@ -13,6 +13,7 @@ import { InventoryLookup } from "./tools/InventoryLookup.js";
 import { RecordQueryTool } from "./tools/RecordQueryTool.js";
 import { CaseReview } from "./tools/CaseReview.js";
 import { TeamChatTool } from "./tools/TeamChatTool.js";
+import { AlertRecords, bindAlertAction, selectedAlertSource } from "./tools/AlertRecords.js";
 import { MutationStatus } from "./MutationStatus.js";
 import { CaseRail } from "./CaseRail.js";
 import { NotificationBanner } from "./NotificationBanner.js";
@@ -146,6 +147,7 @@ export function AccessibleMode({
                 </li>
               ))}
             </ul>
+            {system.id === "alert_dashboard" && (view.alertRecords?.length ?? 0) > 0 ? <AlertRecords view={view} onOpenRecord={onWorkplaceInteraction ? (recordId) => onWorkplaceInteraction({ type: "open_alert_record", recordId }) : undefined} mutationState={mutationState} /> : null}
             {system.id === "team_chat" ? <TeamChatTool view={view} onOpenArtifact={openArtifact} mutationState={mutationState} /> : system.id !== "knowledge_base" ? <StructuredArtifacts artifacts={artifacts} {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})} mutationState={mutationState} /> : null}
             {system.id === "knowledge_base" ? (
               <>
@@ -174,6 +176,7 @@ export function AccessibleMode({
             <CaseReview view={view} actions={interactionActions} />
             <div className="accessible-actions">
               {interactionActions.map((action) => {
+                const needsAlertSource = system.id === "alert_dashboard" && Boolean(view.alertRecords?.some((record) => record.linkedWorkItemId === action.eventId)) && !selectedAlertSource(view, action.eventId);
                 const task = action.taskId
                   ? view.tasks.find(
                       ({ id, eventId }) =>
@@ -209,7 +212,8 @@ export function AccessibleMode({
                     action={action}
                     key={`${action.id}:${action.eventId}`}
                     mutationState={mutationState}
-                    onAction={onAction}
+                    disabled={needsAlertSource}
+                    onAction={(selectedAction, freeText) => { onAction(bindAlertAction(view, selectedAction), freeText); }}
                   />
                 );
               })}
@@ -274,16 +278,18 @@ function StructuredActionButton({
   action,
   onAction,
   mutationState = EMPTY_MUTATION_STATE,
+  disabled = false,
 }: {
   action: AvailableAction;
   onAction: ModeProps["onAction"];
   mutationState?: MutationState;
+  disabled?: boolean;
 }) {
   return (
     <button
       data-action-id={action.id}
       data-event-id={action.eventId}
-      disabled={Boolean(mutationState.pendingKey)}
+      disabled={disabled || Boolean(mutationState.pendingKey)}
       onClick={() => {
         onAction(action);
       }}

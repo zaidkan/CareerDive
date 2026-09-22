@@ -7,7 +7,7 @@ import type {
 import { DatasetRecordSchema, InventoryLookupKeysSchema } from "@sim/schemas";
 import { availableActions } from "./availability.js";
 import { taskProgressKey } from "./tasks.js";
-import { canOpenArtifact } from "./workplace.js";
+import { alertRecordSource, canOpenArtifact } from "./workplace.js";
 
 /**
  * Server-side Work Item bucket for client events. Fixed mapping evaluated
@@ -145,6 +145,23 @@ export function toClientView(state: WorldState): ClientView {
     availableActions: actions,
     operationalMessages,
     pacingMode: state.pacingMode,
+    alertRecords: (state.rules.datasets.alerts?.records ?? []).flatMap((record) => {
+      if (record.datasetId !== "alerts") return [];
+      const source = alertRecordSource(state, record.id);
+      if (!source) return [];
+      if (state.workplace.selectedAlertIdsByEvent?.[source.event.id] === record.id) return [record];
+      return [{
+        id: record.id,
+        datasetId: record.datasetId,
+        alertId: record.alertId,
+        category: record.category,
+        severity: record.severity,
+        state: record.state,
+        linkedWorkItemId: source.event.id,
+        sourceRefs: [],
+        relatedRecordIds: [],
+      }];
+    }),
     artifacts: Object.values(state.artifacts)
       .filter((artifact) => canOpenArtifact(state, artifact.id))
       .map((artifact) => {

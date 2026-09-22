@@ -49,6 +49,29 @@ export function canOpenArtifact(
   return artifact.eventIds.some((eventId) => visible.has(eventId));
 }
 
+export function alertRecordSource(state: WorldState, recordId: string) {
+  const record = state.rules.datasets.alerts?.records.find(
+    (item) => item.datasetId === "alerts" && item.id === recordId,
+  );
+  if (!record || record.datasetId !== "alerts" || !record.linkedWorkItemId) return;
+  const event = state.events.find(
+    ({ id, systemId, status }) =>
+      id === record.linkedWorkItemId &&
+      systemId === "alert_dashboard" &&
+      status === "active",
+  );
+  if (!event) return;
+  const artifact = Object.values(state.artifacts).find(
+    ({ kind, systemId, eventIds, metadata }) =>
+      kind === "alert" &&
+      systemId === "alert_dashboard" &&
+      eventIds.includes(event.id) &&
+      metadata.alertId === record.alertId,
+  );
+  if (!artifact || !canOpenArtifact(state, artifact.id)) return;
+  return { record, event, artifact };
+}
+
 function observeArtifact(state: WorldState, artifactId: string): void {
   if (!state.observedArtifactIds.includes(artifactId)) {
     state.observedArtifactIds.push(artifactId);
@@ -164,6 +187,15 @@ export function applyWorkplaceInteraction(
       observeArtifact(state, interaction.artifactId);
       feedbackCode = "artifact_opened";
       break;
+    case "open_alert_record": {
+      const source = alertRecordSource(currentState, interaction.recordId);
+      if (!source) reject("Alert record is not available in the current state");
+      observeArtifact(state, source.artifact.id);
+      state.workplace.selectedAlertIdsByEvent ??= {};
+      state.workplace.selectedAlertIdsByEvent[source.event.id] = source.record.id;
+      feedbackCode = "alert_record_opened";
+      break;
+    }
     case "emergency_recovery": {
       const workplace = state.workplace;
       const exhausted = workplace.energy.current === 0;

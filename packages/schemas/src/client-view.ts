@@ -3,6 +3,7 @@ import { z } from "zod";
 import { AvailableActionSchema } from "./actions.js";
 import { EventInstanceSchema, WorkItemCategorySchema } from "./events.js";
 import { QueryResultViewSchema } from "./query.js";
+import { AlertRecordSchema } from "./records.js";
 import { PacingModeSchema, SessionKindSchema } from "./session.js";
 import { ClientNotificationSchema, ClientTaskViewSchema } from "./tasks.js";
 import { ClientWorkplaceStateSchema } from "./workplace.js";
@@ -58,6 +59,7 @@ export const ClientViewSchema = z.object({
   operationalMessages: z.array(z.string()),
   pacingMode: PacingModeSchema,
   artifacts: z.array(ClientArtifactSchema),
+  alertRecords: z.array(AlertRecordSchema).optional(),
   ticketNotes: z.record(z.string(), z.string()),
   notebook: z.string(),
   kbQuery: z.string(),

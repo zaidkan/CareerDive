@@ -76,8 +76,8 @@ describe("rendered workplace golden path", () => {
     const onAction = (action: AvailableAction, freeText?: string) => {
       void coordinator.runMutation(actionMutationKey(action), async () => {
         failOnce("action");
-        trace.push({ type: "action", id: action.id, eventId: action.eventId, freeText });
-        await caller.simulation.performAction({ sessionId: "golden", actionId: action.id, eventId: action.eventId, ...(freeText ? { freeText } : {}) });
+        trace.push({ type: "action", id: action.id, eventId: action.eventId, freeText, sourceRecordId: action.sourceRecordId, sourceArtifactId: action.sourceArtifactId });
+        await caller.simulation.performAction({ sessionId: "golden", actionId: action.id, eventId: action.eventId, ...(freeText ? { freeText } : {}), ...(action.sourceRecordId ? { sourceRecordId: action.sourceRecordId } : {}), ...(action.sourceArtifactId ? { sourceArtifactId: action.sourceArtifactId } : {}) });
         return { result: undefined, view: await update() };
       }).catch(() => undefined);
     };
@@ -91,7 +91,7 @@ describe("rendered workplace golden path", () => {
       });
     const onWorkplaceInteraction = (interaction: WorkplaceInteraction) =>
       coordinator.runMutation(workplaceMutationKey(interaction), async () => {
-        if (interaction.type === "open_artifact") failOnce("artifact");
+        if (interaction.type === "open_artifact" || interaction.type === "open_alert_record") failOnce("artifact");
         trace.push(interaction);
         const result = await caller.simulation.performWorkplaceInteraction({ sessionId: "golden", interaction });
         return { result, view: await update() };
@@ -190,6 +190,17 @@ describe("rendered workplace golden path", () => {
       const eventTitle = state.events.find(({ id }) => id === eventId)?.title;
       const item = Array.from(queue?.querySelectorAll<HTMLButtonElement>("button") ?? []).find((button) => eventTitle && button.textContent.includes(eventTitle));
       if (item) await user.click(item);
+      if (action.systemId === "alert_dashboard" && !state.workplace.selectedAlertIdsByEvent?.[eventId]) {
+        const recordId = eventId === routine ? "A-1180" : "A-1042";
+        await activate(required(container.querySelector<HTMLElement>(`button[data-record-id="${recordId}"]`), `${recordId} alert record`));
+        expect(state.workplace.selectedAlertIdsByEvent?.[eventId]).toBe(recordId);
+        if (mode === "list" && eventId === routine) {
+          expect(Array.from(container.querySelectorAll(".alert-record h4")).map((heading) => heading.textContent)).toEqual(expect.arrayContaining([
+            "A-1042 · sign-in monitoring",
+            "A-1180 · connection monitoring",
+          ]));
+        }
+      }
       if (!action.taskId) {
         if ((id === "dismiss_alert" && eventId === routine) || id === "escalate_alert") {
           const note = required(state.ticketNotes[eventId], "saved handoff before decision");

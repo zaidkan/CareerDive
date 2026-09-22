@@ -138,6 +138,9 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
             action.id,
             action.eventId,
             freeText,
+            action.sourceRecordId && action.sourceArtifactId
+              ? { sourceRecordId: action.sourceRecordId, sourceArtifactId: action.sourceArtifactId }
+              : undefined,
           );
         } catch (cause) {
           throw new Error("That action could not be completed.", { cause });

@@ -1,8 +1,19 @@
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import { describe, expect, it } from "vitest";
-import { createInitialWorldState, toClientView } from "../src/index.js";
+import { applyWorkplaceInteraction, createInitialWorldState, toClientView } from "../src/index.js";
 
 describe("client artifact serialization", () => {
+  it("reveals email body only after canonical opening, without spending time or energy", () => {
+    const initial = createInitialWorldState("email-open", 42, {}, loadDefaultCybersecurityPack());
+    const before = toClientView(initial).artifacts.find(({ id }) => id === "handoff-email");
+    expect(before?.observed).toBe(false);
+    expect(before).not.toHaveProperty("body");
+    const opened = applyWorkplaceInteraction(initial, { type: "open_artifact", artifactId: "handoff-email" }).state;
+    expect(initial.observedArtifactIds).not.toContain("handoff-email");
+    expect(opened.simClock).toBe(initial.simClock);
+    expect(opened.workplace.energy).toEqual(initial.workplace.energy);
+    expect(toClientView(opened).artifacts.find(({ id }) => id === "handoff-email")?.body).toContain("Did not finish device inventory check");
+  });
   it("exposes only approved inventory identifiers, never unopened record details", () => {
     const state = createInitialWorldState(
       "lookup-privacy",

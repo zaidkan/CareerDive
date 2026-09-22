@@ -41,6 +41,49 @@ function interact(
   return applyWorkplaceInteraction(state, interaction).state;
 }
 
+describe("source-bound alert records", () => {
+  it("opens a real visible record, maps its artifact, and replays the same selected source", () => {
+    const initial = world();
+    const preview = toClientView(initial).alertRecords?.find(({ id }) => id === "A-1042");
+    expect(preview).toMatchObject({ id: "A-1042", linkedWorkItemId: "suspicious-login-1" });
+    expect(preview).not.toHaveProperty("note");
+    expect(toClientView(initial).artifacts.find(({ id }) => id === "suspicious-login-alert")).not.toHaveProperty("body");
+
+    const interaction = { type: "open_alert_record" as const, recordId: "A-1042" };
+    const opened = applyWorkplaceInteraction(initial, interaction).state;
+    expect(initial.workplace.selectedAlertIdsByEvent).toEqual({});
+    expect(opened.workplace.selectedAlertIdsByEvent?.["suspicious-login-1"]).toBe("A-1042");
+    expect(opened.observedArtifactIds).toContain("suspicious-login-alert");
+    expect(opened.simClock).toBe(initial.simClock);
+    expect(opened.workplace.energy).toEqual(initial.workplace.energy);
+    expect(toClientView(opened).alertRecords?.find(({ id }) => id === "A-1042")?.note).toContain("Six failed");
+    const replayed = foldActionLog(initial, [{ sequence: 1, interaction: { type: "workplace_interaction", interaction } }]);
+    expect(replayed).toEqual(opened);
+
+    const action = { id: "review_alert" as const, actorId: "user", eventId: "suspicious-login-1", sourceRecordId: "A-1042", sourceArtifactId: "suspicious-login-alert" };
+    const reviewed = applyAction(opened, action).state;
+    expect(reviewed.events.find(({ id }) => id === action.eventId)?.completedActionIds).toContain("review_alert");
+    expect(foldActionLog(initial, [
+      { sequence: 1, interaction: { type: "workplace_interaction", interaction } },
+      { sequence: 2, interaction: { type: "action", action } },
+    ])).toEqual(reviewed);
+  });
+
+  it("rejects unknown, pending, unrelated, and stale sources without mutation", () => {
+    const initial = world();
+    for (const recordId of ["missing", "A-1180", "A-1159"]) {
+      expect(() => applyWorkplaceInteraction(initial, { type: "open_alert_record", recordId })).toThrow(WorkplaceInteractionError);
+    }
+    const opened = interact(initial, { type: "open_alert_record", recordId: "A-1042" });
+    expect(() => applyAction(opened, { id: "review_alert", actorId: "user", eventId: "suspicious-login-1" })).toThrow(ActionUnavailableError);
+    for (const [sourceRecordId, sourceArtifactId] of [["A-1180", "suspicious-login-alert"], ["A-1042", "scanner-alert"], ["A-1042", "missing"]]) {
+      expect(() => applyAction(opened, { id: "review_alert", actorId: "user", eventId: "suspicious-login-1", sourceRecordId, sourceArtifactId })).toThrow(ActionUnavailableError);
+    }
+    expect(opened.simClock).toBe(0);
+    expect(opened.events.find(({ id }) => id === "suspicious-login-1")?.completedActionIds).toEqual([]);
+  });
+});
+
 function expectRejectedWithoutMutation(
   state: WorldState,
   interaction: WorkplaceInteraction,

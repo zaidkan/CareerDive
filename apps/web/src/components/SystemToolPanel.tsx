@@ -11,6 +11,7 @@ import {
   filterSystemArtifacts,
 } from "./artifacts.js";
 import { AlertTool } from "./tools/AlertTool.js";
+import { AlertRecords, bindAlertAction, selectedAlertSource } from "./tools/AlertRecords.js";
 import { EmailTool } from "./tools/EmailTool.js";
 import { GuideSearch } from "./tools/GuideSearch.js";
 import { InventoryLookup } from "./tools/InventoryLookup.js";
@@ -30,11 +31,13 @@ function ActionButtons({
   actions,
   onAction,
   highlightActionId,
+  disableAction = false,
   mutationState = EMPTY_MUTATION_STATE,
 }: {
   actions: AvailableAction[];
   onAction: (action: AvailableAction, freeText?: string) => void;
   highlightActionId?: string;
+  disableAction?: boolean;
   mutationState?: MutationState;
 }) {
   const choices = primaryActions(actions);
@@ -65,7 +68,7 @@ function ActionButtons({
         className="action-primary"
         data-action-id={highlighted.id}
         data-event-id={highlighted.eventId}
-        disabled={pending}
+        disabled={pending || disableAction}
         key={`${highlighted.id}:${highlighted.eventId}`}
         onClick={() => {
           onAction(highlighted);
@@ -92,7 +95,7 @@ function ActionButtons({
               <button
                 data-action-id={action.id}
                 data-event-id={action.eventId}
-                disabled={pending}
+                disabled={pending || disableAction}
                 key={`${action.id}:${action.eventId}`}
                 onClick={() => {
                   onAction(action);
@@ -116,6 +119,7 @@ function WorkInteraction({
   onAction,
   onTaskAttempt,
   highlightActionId,
+  disableAction = false,
   onOpenArtifact,
   mutationState = EMPTY_MUTATION_STATE,
 }: {
@@ -124,6 +128,7 @@ function WorkInteraction({
   onAction: (action: AvailableAction, freeText?: string) => void;
   onTaskAttempt?: TaskAttemptHandler;
   highlightActionId?: string;
+  disableAction?: boolean;
   onOpenArtifact?: ((id: string) => Promise<unknown>) | undefined;
   mutationState?: MutationState;
 }) {
@@ -167,6 +172,7 @@ function WorkInteraction({
       (uniqueTasks.length === 0 && missingTaskActions.length === 0) ? (
         <ActionButtons
           actions={ordinary}
+          disableAction={disableAction}
           {...(highlightActionId ? { highlightActionId } : {})}
           onAction={onAction}
           mutationState={mutationState}
@@ -271,21 +277,30 @@ export function SystemToolPanel({
   }
 
   if (systemId === "alert_dashboard") {
+    const records = (view.alertRecords ?? []).filter((record) => !selectedEventId || record.linkedWorkItemId === selectedEventId);
+    const source = selectedEventId ? selectedAlertSource(view, selectedEventId) : undefined;
     return (
       <div className="tool-panel" data-system={systemId}>
         <ToolChrome systemId={systemId} />
-        <AlertTool
+        {records.length > 0 ? <AlertRecords
+          view={view}
+          eventId={selectedEventId}
+          onOpenRecord={onWorkplaceInteraction ? (recordId) => onWorkplaceInteraction({ type: "open_alert_record", recordId }) : undefined}
+          mutationState={mutationState}
+        /> : <AlertTool
           artifacts={eventArtifacts}
           onOpenArtifact={openArtifact}
           onSelect={selectArtifact}
           selectedId={selectedArtifactId}
           mutationState={mutationState}
-        />
+        />}
+        {records.length > 0 && !source ? <p role="status">Open alert record before taking an investigation action.</p> : null}
         <WorkInteraction
           onOpenArtifact={openArtifact}
           actions={workInteractionActions(actions)}
+          disableAction={records.length > 0 && !source}
           {...(highlightActionId ? { highlightActionId } : {})}
-          onAction={onAction}
+          onAction={(action, freeText) => { onAction(bindAlertAction(view, action), freeText); }}
           mutationState={mutationState}
           {...(onTaskAttempt ? { onTaskAttempt } : {})}
           view={view}

@@ -40,6 +40,8 @@ export const SimulationActionSchema = z.object({
    */
   queryPayload: QueryRecordsPayloadSchema.optional(),
   ticketPayload: TicketUpdatePayloadSchema.optional(),
+  sourceRecordId: z.string().min(1).optional(),
+  sourceArtifactId: z.string().min(1).optional(),
 });
 export type SimulationAction = z.infer<typeof SimulationActionSchema>;
 
@@ -51,6 +53,8 @@ export const AvailableActionSchema = z.object({
   description: z.string(),
   simulatedMinutes: z.number().int().nonnegative(),
   taskId: z.string().min(1).optional(),
+  sourceRecordId: z.string().min(1).optional(),
+  sourceArtifactId: z.string().min(1).optional(),
 });
 export type AvailableAction = z.infer<typeof AvailableActionSchema>;
 
