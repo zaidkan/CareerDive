@@ -480,6 +480,11 @@ describe("rendered workplace golden path", () => {
               state.structuredTickets[`ticket-${eventId}`]?.sourceArtifactIds
                 ?.length,
             ).toBe(sources.length);
+            expect(
+              state.structuredTickets[`ticket-${eventId}`]?.sourceArtifactIds,
+            ).toContain(
+              eventId === routine ? "scanner-window" : "device-inventory-1",
+            );
             return;
           }
           if (id === "ask_manager" || id === "acknowledge_handoff") {
@@ -628,9 +633,37 @@ describe("rendered workplace golden path", () => {
       await perform("acknowledge_handoff", "handoff-1");
       await perform("review_alert", suspicious);
       await perform("inspect_login_context", suspicious);
+      await openSystem("knowledge_base");
+      await user.type(
+        screen.getByRole("searchbox", { name: "Find an exact device" }),
+        "unknown-laptop-17",
+      );
+      await activate(
+        required(
+          container.querySelector<HTMLElement>(
+            '[data-interaction-id="open_artifact"][data-artifact-id="device-inventory-1"]',
+          ),
+          "exact inventory record",
+        ),
+      );
+      expect(state.observedArtifactIds).toContain("device-inventory-1");
       await verifyAvailableTargets();
       await activate(screen.getByRole("button", { name: "Handle now" }));
       await perform("review_alert", routine);
+      await openSystem("knowledge_base");
+      await user.type(
+        screen.getByRole("searchbox", { name: "Filter guides locally" }),
+        "scanner",
+      );
+      await activate(
+        required(
+          container.querySelector<HTMLElement>(
+            '[data-interaction-id="open_artifact"][data-artifact-id="scanner-window"]',
+          ),
+          "scanner guide",
+        ),
+      );
+      expect(state.observedArtifactIds).toContain("scanner-window");
       await perform("search_knowledge_base", routine);
       await saveTicketNote(
         routine,
