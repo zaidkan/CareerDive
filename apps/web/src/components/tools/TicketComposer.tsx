@@ -15,7 +15,7 @@ export function TicketComposer({
 }: {
   view: ClientView;
   action: AvailableAction;
-  draftAction?: AvailableAction;
+  draftAction?: AvailableAction | undefined;
   onAction: (action: AvailableAction, freeText?: string) => void;
   mutationState: MutationState;
 }) {

@@ -38,7 +38,11 @@ export function toClientView(state: WorldState): ClientView {
     .filter(({ applied }) => applied)
     .map(({ description }) => description);
   const observed = new Set(state.observedArtifactIds);
-  const actions = availableActions(state);
+  const actions = availableActions(state).map((action) => {
+    if (action.id !== "document_ticket") return action;
+    const { taskId: _legacyTaskId, ...composerAction } = action;
+    return composerAction;
+  });
   const tasks = actions.flatMap((action) => {
     if (!action.taskId) return [];
     const task = state.rules.tasks[action.taskId];
