@@ -48,7 +48,7 @@ describe("site routes", () => {
     expect(createSession).not.toHaveBeenCalled();
   });
 
-  it("landing has no fake quotes, no film teaser, ends at start CTA", () => {
+  it("landing has no fake quotes, no film teaser, no redundant surface section", () => {
     render(<LandingPage />);
     expect(screen.queryByText(/early response/i)).toBeNull();
     expect(screen.queryByText(/felt like real triage/i)).toBeNull();
@@ -56,10 +56,11 @@ describe("site routes", () => {
     expect(screen.queryByRole("button", { name: /watch arrival film/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /play arrival film/i })).toBeNull();
     expect(screen.getByRole("heading", { name: /how the 10 minutes move/i })).toBeVisible();
-    expect(screen.getByRole("heading", { name: /three ways to work/i })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: /three ways to work/i })).toBeNull();
+    expect(screen.queryByRole("heading", { name: /ready for day one/i })).toBeNull();
     expect(
       screen.getAllByRole("link", { name: /start your first day/i }).length,
-    ).toBeGreaterThanOrEqual(2);
+    ).toBeGreaterThanOrEqual(1);
   });
 
   it("landing keeps shift surprises vague and names systems only", () => {

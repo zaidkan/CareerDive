@@ -131,54 +131,6 @@ export function LandingPage() {
           </article>
         </div>
       </section>
-
-      <section className="page-section" aria-labelledby="surface-preview">
-        <h2 id="surface-preview">Three ways to work the same shift</h2>
-        <p className="lede">
-          Same evidence, same outcomes. Pick the surface that fits you — no
-          mode changes the story.
-        </p>
-        <div className="showcase-grid">
-          <article className="showcase-card">
-            <div>
-              <h3>Walk the floor</h3>
-              <p>Find the desk, meet the room. Keyboard + look.</p>
-            </div>
-          </article>
-          <article className="showcase-card">
-            <div>
-              <h3>Desk only</h3>
-              <p>Straight to workstation. No 3D, full tools.</p>
-            </div>
-          </article>
-          <article className="showcase-card">
-            <div>
-              <h3>Simple list</h3>
-              <p>One column, full keyboard and screen-reader flow.</p>
-            </div>
-          </article>
-        </div>
-      </section>
-
-      <section className="page-section" aria-labelledby="ready-cta">
-        <h2 id="ready-cta">Ready for day one?</h2>
-        <p className="lede">
-          Short preview film first, then badge in and work the floor.
-        </p>
-        <div className="hero-ctas">
-          <a
-            className="start-shift"
-            style={{ textDecoration: "none", display: "inline-block" }}
-            href="/start"
-            onClick={(event) => {
-              event.preventDefault();
-              navigate("/start");
-            }}
-          >
-            Start your first day
-          </a>
-        </div>
-      </section>
     </>
   );
 }
