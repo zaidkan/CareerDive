@@ -34,6 +34,9 @@ export const TicketUpdatePayloadSchema = z
     disposition: z.string().max(500).optional(),
     noteText: z.string().max(2_000).optional(),
     followUp: z.string().max(500).optional(),
+    verifiedEvidence: z.string().max(2_000).optional(),
+    uncertainty: z.string().max(2_000).optional(),
+    sourceArtifactIds: z.array(z.string()).optional(),
   })
   .strict();
 export type TicketUpdatePayload = z.infer<typeof TicketUpdatePayloadSchema>;

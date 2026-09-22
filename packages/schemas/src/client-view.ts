@@ -7,6 +7,7 @@ import { AlertRecordSchema } from "./records.js";
 import { PacingModeSchema, SessionKindSchema } from "./session.js";
 import { ClientNotificationSchema, ClientTaskViewSchema } from "./tasks.js";
 import { ClientWorkplaceStateSchema } from "./workplace.js";
+import { StructuredTicketSchema } from "./ticket.js";
 import { LocationSchema, WorkArtifactSchema } from "./world.js";
 
 /** Reviewed exact identifiers only, never record prose or enrollment status. */
@@ -61,6 +62,19 @@ export const ClientViewSchema = z.object({
   artifacts: z.array(ClientArtifactSchema),
   alertRecords: z.array(AlertRecordSchema).optional(),
   ticketNotes: z.record(z.string(), z.string()),
+  structuredTickets: z.record(z.string(), StructuredTicketSchema).optional(),
+  teamMessages: z
+    .array(
+      z.object({
+        id: z.string(),
+        eventId: z.string(),
+        author: z.enum(["player", "morgan"]),
+        body: z.string(),
+        actionId: AvailableActionSchema.shape.id,
+        simMinutes: z.number().int().nonnegative(),
+      }),
+    )
+    .optional(),
   notebook: z.string(),
   kbQuery: z.string(),
   tasks: z.array(ClientTaskViewSchema).default([]),

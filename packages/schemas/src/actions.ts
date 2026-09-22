@@ -55,6 +55,7 @@ export const AvailableActionSchema = z.object({
   taskId: z.string().min(1).optional(),
   sourceRecordId: z.string().min(1).optional(),
   sourceArtifactId: z.string().min(1).optional(),
+  ticketPayload: TicketUpdatePayloadSchema.optional(),
 });
 export type AvailableAction = z.infer<typeof AvailableActionSchema>;
 
