@@ -11,7 +11,11 @@ import {
   filterSystemArtifacts,
 } from "./artifacts.js";
 import { AlertTool } from "./tools/AlertTool.js";
-import { AlertRecords, bindAlertAction, selectedAlertSource } from "./tools/AlertRecords.js";
+import {
+  AlertRecords,
+  bindAlertAction,
+  selectedAlertSource,
+} from "./tools/AlertRecords.js";
 import { EmailTool } from "./tools/EmailTool.js";
 import { GuideSearch } from "./tools/GuideSearch.js";
 import { InventoryLookup } from "./tools/InventoryLookup.js";
@@ -19,6 +23,7 @@ import { RecordQueryTool } from "./tools/RecordQueryTool.js";
 import { TaskInteraction } from "./tools/TaskInteraction.js";
 import { CaseReview } from "./tools/CaseReview.js";
 import { TeamChatTool } from "./tools/TeamChatTool.js";
+import { TicketComposer } from "./tools/TicketComposer.js";
 import { primaryActions, systemMeta, utilityActions } from "../systems.js";
 import type { TaskAttemptHandler } from "./shared.js";
 import {
@@ -140,7 +145,9 @@ function WorkInteraction({
     return task ? [task] : [];
   });
   const uniqueTasks = [
-    ...new Map(tasks.map((task) => [`${task.eventId}:${task.id}`, task])).values(),
+    ...new Map(
+      tasks.map((task) => [`${task.eventId}:${task.id}`, task]),
+    ).values(),
   ];
   const missingTaskActions = taskActions.filter(
     (action) =>
@@ -277,30 +284,53 @@ export function SystemToolPanel({
   }
 
   if (systemId === "alert_dashboard") {
-    const records = (view.alertRecords ?? []).filter((record) => !selectedEventId || record.linkedWorkItemId === selectedEventId);
-    const source = selectedEventId ? selectedAlertSource(view, selectedEventId) : undefined;
+    const records = (view.alertRecords ?? []).filter(
+      (record) =>
+        !selectedEventId || record.linkedWorkItemId === selectedEventId,
+    );
+    const source = selectedEventId
+      ? selectedAlertSource(view, selectedEventId)
+      : undefined;
     return (
       <div className="tool-panel" data-system={systemId}>
         <ToolChrome systemId={systemId} />
-        {records.length > 0 ? <AlertRecords
-          view={view}
-          eventId={selectedEventId}
-          onOpenRecord={onWorkplaceInteraction ? (recordId) => onWorkplaceInteraction({ type: "open_alert_record", recordId }) : undefined}
-          mutationState={mutationState}
-        /> : <AlertTool
-          artifacts={eventArtifacts}
-          onOpenArtifact={openArtifact}
-          onSelect={selectArtifact}
-          selectedId={selectedArtifactId}
-          mutationState={mutationState}
-        />}
-        {records.length > 0 && !source ? <p role="status">Open alert record before taking an investigation action.</p> : null}
+        {records.length > 0 ? (
+          <AlertRecords
+            view={view}
+            eventId={selectedEventId}
+            onOpenRecord={
+              onWorkplaceInteraction
+                ? (recordId) =>
+                    onWorkplaceInteraction({
+                      type: "open_alert_record",
+                      recordId,
+                    })
+                : undefined
+            }
+            mutationState={mutationState}
+          />
+        ) : (
+          <AlertTool
+            artifacts={eventArtifacts}
+            onOpenArtifact={openArtifact}
+            onSelect={selectArtifact}
+            selectedId={selectedArtifactId}
+            mutationState={mutationState}
+          />
+        )}
+        {records.length > 0 && !source ? (
+          <p role="status">
+            Open alert record before taking an investigation action.
+          </p>
+        ) : null}
         <WorkInteraction
           onOpenArtifact={openArtifact}
           actions={workInteractionActions(actions)}
           disableAction={records.length > 0 && !source}
           {...(highlightActionId ? { highlightActionId } : {})}
-          onAction={(action, freeText) => { onAction(bindAlertAction(view, action), freeText); }}
+          onAction={(action, freeText) => {
+            onAction(bindAlertAction(view, action), freeText);
+          }}
           mutationState={mutationState}
           {...(onTaskAttempt ? { onTaskAttempt } : {})}
           view={view}
@@ -325,7 +355,13 @@ export function SystemToolPanel({
           selectedId={selectedArtifactId}
           view={view}
         />
-        {openArtifact ? <InventoryLookup view={view} onOpenArtifact={openArtifact} mutationState={mutationState} /> : null}
+        {openArtifact ? (
+          <InventoryLookup
+            view={view}
+            onOpenArtifact={openArtifact}
+            mutationState={mutationState}
+          />
+        ) : null}
         <RecordQueryTool view={view} mutationState={mutationState} />
         <WorkInteraction
           onOpenArtifact={openArtifact}
@@ -347,8 +383,23 @@ export function SystemToolPanel({
     return (
       <div className="tool-panel" data-system={systemId}>
         <ToolChrome systemId={systemId} />
-        <TeamChatTool view={view} onOpenArtifact={openArtifact} mutationState={mutationState} />
-        <WorkInteraction onOpenArtifact={openArtifact} actions={workInteractionActions(actions)} onAction={onAction} mutationState={mutationState} {...(onTaskAttempt ? { onTaskAttempt } : {})} view={view} />
+        <TeamChatTool
+          view={view}
+          onOpenArtifact={openArtifact}
+          mutationState={mutationState}
+          actions={actions}
+          onAction={onAction}
+        />
+        <WorkInteraction
+          onOpenArtifact={openArtifact}
+          actions={workInteractionActions(actions).filter(
+            ({ id }) => id !== "ask_manager" && id !== "acknowledge_handoff",
+          )}
+          onAction={onAction}
+          mutationState={mutationState}
+          {...(onTaskAttempt ? { onTaskAttempt } : {})}
+          view={view}
+        />
       </div>
     );
   }
@@ -394,9 +445,26 @@ export function SystemToolPanel({
             />
           </div>
         </div>
+        {actions
+          .filter(({ id }) => id === "document_ticket")
+          .map((action) => (
+            <TicketComposer
+              key={action.eventId}
+              view={view}
+              action={action}
+              draftAction={actions.find(
+                ({ id, eventId }) =>
+                  id === "update_ticket_notes" && eventId === action.eventId,
+              )}
+              onAction={onAction}
+              mutationState={mutationState}
+            />
+          ))}
         <WorkInteraction
           onOpenArtifact={openArtifact}
-          actions={workInteractionActions(actions)}
+          actions={workInteractionActions(actions).filter(
+            ({ id }) => id !== "document_ticket",
+          )}
           {...(highlightActionId ? { highlightActionId } : {})}
           onAction={onAction}
           mutationState={mutationState}

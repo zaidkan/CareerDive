@@ -1,4 +1,5 @@
-import type { ClientView } from "@sim/schemas";
+import { useState } from "react";
+import type { AvailableAction, ClientView } from "@sim/schemas";
 import type { MutationState } from "../../useMutationCoordinator.js";
 import { ArtifactDetail } from "../artifacts.js";
 
@@ -7,11 +8,19 @@ export function TeamChatTool({
   view,
   onOpenArtifact,
   mutationState,
+  actions = [],
+  onAction,
 }: {
   view: ClientView;
   onOpenArtifact?: ((id: string) => Promise<unknown>) | undefined;
   mutationState?: MutationState;
+  actions?: AvailableAction[];
+  onAction?: (action: AvailableAction, freeText?: string) => void;
 }) {
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const chatActions = actions.filter(
+    ({ id }) => id === "ask_manager" || id === "acknowledge_handoff",
+  );
   const messages = view.artifacts.filter(
     ({ systemId }) => systemId === "team_chat",
   );
@@ -62,6 +71,61 @@ export function TeamChatTool({
           />
         ))}
       </article>
+      {(view.teamMessages?.length ?? 0) > 0 ? (
+        <ol aria-label="Team conversation">
+          {view.teamMessages?.map((message) => (
+            <li key={message.id}>
+              <strong>
+                {message.author === "morgan" ? "Morgan" : "You"} ·{" "}
+                {view.events.find(({ id }) => id === message.eventId)?.title ??
+                  message.eventId}
+                :
+              </strong>{" "}
+              {message.body}
+            </li>
+          ))}
+        </ol>
+      ) : null}
+      {chatActions.map((action) => {
+        const key = `${action.id}:${action.eventId}`;
+        const draft = drafts[key] ?? "";
+        return (
+          <form
+            key={key}
+            aria-label={`${action.label} for ${view.events.find(({ id }) => id === action.eventId)?.title ?? action.eventId}`}
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (draft.trim()) onAction?.(action, draft.trim());
+            }}
+          >
+            <label>
+              {action.id === "ask_manager"
+                ? "Question for Morgan"
+                : "Handoff to Morgan"}
+              <textarea
+                maxLength={2000}
+                value={draft}
+                onChange={(event) =>
+                  setDrafts((current) => ({
+                    ...current,
+                    [key]: event.target.value,
+                  }))
+                }
+              />
+            </label>
+            <button
+              type="submit"
+              data-action-id={action.id}
+              data-event-id={action.eventId}
+              disabled={
+                !draft.trim() || Boolean(mutationState?.pendingKey) || !onAction
+              }
+            >
+              {action.label}
+            </button>
+          </form>
+        );
+      })}
       {reminders.length > 0 ? (
         <aside aria-label="Morgan procedure reminders">
           <h4>From Morgan’s procedure notes</h4>
