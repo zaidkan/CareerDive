@@ -206,27 +206,29 @@ describe("authenticated simulation API", () => {
     expect(created.view.availableActions.map(({ id }) => id)).toContain(
       "review_alert",
     );
-    const first = await caller.simulation.submitTaskAttempt({
-      sessionId: created.sessionId,
-      taskId: "login-alert-compare",
-      eventId: "suspicious-login-1",
-      selectedOptionIds: ["failures-then-success"],
-    });
-    expect(first.view.simClock).toBe(0);
-    expect(first.completed).toBe(false);
+    const handoffAction = created.view.availableActions.find(
+      ({ id }) => id === "read_handoff",
+    );
+    expect(handoffAction?.taskId).toBeUndefined();
 
-    const turn = await caller.simulation.submitTaskAttempt({
+    const first = await caller.simulation.performAction({
       sessionId: created.sessionId,
-      taskId: "login-alert-compare",
-      eventId: "suspicious-login-1",
-      selectedOptionIds: ["geo-hint"],
+      actionId: "read_handoff",
+      eventId: "handoff-1",
+    });
+    expect(first.view.simClock).toBe(5);
+    expect(first.sequence).toBe(1);
+
+    const turn = await caller.simulation.performAction({
+      sessionId: created.sessionId,
+      actionId: "acknowledge_handoff",
+      eventId: "handoff-1",
     });
     expect(turn.view.simClock).toBe(10);
     expect(turn.sequence).toBe(2);
-    expect(turn.completed).toBe(true);
   });
 
-  it("coaches a failed task attempt without evidence, then logs completion", async () => {
+  it("rejects unavailable actions atomically, then records assessed actions", async () => {
     const { caller, repository } = setup();
     const created = await caller.session.create({
       seed: 42,
@@ -234,43 +236,32 @@ describe("authenticated simulation API", () => {
       pacingMode: "standard",
     });
 
-    const weak = await caller.simulation.submitTaskAttempt({
-      sessionId: created.sessionId,
-      taskId: "login-alert-compare",
-      eventId: "suspicious-login-1",
-      selectedOptionIds: ["one-normal-login"],
-    });
-    expect(weak).toMatchObject({
-      accepted: false,
-      completed: false,
-      sequence: 1,
-    });
-    expect(weak.feedback).toMatch(/order of events/i);
-    expect(repository.evidenceFor("user-1", created.sessionId)).toHaveLength(0);
-
-    await caller.simulation.submitTaskAttempt({
-      sessionId: created.sessionId,
-      taskId: "login-alert-compare",
-      eventId: "suspicious-login-1",
-      selectedOptionIds: ["failures-then-success"],
-    });
-    const completed = await caller.simulation.submitTaskAttempt({
-      sessionId: created.sessionId,
-      taskId: "login-alert-compare",
-      eventId: "suspicious-login-1",
-      selectedOptionIds: ["geo-hint"],
-    });
-    expect(completed.completed).toBe(true);
-    expect(repository.evidenceFor("user-1", created.sessionId)).toHaveLength(1);
-
     await expect(
-      caller.simulation.submitTaskAttempt({
+      caller.simulation.performAction({
         sessionId: created.sessionId,
-        taskId: "login-alert-compare",
+        actionId: "read_handoff",
         eventId: "suspicious-login-1",
-        selectedOptionIds: ["geo-hint"],
       }),
     ).rejects.toThrow("not available");
+    expect(repository.evidenceFor("user-1", created.sessionId)).toHaveLength(0);
+    expect(
+      (await repository.getSession("user-1", created.sessionId)).actionLog,
+    ).toHaveLength(0);
+
+    await caller.simulation.performAction({
+      sessionId: created.sessionId,
+      actionId: "read_handoff",
+      eventId: "handoff-1",
+    });
+    await caller.simulation.performAction({
+      sessionId: created.sessionId,
+      actionId: "acknowledge_handoff",
+      eventId: "handoff-1",
+    });
+    expect(repository.evidenceFor("user-1", created.sessionId)).toHaveLength(2);
+    expect(
+      (await repository.getSession("user-1", created.sessionId)).actionLog,
+    ).toHaveLength(2);
   });
 
   it("prevents another user from reading or mutating the session", async () => {
@@ -307,22 +298,20 @@ describe("authenticated simulation API", () => {
     });
 
     for (const sessionId of [assessed.sessionId, tutorial.sessionId]) {
-      await caller.simulation.submitTaskAttempt({
+      await caller.simulation.performAction({
         sessionId,
-        taskId: "login-alert-compare",
-        eventId: "suspicious-login-1",
-        selectedOptionIds: ["failures-then-success"],
+        actionId: "read_handoff",
+        eventId: "handoff-1",
       });
-      await caller.simulation.submitTaskAttempt({
+      await caller.simulation.performAction({
         sessionId,
-        taskId: "login-alert-compare",
-        eventId: "suspicious-login-1",
-        selectedOptionIds: ["geo-hint"],
+        actionId: "acknowledge_handoff",
+        eventId: "handoff-1",
       });
     }
 
     expect(repository.evidenceFor("user-1", assessed.sessionId)).toHaveLength(
-      1,
+      2,
     );
     expect(repository.evidenceFor("user-1", tutorial.sessionId)).toHaveLength(
       0,
@@ -341,22 +330,29 @@ describe("authenticated simulation API", () => {
       sessionId: created.sessionId,
       interaction: { type: "open_artifact", artifactId: "handoff-email" },
     });
-    await caller.simulation.submitTaskAttempt({
+    await caller.simulation.performAction({
       sessionId: created.sessionId,
-      taskId: "handoff-open-items",
+      actionId: "read_handoff",
       eventId: "handoff-1",
-      selectedOptionIds: ["device-check"],
     });
-    await caller.simulation.submitTaskAttempt({
+    await caller.simulation.performAction({
       sessionId: created.sessionId,
-      taskId: "handoff-open-items",
+      actionId: "acknowledge_handoff",
       eventId: "handoff-1",
-      selectedOptionIds: ["scanner-window"],
+    });
+    await caller.simulation.performAction({
+      sessionId: created.sessionId,
+      actionId: "review_alert",
+      eventId: "suspicious-login-1",
     });
 
+    const signals = repository.evidenceFor("user-1", created.sessionId);
     expect(
-      repository.evidenceFor("user-1", created.sessionId)[0]?.eventId,
-    ).toBe("handoff-1");
+      signals.filter(({ eventId }) => eventId === "handoff-1"),
+    ).toHaveLength(2);
+    expect(
+      signals.filter(({ eventId }) => eventId === "suspicious-login-1"),
+    ).toHaveLength(1);
   });
 
   it("rejects a valid action aimed at the wrong event", async () => {
@@ -383,33 +379,40 @@ describe("authenticated simulation API", () => {
       sessionKind: "assessed",
       pacingMode: "standard",
     });
-    const attempts = [
-      ["login-alert-compare", "suspicious-login-1", ["failures-then-success"]],
-      ["login-alert-compare", "suspicious-login-1", ["geo-hint"]],
-      ["handoff-open-items", "handoff-1", ["device-check"]],
-      ["handoff-open-items", "handoff-1", ["scanner-window"]],
-      ["handoff-priority-message", "handoff-1", ["login-first-watch-routine"]],
-      [
-        "login-context-clues",
-        "suspicious-login-1",
-        ["unknown-windows-device", "new-residential-network"],
-      ],
+    const script = [
+      { actionId: "read_handoff", eventId: "handoff-1" },
+      { actionId: "acknowledge_handoff", eventId: "handoff-1" },
+      { actionId: "review_alert", eventId: "suspicious-login-1" },
+      {
+        actionId: "query_records",
+        eventId: "suspicious-login-1",
+        queryPayload: {
+          datasetId: "auth",
+          filters: { user: "j.patel@example.com" },
+        },
+      },
+      { actionId: "inspect_login_context", eventId: "suspicious-login-1" },
+      {
+        actionId: "query_records",
+        eventId: "suspicious-login-1",
+        queryPayload: {
+          datasetId: "devices",
+          filters: { assignedUser: "j.patel@example.com" },
+        },
+      },
     ] as const;
-    for (const [taskId, eventId, selectedOptionIds] of attempts) {
-      if (taskId === "handoff-open-items")
-        await caller.simulation.performWorkplaceInteraction({
-          sessionId: created.sessionId,
-          interaction: { type: "open_artifact", artifactId: "handoff-email" },
-        });
-      await caller.simulation.submitTaskAttempt({
+    for (const action of script) {
+      await caller.simulation.performAction({
         sessionId: created.sessionId,
-        taskId,
-        eventId,
-        selectedOptionIds: [...selectedOptionIds],
+        ...action,
       });
     }
     const before = await caller.session.get({ sessionId: created.sessionId });
-    expect(before.view.notifications[0]?.id).toBe("routine-scanner-arrived");
+    expect(
+      before.view.notifications.find(
+        ({ id }) => id === "routine-scanner-arrived",
+      ),
+    ).toBeDefined();
     const evidenceCount = repository.evidenceFor(
       "user-1",
       created.sessionId,
@@ -422,7 +425,11 @@ describe("authenticated simulation API", () => {
     });
 
     expect(response.view.simClock).toBe(before.view.simClock);
-    expect(response.view.notifications[0]?.status).toBe("acknowledged");
+    expect(
+      response.view.notifications.find(
+        ({ id }) => id === "routine-scanner-arrived",
+      )?.status,
+    ).toBe("acknowledged");
     expect(repository.evidenceFor("user-1", created.sessionId)).toHaveLength(
       evidenceCount,
     );
@@ -450,17 +457,15 @@ describe("authenticated simulation API", () => {
       sessionKind: "assessed",
       pacingMode: "standard",
     });
-    await caller.simulation.submitTaskAttempt({
+    await caller.simulation.performAction({
       sessionId: created.sessionId,
-      taskId: "login-alert-compare",
-      eventId: "suspicious-login-1",
-      selectedOptionIds: ["failures-then-success"],
+      actionId: "read_handoff",
+      eventId: "handoff-1",
     });
-    await caller.simulation.submitTaskAttempt({
+    await caller.simulation.performAction({
       sessionId: created.sessionId,
-      taskId: "login-alert-compare",
-      eventId: "suspicious-login-1",
-      selectedOptionIds: ["geo-hint"],
+      actionId: "acknowledge_handoff",
+      eventId: "handoff-1",
     });
 
     const exported = await caller.privacy.exportData();

@@ -15,6 +15,15 @@ afterEach(cleanup);
 const view = toClientView(
   createInitialWorldState("lifecycle", 24, {}, loadDefaultCybersecurityPack()),
 );
+function taskFixtureView() {
+  const pack = structuredClone(loadDefaultCybersecurityPack());
+  const task = pack.scenario.tasks.find(
+    ({ id }) => id === "handoff-open-items",
+  );
+  if (!task) throw new Error("Missing handoff task fixture");
+  task.releasesActionGate = false;
+  return toClientView(createInitialWorldState("task-retry", 24, {}, pack));
+}
 const debrief: Debrief = {
   sessionId: view.sessionId,
   confidence: "early_signal",
@@ -137,14 +146,17 @@ it.each(["Desk only", "Simple list"])(
       await screen.findByRole("heading", { name: "Shift debrief" }),
     ).toBeVisible();
     expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(8);
-    await waitFor(() => { expect(getDebrief).toHaveBeenCalledTimes(2); });
+    await waitFor(() => {
+      expect(getDebrief).toHaveBeenCalledTimes(2);
+    });
     expect(performAction).toHaveBeenCalledTimes(1);
   },
 );
 
 it("preserves selected findings when the App task request fails", async () => {
   const user = userEvent.setup();
-  const source = view.tasks[0];
+  const taskView = taskFixtureView();
+  const source = taskView.tasks[0];
   if (!source) throw new Error("Expected initial task");
   const task = {
     ...source,
@@ -155,9 +167,9 @@ it("preserves selected findings when the App task request fails", async () => {
     options: [{ id: "visible-finding", label: "Keep this finding" }],
   };
   const current = {
-    ...view,
+    ...taskView,
     tasks: [task],
-    availableActions: view.availableActions.filter(
+    availableActions: taskView.availableActions.filter(
       (action) => action.taskId === task.id,
     ),
   };

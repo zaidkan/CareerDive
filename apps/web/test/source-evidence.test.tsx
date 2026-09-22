@@ -14,13 +14,26 @@ import {
 import { TaskInteraction } from "../src/components/tools/TaskInteraction.js";
 
 afterEach(cleanup);
+function gatedSourcePack() {
+  const pack = structuredClone(loadDefaultCybersecurityPack());
+  for (const id of [
+    "handoff-open-items",
+    "login-alert-compare",
+    "login-context-clues",
+    "account-pattern-compare",
+  ]) {
+    const task = pack.scenario.tasks.find((candidate) => candidate.id === id);
+    if (task) task.releasesActionGate = false;
+  }
+  return pack;
+}
 function Harness({ comparison = false }: { comparison?: boolean }) {
   const [state, setState] = useState(() => {
     let initial = createInitialWorldState(
       "source-ui",
       42,
       {},
-      loadDefaultCybersecurityPack(),
+      gatedSourcePack(),
     );
     if (comparison) {
       for (const [taskId, selectedOptionIds] of [
@@ -101,15 +114,24 @@ it("marks baseline evidence in two records, keeps citations, then submits a caut
     ),
   );
   await user.click(screen.getByRole("button", { name: "Check my work" }));
-  expect(screen.getByRole("button", { name: "Submit findings" })).toBeDisabled();
-  for (const title of ["Earlier session · S-0731", "Office VPN route catalogue", "Sign-in timeline · A-1042"]) {
-    await user.click(screen.getByRole("button", { name: `Open source: ${title}` }));
+  expect(
+    screen.getByRole("button", { name: "Submit findings" }),
+  ).toBeDisabled();
+  for (const title of [
+    "Earlier session · S-0731",
+    "Office VPN route catalogue",
+    "Sign-in timeline · A-1042",
+  ]) {
+    await user.click(
+      screen.getByRole("button", { name: `Open source: ${title}` }),
+    );
   }
   for (const name of [
     "S-0731 used corp-macbook-patel through VPN connection V-218, exiting at 198.51.100.20.",
     "V-218 maps to exit 198.51.100.20; this office's only approved VPN exit in this snapshot.",
     "S-0741: source 203.0.113.44; VPN connection ID absent; device label unknown-laptop-17.",
-  ]) await user.click(screen.getByRole("button", { name }));
+  ])
+    await user.click(screen.getByRole("button", { name }));
   await user.click(screen.getByRole("button", { name: "Submit findings" }));
   expect(screen.getByText("Comparison recorded")).toBeInTheDocument();
 });

@@ -143,7 +143,7 @@ it.each(["desk", "structured"] as const)(
   },
 );
 
-it("keeps Morgan procedure reminders behind opening the thread and follows the public task stage", () => {
+it("keeps Morgan procedure reminders behind opening the thread and the public decision stage", () => {
   const current = view();
   const { rerender } = render(<TeamChatTool view={current} />);
   expect(screen.queryByLabelText("Morgan procedure reminders")).toBeNull();
@@ -153,17 +153,26 @@ it("keeps Morgan procedure reminders behind opening the thread and follows the p
       : artifact,
   );
   rerender(<TeamChatTool view={current} />);
-  expect(screen.getByLabelText("Morgan procedure reminders")).toHaveTextContent(
-    /record|source/i,
-  );
-  current.tasks = current.tasks
-    .slice(0, 1)
-    .map((task) => ({ ...task, kind: "build_summary" }));
+  expect(screen.queryByLabelText("Morgan procedure reminders")).toBeNull();
+  const event = current.events.find(({ id }) => id === "suspicious-login-1");
+  if (!event) throw new Error("Missing login case");
+  current.availableActions = [
+    {
+      id: "escalate_alert",
+      eventId: event.id,
+      systemId: "alert_dashboard",
+      label: "Escalate with evidence",
+      description:
+        "Request senior review with the saved evidence and uncertainty.",
+      simulatedMinutes: 5,
+    },
+  ];
   rerender(<TeamChatTool view={current} />);
-  expect(screen.getByLabelText("Morgan procedure reminders")).toHaveTextContent(
-    /verified observations, uncertainty, and the next step/i,
+  const reminders = screen.getByLabelText("Morgan procedure reminders");
+  expect(reminders).toHaveTextContent(
+    /Review your saved note before deciding/i,
   );
-  expect(
-    screen.getByLabelText("Morgan procedure reminders"),
-  ).not.toHaveTextContent(/unknown-laptop|J. Patel|escalate-evidence/);
+  expect(reminders).not.toHaveTextContent(
+    /unknown-laptop|J. Patel|escalate-evidence/,
+  );
 });

@@ -156,12 +156,7 @@ describe("query_records server transport", () => {
 
     const stored = await repository.getSession("user-1", sessionId);
     const { createInitialWorldState } = await import("@sim/core");
-    const initial = createInitialWorldState(
-      sessionId,
-      7,
-      {},
-      queryTestPack(),
-    );
+    const initial = createInitialWorldState(sessionId, 7, {}, queryTestPack());
     // Session ids are random per create; align the replay baseline.
     const replayed = foldActionLog(
       { ...initial, sessionId: stored.state.sessionId },
@@ -244,7 +239,7 @@ describe("query_records server transport", () => {
         ...QUERY,
         queryPayload: { datasetId: "auth", filters: { sender: "x@y.z" } },
       }),
-    ).rejects.toThrow('Query rejected (invalid_filter)');
+    ).rejects.toThrow("Query rejected (invalid_filter)");
   });
 
   it("rejects an inverted time window as invalid_filter", async () => {
@@ -314,22 +309,24 @@ describe("query_records server transport", () => {
     const { caller } = setup();
     const sessionId = await createSession(caller);
 
-    // Legacy legality errors keep their existing transport behavior.
-    await expect(
-      caller.simulation.performAction({
-        sessionId,
-        actionId: "read_handoff",
-        eventId: "handoff-1",
-      }),
-    ).rejects.toThrow('Action "read_handoff" requires task');
+    // Released actions keep their ordinary transport behavior.
+    const result = await caller.simulation.performAction({
+      sessionId,
+      actionId: "read_handoff",
+      eventId: "handoff-1",
+    });
+    expect(result.sequence).toBe(1);
+    expect(result.effects).toMatchObject([
+      { type: "action_applied", actionId: "read_handoff" },
+    ]);
 
     // And an ordinary allowed action still succeeds without a payload.
-    const result = await caller.simulation.performAction({
+    const asked = await caller.simulation.performAction({
       sessionId,
       actionId: "ask_manager",
       eventId: "handoff-1",
     });
-    expect(result.sequence).toBe(1);
-    expect(result.view.queryResults).toHaveLength(0);
+    expect(asked.sequence).toBe(2);
+    expect(asked.view.queryResults).toHaveLength(0);
   });
 });
