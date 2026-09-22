@@ -43,10 +43,10 @@ describe("source-backed ticket composer", () => {
       toClientView(initial).availableActions.find(
         ({ id }) => id === "document_ticket",
       ),
-    ).not.toHaveProperty("taskId");
+    ).toHaveProperty("taskId", "login-ticket-summary");
     expect(
       toClientView(initial).tasks.some(({ kind }) => kind === "build_summary"),
-    ).toBe(false);
+    ).toBe(true);
     const draft: SimulationAction = {
       id: "update_ticket_notes",
       actorId: "user",

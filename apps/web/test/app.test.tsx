@@ -643,13 +643,19 @@ describe("tutorial and debrief", () => {
         name: /Structured workplace view/i,
       }),
     ).toBeVisible();
+    await user.type(
+      screen.getByRole("textbox", { name: "Question for Morgan" }),
+      "Which record should I check next?",
+    );
     await user.click(
       await screen.findByRole("button", { name: /ask manager for context/i }),
     );
 
     // Guidance now stays inline inside the workplace OS instead of routing to a
     // separate App-level manager surface, and the selected mode is preserved.
-    expect(await screen.findByRole("complementary", { name: "Morgan guidance" })).toHaveTextContent(/Morgan recommends reviewing/i);
+    expect(
+      await screen.findByRole("complementary", { name: "Morgan guidance" }),
+    ).toHaveTextContent(/Morgan recommends reviewing/i);
     expect(
       screen.queryByRole("heading", { name: "Morgan is here to help" }),
     ).toBeNull();
