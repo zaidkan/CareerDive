@@ -17,25 +17,21 @@ API health: `http://localhost:3001/health`
 
 ## Current playable shift
 
-Start an assessed shift, enter the workstation, and move between Alerts,
-Email, Tickets, Knowledge Base, and Team Chat. The expected path contains more
-than twenty targeted workplace actions across:
+**Career Expo simulates actually doing ordinary career work, not answering questions about work.**
 
-- An incomplete shift handoff.
-- A suspicious-login investigation.
-- Overlapping routine monitoring.
-- An employee phishing report.
-- A calm false-positive review.
+Start an assessed shift, enter the workstation, and work through the same deterministic state in **Desk only**, **Walk the office**, or **Simple list** (keyboard) — all three renderers expose identical canonical action IDs and outcomes.
 
-Events arrive as simulated time advances. Earlier dismissal choices can create
-delayed consequences while later work is underway. Actions are deterministic
-and replayable; manager guidance cannot change canonical outcomes.
+Canonical systems: **Alert Dashboard · Email · Ticket Queue · Knowledge Base · Team Chat**. Canonical events on `zaidkan/product-experimental` (pack `cybersecurity_analyst@1.0.0`):
 
-The break-room loop is also deterministic: the fridge has finite snack bars,
-each carried bar has three bites, and coffee follows start, finish, pour, and
-drink controls. Energy changes only through canonical work and these finite
-resources; it never drains while idle and there is no automatic collapse or
-refill loop.
+- **Incomplete shift handoff** (`handoff-1`, Email + Team Chat) — read the handoff email, identify the unfinished device check and missing scanner reference, confirm priority with Morgan.
+- **Suspicious-login investigation** (`suspicious-login-1`, A-1042) — review the alert timeline, isolate device/network clues, compare the account baseline (HQ Wi-Fi + enrolled MacBook vs. unknown Windows laptop + residential ISP), test the VPN route explanation (S-0731/V-218 at `198.51.100.20` vs. S-0741 at `203.0.113.44` without a VPN ID), match `unknown-laptop-17` in inventory, incorporate the employee reply and travel-record coverage limit, then build the ticket (evidence → uncertainty → route comparison → collection limits → next step) and escalate.
+- **Routine scanner interruption** (`routine-alert-1`, A-1180, arrives ~25m in) — triage the new low-priority alert, match it to the approved scanner window (`vuln-scan-03`, finance, Mon 10:00–12:00) and recorded run (`RUN-FIN-031`, `SCAN-FIN-MON`), distinguish recorded event time (Mon 10:18) from queue-arrival time, document scope/coverage, and close as expected.
+
+Work is deterministic and replayable (same seed + same interaction log = same state). Dismissing the login without escalation can create a **delayed consequence** (`delayMinutes: 40`, `escalateOnApply`) while later work is underway; break-room work and idle time never change evidence. Manager guidance is procedural only and cannot change canonical outcomes.
+
+The break-room loop is also deterministic: the fridge has finite snack bars (2), each carried bar has three bites, and coffee follows start → finish → pour → drink (2 servings). Energy changes only through canonical work and these finite resources; it never drains while idle and there is no automatic collapse or refill loop. If energy is exhausted, the one-time manager recovery is the only fallback (and it does not create a refill loop).
+
+> **Not live on this branch:** employee phishing report, quarantine/message actions, and other phishing artifacts remain quarantined (Phase 1 R1) and are not offered by any progression; calm false-positive review beyond the current `routine_alert_review` scanner path is not a live scenario. Those remain future content and must not be presented as playable.
 
 ## Manual acceptance route
 

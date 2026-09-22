@@ -4,6 +4,7 @@
  * module scope.
  */
 import { useEffect, useState } from "react";
+import { useWorldQuality } from "../effects/useAdaptiveQuality.js";
 
 /** Matches DualMonitor / MonitorArmDesk JSX defaults. */
 export const DUAL_SCREEN_INTENSITY = 0.55;
@@ -96,12 +97,14 @@ export function readPrefersReducedMotion(): boolean {
 }
 
 /**
- * Decorative motion runs only when `animated` is true and the user has not
- * requested reduced motion. The matchMedia query is created in an effect so
- * nothing WebGL/window-related runs at module scope.
+ * Decorative motion runs only when `animated` is true, the user has not
+ * requested reduced motion, and the quality tier still allows ambient
+ * emitters (frozen on LOW / seated Desk OS). The matchMedia query is created
+ * in an effect so nothing WebGL/window-related runs at module scope.
  */
 export function useAmbientMotion(animated = true): boolean {
   const [reduced, setReduced] = useState(readPrefersReducedMotion);
+  const { ambientEnabled } = useWorldQuality();
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return undefined;
@@ -116,5 +119,5 @@ export function useAmbientMotion(animated = true): boolean {
     };
   }, []);
 
-  return animated && !reduced;
+  return animated && !reduced && ambientEnabled;
 }
