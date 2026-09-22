@@ -117,11 +117,7 @@ function managerGuidanceForA1042(
     return "I have seen the alert, but not enough context to add much yet. Tell me which record you checked and what still does not line up; I will help with the process, not choose the outcome.";
   }
 
-  const context = state.facts["manager-managed-device-context"]?.content;
-  if (!context) {
-    return "I do not recognize that device name from our managed-device work, but that is context rather than proof of who used it. Keep the exact identifier and the remaining uncertainty in your note.";
-  }
-  return `${context} That does not establish who used the flagged device. Keep the exact identifier and the remaining uncertainty in your note.`;
+  return "Morgan notes that the records you opened are context, not proof of who used the flagged device. Keep the exact identifier and the remaining uncertainty in your note.";
 }
 
 export function applyResolvedEffect(input: {
