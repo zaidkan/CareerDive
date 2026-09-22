@@ -21,32 +21,6 @@ const OBJECTIVE_BLUE = "#6ea8fe";
 const IN_RANGE_TEAL = "#2dd4bf";
 const IDLE_GRAPHITE = "#5a6572";
 
-/** Readable verb per station. break_door carries its dynamic open/close label. */
-export function promptFor(def: HotspotDef): string {
-  switch (def.id) {
-    case "desk_player":
-      return "Sit at your desk";
-    case "alert_wall":
-      return "Review the alert wall";
-    case "morgan_station":
-      return "Talk to Morgan";
-    case "break_door":
-      return def.label;
-    case "storage":
-      return "Open the parts cabinets";
-    case "door_exit":
-      return "Exit to the floor map";
-    case "jules":
-      return "Talk to Jules";
-    case "coffee":
-      return "Brew coffee";
-    case "fridge":
-      return "Check the fridge";
-    default:
-      return def.label;
-  }
-}
-
 export function Hotspot({
   def,
   active,

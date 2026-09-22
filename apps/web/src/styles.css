@@ -2251,6 +2251,30 @@ section[aria-labelledby="structured-title"],
   font-size: 0.82rem;
 }
 
+.room-hud-prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--signal) 55%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.room-hud-prompt kbd {
+  border: 1px solid color-mix(in srgb, var(--ink) 35%, transparent);
+  border-radius: 4px;
+  padding: 0.05rem 0.35rem;
+  font: inherit;
+  font-size: 0.75rem;
+}
+
 .room-hud-compass {
   margin: 0;
   color: var(--phosphor);

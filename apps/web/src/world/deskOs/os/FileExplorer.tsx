@@ -71,7 +71,7 @@ export function FileExplorer({ onOpenFile }: { onOpenFile: (file: OpenableFile) 
       <WindowChrome
         app="files"
         title={meta.label}
-        subtitle={`${folderLabel(folder)} · ${fs.filesByFolder[folder].length} items`}
+        subtitle={`${folderLabel(folder)} · ${String(fs.filesByFolder[folder].length)} items`}
       />
       <div className="os-toolbar" role="group" aria-label="File actions">
         <button className="desk-os-ghost" disabled={!selected} onClick={openSelected} type="button">

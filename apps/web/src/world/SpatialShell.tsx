@@ -43,7 +43,6 @@ import {
   workplaceMutationKey,
   type MutationState,
 } from "../useMutationCoordinator.js";
-import { promptFor } from "./Hotspot.js";
 import {
   loadMouseSensitivity,
   MAX_MOUSE_SENSITIVITY,
@@ -342,20 +341,12 @@ export function SpatialShell({
   }
 
   const nearbyHotspotId = spatial.nearbyHotspotId;
-  const nearbyPrompt = nearbyLabel
-    ? nearbyLabel === "Your chair"
-      ? "At your chair — press E or Sit to use the computer"
-      : `Near: ${nearbyLabel} · press E or Interact`
-    : undefined;
   const energyLow =
     view.workplace.energy.current / view.workplace.energy.max <= 0.28;
   const energyEmpty = view.workplace.energy.current === 0;
   const highlightHotspotId: HotspotId | undefined =
     journey.target?.kind === "hotspot" ? journey.target.hotspotId : undefined;
   /** Spawning beside the exit should not bury the step the player is actually on. */
-  const nearbyIsTarget =
-    highlightHotspotId !== undefined &&
-    highlightHotspotId === spatial.nearbyHotspotId;
 
   const maximized = spatial.phase === "focus_desk";
   const deskPhase =
@@ -384,6 +375,18 @@ export function SpatialShell({
     workplaceMutationKey({ type: "movement_exertion", distanceMeters: 5 });
   const playerMovementBlocked =
     workplacePending || (canonicalMutationPending && !movementMutationPending);
+  const showContextPrompt =
+    walking &&
+    nearbyHotspotId !== undefined &&
+    !julesOpen &&
+    !breakStation &&
+    !atDesk &&
+    !canonicalMutationPending &&
+    !workplacePending;
+  const contextHotspotId = showContextPrompt ? nearbyHotspotId : undefined;
+  const contextLabel = contextHotspotId
+    ? contextLabelFor(contextHotspotId, nearbyLabel)
+    : undefined;
 
   return (
     <section
@@ -468,13 +471,21 @@ export function SpatialShell({
                 <span className="room-hud-count">{stepLabel}</span>
                 {journey.title}
               </p>
-              <p className="room-hud-line">
-                {nearbyIsTarget && nearbyPrompt ? nearbyPrompt : journey.body}
-              </p>
-              {compass ? <p className="room-hud-compass">{compass}</p> : null}
-              {!nearbyIsTarget && nearbyPrompt ? (
-                <p className="room-hud-nearby">{nearbyPrompt}</p>
+              <p className="room-hud-line">{journey.body}</p>
+              {contextHotspotId ? (
+                <button
+                  type="button"
+                  className="room-hud-prompt"
+                  onClick={() => {
+                    handleInteract(contextHotspotId);
+                  }}
+                  aria-label={`${contextLabel ?? "Interact"} — press E to interact`}
+                >
+                  <kbd>E</kbd>
+                  <span>{contextLabel ?? "Interact"}</span>
+                </button>
               ) : null}
+              {compass ? <p className="room-hud-compass">{compass}</p> : null}
               {spatial.flavorMessage ? (
                 <p className="room-flavor">{spatial.flavorMessage}</p>
               ) : null}
@@ -528,7 +539,7 @@ export function SpatialShell({
                   {mouseSensitivity.toFixed(1)}×
                 </output>
               </label>
-              {nearbyHotspotId && !breakStation ? (
+              {!showContextPrompt && nearbyHotspotId && !breakStation ? (
                 <button
                   className="start-shift"
                   onClick={() => {
