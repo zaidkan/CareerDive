@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
@@ -43,7 +43,7 @@ function client(overrides: Partial<SimulationClient> = {}): SimulationClient {
     ...overrides,
   };
 }
-it("retries failed practice startup without leaving a permanent loading screen", async () => {
+it("retries failed assessed startup without leaving a permanent loading screen", async () => {
   const user = userEvent.setup();
   const createSession = vi
     .fn<SimulationClient["createSession"]>()
@@ -58,30 +58,22 @@ it("retries failed practice startup without leaving a permanent loading screen",
   ).toBeEnabled();
   expect(screen.queryByRole("alert")).toBeNull();
   expect(createSession.mock.calls.map(([input]) => input.sessionKind)).toEqual([
-    "tutorial",
-    "tutorial",
+    "assessed",
+    "assessed",
   ]);
 });
 it("retries the assessed session after its creation fails", async () => {
   const user = userEvent.setup();
   const createSession = vi
     .fn<SimulationClient["createSession"]>()
-    .mockResolvedValueOnce({ sessionId: view.sessionId, view })
     .mockRejectedValueOnce(new Error("offline"))
-    .mockResolvedValueOnce({
-      sessionId: "assessed",
-      view: { ...view, sessionId: "assessed" },
-    });
+    .mockResolvedValueOnce({ sessionId: view.sessionId, view });
   render(<App client={client({ createSession })} />);
-  await user.click(
-    await screen.findByRole("button", { name: /Skip practice/ }),
-  );
   await user.click(
     await screen.findByRole("button", { name: "Retry starting shift" }),
   );
   expect(await screen.findByText("Assessed shift")).toBeVisible();
   expect(createSession.mock.calls.map(([input]) => input.sessionKind)).toEqual([
-    "tutorial",
     "assessed",
     "assessed",
   ]);
@@ -142,102 +134,3 @@ it.each(["Desk only", "Simple list"])(
   },
 );
 
-it("preserves selected findings when the App task request fails", async () => {
-  const user = userEvent.setup();
-  const source = view.tasks[0];
-  if (!source) throw new Error("Expected initial task");
-  const task = {
-    ...source,
-    kind: "match_reference" as const,
-    minSelections: 1,
-    maxSelections: 1,
-    relatedArtifactIds: [],
-    options: [{ id: "visible-finding", label: "Keep this finding" }],
-  };
-  const current = {
-    ...view,
-    tasks: [task],
-    availableActions: view.availableActions.filter(
-      (action) => action.taskId === task.id,
-    ),
-  };
-  const submitTaskAttempt = vi.fn().mockRejectedValueOnce(new Error("offline"));
-  render(
-    <App
-      client={client({
-        createSession: vi
-          .fn()
-          .mockResolvedValue({ sessionId: current.sessionId, view: current }),
-        submitTaskAttempt,
-      })}
-    />,
-  );
-  await user.click(
-    await screen.findByRole("button", { name: /Enter the Verdaly floor/ }),
-  );
-  await user.click(screen.getByRole("button", { name: "Simple list" }));
-  await user.click(screen.getByRole("radio", { name: "Keep this finding" }));
-  await user.click(screen.getByRole("button", { name: "Check my work" }));
-  expect(await screen.findByRole("button", { name: "Retry" })).toBeEnabled();
-  expect(
-    screen.getByRole("radio", { name: "Keep this finding" }),
-  ).toBeChecked();
-});
-
-it("ignores a late practice debrief after the assessed session starts", async () => {
-  const user = userEvent.setup();
-  let resolve!: (value: Debrief) => void;
-  const pending = new Promise<Debrief>((done) => {
-    resolve = done;
-  });
-  const finished = {
-    ...view,
-    tasks: [],
-    availableActions: [
-      {
-        id: "complete_shift" as const,
-        eventId: "shift",
-        systemId: "team_chat" as const,
-        label: "Complete shift",
-        description: "Finish work",
-        simulatedMinutes: 0,
-      },
-    ],
-    events: view.events.map((event) => ({
-      ...event,
-      status: "resolved" as const,
-    })),
-  };
-  const createSession = vi
-    .fn<SimulationClient["createSession"]>()
-    .mockResolvedValueOnce({ sessionId: view.sessionId, view: finished })
-    .mockResolvedValueOnce({
-      sessionId: "new-assessed",
-      view: { ...view, sessionId: "new-assessed" },
-    });
-  render(
-    <App
-      client={client({
-        createSession,
-        performAction: vi.fn().mockResolvedValue(finished),
-        getDebrief: vi.fn().mockReturnValue(pending),
-      })}
-    />,
-  );
-  await user.click(
-    await screen.findByRole("button", { name: /Enter the Verdaly floor/ }),
-  );
-  await user.click(screen.getByRole("button", { name: "Simple list" }));
-  await user.click(screen.getByRole("button", { name: /^Complete shift/ }));
-  expect(await screen.findByText("Loading your debrief…")).toBeVisible();
-  await user.click(screen.getByRole("button", { name: /start real shift/i }));
-  expect(await screen.findByText("Assessed shift")).toBeVisible();
-  await act(async () => {
-    resolve(debrief);
-    await pending;
-  });
-  expect(screen.queryByRole("heading", { name: "Shift debrief" })).toBeNull();
-  expect(
-    screen.getByRole("button", { name: /Enter the Verdaly floor/ }),
-  ).toBeEnabled();
-});

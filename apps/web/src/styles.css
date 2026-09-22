@@ -14,6 +14,13 @@
   --fog: #c3c9d1;
   --mute: #9aa0a6;
   --ok: #34d399;
+  --cta: #2563eb;
+  --cta-hover: #1d4ed8;
+  --mode-surface: #17302d;
+  --mode-ink: #dce9e4;
+  --mode-line: #8aa69e;
+  --mode-active-bg: #f3d47a;
+  --mode-active-ink: #152b27;
   --font-display: "Syne", "DM Sans", system-ui, sans-serif;
   --font-body: "DM Sans", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
@@ -26,6 +33,32 @@
   font-size: 16px;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Light warm theme. Dark SOC remains default; toggle sets data-theme="light". */
+:root[data-theme="light"] {
+  --ink: #faf6ef;
+  --ink-lift: #f3ecdf;
+  --desk: #fffdf8;
+  --panel: #ffffff;
+  --line: #e3d9c7;
+  --line-bright: #c9bda6;
+  --phosphor: #1d4ed8;
+  --phosphor-dim: #5b6470;
+  --signal: #0f766e;
+  --signal-hot: #b91c1c;
+  --paper: #1c1917;
+  --paper-ink: #1c1917;
+  --fog: #44403c;
+  --mute: #57534e;
+  --ok: #047857;
+  --cta: #1d4ed8;
+  --cta-hover: #1e40af;
+  --mode-surface: #fffdf8;
+  --mode-ink: #1c1917;
+  --mode-line: #a8a29e;
+  --mode-active-bg: #1c1917;
+  --mode-active-ink: #faf6ef;
 }
 
 * {
@@ -50,6 +83,34 @@ body {
   background:
     linear-gradient(180deg, #111418 0%, var(--ink) 45%, #0a0c0e 100%);
   background-attachment: fixed;
+}
+
+:root[data-theme="light"] body {
+  background:
+    linear-gradient(180deg, #fffdf8 0%, var(--ink) 55%, #f3ecdf 100%);
+  background-attachment: fixed;
+}
+
+/* Light-theme surface corrections: keep dark gradients from washing out ink text. */
+:root[data-theme="light"] .workplace-shell,
+:root[data-theme="light"] .tutorial,
+:root[data-theme="light"] .manager-context,
+:root[data-theme="light"] .shift-briefing,
+:root[data-theme="light"] section[aria-labelledby="structured-title"],
+:root[data-theme="light"] .debrief-grid article,
+:root[data-theme="light"] .floor-map {
+  background: var(--panel);
+}
+:root[data-theme="light"] .scene-side {
+  background:
+    radial-gradient(circle at 50% 30%, rgb(29 78 216 / 14%), transparent 55%),
+    linear-gradient(180deg, #e7e0d2, #d9cfbb);
+}
+:root[data-theme="light"] .briefing-beats li {
+  background: rgb(28 25 23 / 4%);
+}
+:root[data-theme="light"] .site-header {
+  background: linear-gradient(180deg, rgb(29 78 216 / 6%), transparent 70%);
 }
 
 body::before {
@@ -206,7 +267,7 @@ h1 {
 
 .mode-switch button[aria-pressed="true"] {
   color: #fff;
-  background: #2563eb;
+  background: var(--cta);
 }
 
 .shift-cta-row {
@@ -1305,11 +1366,12 @@ section[aria-labelledby="structured-title"],
 
 .start-shift {
   margin-top: 1.35rem;
+  min-height: 48px;
   padding: 0.95rem 1.4rem;
   border: 0;
   border-radius: 8px;
   color: #fff;
-  background: #2563eb;
+  background: var(--cta);
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 700;
@@ -1326,7 +1388,7 @@ section[aria-labelledby="structured-title"],
 
 .start-shift:hover {
   transform: translateY(-1px);
-  background: #1d4ed8;
+  background: var(--cta-hover);
   box-shadow:
     0 1px 2px rgb(0 0 0 / 30%),
     0 12px 28px rgb(0 0 0 / 30%);
@@ -1400,11 +1462,20 @@ section[aria-labelledby="structured-title"],
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .site-header .brand-mark::before,
+  .scene-side::before,
+  .app-loading {
+    animation: none !important;
+  }
+
   *,
   *::before,
   *::after {
-    animation: none !important;
-    transition: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  html:focus-within {
+    scroll-behavior: auto;
   }
 
   body::before {

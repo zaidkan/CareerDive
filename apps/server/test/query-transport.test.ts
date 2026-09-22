@@ -314,22 +314,24 @@ describe("query_records server transport", () => {
     const { caller } = setup();
     const sessionId = await createSession(caller);
 
-    // Legacy legality errors keep their existing transport behavior.
-    await expect(
-      caller.simulation.performAction({
-        sessionId,
-        actionId: "read_handoff",
-        eventId: "handoff-1",
-      }),
-    ).rejects.toThrow('Action "read_handoff" requires task');
+    // P3: handoff reading is a released action, no legacy quiz task required.
+    const result = await caller.simulation.performAction({
+      sessionId,
+      actionId: "read_handoff",
+      eventId: "handoff-1",
+    });
+    expect(result.sequence).toBe(1);
+    expect(result.effects).toMatchObject([
+      { type: "action_applied", actionId: "read_handoff" },
+    ]);
 
     // And an ordinary allowed action still succeeds without a payload.
-    const result = await caller.simulation.performAction({
+    const asked = await caller.simulation.performAction({
       sessionId,
       actionId: "ask_manager",
       eventId: "handoff-1",
     });
-    expect(result.sequence).toBe(1);
-    expect(result.view.queryResults).toHaveLength(0);
+    expect(asked.sequence).toBe(2);
+    expect(asked.view.queryResults).toHaveLength(0);
   });
 });
