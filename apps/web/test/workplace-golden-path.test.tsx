@@ -688,9 +688,8 @@ describe("rendered workplace golden path", () => {
         "action",
         "artifact",
         "notification",
-        "task",
       ]);
-      expect(recovered.size).toBe(4);
+      expect(recovered.size).toBe(3);
       expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
       const stored = await repository.getSession("user-1", "golden");
       expect(stored.evidence.length).toBeGreaterThan(0);
@@ -794,6 +793,30 @@ describe("rendered workplace golden path", () => {
           sessionId,
           actionId: action.id,
           eventId: action.eventId,
+          ...(action.id === "document_ticket"
+            ? {
+                ticketPayload: {
+                  ticketId: `ticket-${eventId}`,
+                  verifiedEvidence:
+                    eventId === routine
+                      ? "Scanner window and run agree."
+                      : "Sign-in and inventory records compared.",
+                  uncertainty:
+                    eventId === routine
+                      ? "Log scope remains limited."
+                      : "User identity remains unverified.",
+                  followUp:
+                    eventId === routine
+                      ? "Document closure."
+                      : "Request reviewer assessment.",
+                  sourceArtifactIds: [
+                    eventId === routine
+                      ? "scanner-window"
+                      : "device-inventory-1",
+                  ],
+                },
+              }
+            : {}),
         });
       }
       state = (await repository.getSession("user-1", sessionId)).state;
