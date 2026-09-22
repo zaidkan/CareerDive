@@ -133,9 +133,19 @@ export const WorldStateSchema = z.object({
   artifacts: z.record(z.string(), WorkArtifactSchema),
   observedArtifactIds: z.array(z.string()).default([]),
   ticketNotes: z.record(z.string(), z.string()).default({}),
-  structuredTickets: z
-    .record(z.string(), StructuredTicketSchema)
-    .default({}),
+  structuredTickets: z.record(z.string(), StructuredTicketSchema).default({}),
+  teamMessages: z
+    .array(
+      z.object({
+        id: z.string(),
+        eventId: z.string(),
+        author: z.enum(["player", "morgan"]),
+        body: z.string(),
+        actionId: SimulationActionIdSchema,
+        simMinutes: z.number().int().nonnegative(),
+      }),
+    )
+    .optional(),
   notebook: z.string().default(""),
   kbQuery: z.string().default(""),
   taskProgress: z.record(z.string(), TaskProgressSchema).default({}),

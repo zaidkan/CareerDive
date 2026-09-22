@@ -14,7 +14,9 @@ import { alertRecordSource, canOpenArtifact } from "./workplace.js";
  * against canonical state only — never serialized inputs — so clients cannot
  * join events back to pack rules. Unknown templates fall back to "general".
  */
-export function workItemCategoryForTemplate(templateId: string): WorkItemCategory {
+export function workItemCategoryForTemplate(
+  templateId: string,
+): WorkItemCategory {
   switch (templateId) {
     case "suspicious_login":
       return "main_case";
@@ -145,23 +147,31 @@ export function toClientView(state: WorldState): ClientView {
     availableActions: actions,
     operationalMessages,
     pacingMode: state.pacingMode,
-    alertRecords: (state.rules.datasets.alerts?.records ?? []).flatMap((record) => {
-      if (record.datasetId !== "alerts") return [];
-      const source = alertRecordSource(state, record.id);
-      if (!source) return [];
-      if (state.workplace.selectedAlertIdsByEvent?.[source.event.id] === record.id) return [record];
-      return [{
-        id: record.id,
-        datasetId: record.datasetId,
-        alertId: record.alertId,
-        category: record.category,
-        severity: record.severity,
-        state: record.state,
-        linkedWorkItemId: source.event.id,
-        sourceRefs: [],
-        relatedRecordIds: [],
-      }];
-    }),
+    alertRecords: (state.rules.datasets.alerts?.records ?? []).flatMap(
+      (record) => {
+        if (record.datasetId !== "alerts") return [];
+        const source = alertRecordSource(state, record.id);
+        if (!source) return [];
+        if (
+          state.workplace.selectedAlertIdsByEvent?.[source.event.id] ===
+          record.id
+        )
+          return [record];
+        return [
+          {
+            id: record.id,
+            datasetId: record.datasetId,
+            alertId: record.alertId,
+            category: record.category,
+            severity: record.severity,
+            state: record.state,
+            linkedWorkItemId: source.event.id,
+            sourceRefs: [],
+            relatedRecordIds: [],
+          },
+        ];
+      },
+    ),
     artifacts: Object.values(state.artifacts)
       .filter((artifact) => canOpenArtifact(state, artifact.id))
       .map((artifact) => {
@@ -207,6 +217,8 @@ export function toClientView(state: WorldState): ClientView {
         return preview;
       }),
     ticketNotes: state.ticketNotes,
+    structuredTickets: state.structuredTickets,
+    teamMessages: state.teamMessages ?? [],
     notebook: state.notebook,
     kbQuery: state.kbQuery,
     tasks,

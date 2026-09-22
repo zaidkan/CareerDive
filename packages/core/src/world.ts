@@ -22,7 +22,10 @@ export function createInitialWorldState(
     pack.scenario.tasks.map((task) => [task.id, task]),
   );
   const notificationRules = Object.fromEntries(
-    pack.scenario.notifications.map((notification) => [notification.id, notification]),
+    pack.scenario.notifications.map((notification) => [
+      notification.id,
+      notification,
+    ]),
   );
   // P2: map authored pack datasets into the immutable rules snapshot so the
   // query engine can read them at runtime. RuntimeDataset carries datasetId +
@@ -103,6 +106,7 @@ export function createInitialWorldState(
     ),
     observedArtifactIds: [],
     ticketNotes: {},
+    teamMessages: [],
     notebook: "",
     kbQuery: "",
     taskProgress: {},
