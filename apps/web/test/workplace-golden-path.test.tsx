@@ -392,6 +392,7 @@ describe("rendered workplace golden path", () => {
         );
         expect([...foundTasks].sort()).toEqual(
           view.tasks
+            .filter(({ kind }) => kind !== "build_summary")
             .map(
               ({ id, eventId, stepIndex }) =>
                 `${id}:${eventId}:${String(stepIndex)}`,
@@ -444,7 +445,7 @@ describe("rendered workplace golden path", () => {
             );
           }
         }
-        if (!action.taskId) {
+        if (!action.taskId || id === "document_ticket") {
           if (id === "document_ticket") {
             const button = required(
               container.querySelector<HTMLButtonElement>(
@@ -475,6 +476,14 @@ describe("rendered workplace golden path", () => {
             const sources = within(form).getAllByRole("checkbox");
             expect(sources.length).toBeGreaterThan(0);
             for (const source of sources) await user.click(source);
+            const saveDraft = required(
+              within(form).queryByRole("button", { name: "Save draft" }),
+              "ticket draft button",
+            );
+            await activate(saveDraft);
+            expect(state.structuredTickets[`ticket-${eventId}`]?.status).toBe(
+              "in_progress",
+            );
             await activate(button);
             expect(
               state.structuredTickets[`ticket-${eventId}`]?.sourceArtifactIds
@@ -799,7 +808,7 @@ describe("rendered workplace golden path", () => {
         ),
         `tutorial action ${actionId}:${eventId}`,
       );
-      if (action.taskId) {
+      if (action.taskId && action.id !== "document_ticket") {
         while (!state.taskProgress[`${eventId}:${action.taskId}`]?.completed) {
           const stepIndex =
             state.taskProgress[`${eventId}:${action.taskId}`]?.currentStep ?? 0;
