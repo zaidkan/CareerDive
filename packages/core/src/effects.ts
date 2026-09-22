@@ -159,13 +159,28 @@ export function applyResolvedEffect(input: {
   ) {
     state.teamMessages ??= [];
     state.teamMessages.push({
-      id: `${state.sessionId}-chat-${state.teamMessages.length + 1}`,
+      id: `${state.sessionId}-chat-${String(state.teamMessages.length + 1)}`,
       eventId: event.id,
       author: "player",
       body: action.freeText.trim(),
       actionId: action.id,
       simMinutes: state.simClock,
     });
+  }
+
+  if (action.id === "escalate_alert") {
+    const ticket = state.structuredTickets[`ticket-${event.id}`];
+    if (ticket) {
+      state.teamMessages ??= [];
+      state.teamMessages.push({
+        id: `${state.sessionId}-chat-${String(state.teamMessages.length + 1)}`,
+        eventId: event.id,
+        author: "player",
+        body: `Escalated ${ticket.ticketId} for review. Verified evidence: ${ticket.verifiedEvidence ?? ""} Uncertainty: ${ticket.uncertainty ?? ""} Next step: ${ticket.followUp ?? ""} Sources: ${(ticket.sourceArtifactIds ?? []).join(", ")}.`,
+        actionId: action.id,
+        simMinutes: state.simClock,
+      });
+    }
   }
 
   if (action.id === "ask_manager") {
@@ -184,7 +199,7 @@ export function applyResolvedEffect(input: {
     effects.push({ type: "consequence_recorded", consequenceId: entry.id });
     state.teamMessages ??= [];
     state.teamMessages.push({
-      id: `${state.sessionId}-chat-${state.teamMessages.length + 1}`,
+      id: `${state.sessionId}-chat-${String(state.teamMessages.length + 1)}`,
       eventId: event.id,
       author: "morgan",
       body: guidance,
