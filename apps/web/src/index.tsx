@@ -25,7 +25,13 @@ import {
   workplaceMutationKey,
 } from "./useMutationCoordinator.js";
 
-export function App({ client = defaultClient }: { client?: SimulationClient }) {
+export function App({
+  client = defaultClient,
+  briefing = "shown",
+}: {
+  client?: SimulationClient;
+  briefing?: "shown" | "hidden";
+}) {
   const [view, setView] = useState<ClientView>();
   const [sessionId, setSessionId] = useState<string>();
   const [debrief, setDebrief] = useState<Debrief>();
@@ -38,7 +44,7 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
   const [phase, setPhase] = useState<"tutorial" | "assessed">("tutorial");
   const [activeSurface, setActiveSurface] = useState<
     "briefing" | "dashboard" | "manager"
-  >("briefing");
+  >(briefing === "hidden" ? "dashboard" : "briefing");
   const [experienceMode, setExperienceMode] = useState<ExperienceMode>("walk");
   const sessionGenerationRef = useRef(0);
   const currentSessionRef = useRef<

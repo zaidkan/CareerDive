@@ -1,24 +1,26 @@
 .experience-modes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
   margin-block: 1rem;
 }
 .experience-modes button {
   min-height: 44px;
-  padding: 0.65rem 1rem;
+  padding: 0.85rem 1rem;
   font: inherit;
   font-weight: 600;
-  color: #dce9e4;
-  background: #17302d;
-  border: 1px solid #8aa69e;
-  border-radius: 0.5rem;
+  text-align: left;
+  color: var(--mode-ink);
+  background: var(--mode-surface);
+  border: 1px solid var(--mode-line);
+  border-radius: 0.75rem;
   cursor: pointer;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 20%);
 }
 .experience-modes button[aria-pressed="true"] {
-  color: #152b27;
-  background: #f3d47a;
-  border-color: #f3d47a;
+  color: var(--mode-active-ink);
+  background: var(--mode-active-bg);
+  border-color: var(--mode-active-bg);
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
@@ -26,6 +28,6 @@
   border-color: #fff;
 }
 .experience-modes button:focus-visible {
-  outline: 3px solid #f3d47a;
+  outline: 3px solid var(--mode-active-bg);
   outline-offset: 3px;
 }

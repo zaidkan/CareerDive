@@ -14,6 +14,13 @@
   --fog: #c3c9d1;
   --mute: #9aa0a6;
   --ok: #34d399;
+  --cta: #2563eb;
+  --cta-hover: #1d4ed8;
+  --mode-surface: #17302d;
+  --mode-ink: #dce9e4;
+  --mode-line: #8aa69e;
+  --mode-active-bg: #f3d47a;
+  --mode-active-ink: #152b27;
   --font-display: "Syne", "DM Sans", system-ui, sans-serif;
   --font-body: "DM Sans", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
@@ -26,6 +33,32 @@
   font-size: 16px;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Light warm theme. Dark SOC remains default; toggle sets data-theme="light". */
+:root[data-theme="light"] {
+  --ink: #faf6ef;
+  --ink-lift: #f3ecdf;
+  --desk: #fffdf8;
+  --panel: #ffffff;
+  --line: #e3d9c7;
+  --line-bright: #c9bda6;
+  --phosphor: #1d4ed8;
+  --phosphor-dim: #5b6470;
+  --signal: #0f766e;
+  --signal-hot: #b91c1c;
+  --paper: #1c1917;
+  --paper-ink: #1c1917;
+  --fog: #44403c;
+  --mute: #57534e;
+  --ok: #047857;
+  --cta: #1d4ed8;
+  --cta-hover: #1e40af;
+  --mode-surface: #fffdf8;
+  --mode-ink: #1c1917;
+  --mode-line: #a8a29e;
+  --mode-active-bg: #1c1917;
+  --mode-active-ink: #faf6ef;
 }
 
 * {
@@ -50,6 +83,34 @@ body {
   background:
     linear-gradient(180deg, #111418 0%, var(--ink) 45%, #0a0c0e 100%);
   background-attachment: fixed;
+}
+
+:root[data-theme="light"] body {
+  background:
+    linear-gradient(180deg, #fffdf8 0%, var(--ink) 55%, #f3ecdf 100%);
+  background-attachment: fixed;
+}
+
+/* Light-theme surface corrections: keep dark gradients from washing out ink text. */
+:root[data-theme="light"] .workplace-shell,
+:root[data-theme="light"] .tutorial,
+:root[data-theme="light"] .manager-context,
+:root[data-theme="light"] .shift-briefing,
+:root[data-theme="light"] section[aria-labelledby="structured-title"],
+:root[data-theme="light"] .debrief-grid article,
+:root[data-theme="light"] .floor-map {
+  background: var(--panel);
+}
+:root[data-theme="light"] .scene-side {
+  background:
+    radial-gradient(circle at 50% 30%, rgb(29 78 216 / 14%), transparent 55%),
+    linear-gradient(180deg, #e7e0d2, #d9cfbb);
+}
+:root[data-theme="light"] .briefing-beats li {
+  background: rgb(28 25 23 / 4%);
+}
+:root[data-theme="light"] .site-header {
+  background: linear-gradient(180deg, rgb(29 78 216 / 6%), transparent 70%);
 }
 
 body::before {
@@ -206,7 +267,7 @@ h1 {
 
 .mode-switch button[aria-pressed="true"] {
   color: #fff;
-  background: #2563eb;
+  background: var(--cta);
 }
 
 .shift-cta-row {
@@ -1305,11 +1366,12 @@ section[aria-labelledby="structured-title"],
 
 .start-shift {
   margin-top: 1.35rem;
+  min-height: 48px;
   padding: 0.95rem 1.4rem;
   border: 0;
   border-radius: 8px;
   color: #fff;
-  background: #2563eb;
+  background: var(--cta);
   font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 700;
@@ -1326,7 +1388,7 @@ section[aria-labelledby="structured-title"],
 
 .start-shift:hover {
   transform: translateY(-1px);
-  background: #1d4ed8;
+  background: var(--cta-hover);
   box-shadow:
     0 1px 2px rgb(0 0 0 / 30%),
     0 12px 28px rgb(0 0 0 / 30%);
@@ -1400,11 +1462,20 @@ section[aria-labelledby="structured-title"],
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .site-header .brand-mark::before,
+  .scene-side::before,
+  .app-loading {
+    animation: none !important;
+  }
+
   *,
   *::before,
   *::after {
-    animation: none !important;
-    transition: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  html:focus-within {
+    scroll-behavior: auto;
   }
 
   body::before {
@@ -2960,149 +3031,40 @@ section[aria-labelledby="structured-title"],
 }
 
 .desk-os-lock {
-  position: relative;
-  isolation: isolate;
   display: grid;
-  place-items: center;
+  grid-template-columns: auto minmax(16rem, 22rem);
+  justify-content: center;
+  align-items: start;
+  gap: 1.4rem 1.6rem;
   min-height: 100%;
-  padding: 3.5rem 1.25rem 4rem;
-  overflow: hidden;
-  background: #172d38;
-  color: #f7f9f9;
-}
-
-.desk-os-locked {
-  grid-template-rows: minmax(0, 1fr);
-}
-
-.desk-os-locked .desk-os-body {
-  position: relative;
-  grid-template-rows: minmax(0, 1fr);
-  padding: 0;
-  row-gap: 0;
-}
-
-.desk-os-locked .desk-os-window-actions {
-  position: absolute;
-  z-index: 4;
-  top: 1rem;
-  right: 1rem;
-}
-
-.desk-os-locked .desk-os-body > .desk-os-lock {
-  grid-row: 1;
-  min-height: 0;
-}
-
-.desk-os-lock::before {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  inset: -1.5rem;
-  background:
-    radial-gradient(
-      ellipse 28% 16% at 73% 38%,
-      rgb(255 219 177 / 84%),
-      transparent 75%
-    ),
-    radial-gradient(ellipse 59% 29% at 5% 71%, #345562 47%, transparent 49%),
-    radial-gradient(ellipse 63% 30% at 95% 77%, #244956 48%, transparent 50%),
-    radial-gradient(ellipse 88% 30% at 50% 109%, #123c49 48%, transparent 50%),
-    linear-gradient(
-      180deg,
-      #9fbfc4 0%,
-      #cfceba 43%,
-      #819ba1 54%,
-      #3b616d 73%,
-      #123440 100%
-    );
-  filter: blur(16px) saturate(0.88);
-  transform: scale(1.05);
-}
-
-.desk-os-lock::after {
-  content: "";
-  position: absolute;
-  z-index: 1;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgb(8 20 30 / 24%),
-    rgb(8 20 30 / 40%) 54%,
-    rgb(7 16 25 / 72%)
-  );
-}
-
-.desk-os-lock-brand {
-  position: absolute;
-  z-index: 2;
-  top: 1.25rem;
-  left: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  color: rgb(255 255 255 / 92%);
-  font-size: 0.87rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-}
-
-.desk-os-lock-brand-mark {
-  display: grid;
-  place-items: center;
-  width: 1.65rem;
-  height: 1.65rem;
-  border: 1px solid rgb(255 255 255 / 45%);
-  border-radius: 0.4rem;
-  background: rgb(10 37 42 / 32%);
-  font-family: var(--font-display);
-  font-size: 0.95rem;
+  padding: 1.1rem 1.2rem 1.4rem;
 }
 
 .desk-os-bezel-note {
-  position: absolute;
-  z-index: 2;
-  bottom: 2.1rem;
-  left: clamp(1rem, 5%, 3.5rem);
+  position: relative;
+  right: auto;
+  top: 2.4rem;
+  z-index: 8;
   width: 10.2rem;
   padding: 0.6rem 0.7rem 0.75rem;
-  transform: rotate(-6deg);
+  transform: rotate(-7deg);
   border: 1px solid #d4c07a;
   background: #f3e6a8;
   color: #3a2018;
-  box-shadow: 1px 7px 20px rgb(0 0 0 / 24%);
+  box-shadow: 2px 3px 0 rgb(0 0 0 / 22%);
   font-family: Georgia, "Times New Roman", serif;
   pointer-events: none;
 }
 
 .desk-os-lock-card {
-  position: relative;
-  z-index: 2;
-  width: min(23.5rem, 100%);
-  padding: 1.4rem 1.65rem 1.25rem;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: 1rem;
-  background: rgb(9 22 32 / 72%);
-  box-shadow: 0 18px 52px rgb(2 10 17 / 35%);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  text-align: center;
-}
-
-.desk-os-lock-avatar {
-  display: grid;
-  place-items: center;
-  width: 3.6rem;
-  height: 3.6rem;
-  margin: 0 auto 0.8rem;
-  border: 1px solid rgb(255 255 255 / 33%);
-  border-radius: 50%;
-  background: linear-gradient(145deg, #6b8891, #2c535a);
-  box-shadow: 0 5px 18px rgb(0 0 0 / 23%);
-  color: #fff;
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 700;
+  width: min(28rem, 100%);
+  padding: 1.5rem 1.6rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 30%),
+    0 12px 32px rgb(0 0 0 / 30%);
 }
 
 .desk-os-lock-status,
@@ -3131,19 +3093,6 @@ section[aria-labelledby="structured-title"],
   letter-spacing: -0.02em;
 }
 
-.desk-os-lock-card h2 {
-  margin-bottom: 0.1rem;
-  color: #fff;
-  font-size: 1.45rem;
-  line-height: 1.2;
-}
-
-.desk-os-lock-account {
-  margin: 0;
-  color: #d1e0e3;
-  font-size: 0.78rem;
-}
-
 .desk-os-hint,
 .desk-os-empty {
   color: var(--mute);
@@ -3153,168 +3102,44 @@ section[aria-labelledby="structured-title"],
 
 .desk-os-login-form {
   display: grid;
-  gap: 0.7rem;
-  margin-top: 1.15rem;
-  text-align: left;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
 }
 
 .desk-os-login-form label {
   display: grid;
-  gap: 0.32rem;
-  color: #e2ebed;
-  font-size: 0.76rem;
+  gap: 0.25rem;
+  color: var(--mute);
+  font-size: 0.74rem;
   font-weight: 600;
 }
 
 .desk-os-login-form input {
-  width: 100%;
-  min-height: 2.55rem;
-  padding: 0.55rem 0.72rem;
-  border: 1px solid rgb(255 255 255 / 36%);
-  border-radius: 0.5rem;
-  background: rgb(252 254 255 / 94%);
-  color: #11222b;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--line-bright);
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--paper);
   font-family: var(--font-body);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .desk-os-login-form input:focus {
-  outline: 3px solid #86dbdb;
-  outline-offset: 2px;
-  border-color: #143e49;
+  outline: 2px solid var(--phosphor);
+  outline-offset: 1px;
+  border-color: var(--phosphor);
 }
 
 .desk-os-error {
   margin: 0;
-  color: #ffbab2;
+  color: #f49a8e;
   font-size: 0.78rem;
 }
 
 .desk-os-lock-actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-top: 0.25rem;
-}
-
-.desk-os-lock-actions .desk-os-primary {
-  order: 2;
-  min-width: 6.5rem;
-  border-color: #d6efeb;
-  background: #e6f4f1;
-  color: #12343a;
-}
-
-.desk-os-lock-actions .desk-os-primary:hover:not(:disabled) {
-  background: #fff;
-}
-
-.desk-os-lock-actions .desk-os-primary:disabled {
-  opacity: 0.68;
-  cursor: wait;
-}
-
-.desk-os-lock-actions .desk-os-ghost {
-  border-color: transparent;
-  color: #e4f0f1;
-  background: transparent;
-}
-
-.desk-os-lock-actions .desk-os-ghost:hover {
-  background: rgb(255 255 255 / 12%);
-}
-
-.desk-os-lock-actions button:focus-visible {
-  outline: 3px solid #86dbdb;
-  outline-offset: 2px;
-}
-
-.desk-os-lock-card > .desk-os-hint {
-  margin: 0.95rem 0 0;
-  padding-top: 0.8rem;
-  border-top: 1px solid rgb(255 255 255 / 17%);
-  color: #d6e1e3;
-  font-size: 0.72rem;
-}
-
-.desk-os-lock-card > .desk-os-hint code {
-  color: #fff;
-}
-
-.desk-os-lock-tray {
-  position: absolute;
-  z-index: 2;
-  right: 1.65rem;
-  bottom: 1.4rem;
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  color: rgb(255 255 255 / 88%);
-  font-size: 0.79rem;
-  font-variant-numeric: tabular-nums;
-  pointer-events: none;
-  user-select: none;
-}
-
-.desk-os-lock-tray svg {
-  width: 1.15rem;
-  height: 1.15rem;
-}
-
-@media (max-width: 700px) {
-  .desk-os-lock {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 1.1rem;
-    padding: 4rem 1rem 3.5rem;
-    overflow-y: auto;
-  }
-
-  .desk-os-lock-card {
-    order: 1;
-    padding: 1.2rem;
-  }
-
-  .desk-os-bezel-note {
-    position: relative;
-    bottom: auto;
-    left: auto;
-    order: 2;
-    align-self: flex-start;
-    margin-left: 0.5rem;
-    transform: rotate(-3deg);
-  }
-
-  .desk-os-lock-tray {
-    right: 1rem;
-    bottom: 0.9rem;
-  }
-}
-
-@media (max-height: 650px) and (min-width: 701px) {
-  .desk-os-lock {
-    padding-top: 3.75rem;
-    padding-bottom: 2.5rem;
-    overflow-y: auto;
-  }
-
-  .desk-os-lock-card {
-    padding-top: 1rem;
-    padding-bottom: 1rem;
-  }
-
-  .desk-os-lock-avatar {
-    width: 2.8rem;
-    height: 2.8rem;
-    margin-bottom: 0.45rem;
-  }
-
-  .desk-os-login-form {
-    margin-top: 0.7rem;
-    gap: 0.45rem;
-  }
+  flex-wrap: wrap;
+  gap: 0.45rem;
 }
 
 .desk-os-home {
