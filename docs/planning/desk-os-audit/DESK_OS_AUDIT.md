@@ -1,6 +1,6 @@
 # Desk OS current-state audit
 
-Audit date: 2026-09-20. Repository: `/Users/zaid/orca/Career-Expo`; branch `main`; HEAD `3e8fe62382ed1b9d7aa83a8fab47bb28c66500ba`. Scope: current working tree, including pre-existing uncommitted work. This is an implementation inventory for architecture planning, not an overhaul design or release approval.
+Audit date: 2026-09-20. Repository checkout: Career Expo; branch `main`; HEAD `3e8fe62382ed1b9d7aa83a8fab47bb28c66500ba`. Scope: current working tree, including pre-existing uncommitted work. This is an implementation inventory for architecture planning, not an overhaul design or release approval.
 
 ## Evidence and baseline
 
