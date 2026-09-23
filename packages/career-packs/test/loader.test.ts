@@ -31,15 +31,19 @@ describe("career pack governance", () => {
     ).toBe("stages");
   });
 
-  it("ships the approved beginner shift task set and one routine interruption", async () => {
+  it("ships the approved beginner workday breadth without draft scenarios", async () => {
     const pack = loadCareerPack(
       await readCheckedInPack(),
       new Date("2026-06-22"),
     );
     expect(pack.career.events).toEqual([
-      "suspicious_login",
       "incomplete_handoff",
+      "suspicious_login",
+      "access_request",
       "routine_alert_review",
+      "employee_login_help",
+      "morgan_status_check",
+      "end_shift_handoff",
     ]);
     expect(pack.scenario.tasks.map(({ id }) => id)).toEqual(
       expect.arrayContaining([
@@ -53,14 +57,30 @@ describe("career pack governance", () => {
         "scanner-alert-compare",
         "scanner-window-match",
         "scanner-ticket-summary",
+        "access-authority-check",
+        "employee-login-troubleshooting",
+        "morgan-midshift-update",
+        "end-shift-continuity",
       ]),
     );
-    expect(pack.scenario.notifications).toEqual([
-      expect.objectContaining({
-        id: "routine-scanner-arrived",
-        eventTemplateId: "routine_alert_review",
-      }),
-    ]);
+    expect(pack.scenario.notifications).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "routine-scanner-arrived",
+          eventTemplateId: "routine_alert_review",
+        }),
+        expect.objectContaining({
+          id: "login-help-arrived",
+          eventTemplateId: "employee_login_help",
+        }),
+        expect.objectContaining({
+          id: "handoff-reminder",
+          eventTemplateId: "end_shift_handoff",
+        }),
+      ]),
+    );
+    expect(pack.career.events).not.toContain("blocked_spray_review");
+    expect(pack.career.events).not.toContain("phishing_report");
   });
 
   it.each([

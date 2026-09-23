@@ -392,7 +392,9 @@ describe("rendered workplace golden path", () => {
         );
         expect([...foundTasks].sort()).toEqual(
           view.tasks
-            .filter(({ kind }) => kind !== "build_summary")
+            // document_ticket uses TicketComposer; every other task kind,
+            // including authored build summaries, must render a task panel.
+            .filter(({ actionId }) => actionId !== "document_ticket")
             .map(
               ({ id, eventId, stepIndex }) =>
                 `${id}:${eventId}:${String(stepIndex)}`,
@@ -682,6 +684,9 @@ describe("rendered workplace golden path", () => {
       await perform("dismiss_alert", routine);
       await perform("inspect_account_history", suspicious);
       await perform("check_device_inventory", suspicious);
+      await perform("route_access_request", "access-request-1");
+      await perform("resolve_login_help", "login-help-1");
+      await perform("send_status_update", "status-check-1");
       await verifyAvailableTargets();
       for (const label of [
         "Open fridge",
@@ -711,6 +716,7 @@ describe("rendered workplace golden path", () => {
         "suspected, not yet proven",
       );
       await perform("escalate_alert", suspicious);
+      await perform("submit_shift_handoff", "shift-handoff-1");
       await verifyAvailableTargets();
       await perform("complete_shift", "shift");
       expect(state.workplace.energy.current).toBeGreaterThan(0);
@@ -730,8 +736,9 @@ describe("rendered workplace golden path", () => {
         "action",
         "artifact",
         "notification",
+        "task",
       ]);
-      expect(recovered.size).toBe(3);
+      expect(recovered.size).toBe(4);
       expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
       const stored = await repository.getSession("user-1", "golden");
       expect(stored.evidence.length).toBeGreaterThan(0);
@@ -795,8 +802,12 @@ describe("rendered workplace golden path", () => {
       [routine, "dismiss_alert"],
       [suspicious, "inspect_account_history"],
       [suspicious, "check_device_inventory"],
+      ["access-request-1", "route_access_request"],
+      ["login-help-1", "resolve_login_help"],
+      ["status-check-1", "send_status_update"],
       [suspicious, "document_ticket"],
       [suspicious, "escalate_alert"],
+      ["shift-handoff-1", "submit_shift_handoff"],
       ["shift", "complete_shift"],
     ] as const;
     for (const [eventId, actionId] of tutorialActions) {
