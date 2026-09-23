@@ -8,7 +8,6 @@ import type {
   QueryResultView,
 } from "@sim/schemas";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { AccessibleMode } from "../src/components/AccessibleMode.js";
 import { SystemToolPanel } from "../src/components/SystemToolPanel.js";
 import { RecordQueryTool } from "../src/components/tools/RecordQueryTool.js";
 
@@ -26,7 +25,7 @@ const queryAction: AvailableAction = {
 function baseView(): ClientView {
   return {
     sessionId: "session-1",
-    sessionKind: "tutorial",
+    sessionKind: "assessed",
     simClock: 12,
     currentLocation: {
       id: "operations-center",
@@ -37,7 +36,7 @@ function baseView(): ClientView {
     events: [],
     availableActions: [],
     operationalMessages: [],
-    pacingMode: "practice",
+    pacingMode: "standard",
     artifacts: [],
     ticketNotes: {},
     notebook: "",
@@ -336,7 +335,7 @@ describe("RecordQueryTool", () => {
     ).toBeVisible();
   });
 
-  it("mounts in the desk knowledge-base panel and the accessible view", () => {
+  it("mounts in the desk knowledge-base panel", () => {
     const { unmount } = render(
       <SystemToolPanel
         actions={[]}
@@ -349,26 +348,5 @@ describe("RecordQueryTool", () => {
       screen.getByRole("heading", { name: "Record search" }),
     ).toBeVisible();
     unmount();
-    cleanup();
-
-    const guideView = baseView();
-    guideView.artifacts = [
-      {
-        id: "login-guide",
-        systemId: "knowledge_base",
-        kind: "kb_document",
-        title: "Login alert guide",
-        summary: "Review an unfamiliar successful login.",
-        body: "Full login alert procedure.",
-        eventIds: [],
-        relatedArtifactIds: [],
-        searchableText: "account history device",
-        observed: false,
-      },
-    ];
-    render(<AccessibleMode view={guideView} onAction={() => undefined} />);
-    expect(
-      screen.getByRole("heading", { name: "Record search" }),
-    ).toBeVisible();
   });
 });

@@ -1,5 +1,5 @@
 import type { ClientView, WorkSystemId } from "@sim/schemas";
-import { getShiftGuidance, getTutorialStep, TUTORIAL_STEPS } from "./guidance.js";
+import { getShiftGuidance, getFirstDayStep, FIRST_DAY_STEPS } from "./guidance.js";
 import type { HotspotId, RoomId, SpatialPhase } from "./world/worldTypes.js";
 
 export type JourneyStepId =
@@ -38,8 +38,8 @@ const JOURNEY_ORDER: JourneyStepId[] = [
 
 export const JOURNEY_TOTAL = JOURNEY_ORDER.length;
 
-const DESK_STEP_BY_TUTORIAL_ID: Record<
-  (typeof TUTORIAL_STEPS)[number]["id"],
+const DESK_STEP_BY_FIRST_DAY_ID: Record<
+  (typeof FIRST_DAY_STEPS)[number]["id"],
   JourneyStepId
 > = {
   email: "read_handoff",
@@ -61,7 +61,7 @@ function step(
   };
 }
 
-/** Tutorial titles carry their own "Step 1 · " prefix; the journey numbers itself. */
+/** First-day titles carry their own "Step 1 · " prefix; the journey numbers itself. */
 function withoutStepPrefix(title: string): string {
   return title.replace(/^Step\s+\d+\s+·\s+/u, "");
 }
@@ -112,9 +112,9 @@ export function getJourneyStep({
   }
 
   const guidance = getShiftGuidance(view);
-  const tutorialStep = getTutorialStep(view);
+  const firstDayStep = getFirstDayStep(view);
 
-  if (!tutorialStep) {
+  if (!firstDayStep) {
     return step("ready", {
       title: "You have covered the basics",
       body:
@@ -123,9 +123,9 @@ export function getJourneyStep({
     });
   }
 
-  return step(DESK_STEP_BY_TUTORIAL_ID[tutorialStep.id], {
-    title: withoutStepPrefix(tutorialStep.title),
-    body: guidance?.detail ?? tutorialStep.body,
+  return step(DESK_STEP_BY_FIRST_DAY_ID[firstDayStep.id], {
+    title: withoutStepPrefix(firstDayStep.title),
+    body: guidance?.detail ?? firstDayStep.body,
     ...(guidance ? { target: { kind: "system", systemId: guidance.systemId } } : {}),
   });
 }
