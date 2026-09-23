@@ -66,13 +66,16 @@ export function ArrivalFilm({
   }
 
   if (required) {
+    // TEMPORARY screenshots bypass — remove after capture: unlock immediately.
+    const screenshotsBypass = true;
     return (
       <section className="film-gate" aria-labelledby="arrival-film-gate">
         <p className="eyebrow">Step 1 of 2 · Arrival film</p>
         <h2 id="arrival-film-gate">Short preview film before your first day</h2>
         <p className="lede">
-          Watch the film so you can continue to the simulator itself. It plays
-          through once, freezes at the doors, then the start control appears.
+          {screenshotsBypass
+            ? "Screenshots mode — film not yet uploaded. Continue directly to briefing."
+            : "Watch the film so you can continue to the simulator itself. It plays through once, freezes at the doors, then the start control appears."}
         </p>
         {!playing && !reducedMotion ? (
           <img
@@ -171,7 +174,15 @@ export function ArrivalFilm({
           />
         ) : null}
         <div className="hero-ctas">
-          {!playing && !reducedMotion && !doorHold ? (
+          {screenshotsBypass ? (
+            <button
+              type="button"
+              className="start-shift"
+              onClick={() => onSeen?.()}
+            >
+              Continue to briefing — bypass film
+            </button>
+          ) : !playing && !reducedMotion && !doorHold ? (
             <button
               type="button"
               className="start-shift"
@@ -183,7 +194,7 @@ export function ArrivalFilm({
             </button>
           ) : null}
         </div>
-        {!doorHold && !reducedMotion ? (
+        {!screenshotsBypass && !doorHold && !reducedMotion ? (
           <p className="mode-note">
             No skip — finish the film to unlock the simulator.
           </p>

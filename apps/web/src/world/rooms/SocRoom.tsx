@@ -1,5 +1,5 @@
 import { ContactShadows } from "@react-three/drei";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ClientWorkplaceState } from "@sim/schemas";
 import * as THREE from "three";
@@ -10,6 +10,7 @@ import { NameTag } from "../NameTag.js";
 import { PlayerController } from "../PlayerController.js";
 import { useWorldQuality } from "../effects/useAdaptiveQuality.js";
 import { useAmbientMotion } from "../props/ambient.js";
+import { AmbientClockDriver, useAmbient } from "../props/ambientClock.js";
 import { DustMotes, VentPapers } from "../props/atmosphere.js";
 import {
   CeilingAC,
@@ -76,7 +77,7 @@ import {
 /**
  * Alert boards with a faint cosmetic screen-breathing pass.
  * Severity colors stay (red/amber/teal carry meaning); only intensity
- * breathes, and it freezes under prefers-reduced-motion.
+ * breathes, and it freezes under prefers-reduced-motion / LOW tier.
  */
 function AlertWall({ animated = true }: { animated?: boolean }) {
   const live = useAmbientMotion(animated);
@@ -86,16 +87,20 @@ function AlertWall({ animated = true }: { animated?: boolean }) {
     null,
   ]);
 
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime;
-    for (let i = 0; i < screens.current.length; i += 1) {
-      const mat = screens.current[i];
-      if (!mat) continue;
-      mat.emissiveIntensity = live
-        ? 0.65 + Math.sin(t * (0.9 + i * 0.23) + i * 2.1) * 0.08
-        : 0.65;
-    }
-  });
+  useAmbient(
+    (t) => {
+      for (let i = 0; i < screens.current.length; i += 1) {
+        const mat = screens.current[i];
+        if (!mat) continue;
+        mat.emissiveIntensity = live
+          ? 0.65 + Math.sin(t * (0.9 + i * 0.23) + i * 2.1) * 0.08
+          : 0.65;
+      }
+    },
+    8,
+    live,
+    [live],
+  );
 
   return (
     <group position={ALERT_POS}>
@@ -272,6 +277,7 @@ export function SocRoom({
         attach="fog"
         args={["#20282b", seated ? 14 : 20, seated ? 28 : 38]}
       />
+      <AmbientClockDriver enabled={quality.ambientEnabled && !seated} />
       <SocLighting
         seated={seated}
         directionalShadows={quality.directionalShadows}
