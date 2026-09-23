@@ -7,12 +7,10 @@ import type { DeskOsTab } from "./tabs.js";
 export function DashboardHome({
   view,
   guidance,
-  guided,
   onOpenTab,
 }: {
   view: ClientView;
   guidance: ShiftGuidance | null;
-  guided?: boolean;
   onOpenTab: (tab: DeskOsTab) => void;
 }) {
   const counts = systemOpenCounts(view);
@@ -40,7 +38,7 @@ export function DashboardHome({
       {guidance ? (
         <div className="desk-os-guidance">
           <p className="eyebrow">
-            {guided ? "Practice · next step" : "Suggested"}
+            Suggested
           </p>
           <h3>{guidance.headline}</h3>
           <button

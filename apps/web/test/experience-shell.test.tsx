@@ -1,198 +1,51 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import type { ClientView } from "@sim/schemas";
+import { afterEach, expect, it, vi } from "vitest";
+import { loadDefaultCybersecurityPack } from "@sim/career-packs";
+import { createInitialWorldState, toClientView } from "@sim/core";
+import type { WorkstationProps } from "../src/components/shared.js";
 import { ExperienceShell } from "../src/experience/ExperienceShell.js";
 
+const spatial = vi.hoisted(() => ({ fail: false, render: vi.fn<(props: WorkstationProps) => void>() }));
 vi.mock("../src/world/SpatialShell.js", () => ({
-  SpatialShell: () => {
-    throw new Error("WebGL is unavailable");
+  SpatialShell: (props: WorkstationProps) => {
+    spatial.render(props);
+    if (spatial.fail) throw new Error("WebGL is unavailable");
+    return <div>Spatial workplace</div>;
   },
 }));
+afterEach(() => { cleanup(); spatial.fail = false; vi.restoreAllMocks(); spatial.render.mockClear(); });
+const view = toClientView(createInitialWorldState("recovery", 24, {}, loadDefaultCybersecurityPack()));
 
-afterEach(cleanup);
+it("enters SpatialShell with the canonical view and no product selector", async () => {
+  render(<ExperienceShell view={view} onAction={vi.fn()} />);
+  expect(await screen.findByText("Spatial workplace")).toBeVisible();
+  expect(spatial.render.mock.lastCall?.[0].view).toBe(view);
+  expect(screen.queryByRole("navigation", { name: /Choose how/ })).toBeNull();
+  expect(screen.queryByRole("region", { name: "Workplace recovery" })).toBeNull();
+});
 
-const view: ClientView = {
-  sessionId: "session-1",
-  sessionKind: "assessed",
-  simClock: 10,
-  currentLocation: {
-    id: "operations-center",
-    name: "Security Operations Center",
-    connectedLocationIds: [],
-    interactableIds: ["alert-dashboard"],
-  },
-  events: [],
-  availableActions: [],
-  operationalMessages: [],
-  pacingMode: "standard",
-  artifacts: [],
-  ticketNotes: {},
-  notebook: "",
-  kbQuery: "",
-  tasks: [],
-  notifications: [],
-  queryResults: [],
-  workplace: {
-    energy: { current: 0, max: 100 },
-    carriedSnackBites: 1,
-    fridgeSnackBars: 2,
-    fridgeOpen: false,
-    coffeeServings: 2,
-    coffeeStage: "idle",
-    julesTopicsSeen: [],
-    emergencyRecoveryUsed: false,
-  },
-};
-
-describe("ExperienceShell", () => {
-  it("selects each peer renderer without submitting a canonical action", async () => {
+it.each(["failure", "accessibility"] as const)("recovers after %s without changing canonical session state", async (cause) => {
+  const before = JSON.stringify(view);
+  const onAction = vi.fn();
+  const onWorkplaceInteraction = vi.fn().mockResolvedValue({ view, sequence: 1, feedback: "artifact_opened" });
+  if (cause === "failure") {
+    spatial.fail = true;
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+  }
+  render(<ExperienceShell view={view} onAction={onAction} onWorkplaceInteraction={onWorkplaceInteraction} />);
+  if (cause === "accessibility") {
     const user = userEvent.setup();
-    const onModeChange = vi.fn();
-    const onAction = vi.fn();
-    const onWorkplaceInteraction = vi.fn();
-
-    const { rerender } = render(
-      <ExperienceShell
-        mode="desk"
-        onAction={onAction}
-        onModeChange={onModeChange}
-        onWorkplaceInteraction={onWorkplaceInteraction}
-        view={view}
-      />,
-    );
-
-    expect(
-      await screen.findByRole("heading", { name: "Your workstation" }),
-    ).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Simple list" }));
-    expect(onModeChange).toHaveBeenCalledWith("list");
-    expect(onAction).not.toHaveBeenCalled();
-    expect(onWorkplaceInteraction).not.toHaveBeenCalled();
-
-    rerender(
-      <ExperienceShell
-        mode="list"
-        onAction={onAction}
-        onModeChange={onModeChange}
-        onWorkplaceInteraction={onWorkplaceInteraction}
-        view={view}
-      />,
-    );
-    expect(
-      await screen.findByRole("heading", { name: "Structured workplace view" }),
-    ).toBeVisible();
-  });
-
-  it("reuses finite recovery and Jules interactions in desk-only mode", async () => {
-    const user = userEvent.setup();
-    const onWorkplaceInteraction = vi.fn().mockResolvedValue({
-      view,
-      sequence: 1,
-      feedback: "energy_recovered",
-    });
-
-    render(
-      <ExperienceShell
-        mode="desk"
-        onAction={() => undefined}
-        onModeChange={() => undefined}
-        onWorkplaceInteraction={onWorkplaceInteraction}
-        view={view}
-      />,
-    );
-
-    expect(await screen.findByTestId("energy-meter")).toHaveAttribute(
-      "aria-valuenow",
-      "0",
-    );
-    await user.click(
-      screen.getByRole("button", { name: "Eat snack — 1 bite remaining" }),
-    );
-    await user.click(screen.getByRole("button", { name: "Open fridge" }));
-    await user.click(screen.getByRole("button", { name: "Start coffee" }));
-    expect(
-      screen.queryByRole("button", { name: "Use emergency recovery" }),
-    ).toBeNull();
-    await user.click(screen.getByRole("button", { name: "Talk to Jules" }));
-    await user.click(screen.getByRole("button", { name: "First day rhythm" }));
-
-    expect(onWorkplaceInteraction).toHaveBeenCalledWith({
-      type: "eat_snack_bite",
-    });
-    expect(onWorkplaceInteraction).toHaveBeenCalledWith({
-      type: "open_fridge",
-    });
-    expect(onWorkplaceInteraction).toHaveBeenCalledWith({
-      type: "start_coffee",
-    });
-    expect(onWorkplaceInteraction).toHaveBeenCalledWith({
-      type: "talk_to_jules",
-      topic: "first_day",
-    });
-  });
-
-  it("offers emergency recovery only after the finite resources are exhausted", async () => {
-    const user = userEvent.setup();
-    const onWorkplaceInteraction = vi.fn().mockResolvedValue({
-      view,
-      sequence: 1,
-      feedback: "energy_recovered",
-    });
-    const exhaustedView: ClientView = {
-      ...view,
-      workplace: {
-        ...view.workplace,
-        carriedSnackBites: 0,
-        fridgeSnackBars: 0,
-        coffeeServings: 0,
-      },
-    };
-
-    render(
-      <ExperienceShell
-        mode="list"
-        onAction={() => undefined}
-        onModeChange={() => undefined}
-        onWorkplaceInteraction={onWorkplaceInteraction}
-        view={exhaustedView}
-      />,
-    );
-
-    await user.click(
-      await screen.findByRole("button", { name: "Use emergency recovery" }),
-    );
-    expect(onWorkplaceInteraction).toHaveBeenCalledWith({
-      type: "emergency_recovery",
-    });
-  });
-
-  it("falls back to desk-only mode when the spatial renderer fails", async () => {
-    const onModeChange = vi.fn();
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {
-      // React reports the expected boundary error in development.
-    });
-
-    try {
-      render(
-        <ExperienceShell
-          mode="walk"
-          onAction={() => undefined}
-          onModeChange={onModeChange}
-          view={view}
-        />,
-      );
-
-      await waitFor(() => {
-        expect(onModeChange).toHaveBeenCalledWith("desk");
-      });
-      expect(await screen.findByRole("alert")).toHaveTextContent(
-        /office view is unavailable/i,
-      );
-    } finally {
-      consoleError.mockRestore();
-    }
-  });
+    await user.click(await screen.findByText("Accessibility recovery"));
+    await user.click(screen.getByRole("button", { name: "Recover workstation access" }));
+  }
+  expect(await screen.findByRole("heading", { name: "Your workstation" })).toBeVisible();
+  expect(JSON.stringify(view)).toBe(before);
+  expect(onWorkplaceInteraction).not.toHaveBeenCalled();
+  expect(onAction).not.toHaveBeenCalled();
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Open message" }));
+  expect(onWorkplaceInteraction).toHaveBeenCalledWith({ type: "open_artifact", artifactId: "handoff-email" });
 });

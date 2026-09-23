@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import type { WorkSystemId } from "@sim/schemas";
 import { SystemToolPanel } from "./SystemToolPanel.js";
 import { GuidancePanel } from "./GuidancePanel.js";
-import { OperationalMessages, type ModeProps } from "./shared.js";
-import { getShiftGuidance, getTutorialStep } from "../guidance.js";
+import { OperationalMessages, type WorkstationProps } from "./shared.js";
+import { getShiftGuidance } from "../guidance.js";
 import { WORK_SYSTEMS, formatShiftClock, systemLabel } from "../systems.js";
 import {
   deriveSystemState,
@@ -24,10 +24,8 @@ export function WorkSurface({
   onWorkplaceInteraction,
   mutationState,
   onRetryMutation,
-  guided = false,
-}: ModeProps & { guided?: boolean }) {
+}: WorkstationProps) {
   const guidance = getShiftGuidance(view);
-  const tutorialStep = guided ? getTutorialStep(view) : null;
   const recommendedSystemId = guidance?.systemId;
 
   const initialSystem: WorkSystemId =
@@ -48,12 +46,6 @@ export function WorkSurface({
     if (focusRequest > 0) headingRef.current?.focus();
   }, [focusRequest]);
 
-  useEffect(() => {
-    if (recommendedSystemId && guided) {
-      setSystemId(recommendedSystemId);
-      setSelectedEventId(undefined);
-    }
-  }, [guided, recommendedSystemId, tutorialStep?.id]);
 
   const { systemEvents, selectedEvent, contextualActions, highlightActionId } =
     deriveSystemState(view, systemId, { selectedEventId, guidance });
@@ -107,7 +99,7 @@ export function WorkSurface({
         guidance={guidance}
         onGoToSystem={openSystem}
         currentSystemId={systemId}
-        title={guided ? "Practice · what to do next" : "What to do next"}
+        title="What to do next"
       />
 
       <nav className="system-dock" aria-label="Work systems">

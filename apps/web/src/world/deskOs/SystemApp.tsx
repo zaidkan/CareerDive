@@ -22,7 +22,6 @@ export function SystemApp({
   onWorkplaceInteraction,
   focusEventId,
   guidance,
-  guided,
   focusRequestId = 0,
   mutationState = EMPTY_MUTATION_STATE,
 }: {
@@ -33,7 +32,6 @@ export function SystemApp({
   onWorkplaceInteraction?: WorkplaceInteractionHandler;
   focusEventId?: string;
   guidance: ShiftGuidance | null;
-  guided?: boolean;
   focusRequestId?: number;
   mutationState?: MutationState;
 }) {
@@ -132,9 +130,7 @@ export function SystemApp({
               {systemLabel(systemId)}
             </h3>
             <p>
-              {guided
-                ? "Follow the suggested step, or pick another tab."
-                : "Nothing assigned here yet."}
+              Nothing assigned here yet.
             </p>
             <SystemToolPanel
               actions={contextualActions}

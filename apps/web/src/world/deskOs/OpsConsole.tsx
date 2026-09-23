@@ -29,7 +29,6 @@ export function OpsConsole({
   onTaskAttempt,
   onNotification,
   onWorkplaceInteraction,
-  guided = false,
   mutationState = EMPTY_MUTATION_STATE,
   onRetryMutation,
 }: {
@@ -39,7 +38,6 @@ export function OpsConsole({
   onTaskAttempt?: TaskAttemptHandler;
   onNotification?: NotificationHandler;
   onWorkplaceInteraction?: WorkplaceInteractionHandler;
-  guided?: boolean;
   mutationState?: MutationState;
   onRetryMutation?: () => void;
 }) {
@@ -84,11 +82,6 @@ export function OpsConsole({
     setPendingNotificationTarget(undefined);
   }, [pendingNotificationTarget, view.notifications]);
 
-  useEffect(() => {
-    if (phase !== "desk_login" && guidance?.systemId && guided) {
-      setTab(guidance.systemId);
-    }
-  }, [guided, guidance?.systemId, phase]);
 
   const locked = phase === "desk_login";
   const activeTab = APP_TABS.find((item) => item.id === tab) ?? APP_TABS[0];
@@ -193,7 +186,6 @@ export function OpsConsole({
         {tab === "home" ? (
           <DashboardHome
             guidance={guidance}
-            guided={guided}
             onOpenTab={openTab}
             view={view}
           />
@@ -207,7 +199,6 @@ export function OpsConsole({
         ) : (
           <SystemApp
             guidance={guidance}
-            guided={guided}
             onAction={onAction}
             mutationState={mutationState}
             {...(onTaskAttempt ? { onTaskAttempt } : {})}

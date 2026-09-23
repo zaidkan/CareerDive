@@ -17,7 +17,7 @@ const handoffEvent: ClientView["events"][number] = {
 
 const baseView: ClientView = {
   sessionId: "session-1",
-  sessionKind: "tutorial",
+  sessionKind: "assessed",
   simClock: 0,
   currentLocation: {
     id: "operations-center",
@@ -37,7 +37,7 @@ const baseView: ClientView = {
     },
   ],
   operationalMessages: [],
-  pacingMode: "practice",
+  pacingMode: "standard",
   artifacts: [],
   ticketNotes: {},
   notebook: "",

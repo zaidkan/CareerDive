@@ -45,7 +45,7 @@ export function getShiftGuidance(view: ClientView): ShiftGuidance | null {
   };
 }
 
-export const TUTORIAL_STEPS = [
+export const FIRST_DAY_STEPS = [
   {
     id: "email",
     title: "Step 1 · Check your inbox",
@@ -67,19 +67,19 @@ export const TUTORIAL_STEPS = [
   },
 ] as const;
 
-export function getTutorialStep(
+export function getFirstDayStep(
   view: ClientView,
-): (typeof TUTORIAL_STEPS)[number] | null {
+): (typeof FIRST_DAY_STEPS)[number] | null {
   const completed = new Set(
     view.events.flatMap((event) => event.completedActionIds),
   );
-  if (!completed.has("read_handoff")) return TUTORIAL_STEPS[0];
-  if (!completed.has("acknowledge_handoff")) return TUTORIAL_STEPS[1];
+  if (!completed.has("read_handoff")) return FIRST_DAY_STEPS[0];
+  if (!completed.has("acknowledge_handoff")) return FIRST_DAY_STEPS[1];
   if (
     !completed.has("review_alert") &&
     !completed.has("inspect_login_context")
   ) {
-    return TUTORIAL_STEPS[2];
+    return FIRST_DAY_STEPS[2];
   }
   return null;
 }
