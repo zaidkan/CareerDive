@@ -36,15 +36,16 @@
       rel="stylesheet"
     />
     <script>
+      // Illoca-led default is warm paper (light). Respect stored choice; otherwise default warm, not system dark.
       try {
         var stored = localStorage.getItem("career-expo-theme");
         var theme = stored === "light" || stored === "dark" ? stored : null;
-        if (!theme && window.matchMedia("(prefers-color-scheme: light)").matches) {
-          theme = "light";
+        document.documentElement.dataset.theme = theme || "light";
+        if (!theme) {
+          try { localStorage.setItem("career-expo-theme", "light"); } catch (e2) {}
         }
-        document.documentElement.dataset.theme = theme || "dark";
       } catch (e) {
-        document.documentElement.dataset.theme = "dark";
+        document.documentElement.dataset.theme = "light";
       }
     </script>
   </head>

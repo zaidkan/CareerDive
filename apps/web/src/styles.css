@@ -1,4 +1,84 @@
+/* Illoca-led design system — warm paper + cobalt studio */
 :root {
+  /* Ground — warm paper, not cold white. #FDF2DE family */
+  --ink: #FDF2DE;
+  --ink-lift: #FFF8E6;
+  --desk: #FFFBF0;
+  --panel: #FFFFFF;
+  --line: #E9DDC2;
+  --line-bright: #DCCEB0;
+  /* Accent — cobalt, single strong blue. Illoca ≈ #3B60C5 */
+  --phosphor: #3B60C5;
+  --phosphor-dim: #6A7A96;
+  --cta: #3B60C5;
+  --cta-hover: #2E4FA6;
+  /* Reserve teal/signal for in-sim status only */
+  --signal: #0F7A6E;
+  --signal-hot: #B94A3B;
+  --ok: #2E7A5E;
+  /* Ink — warm near-black for readable long-form */
+  --paper: #1A1B1E;
+  --paper-ink: #1A1B1E;
+  --fog: #3A3936;
+  --mute: #7A7976;
+  /* Mode switcher — trace paper */
+  --mode-surface: #F2E6CC;
+  --mode-ink: #1A1B1E;
+  --mode-line: #C9B99A;
+  --mode-active-bg: #1A1B1E;
+  --mode-active-ink: #FDF2DE;
+  /* New system tokens — Illoca rhythm */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --shadow-soft: 0 1px 2px rgb(26 27 30 / 6%), 0 8px 24px rgb(26 27 30 / 7%);
+  --shadow-lift: 0 8px 32px rgb(26 27 30 / 10%), 0 1px 3px rgb(26 27 30 / 8%);
+  --grid: rgb(26 27 30 / 0.04);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-snap: cubic-bezier(0.34, 1.2, 0.64, 1);
+  --font-display: "Syne", "DM Sans", system-ui, sans-serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  color: var(--fog);
+  background: var(--ink);
+  font-family: var(--font-body);
+  font-synthesis: none;
+  line-height: 1.6;
+  font-size: 16px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Backwards-compat: stored "light" (old) maps to warm paper default */
+:root[data-theme="light"] {
+  --ink: #FDF2DE;
+  --ink-lift: #FFF8E6;
+  --desk: #FFFBF0;
+  --panel: #FFFFFF;
+  --line: #E9DDC2;
+  --line-bright: #DCCEB0;
+  --phosphor: #3B60C5;
+  --phosphor-dim: #6A7A96;
+  --cta: #3B60C5;
+  --cta-hover: #2E4FA6;
+  --signal: #0F7A6E;
+  --signal-hot: #B94A3B;
+  --ok: #2E7A5E;
+  --paper: #1A1B1E;
+  --paper-ink: #1A1B1E;
+  --fog: #3A3936;
+  --mute: #7A7976;
+  --mode-surface: #F2E6CC;
+  --mode-ink: #1A1B1E;
+  --mode-line: #C9B99A;
+  --mode-active-bg: #1A1B1E;
+  --mode-active-ink: #FDF2DE;
+  --grid: rgb(26 27 30 / 0.04);
+}
+
+/* Dense SOC — optional, kept for Walk walkability only. Paper remains default. */
+:root[data-theme="dark"] {
   --ink: #0d0f12;
   --ink-lift: #14171b;
   --desk: #16191d;
@@ -14,51 +94,14 @@
   --fog: #c3c9d1;
   --mute: #9aa0a6;
   --ok: #34d399;
-  --cta: #2563eb;
-  --cta-hover: #1d4ed8;
+  --cta: #3B60C5;
+  --cta-hover: #2E4FA6;
   --mode-surface: #17302d;
   --mode-ink: #dce9e4;
   --mode-line: #8aa69e;
   --mode-active-bg: #f3d47a;
   --mode-active-ink: #152b27;
-  --font-display: "Syne", "DM Sans", system-ui, sans-serif;
-  --font-body: "DM Sans", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  color: var(--fog);
-  background: var(--ink);
-  font-family: var(--font-body);
-  font-synthesis: none;
-  line-height: 1.55;
-  font-size: 16px;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* Light warm theme. Dark SOC remains default; toggle sets data-theme="light". */
-:root[data-theme="light"] {
-  --ink: #faf6ef;
-  --ink-lift: #f3ecdf;
-  --desk: #fffdf8;
-  --panel: #ffffff;
-  --line: #e3d9c7;
-  --line-bright: #c9bda6;
-  --phosphor: #1d4ed8;
-  --phosphor-dim: #5b6470;
-  --signal: #0f766e;
-  --signal-hot: #b91c1c;
-  --paper: #1c1917;
-  --paper-ink: #1c1917;
-  --fog: #44403c;
-  --mute: #57534e;
-  --ok: #047857;
-  --cta: #1d4ed8;
-  --cta-hover: #1e40af;
-  --mode-surface: #fffdf8;
-  --mode-ink: #1c1917;
-  --mode-line: #a8a29e;
-  --mode-active-bg: #1c1917;
-  --mode-active-ink: #faf6ef;
+  --grid: rgb(255 255 255 / 0.03);
 }
 
 * {
@@ -80,38 +123,23 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  /* Warm paper ground + ultra-subtle trace-grid (CSS only, Opacity-clarity) */
+  background:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+    linear-gradient(180deg, #FFF9EB 0%, var(--ink) 55%, #FFF6D9 100%);
+  background-size: 28px 28px, 28px 28px, auto;
+  background-attachment: fixed;
+}
+
+/* Dense SOC — triggered by toggle to dark */
+:root[data-theme="dark"] body {
   background:
     linear-gradient(180deg, #111418 0%, var(--ink) 45%, #0a0c0e 100%);
   background-attachment: fixed;
 }
 
-:root[data-theme="light"] body {
-  background:
-    linear-gradient(180deg, #fffdf8 0%, var(--ink) 55%, #f3ecdf 100%);
-  background-attachment: fixed;
-}
-
-/* Light-theme surface corrections: keep dark gradients from washing out ink text. */
-:root[data-theme="light"] .workplace-shell,
-:root[data-theme="light"] .tutorial,
-:root[data-theme="light"] .manager-context,
-:root[data-theme="light"] .shift-briefing,
-:root[data-theme="light"] section[aria-labelledby="structured-title"],
-:root[data-theme="light"] .debrief-grid article,
-:root[data-theme="light"] .floor-map {
-  background: var(--panel);
-}
-:root[data-theme="light"] .scene-side {
-  background:
-    radial-gradient(circle at 50% 30%, rgb(29 78 216 / 14%), transparent 55%),
-    linear-gradient(180deg, #e7e0d2, #d9cfbb);
-}
-:root[data-theme="light"] .briefing-beats li {
-  background: rgb(28 25 23 / 4%);
-}
-:root[data-theme="light"] .site-header {
-  background: linear-gradient(180deg, rgb(29 78 216 / 6%), transparent 70%);
-}
+/* Paper default already uses --panel — no correction needed. Dark keeps its gradients via specific overrides below. */
 
 body::before {
   content: "";
@@ -315,7 +343,20 @@ section[aria-labelledby="structured-title"],
 .debrief-grid article {
   margin-top: 1.5rem;
   border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+}
+
+:root[data-theme="dark"] .workplace-shell,
+:root[data-theme="dark"] .tutorial,
+:root[data-theme="dark"] .manager-context,
+:root[data-theme="dark"] .shift-briefing,
+:root[data-theme="dark"] section[aria-labelledby="structured-title"],
+:root[data-theme="dark"] .debrief-grid article {
   background: linear-gradient(165deg, rgb(34 25 20 / 96%), rgb(18 13 10 / 98%));
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 12px 32px rgb(0 0 0 / 30%);
 }
 
 .workplace-shell {
