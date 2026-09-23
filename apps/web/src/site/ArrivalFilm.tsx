@@ -11,11 +11,9 @@ function prefersReducedMotion(): boolean {
 }
 
 /**
- * Arrival film in two shapes:
- * - teaser (landing): no player. Single link card into /start.
- * - required (start gate): single inline player, must play through to
- *   doors freeze, then DoorHud start control appears. Reduced-motion
- *   gets stills + DoorHud directly with no video bytes.
+ * Arrival film — calm studio entry, not a test.
+ * Required gate: video freezes at tower doors, DoorHud animates
+ * onto the doors (center) and goes straight to the sim. No extra page.
  */
 export function ArrivalFilm({
   teaser = false,
@@ -37,18 +35,16 @@ export function ArrivalFilm({
 
   function handleMediaError() {
     if (!mediaError) setMediaError(true);
-    // Unlock immediately via fallback poster/stills experience.
     setDoorHold(true);
   }
 
   if (teaser) {
     return (
       <section className="film-gate" aria-labelledby="arrival-film">
-        <p className="eyebrow">Arrival film · Verdaly Technologies</p>
-        <h2 id="arrival-film">Short preview film before your first day</h2>
+        <p className="eyebrow">A quick hello from Verdaly</p>
+        <h2 id="arrival-film">Before you start — a short film</h2>
         <p className="lede">
-          Watch the film so you can continue to the simulator itself. Player
-          lives only on the start path, ending frozen at the doors.
+          Just a minute at the tower doors. It’s the same hello you’d get on day one.
         </p>
         <div className="hero-ctas">
           <button
@@ -58,7 +54,7 @@ export function ArrivalFilm({
               navigate("/start");
             }}
           >
-            Watch arrival film
+            Watch the film
           </button>
         </div>
       </section>
@@ -67,128 +63,106 @@ export function ArrivalFilm({
 
   if (required) {
     return (
-      <section className="film-gate" aria-labelledby="arrival-film-gate">
-        <p className="eyebrow">Step 1 of 2 · Arrival film</p>
+      <section className="film-gate film-cinema" aria-labelledby="arrival-film-gate">
+        <p className="eyebrow">Arrival film · Verdaly Technologies</p>
         <h2 id="arrival-film-gate">Short preview film before your first day</h2>
-        <p className="lede">
-          Watch the film so you can continue to the simulator itself. It plays
-          through once, freezes at the doors, then the start control appears.
-        </p>
-        {!playing && !reducedMotion ? (
-          <img
-            src="/verdaly-tower-doors.svg"
-            alt="Arrival film poster: Verdaly tower sign above glowing entrance doors"
-            width={1600}
-            height={900}
-            loading="lazy"
-            style={{ width: "100%", height: "auto", borderRadius: 8 }}
-          />
-        ) : null}
-        {reducedMotion ? <StillsGrid /> : null}
-        {playing && !reducedMotion ? (
-          <div className="film-hold-wrap">
-            {!mediaError ? (
-              <video
-                controls={!doorHold}
-                autoPlay
-                muted
-                preload="metadata"
-                poster="/verdaly-tower-doors.svg"
-                aria-label="Arrival at Verdaly: from bedroom to tower doors"
-                playsInline
-                onEnded={triggerDoorHold}
-                onError={handleMediaError}
-                onTimeUpdate={(e) => {
-                  const v = e.currentTarget;
-                  if (
-                    !doorHold &&
-                    Number.isFinite(v.duration) &&
-                    v.duration - v.currentTime < 0.5
-                  ) {
-                    v.pause();
-                    triggerDoorHold();
-                  }
+
+        <div className="film-hold-wrap film-hold-wrap-cinema">
+          {reducedMotion ? (
+            <>
+              <img
+                src="/verdaly-tower-doors.svg"
+                alt="Verdaly tower entrance — doors hold"
+                width={1600}
+                height={900}
+                loading="eager"
+                style={{ width: "100%", height: "auto", display: "block", borderRadius: 8 }}
+              />
+              <DoorHud reducedMotion onStart={() => onSeen?.()} />
+            </>
+          ) : !playing ? (
+            <>
+              <img
+                src="/verdaly-tower-doors.svg"
+                alt="Arrival film poster: Verdaly tower doors"
+                width={1600}
+                height={900}
+                loading="eager"
+                style={{ width: "100%", height: "auto", display: "block", borderRadius: 8 }}
+              />
+              <button
+                type="button"
+                className="film-play-overlay"
+                onClick={() => {
+                  setPlaying(true);
                 }}
-                style={{ marginTop: "1rem" }}
+                aria-label="Play arrival film"
               >
-                <source src="/arrival-film.mp4" type="video/mp4" />
-                <p>
-                  Film file lands at launch. Read the full beat transcript below.
-                </p>
-                <track
-                  kind="captions"
-                  srcLang="en"
-                  label="English"
-                  src="/arrival-film.vtt"
-                />
-              </video>
-            ) : (
-              <div
-                style={{
-                  width: "100%",
-                  borderRadius: 8,
-                  overflow: "hidden",
-                  background: "#000",
-                }}
-              >
+                <span className="film-play-icon" aria-hidden="true">▶</span>
+                Play arrival film
+              </button>
+            </>
+          ) : (
+            <>
+              {!mediaError ? (
+                <video
+                  controls={!doorHold}
+                  autoPlay
+                  muted
+                  preload="metadata"
+                  poster="/verdaly-tower-doors.svg"
+                  aria-label="Arrival at Verdaly: from bedroom to tower doors"
+                  playsInline
+                  onEnded={triggerDoorHold}
+                  onError={handleMediaError}
+                  onTimeUpdate={(e) => {
+                    const v = e.currentTarget;
+                    if (
+                      !doorHold &&
+                      Number.isFinite(v.duration) &&
+                      v.duration - v.currentTime < 0.5
+                    ) {
+                      v.pause();
+                      triggerDoorHold();
+                    }
+                  }}
+                >
+                  <source src="/arrival-film.mp4" type="video/mp4" />
+                  <p>Film file lands at launch. Read the transcript below.</p>
+                  <track kind="captions" srcLang="en" label="English" src="/arrival-film.vtt" />
+                </video>
+              ) : (
                 <img
                   src="/verdaly-tower-doors.svg"
                   alt="Arrival film unavailable — Verdaly tower doors poster"
                   width={1600}
                   height={900}
-                  loading="lazy"
-                  style={{ width: "100%", height: "auto", display: "block" }}
+                  loading="eager"
+                  style={{ width: "100%", height: "auto", display: "block", borderRadius: 8 }}
                 />
-              </div>
-            )}
-            {mediaError ? (
-              <p
-                role="status"
-                aria-live="polite"
-                className="mode-note"
-                style={{ marginTop: "0.75rem" }}
-              >
-                Film unavailable — continue with the poster, stills and transcript
-                below.
-              </p>
-            ) : null}
-            {doorHold ? (
-              <DoorHud
-                reducedMotion={false}
-                onStart={() => {
-                  onSeen?.();
-                }}
-              />
-            ) : null}
-          </div>
-        ) : null}
-        {reducedMotion ? (
-          <DoorHud
-            reducedMotion
-            onStart={() => {
-              onSeen?.();
-            }}
-          />
-        ) : null}
-        <div className="hero-ctas">
-          {!playing && !reducedMotion && !doorHold ? (
-            <button
-              type="button"
-              className="start-shift"
-              onClick={() => {
-                setPlaying(true);
-              }}
-            >
-              Play arrival film
-            </button>
-          ) : null}
+              )}
+              {mediaError ? (
+                <p role="status" aria-live="polite" className="film-unavailable-note">
+                  Film unavailable — you can keep going with the poster and transcript below.
+                </p>
+              ) : null}
+              {doorHold ? (
+                <DoorHud
+                  reducedMotion={false}
+                  onStart={() => {
+                    onSeen?.();
+                  }}
+                />
+              ) : null}
+            </>
+          )}
         </div>
-        {!doorHold && !reducedMotion ? (
-          <p className="mode-note">
-            No skip — finish the film to unlock the simulator.
-          </p>
+
+        {!doorHold && !reducedMotion && !playing ? (
+          <p className="mode-note film-cinema-note">No skip — finish the film to unlock the simulator.</p>
         ) : null}
-        <details>
+
+        <details className="film-transcript">
           <summary>Transcript and stills</summary>
           <ArrivalTranscript />
           {reducedMotion ? null : <StillsGrid />}
@@ -213,8 +187,7 @@ function ArrivalTranscript() {
         <li>Button where hands reach: Start your first day.</li>
       </ol>
       <p>
-        Reduced-motion alternative: the still beats below with no flashing
-        cuts. Flashes stay slower than 3 per second when the film ships.
+        If you prefer not to watch, the stills below cover the same beats — no fast cuts.
       </p>
     </>
   );

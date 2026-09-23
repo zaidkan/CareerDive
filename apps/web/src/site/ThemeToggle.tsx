@@ -5,20 +5,14 @@ export type SiteTheme = "dark" | "light";
 const STORAGE_KEY = "career-expo-theme";
 
 function initialTheme(): SiteTheme {
-  if (typeof window === "undefined") return "dark";
+  if (typeof window === "undefined") return "light";
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     if (stored === "light" || stored === "dark") return stored;
   } catch {
-    // Private mode or blocked storage: fall through to OS preference.
+    // Private mode or blocked storage: fall through to warm default.
   }
-  if (
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-color-scheme: light)").matches
-  ) {
-    return "light";
-  }
-  return "dark";
+  return "light";
 }
 
 export function ThemeToggle() {
