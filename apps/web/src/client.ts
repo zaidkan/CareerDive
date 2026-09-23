@@ -1,4 +1,4 @@
-import { createTRPCUntypedClient, httpBatchLink } from "@trpc/client";
+import { createTRPCUntypedClient, httpLink } from "@trpc/client";
 import {
   ClientViewSchema,
   DebriefSchema,
@@ -83,7 +83,9 @@ export class HttpSimulationClient implements SimulationClient {
   constructor(baseUrl: string) {
     this.#client = createTRPCUntypedClient({
       links: [
-        httpBatchLink({
+        // Unbatched: Fastify 404s on comma-joined batch paths with ≥7 procedures,
+        // which StrictMode + Retry clicks can produce for session.create.
+        httpLink({
           url: `${baseUrl}/trpc`,
           headers: { "x-user-id": "local-user" },
         }),
