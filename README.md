@@ -12,8 +12,42 @@ pnpm install
 pnpm dev
 ```
 
-Web: `http://localhost:5173`
-API health: `http://localhost:3001/health`
+Exact start command: **`pnpm dev`**.
+
+| Service | URL |
+|---|---|
+| Web | `http://localhost:5173` |
+| API health | `http://localhost:3001/health` |
+| Session/tRPC | `http://localhost:3001/trpc` |
+
+After both processes are up, optionally verify:
+
+```bash
+pnpm check:dev
+```
+
+### Port collisions (fail fast)
+
+Career Expo local dev is intentionally **strict** about ports:
+
+- Web must bind **5173** (`strictPort`). Vite will **not** silently fall back to 5174/5175.
+- API must bind **3001**. A second stack or stale process fails with `EADDRINUSE` and a recovery hint.
+- Development CORS only allows `http://localhost:5173` and `http://127.0.0.1:5173` — a jumped web port cannot create sessions.
+
+**How to recognize a collision**
+
+- Vite exits immediately with a port-in-use error for 5173 (instead of printing a different port).
+- Server logs `API port 3001 is already in use (EADDRINUSE)` and exits non-zero.
+- Do not start a second `pnpm dev` while one is already running.
+
+**Inspect a holder (do not auto-kill):**
+
+```bash
+lsof -nP -iTCP:5173 -sTCP:LISTEN
+lsof -nP -iTCP:3001 -sTCP:LISTEN
+```
+
+Stop only the process you recognize (stale Vite/tsx from a previous session).
 
 ## Current playable shift
 

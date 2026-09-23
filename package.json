@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "turbo build",
+    "check:dev": "node scripts/check-dev.mjs",
     "dev": "turbo dev",
     "lint": "turbo lint",
     "test": "vitest run",
