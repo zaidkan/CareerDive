@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ClientView } from "@sim/schemas";
 import { DeskOs } from "../src/world/deskOs/DeskOs.js";
 import { LaptopOverlay } from "../src/world/deskOs/LaptopOverlay.js";
+import { OsSessionProvider } from "../src/world/deskOs/osSession.js";
 
 afterEach(cleanup);
 
@@ -50,14 +51,16 @@ function renderShell() {
   const view = makeView();
   const before = JSON.stringify(view);
   render(
-    <DeskOs
-      phase="seated_monitor"
-      view={view}
-      onAction={onAction}
-      onLoginSuccess={() => undefined}
-      onStand={() => undefined}
-      onOsFullscreen={() => undefined}
-    />,
+    <OsSessionProvider>
+      <DeskOs
+        phase="seated_monitor"
+        view={view}
+        onAction={onAction}
+        onLoginSuccess={() => undefined}
+        onStand={() => undefined}
+        onOsFullscreen={() => undefined}
+      />
+    </OsSessionProvider>,
   );
   return { onAction, before };
 }
@@ -108,14 +111,16 @@ describe("os-shell hardening", () => {
     const onAction = vi.fn();
     const view = makeView();
     const { unmount } = render(
-      <DeskOs
-        phase="seated_monitor"
-        view={view}
-        onAction={onAction}
-        onLoginSuccess={() => undefined}
-        onStand={() => undefined}
-        onOsFullscreen={() => undefined}
-      />,
+      <OsSessionProvider>
+        <DeskOs
+          phase="seated_monitor"
+          view={view}
+          onAction={onAction}
+          onLoginSuccess={() => undefined}
+          onStand={() => undefined}
+          onOsFullscreen={() => undefined}
+        />
+      </OsSessionProvider>,
     );
     await user.click(screen.getByRole("button", { name: "Reload page" }));
     expect(() => {
@@ -226,13 +231,15 @@ describe("os-shell hardening", () => {
   it("keyboard-only flow reaches the ops console inside the overlay", async () => {
     const user = userEvent.setup();
     render(
-      <LaptopOverlay
-        phase="seated_monitor"
-        view={makeView()}
-        onAction={() => undefined}
-        onLoginSuccess={() => undefined}
-        onStand={() => undefined}
-      />,
+      <OsSessionProvider>
+        <LaptopOverlay
+          phase="seated_monitor"
+          view={makeView()}
+          onAction={() => undefined}
+          onLoginSuccess={() => undefined}
+          onStand={() => undefined}
+        />
+      </OsSessionProvider>,
     );
     expect(screen.getByTestId("desk-os-overlay")).toBeVisible();
 

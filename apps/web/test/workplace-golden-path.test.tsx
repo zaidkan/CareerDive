@@ -30,6 +30,7 @@ import {
 } from "../../server/src/index.js";
 import { ExperienceShell } from "../src/experience/ExperienceShell.js";
 import { DeskOs } from "../src/world/deskOs/DeskOs.js";
+import { OsSessionProvider } from "../src/world/deskOs/osSession.js";
 import { APP_TABS } from "../src/world/deskOs/tabs.js";
 import { WORK_SYSTEMS } from "../src/systems.js";
 import type { NotificationHandler } from "../src/components/shared.js";
@@ -227,13 +228,15 @@ describe("rendered workplace golden path", () => {
         };
         return mode === "os" ? (
           <>
-            <DeskOs
-              {...props}
-              phase="seated_monitor"
-              onLoginSuccess={() => undefined}
-              onStand={() => undefined}
-              onOsFullscreen={() => undefined}
-            />
+            <OsSessionProvider>
+              <DeskOs
+                {...props}
+                phase="seated_monitor"
+                onLoginSuccess={() => undefined}
+                onStand={() => undefined}
+                onOsFullscreen={() => undefined}
+              />
+            </OsSessionProvider>
             {/* Actual spatial HUD components, without a WebGL canvas. */}
             <BreakRoomPanel
               workplace={view.workplace}

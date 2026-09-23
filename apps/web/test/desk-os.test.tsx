@@ -18,6 +18,7 @@ import { SystemToolPanel } from "../src/components/SystemToolPanel.js";
 import { WorkSurface } from "../src/components/WorkSurface.js";
 import type { NotificationHandler } from "../src/components/shared.js";
 import { DeskOs } from "../src/world/deskOs/DeskOs.js";
+import { OsSessionProvider } from "../src/world/deskOs/osSession.js";
 import { SystemApp } from "../src/world/deskOs/SystemApp.js";
 
 vi.mock("../src/world/FloorMap.js", () => ({
@@ -741,7 +742,11 @@ describe("Desk OS canonical state rendering", () => {
         energy: { current: 73, max: 100 },
       },
     });
-    render(<DeskOs {...deskProps(view)} />);
+    render(
+      <OsSessionProvider>
+        <DeskOs {...deskProps(view)} />
+      </OsSessionProvider>,
+    );
 
     const rail = screen.getByRole("complementary", { name: "Current shift" });
     expect(within(rail).getByText("2 open")).toBeVisible();
@@ -1092,8 +1097,16 @@ describe("Desk OS selection, task, and expansion reliability", () => {
   it("moves focus to an app heading when opened from the Dashboard", async () => {
     const user = userEvent.setup();
     const props = deskProps(makeView());
-    const rendered = render(<DeskOs {...props} phase="desk_login" />);
-    rendered.rerender(<DeskOs {...props} phase="seated_monitor" />);
+    const rendered = render(
+      <OsSessionProvider>
+        <DeskOs {...props} phase="desk_login" />
+      </OsSessionProvider>,
+    );
+    rendered.rerender(
+      <OsSessionProvider>
+        <DeskOs {...props} phase="seated_monitor" />
+      </OsSessionProvider>,
+    );
 
     await user.click(
       screen.getByRole("button", { name: /Tickets Case notes/i }),
@@ -1139,7 +1152,11 @@ describe("Desk OS selection, task, and expansion reliability", () => {
         },
       ],
     });
-    render(<DeskOs {...deskProps(view)} />);
+    render(
+      <OsSessionProvider>
+        <DeskOs {...deskProps(view)} />
+      </OsSessionProvider>,
+    );
     await user.click(screen.getByRole("tab", { name: /^Alerts/ }));
     await user.click(
       within(screen.getByLabelText("Alerts items")).getByRole("button", {
@@ -1221,7 +1238,9 @@ describe("Desk OS selection, task, and expansion reliability", () => {
     const user = userEvent.setup();
     const onOsFullscreen = vi.fn();
     render(
-      <DeskOs {...deskProps(makeView())} onOsFullscreen={onOsFullscreen} />,
+      <OsSessionProvider>
+        <DeskOs {...deskProps(makeView())} onOsFullscreen={onOsFullscreen} />
+      </OsSessionProvider>,
     );
 
     const controls = screen.getAllByRole("button", {

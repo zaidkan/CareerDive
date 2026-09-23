@@ -27,6 +27,7 @@ import {
 import { coffeeControl, fridgeControl } from "./breakRoom.js";
 import { ControlsHelp } from "./ControlsHelp.js";
 import { LaptopOverlay } from "./deskOs/LaptopOverlay.js";
+import { OsSessionProvider } from "./deskOs/osSession.js";
 import { FloorMap } from "./FloorMap.js";
 import { JulesDialogue } from "./JulesDialogue.js";
 import { getJourneyStep } from "../journey.js";
@@ -74,7 +75,7 @@ const INTERACT_LABEL: Partial<Record<HotspotId, string>> = {
   storage: "Open cabinets",
 };
 
-export function SpatialShell({
+function SpatialShellStage({
   view,
   onAction,
   onTaskAttempt,
@@ -567,5 +568,17 @@ export function SpatialShell({
         ) : null}
       </div>
     </section>
+  );
+}
+
+/**
+ * OS session state lives above the LaptopOverlay mount so leave/return and
+ * future window work do not depend on DeskOs mount lifetime.
+ */
+export function SpatialShell(props: Parameters<typeof SpatialShellStage>[0]) {
+  return (
+    <OsSessionProvider>
+      <SpatialShellStage {...props} />
+    </OsSessionProvider>
   );
 }
