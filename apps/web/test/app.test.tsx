@@ -479,7 +479,7 @@ describe("tutorial and debrief", () => {
     expect(screen.queryByText(/Check your inbox/i)).toBeNull();
   });
 
-  it("labels tutorial as practice and offers peer modes from the dashboard", async () => {
+  it("labels tutorial as practice and does not offer peer product modes", async () => {
     const user = userEvent.setup();
     const client = {
       ...clientInteractionStubs,
@@ -492,6 +492,7 @@ describe("tutorial and debrief", () => {
     expect(await screen.findByText("Practice shift")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Simple list" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Desk only" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Walk the office" })).toBeNull();
 
     await user.click(
       await screen.findByRole("button", { name: /Enter the Verdaly floor/i }),
@@ -502,11 +503,13 @@ describe("tutorial and debrief", () => {
     expect(
       screen.getByText(/Go here next — gold door on the plan/i),
     ).toBeVisible();
+    // Single experience: spatial workplace, not a three-way peer selector.
+    expect(screen.queryByRole("button", { name: "Walk the office" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Desk only" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Simple list" })).toBeNull();
     expect(
-      screen.getByRole("button", { name: "Walk the office" }),
+      screen.getByRole("button", { name: /Security Operations/ }),
     ).toBeVisible();
-    expect(screen.getByRole("button", { name: "Desk only" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Simple list" })).toBeVisible();
   });
 
   it("welcomes the user into the shift before opening the workstation", async () => {
@@ -591,7 +594,9 @@ describe("tutorial and debrief", () => {
     );
   });
 
-  it("preserves the selected mode through manager guidance", async () => {
+  it(
+    "keeps Morgan guidance available after the compatibility escape from 3D",
+    async () => {
     const user = userEvent.setup();
     const askView: ClientView = {
       ...view,
@@ -642,38 +647,54 @@ describe("tutorial and debrief", () => {
     await user.click(
       await screen.findByRole(
         "button",
-        { name: "Simple list" },
+        { name: /Security Operations/ },
         { timeout: 6000 },
       ),
     );
-    expect(
-      await screen.findByRole("heading", {
-        name: /Structured workplace view/i,
-      }),
-    ).toBeVisible();
+    const help = await screen.findByText(
+      /having trouble with the 3d view/i,
+      {},
+      { timeout: 6000 },
+    );
+    await user.click(help);
+    await user.click(
+      screen.getByRole("button", { name: "Open compatibility view" }),
+    );
+    await screen.findByRole(
+      "navigation",
+      { name: "Work systems" },
+      { timeout: 6000 },
+    );
+    await user.click(
+      screen.getByRole("button", { name: /^Team chat/ }),
+    );
     await user.type(
-      screen.getByRole("textbox", { name: "Question for Morgan" }),
+      await screen.findByRole(
+        "textbox",
+        { name: "Question for Morgan" },
+        { timeout: 6000 },
+      ),
       "Which record should I check next?",
     );
     await user.click(
-      await screen.findByRole("button", { name: /ask manager for context/i }),
+      await screen.findByRole(
+        "button",
+        { name: /ask manager for context/i },
+        { timeout: 6000 },
+      ),
     );
 
-    // Guidance now stays inline inside the workplace OS instead of routing to a
-    // separate App-level manager surface, and the selected mode is preserved.
+    // Guidance stays inline in the same experience (compatibility or OS), not
+    // a peer mode product surface. No Walk/Desk/List selector may reappear.
     expect(
       await screen.findByRole("complementary", { name: "Morgan guidance" }),
     ).toHaveTextContent(/Morgan recommends reviewing/i);
     expect(
       screen.queryByRole("heading", { name: "Morgan is here to help" }),
     ).toBeNull();
-    expect(
-      screen.getByRole("heading", { name: /Structured workplace view/i }),
-    ).toBeVisible();
-    expect(screen.getByRole("button", { name: "Simple list" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    expect(screen.queryByRole("button", { name: "Simple list" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Desk only" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Walk the office" })).toBeNull();
   });
 
   it("renders all eight debrief sections", () => {

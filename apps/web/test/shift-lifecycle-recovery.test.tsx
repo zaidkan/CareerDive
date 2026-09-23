@@ -95,77 +95,81 @@ it("retries the assessed session after its creation fails", async () => {
     "assessed",
   ]);
 });
-it.each(["Desk only", "Simple list"])(
-  "retries only the debrief read after completion in %s",
-  async (mode) => {
-    const user = userEvent.setup();
-    const complete = {
-      id: "complete_shift" as const,
-      eventId: "shift",
-      systemId: "team_chat" as const,
-      label: "Complete shift",
-      description: "Finish work",
-      simulatedMinutes: 0,
-    };
-    const finished = {
-      ...view,
-      tasks: [],
-      availableActions: [complete],
-      events: view.events.map((event) => ({
-        ...event,
-        status: "resolved" as const,
-      })),
-    };
-    const getDebrief = vi
-      .fn()
-      .mockRejectedValueOnce(new Error("offline"))
-      .mockResolvedValueOnce(debrief);
-    const performAction = vi.fn().mockResolvedValue(finished);
-    render(
-      <App
-        client={client({
-          createSession: vi
-            .fn()
-            .mockResolvedValue({ sessionId: view.sessionId, view: finished }),
-          performAction,
-          getDebrief,
-        })}
-      />,
-    );
-    await user.click(
-      await screen.findByRole("button", { name: /Enter the Verdaly floor/ }),
-    );
-    await user.click(
-      await screen.findByRole("button", { name: mode }, { timeout: 6000 }),
-    );
-    if (mode === "Desk only")
-      await user.click(
-        await screen.findByRole(
-          "button",
-          { name: /^Team chat/ },
-          { timeout: 6000 },
-        ),
-      );
-    await user.click(
-      await screen.findByRole(
-        "button",
-        { name: /^Complete shift/ },
-        { timeout: 6000 },
-      ),
-    );
-    await user.click(
-      await screen.findByRole("button", { name: "Retry loading debrief" }),
-    );
-    expect(
-      await screen.findByRole("heading", { name: "Shift debrief" }),
-    ).toBeVisible();
-    expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(8);
-    await waitFor(() => {
-      expect(getDebrief).toHaveBeenCalledTimes(2);
-    });
-    expect(performAction).toHaveBeenCalledTimes(1);
-  },
-);
+async function openCompatibilityView(user: ReturnType<typeof userEvent.setup>) {
+  const help = await screen.findByText(
+    /having trouble with the 3d view/i,
+    {},
+    { timeout: 6000 },
+  );
+  await user.click(help);
+  await user.click(
+    screen.getByRole("button", { name: "Open compatibility view" }),
+  );
+}
+
+it("retries only the debrief read after completion via compatibility view", async () => {
+  const user = userEvent.setup();
+  const complete = {
+    id: "complete_shift" as const,
+    eventId: "shift",
+    systemId: "team_chat" as const,
+    label: "Complete shift",
+    description: "Finish work",
+    simulatedMinutes: 0,
+  };
+  const finished = {
+    ...view,
+    tasks: [],
+    availableActions: [complete],
+    events: view.events.map((event) => ({
+      ...event,
+      status: "resolved" as const,
+    })),
+  };
+  const getDebrief = vi
+    .fn()
+    .mockRejectedValueOnce(new Error("offline"))
+    .mockResolvedValueOnce(debrief);
+  const performAction = vi.fn().mockResolvedValue(finished);
+  render(
+    <App
+      client={client({
+        createSession: vi
+          .fn()
+          .mockResolvedValue({ sessionId: view.sessionId, view: finished }),
+        performAction,
+        getDebrief,
+      })}
+    />,
+  );
+  await user.click(
+    await screen.findByRole("button", { name: /Enter the Verdaly floor/ }),
+  );
+  await openCompatibilityView(user);
+  await user.click(
+    await screen.findByRole("button", { name: /^Team chat/ }, { timeout: 6000 }),
+  );
+  await user.click(
+    await screen.findByRole(
+      "button",
+      { name: /^Complete shift/ },
+      { timeout: 6000 },
+    ),
+  );
+  await user.click(
+    await screen.findByRole("button", { name: "Retry loading debrief" }),
+  );
+  expect(
+    await screen.findByRole("heading", { name: "Shift debrief" }),
+  ).toBeVisible();
+  expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(8);
+  await waitFor(() => {
+    expect(getDebrief).toHaveBeenCalledTimes(2);
+  });
+  expect(performAction).toHaveBeenCalledTimes(1);
+  expect(screen.queryByRole("button", { name: "Desk only" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Simple list" })).toBeNull();
+});
 
 it("preserves selected findings when the App task request fails", async () => {
   const user = userEvent.setup();
@@ -201,9 +205,7 @@ it("preserves selected findings when the App task request fails", async () => {
   await user.click(
     await screen.findByRole("button", { name: /Enter the Verdaly floor/ }),
   );
-  await user.click(
-    await screen.findByRole("button", { name: "Simple list" }, { timeout: 6000 }),
-  );
+  await openCompatibilityView(user);
   await user.click(
     await screen.findByRole(
       "radio",
@@ -263,8 +265,9 @@ it("ignores a late practice debrief after the assessed session starts", async ()
   await user.click(
     await screen.findByRole("button", { name: /Enter the Verdaly floor/ }),
   );
+  await openCompatibilityView(user);
   await user.click(
-    await screen.findByRole("button", { name: "Simple list" }, { timeout: 6000 }),
+    await screen.findByRole("button", { name: /^Team chat/ }, { timeout: 6000 }),
   );
   await user.click(
     await screen.findByRole(

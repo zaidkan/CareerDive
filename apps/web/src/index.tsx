@@ -10,10 +10,7 @@ import type {
 } from "@sim/schemas";
 import { defaultClient, type SimulationClient } from "./client.js";
 import { DebriefView } from "./components/DebriefView.js";
-import {
-  ExperienceShell,
-  type ExperienceMode,
-} from "./experience/ExperienceShell.js";
+import { ExperienceShell } from "./experience/ExperienceShell.js";
 import { getTutorialStep } from "./guidance.js";
 import { ShiftBriefing } from "./components/shell.js";
 import { COMPANY } from "./world/company.js";
@@ -45,7 +42,6 @@ export function App({
   const [activeSurface, setActiveSurface] = useState<
     "briefing" | "dashboard" | "manager"
   >(briefing === "hidden" ? "dashboard" : "briefing");
-  const [experienceMode, setExperienceMode] = useState<ExperienceMode>("walk");
   const sessionGenerationRef = useRef(0);
   const currentSessionRef = useRef<
     { generation: number; sessionId: string } | undefined
@@ -399,9 +395,7 @@ export function App({
       ) : (
         <ExperienceShell
           guided={phase === "tutorial"}
-          mode={experienceMode}
           onAction={(action, freeText) => void perform(action, freeText)}
-          onModeChange={setExperienceMode}
           onNotification={respondToWorkNotification}
           onTaskAttempt={submitTaskAttempt}
           onWorkplaceInteraction={performWorkplaceInteraction}

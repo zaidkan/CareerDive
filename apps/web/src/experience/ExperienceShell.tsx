@@ -1,14 +1,18 @@
-import { Component, lazy, Suspense, useCallback, useState, type ReactNode } from "react";
+import {
+  Component,
+  lazy,
+  Suspense,
+  useCallback,
+  useState,
+  type ReactNode,
+} from "react";
 import type {
   AvailableAction,
   ClientView,
   JulesTopic,
   WorkplaceInteraction,
 } from "@sim/schemas";
-import {
-  julesDialogueFromClientView,
-  type JulesDialogueReply,
-} from "@sim/core";
+import { julesDialogueFromClientView, type JulesDialogueReply } from "@sim/core";
 import type {
   NotificationHandler,
   TaskAttemptHandler,
@@ -25,7 +29,7 @@ import { JulesDialogue } from "../world/JulesDialogue.js";
 import { useMovementExertion } from "../world/useMovementExertion.js";
 import "./experience.css";
 
-/** Peer renderers split so walk never pays for desk/list bundles and vice versa. */
+/** Spatial workplace is code-split; compatibility peers load only when needed. */
 const SpatialShell = lazy(async () => {
   const mod = await import("../world/SpatialShell.js");
   return { default: mod.SpatialShell };
@@ -39,12 +43,21 @@ const AccessibleMode = lazy(async () => {
   return { default: mod.AccessibleMode };
 });
 
+/**
+ * Internal presentation only. Product entry is always spatial ("walk").
+ * "desk" / "list" remain temporary compatibility fallbacks until A3/R1 —
+ * never user-facing peer product modes.
+ */
 export type ExperienceMode = "walk" | "desk" | "list";
 
 type ExperienceShellProps = {
-  mode: ExperienceMode;
+  /**
+   * Optional forced presentation for tests / temporary compatibility.
+   * Omit in the product path so the shell always starts spatial.
+   */
+  mode?: ExperienceMode;
+  onModeChange?: (mode: ExperienceMode) => void;
   onAction: (action: AvailableAction, freeText?: string) => void;
-  onModeChange: (mode: ExperienceMode) => void;
   onNotification?: NotificationHandler;
   onRetryMutation?: () => void;
   onTaskAttempt?: TaskAttemptHandler;
@@ -54,17 +67,15 @@ type ExperienceShellProps = {
   view: ClientView;
 };
 
-const MODES: ReadonlyArray<{ id: ExperienceMode; label: string; hint: string }> = [
-  { id: "walk", label: "Walk the office", hint: "3D floor, same actions" },
-  { id: "desk", label: "Desk only", hint: "Direct workstation, no WebGL" },
-  { id: "list", label: "Simple list", hint: "Structured, keyboard-first" },
-];
-
-/** Chooses a peer renderer without owning simulation state or mutations. */
+/**
+ * Single product entry: always the 3D workplace → Desk OS path.
+ * On WebGL/spatial failure (or explicit compatibility escape), renders a
+ * bounded compatibility presentation — not another equal Career Expo mode.
+ */
 export function ExperienceShell({
   mode,
-  onAction,
   onModeChange,
+  onAction,
   onNotification,
   onRetryMutation,
   onTaskAttempt,
@@ -73,6 +84,7 @@ export function ExperienceShell({
   guided = false,
   view,
 }: ExperienceShellProps) {
+  const [spatialFailed, setSpatialFailed] = useState(false);
   const movement = useMovementExertion(
     view,
     onWorkplaceInteraction,
@@ -88,64 +100,68 @@ export function ExperienceShell({
     ...(onRetryMutation ? { onRetryMutation } : {}),
   };
 
+  const presentation: ExperienceMode =
+    mode === "desk" || mode === "list"
+      ? mode
+      : spatialFailed
+        ? "desk"
+        : "walk";
+
+  const enterCompatibility = () => {
+    setSpatialFailed(true);
+    onModeChange?.("desk");
+  };
+
   return (
-    <section aria-label="Experience mode">
-      <nav
-        className="experience-modes"
-        aria-label="Choose how to experience the shift"
-      >
-        {MODES.map(({ id, label, hint }) => (
-          <button
-            aria-pressed={mode === id}
-            key={id}
-            title={hint}
-            onClick={() => {
-              onModeChange(id);
-              movement.resetDistance();
-            }}
-            type="button"
-          >
-            {label}
-            <span
-              aria-hidden="true"
-              style={{ display: "block", fontSize: "0.72rem", fontWeight: 400 }}
-            >
-              {hint}
-            </span>
-          </button>
-        ))}
-      </nav>
+    <section aria-label="Career Expo experience">
       <p className="mode-note" role="note">
-        Same actions in every mode. <strong>Desk only</strong> is fastest if
-        your device struggles with 3D. Navigation speed never creates career
-        evidence.
+        One shift: walk the office, sit at your workstation, and work through
+        Desk OS. Navigation speed never creates career evidence.
       </p>
 
-      <Suspense
-        fallback={<p className="mode-note">Loading experience mode…</p>}
-      >
-        {mode === "walk" ? (
-          <SpatialModeBoundary
-            key={mode}
-            onFallback={() => {
-              onModeChange("desk");
-            }}
-          >
-            <SpatialShell
-              onAcceptedDistance={movement.addDistance}
-              onRoomExit={movement.resetDistance}
-              guided={guided}
-              onAction={onAction}
-              {...(onTaskAttempt ? { onTaskAttempt } : {})}
-              {...(onNotification ? { onNotification } : {})}
-              {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
-              {...(mutationState ? { mutationState } : {})}
-              {...(onRetryMutation ? { onRetryMutation } : {})}
-              view={view}
-            />
-          </SpatialModeBoundary>
-        ) : (
-          <>
+      {presentation === "walk" ? (
+        <>
+          <details className="experience-fallback-help">
+            <summary>Having trouble with the 3D view?</summary>
+            <p>
+              If the office will not load on this device, open the compatibility
+              view. Same shift and the same actions — not a separate Career Expo
+              mode.
+            </p>
+            <button onClick={enterCompatibility} type="button">
+              Open compatibility view
+            </button>
+          </details>
+          <Suspense fallback={<p className="mode-note">Loading workplace…</p>}>
+            <SpatialBoundary
+              key={presentation}
+              onFallback={() => {
+                setSpatialFailed(true);
+              }}
+            >
+              <SpatialShell
+                onAcceptedDistance={movement.addDistance}
+                onRoomExit={movement.resetDistance}
+                guided={guided}
+                onAction={onAction}
+                {...(onTaskAttempt ? { onTaskAttempt } : {})}
+                {...(onNotification ? { onNotification } : {})}
+                {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
+                {...(mutationState ? { mutationState } : {})}
+                {...(onRetryMutation ? { onRetryMutation } : {})}
+                view={view}
+              />
+            </SpatialBoundary>
+          </Suspense>
+        </>
+      ) : (
+        <Suspense fallback={<p className="mode-note">Loading compatibility view…</p>}>
+          <div className="experience-compatibility" data-presentation="compatibility">
+            <p role="alert" className="compatibility-notice">
+              {spatialFailed
+                ? "The 3D office view is unavailable. Opening the compatibility view so you can continue the same shift."
+                : "Compatibility view: same Career Expo shift without the 3D office. Use this if the office will not run on your device."}
+            </p>
             <NonspatialResources
               onWalk={() => {
                 movement.addDistance(5);
@@ -155,14 +171,14 @@ export function ExperienceShell({
               {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
               view={view}
             />
-            {mode === "desk" ? (
-              <WorkSurface guided={guided} {...sharedProps} />
-            ) : (
+            {presentation === "list" ? (
               <AccessibleMode {...sharedProps} />
+            ) : (
+              <WorkSurface guided={guided} {...sharedProps} />
             )}
-          </>
-        )}
-      </Suspense>
+          </div>
+        </Suspense>
+      )}
     </section>
   );
 }
@@ -212,7 +228,12 @@ function NonspatialResources({
       <button
         type="button"
         data-interaction-id="movement_exertion"
-        disabled={pending || movementQueued || Boolean(mutationState?.error) || view.workplace.energy.current === 0}
+        disabled={
+          pending ||
+          movementQueued ||
+          Boolean(mutationState?.error) ||
+          view.workplace.energy.current === 0
+        }
         onClick={onWalk}
       >
         Walk 5 meters
@@ -235,7 +256,11 @@ function NonspatialResources({
         station="coffee"
         workplace={view.workplace}
       />
-      <EmergencyRecoveryControl workplace={view.workplace} onSubmit={submit} pending={pending} />
+      <EmergencyRecoveryControl
+        workplace={view.workplace}
+        onSubmit={submit}
+        pending={pending}
+      />
       <button
         disabled={pending}
         onClick={() => {
@@ -260,7 +285,7 @@ function NonspatialResources({
   );
 }
 
-class SpatialModeBoundary extends Component<
+class SpatialBoundary extends Component<
   { children: ReactNode; onFallback: () => void },
   { failed: boolean }
 > {
@@ -277,7 +302,7 @@ class SpatialModeBoundary extends Component<
   render() {
     return this.state.failed ? (
       <p role="alert">
-        The office view is unavailable. Opening desk-only mode.
+        The 3D office view is unavailable. Opening the compatibility view…
       </p>
     ) : (
       this.props.children
