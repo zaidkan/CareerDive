@@ -143,7 +143,8 @@ export function ArrivalFilm({
               )}
               {mediaError ? (
                 <p role="status" aria-live="polite" className="film-unavailable-note">
-                  Film unavailable — you can keep going with the poster and transcript below.
+                  Film unavailable for now — no worries, the poster and transcript below tell the
+                  same story. You can still step through the doors.
                 </p>
               ) : null}
               {doorHold ? (

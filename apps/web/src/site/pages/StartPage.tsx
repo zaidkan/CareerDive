@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import type { SimulationClient } from "../../client.js";
 import { defaultClient } from "../../client.js";
 import { ArrivalFilm } from "../ArrivalFilm.js";
@@ -46,6 +46,21 @@ export function StartPage({
 }) {
   const [step, setStep] = useState<StartStep>(() => readGate() ?? "film");
 
+  // Stable identity: a new object per render would retrigger App's
+  // createSession effect and surface a false start-up failure.
+  const assessedClient = useMemo<SimulationClient>(
+    () => ({
+      ...client,
+      createSession: (input) =>
+        client.createSession({
+          ...input,
+          sessionKind: "assessed",
+          pacingMode: "standard",
+        }),
+    }),
+    [client],
+  );
+
   function go(next: StartStep): void {
     writeGate(next);
     setStep(next);
@@ -64,22 +79,7 @@ export function StartPage({
 
   return (
     <Suspense fallback={<p className="mode-note">Entering the floor…</p>}>
-      <App
-        briefing="hidden"
-        client={{
-          ...client,
-          createSession: (input: {
-            seed: number;
-            sessionKind: "tutorial" | "assessed";
-            pacingMode:
-              | "standard"
-              | "extended"
-              | "pause_compatible"
-              | "no_hard_timer"
-              | "practice";
-          }) => client.createSession({ ...input, sessionKind: "assessed" }),
-        }}
-      />
+      <App briefing="hidden" client={assessedClient} />
     </Suspense>
   );
 }

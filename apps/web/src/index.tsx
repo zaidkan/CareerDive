@@ -61,15 +61,27 @@ export function App({
     setView(undefined);
     setDebrief(undefined);
     setDebriefStatus(undefined);
-    void client
-      .createSession({
-        seed: Date.now() & 0x7fffffff,
-        sessionKind: sessionRequest.kind,
-        pacingMode:
-          sessionRequest.kind === "tutorial" ? "practice" : "standard",
-      })
-      .then((created) => {
-        if (generation !== sessionGenerationRef.current) return;
+    const input = {
+      seed: Date.now() & 0x7fffffff,
+      sessionKind: sessionRequest.kind,
+      pacingMode:
+        sessionRequest.kind === "tutorial" ? "practice" : "standard",
+    } as const;
+    const isCurrent = () => generation === sessionGenerationRef.current;
+    void (async () => {
+      try {
+        let created: Awaited<ReturnType<SimulationClient["createSession"]>>;
+        try {
+          created = await client.createSession(input);
+        } catch {
+          // One quiet retry covers a server restart/wake without a dead-end banner.
+          await new Promise((resolve) => {
+            setTimeout(resolve, 400);
+          });
+          if (!isCurrent()) return;
+          created = await client.createSession(input);
+        }
+        if (!isCurrent()) return;
         currentSessionRef.current = {
           generation,
           sessionId: created.sessionId,
@@ -78,11 +90,13 @@ export function App({
         setView(created.view);
         setPhase(sessionRequest.kind);
         setActiveSurface("briefing");
-      })
-      .catch(() => {
-        if (generation !== sessionGenerationRef.current) return;
-        setError("Simulation could not start. Try again shortly.");
-      });
+      } catch {
+        if (!isCurrent()) return;
+        setError(
+          "We couldn't start your shift — the server might be waking up. Give it a moment and hit Retry.",
+        );
+      }
+    })();
     return () => {
       sessionGenerationRef.current += 1;
     };
@@ -364,7 +378,7 @@ export function App({
 
       {!view ? (
         <p className="app-loading" aria-live="polite">
-          {error ? "Your shift has not started yet." : "Preparing workplace…"}
+          {error ? "Your shift hasn't started yet — hit Retry to try again." : "Preparing workplace…"}
         </p>
       ) : debrief ? (
         <DebriefView debrief={debrief} />

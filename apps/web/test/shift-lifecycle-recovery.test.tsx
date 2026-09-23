@@ -52,11 +52,28 @@ function client(overrides: Partial<SimulationClient> = {}): SimulationClient {
     ...overrides,
   };
 }
-it("retries failed practice startup without leaving a permanent loading screen", async () => {
+it("auto-recovers a failed practice startup without a permanent error", async () => {
+  const createSession = vi
+    .fn<SimulationClient["createSession"]>()
+    .mockRejectedValueOnce(new Error("offline"))
+    .mockResolvedValueOnce({ sessionId: view.sessionId, view });
+  render(<App client={client({ createSession })} />);
+  expect(
+    await screen.findByRole("button", { name: /Enter the Verdaly floor/ }),
+  ).toBeEnabled();
+  expect(screen.queryByRole("button", { name: "Retry starting shift" })).toBeNull();
+  expect(screen.queryByText(/couldn't start your shift/i)).toBeNull();
+  expect(createSession.mock.calls.map(([input]) => input.sessionKind)).toEqual([
+    "tutorial",
+    "tutorial",
+  ]);
+});
+it("retries failed practice startup after automatic recovery also fails", async () => {
   const user = userEvent.setup();
   const createSession = vi
     .fn<SimulationClient["createSession"]>()
     .mockRejectedValueOnce(new Error("offline"))
+    .mockRejectedValueOnce(new Error("still offline"))
     .mockResolvedValueOnce({ sessionId: view.sessionId, view });
   render(<App client={client({ createSession })} />);
   await user.click(
@@ -69,6 +86,7 @@ it("retries failed practice startup without leaving a permanent loading screen",
   expect(createSession.mock.calls.map(([input]) => input.sessionKind)).toEqual([
     "tutorial",
     "tutorial",
+    "tutorial",
   ]);
 });
 it("retries the assessed session after its creation fails", async () => {
@@ -77,6 +95,7 @@ it("retries the assessed session after its creation fails", async () => {
     .fn<SimulationClient["createSession"]>()
     .mockResolvedValueOnce({ sessionId: view.sessionId, view })
     .mockRejectedValueOnce(new Error("offline"))
+    .mockRejectedValueOnce(new Error("still offline"))
     .mockResolvedValueOnce({
       sessionId: "assessed",
       view: { ...view, sessionId: "assessed" },
@@ -91,6 +110,7 @@ it("retries the assessed session after its creation fails", async () => {
   expect(await screen.findByText("Assessed shift")).toBeVisible();
   expect(createSession.mock.calls.map(([input]) => input.sessionKind)).toEqual([
     "tutorial",
+    "assessed",
     "assessed",
     "assessed",
   ]);
