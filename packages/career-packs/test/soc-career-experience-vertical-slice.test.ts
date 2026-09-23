@@ -47,7 +47,12 @@ const ROUTINE = "routine-alert-1";
 // ---------------------------------------------------------------------------
 
 function world(sessionId = "soc-slice"): WorldState {
-  return createInitialWorldState(sessionId, 7, {}, loadDefaultCybersecurityPack());
+  return createInitialWorldState(
+    sessionId,
+    7,
+    {},
+    loadDefaultCybersecurityPack(),
+  );
 }
 
 function action(
@@ -58,8 +63,15 @@ function action(
   return { id, eventId, actorId: "player", ...(freeText ? { freeText } : {}) };
 }
 
-function queryAction(datasetId: DatasetId, filters: QueryFilter): SimulationAction {
-  return { id: "query_records", actorId: "player", queryPayload: { datasetId, filters } };
+function queryAction(
+  datasetId: DatasetId,
+  filters: QueryFilter,
+): SimulationAction {
+  return {
+    id: "query_records",
+    actorId: "player",
+    queryPayload: { datasetId, filters },
+  };
 }
 
 function perform(world: WorldState, ...next: SimulationAction[]): WorldState {
@@ -133,7 +145,9 @@ describe("section 1 · shift start and handoff", () => {
     expect(handoffEvent?.category).toBe("handoff");
     expect(handoffEvent?.status).toBe("active");
 
-    const handoffActions = view.availableActions.filter((a) => a.eventId === HANDOFF);
+    const handoffActions = view.availableActions.filter(
+      (a) => a.eventId === HANDOFF,
+    );
     expect(handoffActions.map((a) => a.id)).toContain("read_handoff");
     // Released: no legacy quiz task is bound to the handoff.
     for (const a of handoffActions) expect(a.taskId).toBeUndefined();
@@ -197,7 +211,10 @@ describe("section 2 · routine work is present, not only A-1042", () => {
 
     // Queries advance simClock but never activate pending events themselves;
     // the routine arrives when the NEXT canonical action crosses its trigger.
-    state = perform(state, queryAction("devices", { assignedUser: "j.patel@example.com" }));
+    state = perform(
+      state,
+      queryAction("devices", { assignedUser: "j.patel@example.com" }),
+    );
     expect(state.simClock).toBe(26);
     expect(event(state, ROUTINE).status).toBe("pending");
 
@@ -216,7 +233,9 @@ describe("section 2 · routine work is present, not only A-1042", () => {
       queryAction("scanner", { runId: "RUN-FIN-031" }),
     );
     const results = toClientView(state).queryResults;
-    const alertIds = results.find((q) => q.datasetId === "alerts")?.records.map((r) => r.id) ?? [];
+    const alertIds =
+      results.find((q) => q.datasetId === "alerts")?.records.map((r) => r.id) ??
+      [];
     expect(alertIds).toEqual(expect.arrayContaining(["A-1042", "A-1180"]));
     expect(alertIds.length).toBeGreaterThan(1);
 
@@ -302,7 +321,8 @@ describe("section 4 · order-independent investigation", () => {
       action("review_alert", LOGIN),
     );
     const auth = () => queryAction("auth", { user: "j.patel@example.com" });
-    const device = () => queryAction("devices", { assignedUser: "j.patel@example.com" });
+    const device = () =>
+      queryAction("devices", { assignedUser: "j.patel@example.com" });
     const vpn = () => queryAction("vpn", { user: "j.patel@example.com" });
     return order === "A"
       ? perform(state, auth(), device(), vpn())
@@ -324,7 +344,11 @@ describe("section 4 · order-independent investigation", () => {
       new Map(
         state.queryHistory.map((entry) => [
           `${entry.datasetId}|${JSON.stringify(entry.normalizedFilters)}`,
-          { resultIds: entry.resultIds, totalCount: entry.totalCount, truncated: entry.truncated },
+          {
+            resultIds: entry.resultIds,
+            totalCount: entry.totalCount,
+            truncated: entry.truncated,
+          },
         ]),
       );
     expect(summarize(b)).toEqual(summarize(a));
@@ -332,7 +356,9 @@ describe("section 4 · order-independent investigation", () => {
     const av = toClientView(a);
     const bv = toClientView(b);
     expect(bv.events).toEqual(av.events);
-    expect(bv.artifacts.map((x) => x.id)).toEqual(av.artifacts.map((x) => x.id));
+    expect(bv.artifacts.map((x) => x.id)).toEqual(
+      av.artifacts.map((x) => x.id),
+    );
   });
 });
 
@@ -391,8 +417,14 @@ describe("section 6 · query ≠ observation ≠ Evidence Fact", () => {
     const observedBeforeQueries = [...state.observedArtifactIds];
     expect(observedBeforeQueries).toEqual(["handoff-email"]);
 
-    state = perform(state, queryAction("devices", { assignedUser: "j.patel@example.com" }));
-    state = perform(state, queryAction("auth", { user: "j.patel@example.com" }));
+    state = perform(
+      state,
+      queryAction("devices", { assignedUser: "j.patel@example.com" }),
+    );
+    state = perform(
+      state,
+      queryAction("auth", { user: "j.patel@example.com" }),
+    );
     expect(state.observedArtifactIds).toEqual(observedBeforeQueries);
 
     // Observation only happens through the canonical open act.
@@ -409,7 +441,10 @@ describe("section 6 · query ≠ observation ≠ Evidence Fact", () => {
     expect(artifact?.body).toContain("unknown-laptop-17");
 
     // Query result rows are strict-validated and carry no observation marker.
-    state = perform(state, queryAction("devices", { assignedUser: "j.patel@example.com" }));
+    state = perform(
+      state,
+      queryAction("devices", { assignedUser: "j.patel@example.com" }),
+    );
     for (const qr of toClientView(state).queryResults) {
       for (const row of qr.records) {
         expect(Object.keys(row)).not.toContain("observed");
@@ -426,7 +461,8 @@ describe("section 7 · ambiguity, no immediate grading", () => {
   it("no grading vocabulary or answer-key metadata is ever serialized", () => {
     const views: string[] = [];
     let state = world();
-    const capture = (s: WorldState) => views.push(JSON.stringify(toClientView(s)));
+    const capture = (s: WorldState) =>
+      views.push(JSON.stringify(toClientView(s)));
     capture(state);
 
     state = perform(
@@ -471,7 +507,11 @@ describe("section 8 · documentation substrate", () => {
 
     const written = perform(
       state,
-      action("update_ticket_notes", LOGIN, "The session was compromised by an attacker."),
+      action(
+        "update_ticket_notes",
+        LOGIN,
+        "The session was compromised by an attacker.",
+      ),
     );
 
     expect(written.ticketNotes[LOGIN]).toMatch(/compromised/);
@@ -500,7 +540,9 @@ describe("section 9 · coworker dependency", () => {
     const messages = toClientView(state).operationalMessages;
     expect(
       messages.some((m) =>
-        /Morgan recommends|not enough context|managed MacBook and phone/i.test(m),
+        /Morgan recommends|not enough context|managed MacBook and phone/i.test(
+          m,
+        ),
       ),
     ).toBe(true);
     // One-shot: asking again is no longer offered.
@@ -546,7 +588,9 @@ describe("section 9 · coworker dependency", () => {
     );
 
     expect(event(state, LOGIN).resolution).toBe(before.resolution);
-    expect(event(state, LOGIN).completedActionIds).toEqual(before.completedActionIds);
+    expect(event(state, LOGIN).completedActionIds).toEqual(
+      before.completedActionIds,
+    );
     expect(event(state, LOGIN).status).toBe("active");
   });
 });
@@ -560,8 +604,16 @@ describe("section 10 · context continuity after switching work", () => {
     let state = fullyInvestigated(world());
     state = perform(
       state,
-      action("update_notebook", LOGIN, "Session owner unverified; unknown-laptop-17 not enrolled."),
-      action("update_ticket_notes", LOGIN, "Auth + device compared; keep watching route coverage."),
+      action(
+        "update_notebook",
+        LOGIN,
+        "Session owner unverified; unknown-laptop-17 not enrolled.",
+      ),
+      action(
+        "update_ticket_notes",
+        LOGIN,
+        "Auth + device compared; keep watching route coverage.",
+      ),
     );
 
     const before = {
@@ -582,7 +634,11 @@ describe("section 10 · context continuity after switching work", () => {
     state = perform(
       state,
       queryAction("scanner", { runId: "RUN-FIN-031" }),
-      action("update_ticket_notes", ROUTINE, "Compare event time, not delivery time."),
+      action(
+        "update_ticket_notes",
+        ROUTINE,
+        "Compare event time, not delivery time.",
+      ),
     );
 
     const mid = toClientView(state);
@@ -595,14 +651,20 @@ describe("section 10 · context continuity after switching work", () => {
       before.observed,
     );
     expect(
-      ["device-inventory-1", "login-context-1", "account-history-1"].every((id) =>
-        state.observedArtifactIds.includes(id),
+      ["device-inventory-1", "login-context-1", "account-history-1"].every(
+        (id) => state.observedArtifactIds.includes(id),
       ),
     ).toBe(true);
     expect(state.notebook).toEqual(before.notebook);
     expect(state.ticketNotes[LOGIN]).toEqual(before.notes);
-    expect(event(state, LOGIN).completedActionIds).toEqual(before.loginCompleted);
-    expect(state.queryHistory.slice(0, before.queryHistory.length).map((e) => JSON.stringify(e))).toEqual(before.queryHistory);
+    expect(event(state, LOGIN).completedActionIds).toEqual(
+      before.loginCompleted,
+    );
+    expect(
+      state.queryHistory
+        .slice(0, before.queryHistory.length)
+        .map((e) => JSON.stringify(e)),
+    ).toEqual(before.queryHistory);
 
     const loginActions = toClientView(state).availableActions.filter(
       (a) => a.eventId === LOGIN,
@@ -669,7 +731,11 @@ describe("section 12 · hidden state", () => {
       state,
       action("update_notebook", LOGIN, "keep route comparison open"),
       queryAction("scanner", { runId: "RUN-FIN-031" }),
-      action("update_ticket_notes", ROUTINE, "Compare approved window before closure."),
+      action(
+        "update_ticket_notes",
+        ROUTINE,
+        "Compare approved window before closure.",
+      ),
     );
 
     const view = toClientView(state);
@@ -705,7 +771,15 @@ describe("section 12 · hidden state", () => {
       "inspect_account_history",
       "check_device_inventory",
     ]);
-    const gatedResidue = ["review_alert", "search_knowledge_base", "document_ticket"];
+    const gatedResidue = [
+      "review_alert",
+      "search_knowledge_base",
+      "document_ticket",
+      "route_access_request",
+      "resolve_login_help",
+      "send_status_update",
+      "submit_shift_handoff",
+    ];
     for (const task of view.tasks) {
       expect(releasedActs.has(task.actionId)).toBe(false);
       expect(gatedResidue).toContain(task.actionId);
@@ -797,7 +871,11 @@ describe("section 13 · regression assertions A–F", () => {
     };
     state = perform(
       state,
-      action("update_ticket_notes", LOGIN, "VPN confirmed; account is compromised."),
+      action(
+        "update_ticket_notes",
+        LOGIN,
+        "VPN confirmed; account is compromised.",
+      ),
     );
     expect(state.facts).toEqual(before.facts);
     expect(state.queryHistory).toEqual(before.queryHistory);
@@ -809,7 +887,11 @@ describe("section 13 · regression assertions A–F", () => {
     let state = fullyInvestigated(world());
     state = perform(
       state,
-      action("update_notebook", LOGIN, "device check done; route coverage open"),
+      action(
+        "update_notebook",
+        LOGIN,
+        "device check done; route coverage open",
+      ),
     );
     const loginCompleted = [...event(state, LOGIN).completedActionIds];
     state = applyWorkplaceInteraction(state, {
@@ -832,7 +914,11 @@ describe("section 13 · regression assertions A–F", () => {
       state,
       action("ask_manager", LOGIN),
       queryAction("scanner", { runId: "RUN-FIN-031" }),
-      action("update_ticket_notes", ROUTINE, "Compare event time with the approved window."),
+      action(
+        "update_ticket_notes",
+        ROUTINE,
+        "Compare event time with the approved window.",
+      ),
     );
     const serialized = JSON.stringify(toClientView(state));
     expect(serialized).not.toMatch(

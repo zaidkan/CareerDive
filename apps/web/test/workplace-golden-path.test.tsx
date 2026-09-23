@@ -18,7 +18,7 @@ import { actionMutationKey, notificationMutationKey, taskMutationKey, useMutatio
 import { JulesDialogue } from "../src/world/JulesDialogue.js";
 afterEach(cleanup);
 const pack = loadDefaultCybersecurityPack();
-type Mode = "desk" | "list" | "os";
+type Mode = "os";
 const outcomes = new Map<Mode, StoredSession>();
 const traces = new Map<Mode, unknown[]>();
 const suspicious = "suspicious-login-1";
@@ -224,13 +224,10 @@ describe("rendered workplace golden path", () => {
             }
         }
         async function openSystem(systemId: AvailableAction["systemId"]) {
-            ;
-            {
-                const tab = required(APP_TABS.find(({ id }) => id === systemId), `Desk OS tab ${systemId}`);
-                await user.click(screen.getByRole("tab", {
-                    name: new RegExp(`^${tab.label}( suggested next)?$`),
-                }));
-            }
+            const tab = required(APP_TABS.find(({ id }) => id === systemId), `Desk OS tab ${systemId}`);
+            await user.click(screen.getByRole("tab", {
+                name: new RegExp(`^${tab.label}( suggested next)?$`),
+            }));
         }
         async function verifyAvailableTargets() {
             const found = new Set<string>();
@@ -247,7 +244,7 @@ describe("rendered workplace golden path", () => {
                     .querySelectorAll<HTMLElement>("[data-task-id]")
                     .forEach((node) => {
                     const taskId = required(node.dataset.taskId, "rendered task ID");
-                    const eventId = required(node.dataset.eventId, "rendered task event ID");
+                    const eventId = required(node.dataset.eventId, "rendered action event ID");
                     const stepIndex = required(node.dataset.stepIndex, "rendered task step index");
                     foundTasks.add(`${taskId}:${eventId}:${stepIndex}`);
                 });
@@ -266,7 +263,9 @@ describe("rendered workplace golden path", () => {
                 ...new Set(view.availableActions.map(({ id, eventId }) => `${id}:${eventId}`)),
             ].sort());
             expect([...foundTasks].sort()).toEqual(view.tasks
-                .filter(({ kind }) => kind !== "build_summary")
+                // document_ticket uses TicketComposer; every other task kind,
+                // including authored build summaries, must render a task panel.
+                .filter(({ actionId }) => actionId !== "document_ticket")
                 .map(({ id, eventId, stepIndex }) => `${id}:${eventId}:${String(stepIndex)}`)
                 .sort());
         }
@@ -396,6 +395,10 @@ describe("rendered workplace golden path", () => {
         await perform("dismiss_alert", routine);
         await perform("inspect_account_history", suspicious);
         await perform("check_device_inventory", suspicious);
+        // Sol content coverage: access request, login help, Morgan status check.
+        await perform("route_access_request", "access-request-1");
+        await perform("resolve_login_help", "login-help-1");
+        await perform("send_status_update", "status-check-1");
         await verifyAvailableTargets();
         for (const label of [
             "Open fridge",
@@ -417,6 +420,8 @@ describe("rendered workplace golden path", () => {
         expect(state.ticketNotes[suspicious]).toContain("unknown-laptop-17 is not enrolled");
         expect(state.ticketNotes[suspicious]).toContain("suspected, not yet proven");
         await perform("escalate_alert", suspicious);
+        // Sol content coverage: end-of-shift handoff before complete.
+        await perform("submit_shift_handoff", "shift-handoff-1");
         await verifyAvailableTargets();
         await perform("complete_shift", "shift");
         expect(state.workplace.energy.current).toBeGreaterThan(0);
@@ -432,8 +437,9 @@ describe("rendered workplace golden path", () => {
             "action",
             "artifact",
             "notification",
+            "task",
         ]);
-        expect(recovered.size).toBe(3);
+        expect(recovered.size).toBe(4);
         expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
         const stored = await repository.getSession("user-1", "golden");
         expect(stored.evidence.length).toBeGreaterThan(0);
@@ -446,5 +452,5 @@ describe("rendered workplace golden path", () => {
         expect(debrief.sections.consequences).toContain("07:45 export has no file-access or mailbox activity");
         outcomes.set(mode, stored);
         traces.set(mode, trace);
-    }, 30000);
+    }, 60000);
 });

@@ -125,7 +125,9 @@ describe("deterministic simulation core", () => {
     const turn = perform(state, "document_ticket", "routine-alert-1");
 
     expect(turn.state.simClock).toBe(75);
-    expect(turn.state.events[0]?.status).toBe("escalated");
+    expect(
+      turn.state.events.find(({ id }) => id === "suspicious-login-1")?.status,
+    ).toBe("escalated");
     expect(turn.effects).toContainEqual(
       expect.objectContaining({
         type: "event_escalated",
@@ -177,6 +179,7 @@ describe("deterministic simulation core", () => {
 
     const turn = applyAction(initial, {
       id: "ask_manager",
+      eventId: "suspicious-login-1",
       actorId: "user",
     });
     const view = toClientView(turn.state);
@@ -191,6 +194,7 @@ describe("deterministic simulation core", () => {
     const initial = world("session-1", 42);
     const consulted = applyAction(initial, {
       id: "ask_manager",
+      eventId: "suspicious-login-1",
       actorId: "user",
     }).state;
 
@@ -237,7 +241,7 @@ describe("deterministic simulation core", () => {
   it("starts a shift with guided handoff and scheduled workplace events", () => {
     const state = world("session-1", 42);
 
-    expect(state.events).toHaveLength(3);
+    expect(state.events).toHaveLength(7);
     expect(
       state.events.find(({ templateId }) => templateId === "incomplete_handoff")
         ?.status,
@@ -307,6 +311,10 @@ describe("deterministic simulation core", () => {
       ["search_knowledge_base", "routine-alert-1"],
       ["document_ticket", "routine-alert-1"],
       ["dismiss_alert", "routine-alert-1"],
+      ["route_access_request", "access-request-1"],
+      ["resolve_login_help", "login-help-1"],
+      ["send_status_update", "status-check-1"],
+      ["submit_shift_handoff", "shift-handoff-1"],
     ] as const;
 
     let direct = initial;

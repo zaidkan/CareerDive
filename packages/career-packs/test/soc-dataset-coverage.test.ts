@@ -90,7 +90,7 @@ describe("SOC pack runtime dataset presence", () => {
   });
 
   it.each<[DatasetId, number]>([
-    ["auth", 16],
+    ["auth", 18],
     ["vpn", 7],
     ["devices", 11],
     ["alerts", 6],
@@ -111,10 +111,7 @@ describe("A-1042 investigation substrate (approved fixture IDs)", () => {
     const pack = await loadProductionPack();
     const auth = rowsOf<AuthRecord>(datasetOf(pack, "auth"), "auth");
     const vpn = rowsOf<VpnRecord>(datasetOf(pack, "vpn"), "vpn");
-    const devices = rowsOf<DeviceRecord>(
-      datasetOf(pack, "devices"),
-      "devices",
-    );
+    const devices = rowsOf<DeviceRecord>(datasetOf(pack, "devices"), "devices");
     const alerts = rowsOf<AlertRecord>(datasetOf(pack, "alerts"), "alerts");
 
     const authIds = auth.map((row) => row.id);
@@ -195,6 +192,21 @@ describe("A-1042 investigation substrate (approved fixture IDs)", () => {
     expect(v218?.vpnId).toBe("V-218");
     expect(v218?.exitIp).toBe("198.51.100.20");
     expect(v218?.status).toBe("active");
+  });
+});
+
+describe("employee login-help substrate", () => {
+  it("ships the phone retry and successful laptop comparison rows", async () => {
+    const pack = await loadProductionPack();
+    const authIds = rowsOf<AuthRecord>(datasetOf(pack, "auth"), "auth").map(
+      ({ id }) => id,
+    );
+    expect(authIds).toEqual(
+      expect.arrayContaining([
+        "AUTH-0836-RIVERA-PHONE-RETRIES",
+        "AUTH-0842-RIVERA-LAPTOP",
+      ]),
+    );
   });
 });
 
@@ -284,15 +296,13 @@ describe("deferred / quarantined content stays out of the runtime", () => {
     const allRecordIds = [
       ...authIds,
       ...vpnIds,
-      ...rowsOf<DeviceRecord>(
-        datasetOf(pack, "devices"),
-        "devices",
-      ).map((row) => row.id),
+      ...rowsOf<DeviceRecord>(datasetOf(pack, "devices"), "devices").map(
+        (row) => row.id,
+      ),
       ...alerts.map((row) => row.id),
-      ...rowsOf<ScannerRecord>(
-        datasetOf(pack, "scanner"),
-        "scanner",
-      ).map((row) => row.id),
+      ...rowsOf<ScannerRecord>(datasetOf(pack, "scanner"), "scanner").map(
+        (row) => row.id,
+      ),
     ];
 
     // Phishing dataset + any PH-* authored row (greenfield, deferred).

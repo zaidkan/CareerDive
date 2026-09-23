@@ -36,8 +36,10 @@ export function createInitialWorldState(
       { datasetId, records: dataset.records },
     ]),
   );
-  const events = Object.entries(pack.scenario.eventTemplates).map(
-    ([templateId, template]) => ({
+  const events = pack.career.events.map((templateId) => {
+    const template = pack.scenario.eventTemplates[templateId];
+    if (!template) throw new Error(`Missing event template "${templateId}"`);
+    return {
       id: template.instanceId,
       templateId,
       title: template.title,
@@ -51,8 +53,8 @@ export function createInitialWorldState(
       completedActionIds: [],
       observedArtifactIds: [],
       followUpRefs: [],
-    }),
-  );
+    };
+  });
 
   const trust = Object.fromEntries(
     pack.scenario.npcs.map((npc) => [npc.id, 0]),
