@@ -66,7 +66,13 @@ it("submits the same movement ID through spatial and keyboard-only controls, wit
   const { rerender, container } = render(
     <ExperienceShell {...props()} mode="walk" />,
   );
-  await user.click(screen.getByRole("button", { name: /Security Operations/ }));
+  await user.click(
+    await screen.findByRole(
+      "button",
+      { name: /Security Operations/ },
+      { timeout: 6000 },
+    ),
+  );
   await user.click(
     await screen.findByRole(
       "button",
@@ -88,7 +94,11 @@ it("submits the same movement ID through spatial and keyboard-only controls, wit
   expect(submit).toHaveBeenCalledTimes(1);
   for (const mode of ["list", "desk"] as const) {
     rerender(<ExperienceShell {...props()} mode={mode} />);
-    const button = screen.getByRole("button", { name: "Walk 5 meters" });
+    const button = await screen.findByRole(
+      "button",
+      { name: "Walk 5 meters" },
+      { timeout: 6000 },
+    );
     expect(button).toHaveAttribute("data-interaction-id", "movement_exertion");
     button.focus();
     await user.keyboard("{Enter}");
@@ -126,7 +136,13 @@ it("keeps spatial movement enabled while routine exertion sync is pending", asyn
       onWorkplaceInteraction={submit}
     />,
   );
-  await user.click(screen.getByRole("button", { name: /Security Operations/ }));
+  await user.click(
+    await screen.findByRole(
+      "button",
+      { name: /Security Operations/ },
+      { timeout: 6000 },
+    ),
+  );
   expect(
     await screen.findByRole("button", { name: "Accepted walk" }, { timeout: 6000 }),
   ).toBeVisible();
@@ -174,7 +190,11 @@ it.each(["walk", "desk", "list"] as const)(
     );
     if (mode === "walk")
       await user.click(
-        screen.getByRole("button", { name: /Security Operations/ }),
+        await screen.findByRole(
+          "button",
+          { name: /Security Operations/ },
+          { timeout: 6000 },
+        ),
       );
     const button = await screen.findByRole(
       "button",
@@ -203,7 +223,13 @@ it("shows mutation retry while walking", async () => {
       onRetryMutation={vi.fn()}
     />,
   );
-  await user.click(screen.getByRole("button", { name: /Security Operations/ }));
+  await user.click(
+    await screen.findByRole(
+      "button",
+      { name: /Security Operations/ },
+      { timeout: 6000 },
+    ),
+  );
   expect(
     await screen.findByRole("alert", {}, { timeout: 6000 }),
   ).toHaveTextContent("Movement save failed");

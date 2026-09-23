@@ -322,11 +322,12 @@ export function SocRoom({
         <meshStandardMaterial color="#454744" roughness={0.95} />
       </mesh>
       {/* Fixtures are emissive panels only — extra point lights multiply fill cost. */}
-      <CeilingFixture light={false} lit={!seated} position={[-4, 3.2, -2]} />
-      <CeilingFixture light={false} lit position={[0, 3.2, 0.5]} />
+      <CeilingFixture light={false} lit={!seated} animated={!seated} position={[-4, 3.2, -2]} />
+      <CeilingFixture light={false} lit animated={!seated} position={[0, 3.2, 0.5]} />
       <CeilingFixture
         light={false}
         lit={!seated}
+        animated={!seated}
         position={[COL.east, 3.2, -1.5]}
       />
       {!seated ? (

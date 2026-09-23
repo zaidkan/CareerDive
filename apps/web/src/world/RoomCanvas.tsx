@@ -58,6 +58,9 @@ export const RoomCanvas = memo(function RoomCanvas({
       <Canvas
         camera={{ fov: 62, position: [0, 1.6, 5], near: 0.08, far: 48 }}
         dpr={1}
+        // Seated is Desk OS HTML over a static pose — render on demand instead
+        // of an always-on loop; walk keeps the interactive frameloop.
+        frameloop={seated ? "demand" : "always"}
         gl={{
           antialias: !seated,
           alpha: false,

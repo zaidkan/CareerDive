@@ -422,9 +422,7 @@ export function App({
   );
 }
 
-export { AccessibleMode } from "./components/AccessibleMode.js";
 export { DebriefView } from "./components/DebriefView.js";
-export { WorkSurface } from "./components/WorkSurface.js";
 export { ShiftBriefing, Tutorial } from "./components/shell.js";
 export type { SimulationClient } from "./client.js";
 export { HttpSimulationClient } from "./client.js";

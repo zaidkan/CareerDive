@@ -28,7 +28,7 @@ export function SiteChrome({
       <a className="skip-link" href="#main-content">
         Skip to main content
       </a>
-      <div className="site-nav">
+      <header className="site-nav">
         <div className="site-nav-inner">
           <a
             className="site-nav-brand"
@@ -38,19 +38,21 @@ export function SiteChrome({
           >
             First Shift <span className="brand-beta">Beta</span>
           </a>
-          <ul className="site-nav-links">
-            {NAV.map(({ route: target, label }) => (
-              <li key={target}>
-                <a
-                  href={target}
-                  aria-current={route === target ? "page" : undefined}
-                  onClick={go(target)}
-                >
-                  {label}
-                </a>
-              </li>
-            ))}
-          </ul>
+          <nav aria-label="Primary">
+            <ul className="site-nav-links">
+              {NAV.map(({ route: target, label }) => (
+                <li key={target}>
+                  <a
+                    href={target}
+                    aria-current={route === target ? "page" : undefined}
+                    onClick={go(target)}
+                  >
+                    {label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
           <ThemeToggle />
           <a
             className="button-secondary"
@@ -61,7 +63,7 @@ export function SiteChrome({
             Start
           </a>
         </div>
-      </div>
+      </header>
       <main id="main-content">{children}</main>
       <footer className="site-footer">
         <nav aria-label="Footer">
