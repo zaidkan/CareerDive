@@ -12,6 +12,7 @@ import type {
   WorkplaceInteractionHandler,
 } from "../../components/shared.js";
 import type { MutationState } from "../../useMutationCoordinator.js";
+import type { OsSessionAction, OsSessionState } from "./osSession.js";
 
 /** Real DOM laptop over the 3D canvas so clicks and typing match the pixels. */
 export function LaptopOverlay({
@@ -28,6 +29,8 @@ export function LaptopOverlay({
   mutationState,
   onRetryMutation,
   disabled = false,
+  session,
+  onSessionAction,
 }: {
   phase: "desk_login" | "seated_monitor" | "focus_desk";
   view: ClientView;
@@ -42,6 +45,8 @@ export function LaptopOverlay({
   mutationState?: MutationState;
   onRetryMutation?: () => void;
   disabled?: boolean;
+  session: OsSessionState;
+  onSessionAction: (action: OsSessionAction) => void;
 }) {
   const laptopRef = useRef<HTMLDivElement>(null);
   const { active: osFullscreen, toggle: toggleOsFullscreen } =
@@ -108,9 +113,11 @@ export function LaptopOverlay({
           onOsFullscreen={() => {
             void toggleOsFullscreen();
           }}
+          onSessionAction={onSessionAction}
           onStand={onStand}
           osFullscreen={osFullscreen}
           phase={phase}
+          session={session}
           view={view}
         />
       </div>

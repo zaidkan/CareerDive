@@ -1,9 +1,27 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { BROWSER_PAGES, pageUrl, useBrowserHistory, type BrowserPageId } from "./browserState.js";
+import {
+  BROWSER_PAGES,
+  browserPage,
+  canBrowserBack,
+  canBrowserForward,
+  pageUrl,
+  type BrowserHistory,
+  type BrowserHistoryAction,
+} from "./browserState.js";
 import { prefersReducedMotion } from "./reducedMotion.js";
 
-export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
-  const { page, canBack, canForward, back, forward, navigate } = useBrowserHistory("ops");
+export function BrowserApp({
+  opsConsole,
+  history,
+  onHistory,
+}: {
+  opsConsole: ReactNode;
+  history: BrowserHistory;
+  onHistory: (action: BrowserHistoryAction) => void;
+}) {
+  const page = browserPage(history);
+  const canBack = canBrowserBack(history);
+  const canForward = canBrowserForward(history);
   const [reloading, setReloading] = useState(false);
   const timer = useRef<number | null>(null);
   useEffect(
@@ -26,9 +44,6 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
       setReloading(false);
     }, 400);
   };
-  const openPage = (next: BrowserPageId) => {
-    navigate(next);
-  };
   return (
     <section aria-label="Browser" className="os-window os-browser">
       <div className="os-browser-bar">
@@ -37,7 +52,9 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
             aria-label="Go back"
             className="os-nav-btn"
             disabled={!canBack}
-            onClick={back}
+            onClick={() => {
+              onHistory({ type: "back" });
+            }}
             type="button"
           >
             ←
@@ -46,7 +63,9 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
             aria-label="Go forward"
             className="os-nav-btn"
             disabled={!canForward}
-            onClick={forward}
+            onClick={() => {
+              onHistory({ type: "forward" });
+            }}
             type="button"
           >
             →
@@ -81,7 +100,7 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
             className={`os-bookmark${page === entry.id ? " os-bookmark-active" : ""}`}
             key={entry.id}
             onClick={() => {
-              openPage(entry.id);
+              onHistory({ type: "navigate", page: entry.id });
             }}
             type="button"
           >

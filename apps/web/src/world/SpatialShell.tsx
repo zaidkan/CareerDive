@@ -27,6 +27,7 @@ import {
 import { coffeeControl, fridgeControl } from "./breakRoom.js";
 import { ControlsHelp } from "./ControlsHelp.js";
 import { LaptopOverlay } from "./deskOs/LaptopOverlay.js";
+import { useOsSessionState } from "./deskOs/osSession.js";
 import { FloorMap } from "./FloorMap.js";
 import { JulesDialogue } from "./JulesDialogue.js";
 import { getJourneyStep } from "../journey.js";
@@ -98,6 +99,8 @@ export function SpatialShell({
   onRoomExit?: () => void;
 }) {
   const [spatial, dispatch] = useReducer(reduceSpatialEvent, INITIAL_SPATIAL);
+  // OS session lives above LaptopOverlay → DeskOs mount (A1): survive stand/sit.
+  const [osSession, dispatchOsSession] = useOsSessionState();
   const [nearbyLabel, setNearbyLabel] = useState<string>();
   const [pointerLocked, setPointerLocked] = useState(false);
   const [mouseSensitivity, setMouseSensitivity] = useState(
@@ -402,10 +405,12 @@ export function SpatialShell({
             onLoginSuccess={() => {
               dispatch({ type: "login_success" });
             }}
+            onSessionAction={dispatchOsSession}
             onStand={() => {
               dispatch({ type: "stand" });
             }}
             phase={deskPhase}
+            session={osSession}
             view={view}
           />
         ) : null}

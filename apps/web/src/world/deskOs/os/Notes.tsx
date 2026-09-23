@@ -1,8 +1,14 @@
-import { useState } from "react";
 import type { OpenableFile } from "./FileExplorer.js";
 
-export function Notes({ openFile }: { openFile: OpenableFile | null }) {
-  const [text, setText] = useState("");
+export function Notes({
+  openFile,
+  text,
+  onTextChange,
+}: {
+  openFile: OpenableFile | null;
+  text: string;
+  onTextChange: (text: string) => void;
+}) {
   return (
     <section aria-label="Notes" className="os-window os-notes">
       <p className="eyebrow">Scratch pad</p>
@@ -20,7 +26,7 @@ export function Notes({ openFile }: { openFile: OpenableFile | null }) {
         className="os-notes-area"
         id="os-scratch-notes"
         onChange={(event) => {
-          setText(event.target.value);
+          onTextChange(event.target.value);
         }}
         placeholder="Jot a reminder. Notes stay here and are never assessed."
         rows={8}

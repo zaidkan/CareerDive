@@ -1,5 +1,4 @@
 import type { AvailableAction, ClientView } from "@sim/schemas";
-import { useState } from "react";
 import { LockScreen } from "./LockScreen.js";
 import { OpsConsole } from "./OpsConsole.js";
 import { BrowserApp } from "./os/BrowserApp.js";
@@ -7,7 +6,6 @@ import { Desktop } from "./os/Desktop.js";
 import { FileExplorer, type OpenableFile } from "./os/FileExplorer.js";
 import { Notes } from "./os/Notes.js";
 import { Taskbar } from "./os/Taskbar.js";
-import type { OsAppId } from "./os/browserState.js";
 import type {
   NotificationHandler,
   TaskAttemptHandler,
@@ -17,6 +15,7 @@ import {
   EMPTY_MUTATION_STATE,
   type MutationState,
 } from "../../useMutationCoordinator.js";
+import type { OsSessionAction, OsSessionState } from "./osSession.js";
 
 export function DeskOs({
   phase,
@@ -33,6 +32,8 @@ export function DeskOs({
   onOsFullscreen,
   mutationState = EMPTY_MUTATION_STATE,
   onRetryMutation,
+  session,
+  onSessionAction,
 }: {
   phase: "desk_login" | "seated_monitor" | "focus_desk";
   view: ClientView;
@@ -48,16 +49,16 @@ export function DeskOs({
   onOsFullscreen: () => void;
   mutationState?: MutationState;
   onRetryMutation?: () => void;
+  /** Session-scoped OS state owned above the LaptopOverlay mount (A1). */
+  session: OsSessionState;
+  onSessionAction: (action: OsSessionAction) => void;
 }) {
-  // Single-active-window model: exactly one app fills the workspace.
-  const [activeApp, setActiveApp] = useState<OsAppId>("browser");
-  // Opened files live at shell level so they survive app switches.
-  const [openFile, setOpenFile] = useState<OpenableFile | null>(null);
+  const activeApp = session.activeApp;
+  const openFile = session.openFile;
   const locked = phase === "desk_login";
 
   const openFileInNotes = (file: OpenableFile) => {
-    setOpenFile(file);
-    setActiveApp("notes");
+    onSessionAction({ type: "open_file_in_notes", file });
   };
 
   const opsConsole = (
@@ -78,21 +79,44 @@ export function DeskOs({
     <div
       className={`desk-os${maximized ? " desk-os-max" : ""}${osFullscreen ? " desk-os-os-fs" : ""}${locked ? " desk-os-locked" : " desk-os-shell"}`}
       data-desk-os="true"
+      data-testid="desk-os"
     >
       {/* Ops console stays mounted while locked so tab state matches the
           pre-login mount behavior; the locked pane hides it. */}
       <div className="os-workspace" hidden={locked}>
         <div hidden={locked || activeApp !== "desktop"}>
-          <Desktop onOpen={setActiveApp} />
+          <Desktop
+            onOpen={(app) => {
+              onSessionAction({ type: "set_active_app", app });
+            }}
+          />
         </div>
         <div hidden={locked || activeApp !== "browser"}>
-          <BrowserApp opsConsole={opsConsole} />
+          <BrowserApp
+            history={session.browserHistory}
+            onHistory={(action) => {
+              onSessionAction({ type: "browser", action });
+            }}
+            opsConsole={opsConsole}
+          />
         </div>
         <div hidden={locked || activeApp !== "files"}>
-          <FileExplorer onOpenFile={openFileInNotes} />
+          <FileExplorer
+            fs={session.fakeFs}
+            onFsChange={(fs) => {
+              onSessionAction({ type: "set_fake_fs", fs });
+            }}
+            onOpenFile={openFileInNotes}
+          />
         </div>
         <div hidden={locked || activeApp !== "notes"}>
-          <Notes openFile={openFile} />
+          <Notes
+            onTextChange={(text) => {
+              onSessionAction({ type: "set_scratch_notes", text });
+            }}
+            openFile={openFile}
+            text={session.scratchNotes}
+          />
         </div>
       </div>
       {locked ? (
@@ -117,7 +141,9 @@ export function DeskOs({
           activeApp={activeApp}
           simClock={view.simClock}
           osFullscreen={osFullscreen}
-          onSelect={setActiveApp}
+          onSelect={(app) => {
+            onSessionAction({ type: "set_active_app", app });
+          }}
           onOsFullscreen={onOsFullscreen}
           onStand={onStand}
         />

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { findFileFolder, initialFakeFs, moveFile, type FakeFs, type FsFile, type FsFolderId } from "./useFakeFs.js";
+import { findFileFolder, moveFile, type FakeFs, type FsFile, type FsFolderId } from "./useFakeFs.js";
 
 const DROP_MIME = "text/os-file-id";
 
@@ -14,8 +14,15 @@ function fileTypeOf(name: string): string {
   return "file";
 }
 
-export function FileExplorer({ onOpenFile }: { onOpenFile: (file: OpenableFile) => void }) {
-  const [fs, setFs] = useState<FakeFs>(() => initialFakeFs());
+export function FileExplorer({
+  fs,
+  onFsChange,
+  onOpenFile,
+}: {
+  fs: FakeFs;
+  onFsChange: (fs: FakeFs) => void;
+  onOpenFile: (file: OpenableFile) => void;
+}) {
   const [folder, setFolder] = useState<FsFolderId>("documents");
   const [selected, setSelected] = useState<string | null>(null);
   const [clipboard, setClipboard] = useState<string | null>(null);
@@ -33,7 +40,7 @@ export function FileExplorer({ onOpenFile }: { onOpenFile: (file: OpenableFile) 
     const fromFolder = findFileFolder(fs, fileId);
     if (!fromFolder || fromFolder === toFolder) return;
     const name = fs.filesByFolder[fromFolder].find((file) => file.id === fileId)?.name ?? fileId;
-    setFs((current) => moveFile(current, fileId, toFolder));
+    onFsChange(moveFile(fs, fileId, toFolder));
     if (fileId === "field-notes-draft.txt" && toFolder === "desktop") {
       setNotice(`Moved ${name} to Desktop. Nice — a tidy desktop. Cosmetic only; the shift does not track files.`);
     } else {

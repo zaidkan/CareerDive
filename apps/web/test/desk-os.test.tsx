@@ -9,6 +9,7 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ClientTaskView, ClientView } from "@sim/schemas";
 import type { SimulationClient } from "../src/client.js";
@@ -18,6 +19,7 @@ import { SystemToolPanel } from "../src/components/SystemToolPanel.js";
 import { WorkSurface } from "../src/components/WorkSurface.js";
 import type { NotificationHandler } from "../src/components/shared.js";
 import { DeskOs } from "../src/world/deskOs/DeskOs.js";
+import { useOsSessionState } from "../src/world/deskOs/osSession.js";
 import { SystemApp } from "../src/world/deskOs/SystemApp.js";
 
 vi.mock("../src/world/FloorMap.js", () => ({
@@ -212,6 +214,23 @@ function deskProps(view: ClientView) {
     phase: "seated_monitor" as const,
     view,
   };
+}
+
+/** DeskOs under an explicit session owner (mirrors SpatialShell ownership). */
+function DeskOsHost(
+  props: Omit<
+    ComponentProps<typeof DeskOs>,
+    "session" | "onSessionAction"
+  >,
+) {
+  const [session, onSessionAction] = useOsSessionState();
+  return (
+    <DeskOs
+      {...props}
+      session={session}
+      onSessionAction={onSessionAction}
+    />
+  );
 }
 
 function makeTask(overrides: Partial<ClientTaskView> = {}): ClientTaskView {
@@ -741,7 +760,7 @@ describe("Desk OS canonical state rendering", () => {
         energy: { current: 73, max: 100 },
       },
     });
-    render(<DeskOs {...deskProps(view)} />);
+    render(<DeskOsHost {...deskProps(view)} />);
 
     const rail = screen.getByRole("complementary", { name: "Current shift" });
     expect(within(rail).getByText("2 open")).toBeVisible();
@@ -1092,8 +1111,8 @@ describe("Desk OS selection, task, and expansion reliability", () => {
   it("moves focus to an app heading when opened from the Dashboard", async () => {
     const user = userEvent.setup();
     const props = deskProps(makeView());
-    const rendered = render(<DeskOs {...props} phase="desk_login" />);
-    rendered.rerender(<DeskOs {...props} phase="seated_monitor" />);
+    const rendered = render(<DeskOsHost {...props} phase="desk_login" />);
+    rendered.rerender(<DeskOsHost {...props} phase="seated_monitor" />);
 
     await user.click(
       screen.getByRole("button", { name: /Tickets Case notes/i }),
@@ -1139,7 +1158,7 @@ describe("Desk OS selection, task, and expansion reliability", () => {
         },
       ],
     });
-    render(<DeskOs {...deskProps(view)} />);
+    render(<DeskOsHost {...deskProps(view)} />);
     await user.click(screen.getByRole("tab", { name: /^Alerts/ }));
     await user.click(
       within(screen.getByLabelText("Alerts items")).getByRole("button", {
@@ -1221,7 +1240,7 @@ describe("Desk OS selection, task, and expansion reliability", () => {
     const user = userEvent.setup();
     const onOsFullscreen = vi.fn();
     render(
-      <DeskOs {...deskProps(makeView())} onOsFullscreen={onOsFullscreen} />,
+      <DeskOsHost {...deskProps(makeView())} onOsFullscreen={onOsFullscreen} />,
     );
 
     const controls = screen.getAllByRole("button", {

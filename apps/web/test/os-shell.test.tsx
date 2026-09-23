@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ClientView } from "@sim/schemas";
 import { DeskOs } from "../src/world/deskOs/DeskOs.js";
+import { useOsSessionState } from "../src/world/deskOs/osSession.js";
 
 afterEach(cleanup);
 
@@ -46,16 +47,22 @@ function makeView(overrides: Partial<ClientView> = {}): ClientView {
 
 function renderShell() {
   const onAction = vi.fn();
-  render(
-    <DeskOs
-      phase="seated_monitor"
-      view={makeView()}
-      onAction={onAction}
-      onLoginSuccess={() => undefined}
-      onStand={() => undefined}
-      onOsFullscreen={() => undefined}
-    />,
-  );
+  function Shell() {
+    const [session, onSessionAction] = useOsSessionState();
+    return (
+      <DeskOs
+        phase="seated_monitor"
+        view={makeView()}
+        onAction={onAction}
+        onLoginSuccess={() => undefined}
+        onStand={() => undefined}
+        onOsFullscreen={() => undefined}
+        session={session}
+        onSessionAction={onSessionAction}
+      />
+    );
+  }
+  render(<Shell />);
   return { onAction };
 }
 

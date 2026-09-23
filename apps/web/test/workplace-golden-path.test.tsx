@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
+import type { ComponentProps } from "react";
 import { useState } from "react";
 import {
   cleanup,
@@ -30,13 +31,32 @@ import {
 } from "../../server/src/index.js";
 import { ExperienceShell } from "../src/experience/ExperienceShell.js";
 import { DeskOs } from "../src/world/deskOs/DeskOs.js";
+import { useOsSessionState } from "../src/world/deskOs/osSession.js";
 import { APP_TABS } from "../src/world/deskOs/tabs.js";
 import { WORK_SYSTEMS } from "../src/systems.js";
 import type { NotificationHandler } from "../src/components/shared.js";
+import type { MutationState } from "../src/useMutationCoordinator.js";
 import {
   BreakRoomPanel,
   CarriedSnackControl,
 } from "../src/world/BreakRoomPanel.js";
+
+/** Desk OS host with session ownership above the DeskOs mount (A1). */
+function OsSessionScopedDeskOs(
+  props: Omit<
+    ComponentProps<typeof DeskOs>,
+    "session" | "onSessionAction"
+  > & { mutationState?: MutationState },
+) {
+  const [session, onSessionAction] = useOsSessionState();
+  return (
+    <DeskOs
+      {...props}
+      session={session}
+      onSessionAction={onSessionAction}
+    />
+  );
+}
 import {
   actionMutationKey,
   notificationMutationKey,
@@ -227,7 +247,7 @@ describe("rendered workplace golden path", () => {
         };
         return mode === "os" ? (
           <>
-            <DeskOs
+            <OsSessionScopedDeskOs
               {...props}
               phase="seated_monitor"
               onLoginSuccess={() => undefined}
