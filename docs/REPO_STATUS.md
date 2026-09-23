@@ -55,8 +55,10 @@ This file is the public-safe map of what is on GitHub, what is draft, and what m
 - **Task7:** as on `45ff32d` baseline (email/alert tooling, artifact observation, source-bound records, guide/inventory, lock-screen login). Open gaps per `docs/planning/desk-os-audit/` remain (sentence-level source selection proof, legacy gate clean-up, mode consistency) — not regressed.
 - **Task8:** **integrated** — structured ticket composer is canonical, Team Chat `managerGuidance` privacy-preserved, legacy `build_summary` gate remains only for replay. Golden-path asserts ticket composer success.
 - **Task9:** complete per `f5d2bff` (site shell + landing + Desk OS lock + briefing prop + light theme).
-- **Task10:** **NEXT** — Accessibility parity, acceptance, and documentation (`docs/product/workplace-systems-overhaul-plan.md` Task 10). Do not start yet.
+- **Task10:** **NEXT** — Accessibility parity, acceptance, and documentation (`docs/product/workplace-systems-overhaul-plan.md` Task 10). Do not start yet. **Note:** Task 10’s peer-mode “structured vs work-surface product” framing is superseded by the Desk OS overhaul plan (A3/X1/R2/V1); re-scope when starting.
 - **Task11:** **FOLLOWS** — Final review and branch verification (`docs/product/workplace-systems-overhaul-plan.md` Task 11).
+
+Desk OS overhaul planning (2026-09-22): decisions resolved + new plan at `docs/planning/desk-os-audit/DESK_OS_OVERHAUL_PLAN.md`. Docs-only; no overhaul implementation commits yet.
 
 Product plan/design restored: `docs/product/workplace-systems-overhaul-design.md` and `docs/product/workplace-systems-overhaul-plan.md` — authoritative Task 1–11; private BrainV2 docs remain excluded.
 
@@ -101,7 +103,7 @@ No BrainV2/Neo4j required. No private env needed beyond `.env.example`.
 ## Remaining known gaps
 
 - Landing still text-only cards (no real screenshots), site footer `Start` link is single entry (hero `Start` remains primary).
-- Desk OS overhaul questions still open per `DESK_OS_AUDIT_HANDOFF.md`; experimental only fixes duplicate leave.
+- **Desk OS overhaul:** product direction is now **settled** (one experience: 3D workplace → workstation → Desk OS; no peer Walk/Desk/List product modes; bounded multi-window cap 4; leave/return session continuity; internal-only browser; cosmetic files/notes boundaries; Morgan intro; Chromebook-class performance target). Planning docs: `docs/planning/desk-os-audit/DESK_OS_AUDIT_HANDOFF.md` (resolved decisions), `DESK_OS_GAP_MATRIX.md`, `DESK_OS_ARCHITECTURE_MAP.md` (target ownership section), **`DESK_OS_OVERHAUL_PLAN.md` (phased implementation plan — START HERE for overhaul work)**. **Implementation of the overhaul has not started.** Experimental only fixed duplicate leave on lock chrome so far.
 - V2 blocked-spray / shift-depth RED contracts still future.
 
 Do **not** merge `zaidkan/product-experimental` into `main` without release decision. Old branches not deleted.

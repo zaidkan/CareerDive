@@ -2,6 +2,8 @@
 
 > **Restored public product design — originally `docs/superpowers/specs/2026-08-28-workplace-systems-overhaul-design.md`. Private orchestration remains excluded. Tasks 1–9 implemented on `zaidkan/product-experimental`; Tasks 10–11 are the next remaining stages. See `docs/product/workplace-systems-overhaul-plan.md` for the implementation plan.**
 
+> **Supersession note (2026-09-22, docs only):** where this design assumes **Work-surface and structured modes as peer product renderers** (locked principle below; “structured mode” as a product path), that future-facing assumption is **superseded** by the single-experience Desk OS direction: one product flow is 3D workplace → workstation → Desk OS; accessibility and structured interaction are designed **into** that experience; peer Walk/Desk/List product modes are being removed per `docs/planning/desk-os-audit/DESK_OS_OVERHAUL_PLAN.md`. Historical statements about completed work and canonical engine rules remain accurate and are not rewritten. Canonical/evidence/privacy/testing invariants in this document still apply.
+
 **Date:** 2026-08-28  
 **Status:** Approved  
 **Audience:** Direct-to-user beta, age 13+, no cybersecurity background required

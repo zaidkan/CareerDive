@@ -2,6 +2,8 @@
 
 > **Restored public product plan — originally `docs/superpowers/plans/2026-08-28-workplace-systems-overhaul.md` (8bf7111). Private orchestration / BrainV2 docs remain excluded. Current active branch is `zaidkan/product-experimental` (`b71a78c`+). Tasks 1–9 implemented; Tasks 10–11 remain. See `docs/product/workplace-systems-overhaul-design.md` for spec and `docs/REPO_STATUS.md` for branch handoff.**
 
+> **Supersession note (2026-09-22, docs only):** Tasks 1–9 history above is accurate. **Future-facing mode assumptions are superseded** — specifically the global constraint that “Work-surface and structured modes must expose identical canonical interaction IDs and outcomes” *as peer product modes*, Task 10 Step 3 “Complete structured-mode controls” framed as maintaining a parallel product path, and any golden-path setup that treats Walk/Desk/List as permanent peer renderers. Replacements: single-experience parity + accessibility-in-main-experience + peer-mode removal in `docs/planning/desk-os-audit/DESK_OS_OVERHAUL_PLAN.md` (tasks A2, A3, X1, R1, R2, V1). Task 10’s verification/documentation intent and Task 11’s final review remain useful when re-scoped to the single experience. Do not rewrite completed Tasks 1–9 checkboxes as if they had always targeted the new direction.
+
 > **For agentic workers:** Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace quiz-like workstation and decorative break-room mechanics with deterministic energy, finite resources, purposeful dialogue, reliable Desk OS interactions, and recoverable 3D navigation.

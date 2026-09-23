@@ -1,5 +1,7 @@
 # September 8 checkpoint — comparison, guide search, room polish
 
+> **Supersession (2026-09-22):** “Simple list” / mode-control references are historical peer-mode wording; superseded by the single-experience Desk OS plan (`docs/planning/desk-os-audit/DESK_OS_OVERHAUL_PLAN.md`). Tool/search behavior claims remain historical facts for their date.
+
 ## Completed
 
 - Account-pattern comparison displays two inspected records, lets the player mark literal passages, and shows selected findings with source citations. Plain-language term disclosures explain unfamiliar vocabulary. The conclusion step remains a structured choice, not free-form investigation.

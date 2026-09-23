@@ -1,5 +1,7 @@
 # Movement comfort and render-load checkpoint
 
+> **Supersession (2026-09-22):** “Desk only presentation” in verification below is historical peer-mode wording; superseded by the single-experience plan (`docs/planning/desk-os-audit/DESK_OS_OVERHAUL_PLAN.md`). Movement/input fixes remain valid.
+
 User requested reliable looking, less tilt, one fast pace, no Shift sprint or double-click travel, and reduced lag.
 
 ## Changes

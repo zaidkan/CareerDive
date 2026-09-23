@@ -1,5 +1,7 @@
 # Desk OS current-state audit
 
+> **Supersession (2026-09-22):** this file is a **historical implementation inventory** (2026-09-20). It correctly described three peer renderers and open product questions **at that time**. Product decisions and the implementation plan now live in [DESK_OS_AUDIT_HANDOFF.md](DESK_OS_AUDIT_HANDOFF.md) and [DESK_OS_OVERHAUL_PLAN.md](DESK_OS_OVERHAUL_PLAN.md): one experience (3D + Desk OS), peer Walk/Desk/List product modes removed after migration. Do not update the body below to pretend the audit already knew the new direction.
+
 Audit date: 2026-09-20. Repository checkout: Career Expo; branch `main`; HEAD `3e8fe62382ed1b9d7aa83a8fab47bb28c66500ba`. Scope: current working tree, including pre-existing uncommitted work. This is an implementation inventory for architecture planning, not an overhaul design or release approval.
 
 ## Evidence and baseline

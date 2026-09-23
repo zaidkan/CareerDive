@@ -1,5 +1,7 @@
 # Evidence and peer modes — implementation slice
 
+> **Supersession (2026-09-22):** historical slice describing the Walk/Desk/List mode selector. Peer product modes are superseded: Career Expo is one experience (3D workplace → Desk OS); see `docs/planning/desk-os-audit/DESK_OS_OVERHAUL_PLAN.md`. Kept for history; not current roadmap.
+
 ## Implemented
 
 - App mode selector: Walk the office, Desk only, Simple list. Selection survives manager guidance. Switching mode is presentation-only, with no canonical action or session reset.

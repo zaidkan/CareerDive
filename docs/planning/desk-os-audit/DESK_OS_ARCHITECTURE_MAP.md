@@ -2,6 +2,8 @@
 
 Snapshot: 2026-09-20, `main`, HEAD `3e8fe62382ed1b9d7aa83a8fab47bb28c66500ba`, including pre-existing local edits. Paths are repository-relative. This maps existing code, not proposed architecture. See [audit](DESK_OS_AUDIT.md) for verification and limitations.
 
+> **Supersession / target ownership (2026-09-22, not implemented):** product direction is a **single experience** (3D workplace + Desk OS). The three-peer-renderer ownership below is **historical current-state**. Target state after [DESK_OS_OVERHAUL_PLAN.md](DESK_OS_OVERHAUL_PLAN.md): one experience entry; OS session state owned **above** `LaptopOverlay` mount; bounded multi-window Desk OS (cap 4); leave/return preserves that session; WorkSurface/AccessibleMode peer products removed after behavior migration; mode selector gone. Canonical data/action path, serializer gating, and mutation coordinator sections below remain authoritative. See “Target renderer ownership” at the end of this file.
+
 ## Entry and component ownership
 
 ```text
@@ -154,3 +156,26 @@ Confirmed high-impact boundaries:
 8. Current SOC naming is embedded in shell URLs/company text and some core helpers. Generalization risk is inferred; existing three-renderer coupling is confirmed.
 
 Build/testing entry points: root `package.json`, `vitest.config.ts`, `apps/web/package.json`, `apps/web/vite.config.ts`; relevant tests and fresh results are recorded in the main audit. No production database or release gate verification is implied by web build success.
+
+## Target renderer ownership (planned — code does not match this yet)
+
+```text
+apps/web/src/main.tsx
+└── index.tsx: App — session, public view, mutations (unchanged canonical owner)
+    └── experience/ExperienceShell.tsx          [SINGLE experience entry]
+        ├── world/SpatialShell.tsx              [3D workplace — default path]
+        │   └── deskOs/LaptopOverlay.tsx        [at desk]
+        │       └── DeskOs.tsx                  [reads/writes osSession above overlay]
+        │           ├── bounded windows (cap 4) + Taskbar/Desktop
+        │           ├── LockScreen              [presentation over preserved session]
+        │           ├── BrowserApp (internal-only pages)
+        │           ├── FileExplorer / Notes    [cosmetic FS, local scratch]
+        │           └── OpsConsole → SystemToolPanel (canonical tools)
+        └── reduced presentation fallback       [in-experience, no-WebGL only]
+            └── migrated shared controls        [NOT a peer product mode]
+```
+
+- `WorkSurface` / `AccessibleMode` peer products: migrate valuable behavior (plan A3), then remove (plan R1).
+- OS session slice (`osSession`): open windows, focus, browser history, FS, drafts — **client-local only**, never server evidence.
+- Mode selector / `ExperienceMode` product UI: removed in plan A2/R1.
+- This section is a **plan target**; do not cite it as implemented structure until the overhaul plan tasks land.
