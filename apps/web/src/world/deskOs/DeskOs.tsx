@@ -1,5 +1,4 @@
 import type { AvailableAction, ClientView } from "@sim/schemas";
-import { useState } from "react";
 import { LockScreen } from "./LockScreen.js";
 import { OpsConsole } from "./OpsConsole.js";
 import { BrowserApp } from "./os/BrowserApp.js";
@@ -8,6 +7,7 @@ import { FileExplorer, type OpenableFile } from "./os/FileExplorer.js";
 import { Notes } from "./os/Notes.js";
 import { Taskbar } from "./os/Taskbar.js";
 import type { OsAppId } from "./os/browserState.js";
+import { useOsSession } from "./osSession.js";
 import type {
   NotificationHandler,
   TaskAttemptHandler,
@@ -49,10 +49,17 @@ export function DeskOs({
   mutationState?: MutationState;
   onRetryMutation?: () => void;
 }) {
+  const { state, dispatch } = useOsSession();
   // Single-active-window model: exactly one app fills the workspace.
-  const [activeApp, setActiveApp] = useState<OsAppId>("browser");
-  // Opened files live at shell level so they survive app switches.
-  const [openFile, setOpenFile] = useState<OpenableFile | null>(null);
+  const activeApp = state.activeApp;
+  const setActiveApp = (app: OsAppId) => {
+    dispatch({ type: "set_active_app", app });
+  };
+  // Opened files live at session level so they survive overlay unmount/remount.
+  const openFile = state.openFile;
+  const setOpenFile = (file: OpenableFile | null) => {
+    dispatch({ type: "set_open_file", file });
+  };
   const locked = phase === "desk_login";
 
   const openFileInNotes = (file: OpenableFile) => {

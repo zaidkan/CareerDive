@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useOsSession } from "../osSession.js";
 
 export type OsAppId = "desktop" | "browser" | "files" | "notes";
 
@@ -17,35 +17,22 @@ export function pageUrl(page: BrowserPageId): string {
   return BROWSER_PAGES.find((entry) => entry.id === page)?.url ?? "verdaly://ops";
 }
 
-interface BrowserHistory {
-  entries: BrowserPageId[];
-  index: number;
-}
-
 export function useBrowserHistory(initial: BrowserPageId = "ops") {
-  const [history, setHistory] = useState<BrowserHistory>({ entries: [initial], index: 0 });
+  const { state, dispatch } = useOsSession();
+  const history = state.browserHistory;
   const page = history.entries[history.index] ?? initial;
-  const navigate = (next: BrowserPageId) => {
-    setHistory((current) => {
-      const base = current.entries.slice(0, current.index + 1);
-      if (base[base.length - 1] === next) return current;
-      const entries = [...base, next];
-      return { entries, index: entries.length - 1 };
-    });
-  };
   return {
     page,
     canBack: history.index > 0,
     canForward: history.index < history.entries.length - 1,
     back: () => {
-      setHistory((current) => ({ ...current, index: Math.max(0, current.index - 1) }));
+      dispatch({ type: "browser_back" });
     },
     forward: () => {
-      setHistory((current) => ({
-        ...current,
-        index: Math.min(current.entries.length - 1, current.index + 1),
-      }));
+      dispatch({ type: "browser_forward" });
     },
-    navigate,
+    navigate: (next: BrowserPageId) => {
+      dispatch({ type: "browser_navigate", page: next });
+    },
   };
 }
