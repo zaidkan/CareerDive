@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SiteApp } from "../src/site/SiteApp.js";
 import { parseRoute } from "../src/site/routes.js";
@@ -86,7 +86,7 @@ describe("site routes", () => {
     expect(
       await screen.findByRole("heading", {
         name: /short preview film/i,
-      }),
+      }, { timeout: 6000 }),
     ).toBeVisible();
     window.history.pushState(null, "", "/");
   });
@@ -144,7 +144,9 @@ describe("site routes", () => {
           name: /enter the verdaly floor/i,
         }),
       );
-      expect(createSession).toHaveBeenCalledTimes(1);
+      await waitFor(() => {
+        expect(createSession).toHaveBeenCalledTimes(1);
+      });
       expect(createSession).toHaveBeenCalledWith(
         expect.objectContaining({ sessionKind: "assessed" }),
       );
@@ -203,7 +205,9 @@ describe("site routes", () => {
           name: /enter the verdaly floor/i,
         }),
       );
-      expect(createSession).toHaveBeenCalledTimes(1);
+      await waitFor(() => {
+        expect(createSession).toHaveBeenCalledTimes(1);
+      });
       // Transcript/stills remain accessible as fallback.
       expect(
         screen.queryByRole("button", { name: /play arrival film/i }),

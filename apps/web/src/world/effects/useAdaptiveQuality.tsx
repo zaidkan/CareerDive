@@ -259,6 +259,9 @@ export function useAdaptiveQuality(seated: boolean): AdaptiveQuality {
   }
 
   useFrame((_, delta) => {
+    // Seated quality is already resolved by resolveEffects; skip the sampler
+    // so demand/idle Desk OS frames do not keep a quality machine warm.
+    if (seated) return;
     const machine = machineRef.current;
     if (machine === undefined) return;
     const hidden = typeof document !== "undefined" && document.hidden;

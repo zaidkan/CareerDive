@@ -1,8 +1,13 @@
-import { useState } from "react";
-import { App } from "../../index.js";
+import { lazy, Suspense, useState } from "react";
 import type { SimulationClient } from "../../client.js";
 import { defaultClient } from "../../client.js";
 import { ArrivalFilm } from "../ArrivalFilm.js";
+
+/** Film/briefing never need the sim shell; pay for App only on Enter. */
+const App = lazy(async () => {
+  const mod = await import("../../index.js");
+  return { default: mod.App };
+});
 
 type StartStep = "film" | "briefing" | "sim";
 
@@ -96,21 +101,23 @@ export function StartPage({
   }
 
   return (
-    <App
-      briefing="hidden"
-      client={{
-        ...client,
-        createSession: (input: {
-          seed: number;
-          sessionKind: "tutorial" | "assessed";
-          pacingMode:
-            | "standard"
-            | "extended"
-            | "pause_compatible"
-            | "no_hard_timer"
-            | "practice";
-        }) => client.createSession({ ...input, sessionKind: "assessed" }),
-      }}
-    />
+    <Suspense fallback={<p className="mode-note">Entering the floor…</p>}>
+      <App
+        briefing="hidden"
+        client={{
+          ...client,
+          createSession: (input: {
+            seed: number;
+            sessionKind: "tutorial" | "assessed";
+            pacingMode:
+              | "standard"
+              | "extended"
+              | "pause_compatible"
+              | "no_hard_timer"
+              | "practice";
+          }) => client.createSession({ ...input, sessionKind: "assessed" }),
+        }}
+      />
+    </Suspense>
   );
 }

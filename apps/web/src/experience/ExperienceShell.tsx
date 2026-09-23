@@ -1,4 +1,4 @@
-import { Component, useCallback, useState, type ReactNode } from "react";
+import { Component, lazy, Suspense, useCallback, useState, type ReactNode } from "react";
 import type {
   AvailableAction,
   ClientView,
@@ -9,13 +9,11 @@ import {
   julesDialogueFromClientView,
   type JulesDialogueReply,
 } from "@sim/core";
-import { AccessibleMode } from "../components/AccessibleMode.js";
 import type {
   NotificationHandler,
   TaskAttemptHandler,
   WorkplaceInteractionHandler,
 } from "../components/shared.js";
-import { WorkSurface } from "../components/WorkSurface.js";
 import type { MutationState } from "../useMutationCoordinator.js";
 import {
   BreakRoomPanel,
@@ -24,9 +22,22 @@ import {
   EnergyMeter,
 } from "../world/BreakRoomPanel.js";
 import { JulesDialogue } from "../world/JulesDialogue.js";
-import { SpatialShell } from "../world/SpatialShell.js";
 import { useMovementExertion } from "../world/useMovementExertion.js";
 import "./experience.css";
+
+/** Peer renderers split so walk never pays for desk/list bundles and vice versa. */
+const SpatialShell = lazy(async () => {
+  const mod = await import("../world/SpatialShell.js");
+  return { default: mod.SpatialShell };
+});
+const WorkSurface = lazy(async () => {
+  const mod = await import("../components/WorkSurface.js");
+  return { default: mod.WorkSurface };
+});
+const AccessibleMode = lazy(async () => {
+  const mod = await import("../components/AccessibleMode.js");
+  return { default: mod.AccessibleMode };
+});
 
 export type ExperienceMode = "walk" | "desk" | "list";
 
@@ -110,44 +121,48 @@ export function ExperienceShell({
         evidence.
       </p>
 
-      {mode === "walk" ? (
-        <SpatialModeBoundary
-          key={mode}
-          onFallback={() => {
-            onModeChange("desk");
-          }}
-        >
-          <SpatialShell
-            onAcceptedDistance={movement.addDistance}
-            onRoomExit={movement.resetDistance}
-            guided={guided}
-            onAction={onAction}
-            {...(onTaskAttempt ? { onTaskAttempt } : {})}
-            {...(onNotification ? { onNotification } : {})}
-            {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
-            {...(mutationState ? { mutationState } : {})}
-            {...(onRetryMutation ? { onRetryMutation } : {})}
-            view={view}
-          />
-        </SpatialModeBoundary>
-      ) : (
-        <>
-          <NonspatialResources
-            onWalk={() => {
-              movement.addDistance(5);
+      <Suspense
+        fallback={<p className="mode-note">Loading experience mode…</p>}
+      >
+        {mode === "walk" ? (
+          <SpatialModeBoundary
+            key={mode}
+            onFallback={() => {
+              onModeChange("desk");
             }}
-            movementQueued={movement.queued}
-            {...(mutationState ? { mutationState } : {})}
-            {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
-            view={view}
-          />
-          {mode === "desk" ? (
-            <WorkSurface guided={guided} {...sharedProps} />
-          ) : (
-            <AccessibleMode {...sharedProps} />
-          )}
-        </>
-      )}
+          >
+            <SpatialShell
+              onAcceptedDistance={movement.addDistance}
+              onRoomExit={movement.resetDistance}
+              guided={guided}
+              onAction={onAction}
+              {...(onTaskAttempt ? { onTaskAttempt } : {})}
+              {...(onNotification ? { onNotification } : {})}
+              {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
+              {...(mutationState ? { mutationState } : {})}
+              {...(onRetryMutation ? { onRetryMutation } : {})}
+              view={view}
+            />
+          </SpatialModeBoundary>
+        ) : (
+          <>
+            <NonspatialResources
+              onWalk={() => {
+                movement.addDistance(5);
+              }}
+              movementQueued={movement.queued}
+              {...(mutationState ? { mutationState } : {})}
+              {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
+              view={view}
+            />
+            {mode === "desk" ? (
+              <WorkSurface guided={guided} {...sharedProps} />
+            ) : (
+              <AccessibleMode {...sharedProps} />
+            )}
+          </>
+        )}
+      </Suspense>
     </section>
   );
 }

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ClientView } from "@sim/schemas";
@@ -65,7 +65,7 @@ describe("ExperienceShell", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Your workstation" }),
+      await screen.findByRole("heading", { name: "Your workstation" }),
     ).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Simple list" }));
     expect(onModeChange).toHaveBeenCalledWith("list");
@@ -82,7 +82,7 @@ describe("ExperienceShell", () => {
       />,
     );
     expect(
-      screen.getByRole("heading", { name: "Structured workplace view" }),
+      await screen.findByRole("heading", { name: "Structured workplace view" }),
     ).toBeVisible();
   });
 
@@ -104,7 +104,7 @@ describe("ExperienceShell", () => {
       />,
     );
 
-    expect(screen.getByTestId("energy-meter")).toHaveAttribute(
+    expect(await screen.findByTestId("energy-meter")).toHaveAttribute(
       "aria-valuenow",
       "0",
     );
@@ -162,14 +162,14 @@ describe("ExperienceShell", () => {
     );
 
     await user.click(
-      screen.getByRole("button", { name: "Use emergency recovery" }),
+      await screen.findByRole("button", { name: "Use emergency recovery" }),
     );
     expect(onWorkplaceInteraction).toHaveBeenCalledWith({
       type: "emergency_recovery",
     });
   });
 
-  it("falls back to desk-only mode when the spatial renderer fails", () => {
+  it("falls back to desk-only mode when the spatial renderer fails", async () => {
     const onModeChange = vi.fn();
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => {
       // React reports the expected boundary error in development.
@@ -185,8 +185,10 @@ describe("ExperienceShell", () => {
         />,
       );
 
-      expect(onModeChange).toHaveBeenCalledWith("desk");
-      expect(screen.getByRole("alert", { name: "" })).toHaveTextContent(
+      await waitFor(() => {
+        expect(onModeChange).toHaveBeenCalledWith("desk");
+      });
+      expect(await screen.findByRole("alert")).toHaveTextContent(
         /office view is unavailable/i,
       );
     } finally {

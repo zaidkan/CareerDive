@@ -281,6 +281,28 @@ describe("rendered workplace golden path", () => {
         return tree(view);
       }
       const { container } = render(<Harness />);
+      // Peer modes are code-split — wait for the suspended shell before acting.
+      if (mode === "os") {
+        // DeskOs root marker (this harness renders DeskOs without LaptopOverlay).
+        await waitFor(
+          () => {
+            expect(document.querySelector("[data-desk-os]")).not.toBeNull();
+          },
+          { timeout: 6000 },
+        );
+      } else if (mode === "list") {
+        await screen.findByRole(
+          "heading",
+          { name: "Structured workplace view" },
+          { timeout: 6000 },
+        );
+      } else {
+        await screen.findByRole(
+          "navigation",
+          { name: "Work systems" },
+          { timeout: 6000 },
+        );
+      }
       async function activate(element: HTMLElement) {
         expect(element).toBeEnabled();
         if (mode === "list") {

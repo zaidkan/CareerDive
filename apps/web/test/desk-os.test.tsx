@@ -196,11 +196,19 @@ async function enterDesk(user: ReturnType<typeof userEvent.setup>) {
   await user.click(
     await screen.findByRole("button", { name: /Enter the Verdaly floor/i }),
   );
-  await user.click(screen.getByRole("button", { name: "Security Operations" }));
+  await user.click(
+    await screen.findByRole(
+      "button",
+      { name: "Security Operations" },
+      { timeout: 6000 },
+    ),
+  );
   await user.click(await screen.findByRole("button", { name: "Sit at desk" }));
-  await user.type(screen.getByLabelText(/Username/i), "day1.analyst");
-  await user.type(screen.getByLabelText(/Password/i), "FirstDay!");
-  await user.click(screen.getByRole("button", { name: /^Login$/i }));
+  await user.type(await screen.findByLabelText(/Username/i), "day1.analyst");
+  await user.type(await screen.findByLabelText(/Password/i), "FirstDay!");
+  await user.click(
+    await screen.findByRole("button", { name: /^Login$/i }),
+  );
   await screen.findByRole("heading", { name: "Your workstation" });
 }
 
@@ -268,7 +276,9 @@ describe("Desk OS mutation coordination", () => {
     });
     render(<App client={makeClient(initialView, { performAction })} />);
     await enterDesk(user);
-    await user.click(screen.getByRole("tab", { name: /^Alerts/ }));
+    await user.click(
+      await screen.findByRole("tab", { name: /^Alerts/ }, { timeout: 6000 }),
+    );
 
     const actionControls = screen.getByLabelText("Workplace actions");
     const review = within(actionControls).getByRole("button", {
@@ -329,7 +339,9 @@ describe("Desk OS mutation coordination", () => {
       />,
     );
     await enterDesk(user);
-    await user.click(screen.getByRole("tab", { name: /^Alerts/ }));
+    await user.click(
+      await screen.findByRole("tab", { name: /^Alerts/ }, { timeout: 6000 }),
+    );
     await user.click(
       within(screen.getByLabelText("Workplace actions")).getByRole("button", {
         name: /Review alert/i,
@@ -343,7 +355,9 @@ describe("Desk OS mutation coordination", () => {
       await oldAction.promise;
     });
     await enterDesk(user);
-    await user.click(screen.getByRole("tab", { name: /^Alerts/ }));
+    await user.click(
+      await screen.findByRole("tab", { name: /^Alerts/ }, { timeout: 6000 }),
+    );
 
     expect(
       screen.getByRole("heading", { name: "Current assessed case" }),
@@ -408,7 +422,11 @@ describe("Desk OS mutation coordination", () => {
       await screen.findByRole("button", { name: /Enter the Verdaly floor/i }),
     );
     await user.click(
-      screen.getByRole("button", { name: "Security Operations" }),
+      await screen.findByRole(
+        "button",
+        { name: "Security Operations" },
+        { timeout: 6000 },
+      ),
     );
     await user.click(
       await screen.findByRole("button", { name: "Open fridge" }),
