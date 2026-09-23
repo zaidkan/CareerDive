@@ -22,7 +22,9 @@ const worktree = process.cwd();
 const branch = git("branch", "--show-current") || "(detached HEAD)";
 const sha = git("rev-parse", "--short", "HEAD") || "unknown";
 const subject = git("log", "-1", "--format=%s") || "";
-const dirty = git("status", "--porcelain") ? " (dirty)" : "";
+const trackedChanges = git("status", "--porcelain", "-uno");
+const untrackedOnly = !trackedChanges && git("status", "--porcelain");
+const dirty = trackedChanges ? " (dirty)" : untrackedOnly ? " (untracked files)" : "";
 
 const lines = [
   "",

@@ -20,7 +20,9 @@ const API_BASE = `http://localhost:${API_PORT}`;
 /** @param {number} port @param {number} [timeoutMs] */
 function portOpen(port, timeoutMs = 1000) {
   return new Promise((resolve) => {
-    const socket = connect({ port, host: "127.0.0.1" });
+    // "localhost" + autoSelectFamily covers Vite/Node binding either loopback
+    // family (::1 or 127.0.0.1); a hard-coded IPv4 probe false-fails on IPv6.
+    const socket = connect({ port, host: "localhost" });
     const done = (ok) => {
       socket.removeAllListeners();
       socket.destroy();
