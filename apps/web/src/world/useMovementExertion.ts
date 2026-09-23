@@ -42,8 +42,8 @@ export function useMovementExertion(
     const timer = window.setInterval(() => {
       const current = latest.current;
       if (current.mutation.pendingKey || current.mutation.error) {
-        // Also pace after a manually retried mutation completes. Waiting from
-        // completion is conservative under variable network latency (max 2/s).
+        // Hold for a full second after any attempt (including errors) so
+        // StrictMode double-mounts and retry races stay under the server window.
         nextSubmission.current = performance.now() + 1000;
         return;
       }

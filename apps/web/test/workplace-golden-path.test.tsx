@@ -24,6 +24,10 @@ const outcomes = new Map<Mode, StoredSession>();
 const traces = new Map<Mode, unknown[]>();
 const suspicious = "suspicious-login-1";
 const routine = "routine-alert-1";
+const suspiciousNote =
+  "unknown-laptop-17 is not enrolled in inventory; the successful login is " +
+  "suspected, not yet proven; the 07:45 export has no file-access or mailbox " +
+  "activity and cannot confirm what was accessed; ask Morgan the open question.";
 
 function required<T>(value: T | null | undefined, description: string): T {
   if (value === null || value === undefined) throw new Error(`Missing ${description}`);
@@ -182,7 +186,7 @@ describe("rendered workplace golden path", () => {
       expect([...found].sort()).toEqual([...new Set(view.availableActions.map(({ id, eventId }) => `${id}:${eventId}`))].sort());
       expect([...foundTasks].sort()).toEqual(view.tasks.map(({ id, eventId, stepIndex }) => `${id}:${eventId}:${String(stepIndex)}`).sort());
     }
-    async function perform(id: SimulationActionId, eventId: string) {
+    async function perform(id: SimulationActionId, eventId: string, freeText?: string) {
       const action = toClientView(state).availableActions.find((entry) => entry.id === id && entry.eventId === eventId);
       if (!action) throw new Error(`Unavailable ${id}:${eventId}`);
       await openSystem(action.systemId);
@@ -190,11 +194,18 @@ describe("rendered workplace golden path", () => {
       const eventTitle = state.events.find(({ id }) => id === eventId)?.title;
       const item = Array.from(queue?.querySelectorAll<HTMLButtonElement>("button") ?? []).find((button) => eventTitle && button.textContent.includes(eventTitle));
       if (item) await user.click(item);
+      if (id === "update_ticket_notes") {
+        const textarea = required(container.querySelector<HTMLTextAreaElement>(`#notes-update_ticket_notes-${eventId}`), `${id} notes editor`);
+        await user.clear(textarea);
+        await user.type(textarea, required(freeText, "saved note text"));
+        await activate(required(container.querySelector<HTMLElement>(`[data-action-id="update_ticket_notes"][data-event-id="${eventId}"]`), `${id} save button`));
+        return;
+      }
       if (!action.taskId) {
-        if ((id === "dismiss_alert" && eventId === routine) || id === "escalate_alert") {
-          const note = required(state.ticketNotes[eventId], "saved handoff before decision");
+        if (id === "escalate_alert") {
+          const note = required(state.ticketNotes[eventId], "saved note before decision");
           expect(Array.from(container.querySelectorAll("pre.artifact-body")).some((node) => node.textContent === note)).toBe(true);
-          expect(note).toContain(eventId === routine ? "RUN-FIN-031" : "file-access or mailbox activity");
+          expect(note).toContain("file-access or mailbox activity");
         }
         await activate(required(container.querySelector<HTMLElement>(`button[data-action-id="${id}"][data-event-id="${eventId}"]`), `${id} action button`));
         return;
@@ -242,6 +253,7 @@ describe("rendered workplace golden path", () => {
     await perform("ask_manager", suspicious);
     expect(screen.getByRole("complementary", { name: "Morgan guidance" })).toBeVisible();
     await perform("document_ticket", suspicious);
+    await perform("update_ticket_notes", suspicious, suspiciousNote);
     expect(state.ticketNotes[suspicious]).toContain("unknown-laptop-17 is not enrolled");
     expect(state.ticketNotes[suspicious]).toContain("suspected, not yet proven");
     await perform("escalate_alert", suspicious);
@@ -285,7 +297,7 @@ describe("rendered workplace golden path", () => {
     expect(comparable("os")).toEqual(comparable("desk"));
   });
 
-  it("keeps tutorial tasks and breaks free of assessment evidence", async () => {
+  it("drives the released action lane in tutorial and stays free of assessment evidence", async () => {
     let state = createInitialWorldState("tutorial-golden", 24, { sessionKind: "tutorial" }, pack);
     const repository = new InMemoryRepository();
     await repository.createSession("user-1", state);
@@ -301,14 +313,21 @@ describe("rendered workplace golden path", () => {
         for (const artifactId of step.relatedArtifactIds) if (!state.observedArtifactIds.includes(artifactId)) await caller.simulation.performWorkplaceInteraction({ sessionId, interaction: { type: "open_artifact", artifactId } });
         await caller.simulation.submitTaskAttempt({ sessionId, taskId: task.id, eventId: task.eventId, selectedOptionIds: step.requiredOptionIds });
       } else {
-        const action = view.availableActions.find(({ id }) => id === "escalate_alert" || id === "dismiss_alert" || id === "complete_shift");
+        const utilityIds = new Set(["update_ticket_notes", "update_notebook", "query_records"]);
+        const action =
+          view.availableActions.find(({ id }) => id === "complete_shift") ??
+          view.availableActions.find(({ id }) => !utilityIds.has(id));
         if (!action) break;
         await caller.simulation.performAction({ sessionId, actionId: action.id, eventId: action.eventId });
         state = (await repository.getSession("user-1", sessionId)).state;
+        expect(repository.evidenceFor("user-1", sessionId)).toEqual([]);
         if (action.id === "complete_shift") break;
       }
       state = (await repository.getSession("user-1", sessionId)).state;
       expect(repository.evidenceFor("user-1", sessionId)).toEqual([]);
+    }
+    if (state.workplace.energy.current === state.workplace.energy.max) {
+      await caller.simulation.performWorkplaceInteraction({ sessionId, interaction: { type: "movement_exertion", distanceMeters: 5 } });
     }
     for (const interaction of [{ type: "open_fridge" }, { type: "take_snack" }, { type: "eat_snack_bite" }, { type: "close_fridge" }, { type: "talk_to_jules", topic: "first_day" }] satisfies WorkplaceInteraction[]) await caller.simulation.performWorkplaceInteraction({ sessionId, interaction });
     state = (await repository.getSession("user-1", sessionId)).state;
