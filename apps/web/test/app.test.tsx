@@ -4,7 +4,9 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ClientView, Debrief } from "@sim/schemas";
-import { App, AccessibleMode, DebriefView, WorkSurface } from "../src/index.js";
+import { App, DebriefView } from "../src/index.js";
+import { AccessibleMode } from "../src/components/AccessibleMode.js";
+import { WorkSurface } from "../src/components/WorkSurface.js";
 
 vi.mock("../src/world/RoomCanvas.js", () => ({
   RoomCanvas: ({
@@ -637,7 +639,13 @@ describe("tutorial and debrief", () => {
     await user.click(
       await screen.findByRole("button", { name: /Enter the Verdaly floor/i }),
     );
-    await user.click(screen.getByRole("button", { name: "Simple list" }));
+    await user.click(
+      await screen.findByRole(
+        "button",
+        { name: "Simple list" },
+        { timeout: 6000 },
+      ),
+    );
     expect(
       await screen.findByRole("heading", {
         name: /Structured workplace view/i,

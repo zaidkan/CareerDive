@@ -21,6 +21,7 @@ vi.mock("@react-three/fiber", () => ({
   useFrame: (frame: (state: unknown, dt: number) => void) => {
     harness.frames.push(frame);
   },
+  invalidate: () => undefined,
 }));
 afterEach(() => {
   harness.cleanups.forEach((cleanup) => {

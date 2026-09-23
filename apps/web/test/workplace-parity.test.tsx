@@ -262,7 +262,9 @@ describe("structured workplace acceptance", () => {
           onWorkplaceInteraction={onWorkplaceInteraction}
         />,
       );
-      await user.click(screen.getByRole("button", { name: "Talk to Jules" }));
+      await user.click(
+        await screen.findByRole("button", { name: "Talk to Jules" }),
+      );
       const topics = screen.getByRole("group", { name: "Topics" });
       expect(topics.tagName).toBe("FIELDSET");
       expect(
