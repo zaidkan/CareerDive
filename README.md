@@ -53,7 +53,7 @@ Stop only the process you recognize (stale Vite/tsx from a previous session).
 
 **Career Expo simulates actually doing ordinary career work, not answering questions about work.**
 
-Start an assessed shift, enter the workstation, and work through the same deterministic state in **Desk only**, **Walk the office**, or **Simple list** (keyboard) — all three renderers expose identical canonical action IDs and outcomes.
+One assessed session per run: landing → arrival film → **Begin your first day** → 3D workplace → walk to your workstation → Desk OS. There are no practice/tutorial shifts and no user-facing product modes; an in-experience accessibility recovery path exists only for navigation/WebGL failure.
 
 Canonical systems: **Alert Dashboard · Email · Ticket Queue · Knowledge Base · Team Chat**. Canonical events on `zaidkan/product-experimental` (pack `cybersecurity_analyst@1.0.0`):
 
@@ -69,12 +69,11 @@ The break-room loop is also deterministic: the fridge has finite snack bars (2),
 
 ## Manual acceptance route
 
-After `pnpm dev`, open the Web URL above and start an assessed shift. Complete
-onboarding and desk login, read and acknowledge the handoff, investigate the
+After `pnpm dev`, open `http://localhost:5173`, play the arrival film, begin
+your first day (one assessed session), walk the 3D office to your workstation,
+log in to Desk OS, then read and acknowledge the handoff, investigate the
 suspicious login, handle the optional routine scanner interruption, take one
 break (snack or coffee and Jules), document the ticket, escalate, and wrap up.
-Repeat the same route with **Simple list** using the keyboard; it exposes the
-same canonical actions and outcomes as **Desk only** and **Walk the office**.
 
 Without `DATABASE_URL`, server uses in-memory repository for local development. Production requires Supabase URL, anon key, and Postgres connection string.
 
