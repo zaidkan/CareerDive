@@ -5,11 +5,10 @@ export const PacingModeSchema = z.enum([
   "extended",
   "pause_compatible",
   "no_hard_timer",
-  "practice",
 ]);
 export type PacingMode = z.infer<typeof PacingModeSchema>;
 
-export const SessionKindSchema = z.enum(["tutorial", "assessed"]);
+export const SessionKindSchema = z.literal("assessed");
 export type SessionKind = z.infer<typeof SessionKindSchema>;
 
 export const WorkSystemIdSchema = z.enum([

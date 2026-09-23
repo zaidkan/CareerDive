@@ -18,13 +18,12 @@ import { z } from "zod";
 export interface SimulationClient {
   createSession(input: {
     seed: number;
-    sessionKind: "tutorial" | "assessed";
+    sessionKind: "assessed";
     pacingMode:
       | "standard"
       | "extended"
       | "pause_compatible"
-      | "no_hard_timer"
-      | "practice";
+      | "no_hard_timer";
   }): Promise<{ sessionId: string; view: ClientView }>;
   performAction(
     sessionId: string,

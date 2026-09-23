@@ -32,7 +32,9 @@ export function useFullscreen(target: RefObject<HTMLElement | null>): {
     if (!el) return;
     try {
       if (document.fullscreenElement === el) {
-        await document.exitFullscreen();
+        await document.exitFullscreen().catch(() => {
+          /* Document may already be inactive during navigation. */
+        });
       } else if (typeof el.requestFullscreen === "function") {
         await el.requestFullscreen();
       }

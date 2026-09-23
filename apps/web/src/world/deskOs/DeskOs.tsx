@@ -25,7 +25,6 @@ export function DeskOs({
   onTaskAttempt,
   onNotification,
   onWorkplaceInteraction,
-  guided = false,
   maximized = false,
   osFullscreen = false,
   onLoginSuccess,
@@ -40,7 +39,6 @@ export function DeskOs({
   onTaskAttempt?: TaskAttemptHandler;
   onNotification?: NotificationHandler;
   onWorkplaceInteraction?: WorkplaceInteractionHandler;
-  guided?: boolean;
   maximized?: boolean;
   osFullscreen?: boolean;
   onLoginSuccess: () => void;
@@ -75,7 +73,6 @@ export function DeskOs({
       {...(onTaskAttempt ? { onTaskAttempt } : {})}
       {...(onNotification ? { onNotification } : {})}
       {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
-      guided={guided}
       mutationState={mutationState}
       {...(onRetryMutation ? { onRetryMutation } : {})}
     />

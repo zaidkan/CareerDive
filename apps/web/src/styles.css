@@ -102,7 +102,6 @@ body {
 
 /* Light-theme surface corrections: keep dark gradients from washing out ink text. */
 :root[data-theme="light"] .workplace-shell,
-:root[data-theme="light"] .tutorial,
 :root[data-theme="light"] .manager-context,
 :root[data-theme="light"] .shift-briefing,
 :root[data-theme="light"] section[aria-labelledby="structured-title"],
@@ -317,7 +316,6 @@ h1 {
 }
 
 .workplace-shell,
-.tutorial,
 .manager-context,
 .shift-briefing,
 section[aria-labelledby="structured-title"],
@@ -1236,48 +1234,12 @@ section[aria-labelledby="structured-title"],
   font-size: 1.15rem;
 }
 
-.tutorial,
 .accessible-shell,
 .debrief-shell {
   padding: clamp(1.25rem, 3vw, 2rem);
 }
 
-.tutorial-top {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
-  align-items: baseline;
-}
 
-.tutorial-progress {
-  margin: 0;
-  color: var(--signal);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.tutorial-track {
-  display: flex;
-  gap: 0.35rem;
-  margin: 0.85rem 0 1rem;
-}
-
-.tutorial-pip {
-  flex: 1;
-  max-width: 3.5rem;
-  height: 0.28rem;
-  background: var(--line);
-}
-
-.tutorial-pip-done {
-  background: var(--signal);
-  box-shadow: 0 0 10px rgb(79 208 200 / 35%);
-}
-
-.tutorial h2,
 .accessible-shell h2,
 .debrief-shell h2 {
   color: var(--paper);
@@ -1286,17 +1248,12 @@ section[aria-labelledby="structured-title"],
   letter-spacing: -0.02em;
 }
 
-.tutorial-loading,
 .accessible-lede,
 .debrief-lede {
   max-width: 58ch;
   color: var(--mute);
 }
 
-.tutorial ol {
-  padding-left: 1.2rem;
-  color: var(--fog);
-}
 
 .structured-system {
   margin-top: 1.25rem;
@@ -1351,27 +1308,8 @@ section[aria-labelledby="structured-title"],
   letter-spacing: 0.02em;
 }
 
-.shift-cta-row .skip-tutorial {
-  margin-top: 1.35rem;
-}
 
-.skip-tutorial {
-  margin-top: 1rem;
-  padding: 0.65rem 0;
-  border: 0;
-  color: var(--mute);
-  background: transparent;
-  font-family: var(--font-body);
-  font-size: 0.92rem;
-  text-decoration: underline;
-  text-underline-offset: 0.18em;
-  cursor: pointer;
-  transition: color 160ms var(--ease-out);
-}
 
-.skip-tutorial:hover {
-  color: var(--fog);
-}
 
 .start-shift {
   margin-top: 1.35rem;

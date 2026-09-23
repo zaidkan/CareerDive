@@ -27,7 +27,7 @@ export type WorkplaceInteractionHandler = (
   interaction: WorkplaceInteraction,
 ) => Promise<WorkplaceInteractionResult>;
 
-export type ModeProps = {
+export type WorkstationProps = {
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
   onTaskAttempt?: TaskAttemptHandler;

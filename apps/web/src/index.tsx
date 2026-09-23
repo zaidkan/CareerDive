@@ -10,12 +10,7 @@ import type {
 } from "@sim/schemas";
 import { defaultClient, type SimulationClient } from "./client.js";
 import { DebriefView } from "./components/DebriefView.js";
-import {
-  ExperienceShell,
-  type ExperienceMode,
-} from "./experience/ExperienceShell.js";
-import { getTutorialStep } from "./guidance.js";
-import { ShiftBriefing } from "./components/shell.js";
+import { ExperienceShell } from "./experience/ExperienceShell.js";
 import { COMPANY } from "./world/company.js";
 import {
   actionMutationKey,
@@ -27,25 +22,16 @@ import {
 
 export function App({
   client = defaultClient,
-  briefing = "shown",
 }: {
   client?: SimulationClient;
-  briefing?: "shown" | "hidden";
 }) {
   const [view, setView] = useState<ClientView>();
   const [sessionId, setSessionId] = useState<string>();
   const [debrief, setDebrief] = useState<Debrief>();
   const [error, setError] = useState<string>();
-  const [sessionRequest, setSessionRequest] = useState({
-    kind: "tutorial" as "tutorial" | "assessed",
-    attempt: 0,
-  });
+  const [sessionRequest, setSessionRequest] = useState(0);
   const [debriefStatus, setDebriefStatus] = useState<"loading" | "failed">();
-  const [phase, setPhase] = useState<"tutorial" | "assessed">("tutorial");
-  const [activeSurface, setActiveSurface] = useState<
-    "briefing" | "dashboard" | "manager"
-  >(briefing === "hidden" ? "dashboard" : "briefing");
-  const [experienceMode, setExperienceMode] = useState<ExperienceMode>("walk");
+  const creationRef = useRef<{ client: SimulationClient; attempt: number; promise: ReturnType<SimulationClient["createSession"]> } | undefined>(undefined);
   const sessionGenerationRef = useRef(0);
   const currentSessionRef = useRef<
     { generation: number; sessionId: string } | undefined
@@ -63,16 +49,18 @@ export function App({
     setDebriefStatus(undefined);
     const input = {
       seed: Date.now() & 0x7fffffff,
-      sessionKind: sessionRequest.kind,
-      pacingMode:
-        sessionRequest.kind === "tutorial" ? "practice" : "standard",
+      sessionKind: "assessed",
+      pacingMode: "standard",
     } as const;
     const isCurrent = () => generation === sessionGenerationRef.current;
     void (async () => {
       try {
         let created: Awaited<ReturnType<SimulationClient["createSession"]>>;
         try {
-          created = await client.createSession(input);
+          if (!creationRef.current || creationRef.current.client !== client || creationRef.current.attempt !== sessionRequest) {
+            creationRef.current = { client, attempt: sessionRequest, promise: client.createSession(input) };
+          }
+          created = await creationRef.current.promise;
         } catch {
           // One quiet retry covers a server restart/wake without a dead-end banner.
           await new Promise((resolve) => {
@@ -88,8 +76,6 @@ export function App({
         };
         setSessionId(created.sessionId);
         setView(created.view);
-        setPhase(sessionRequest.kind);
-        setActiveSurface("briefing");
       } catch {
         if (!isCurrent()) return;
         setError(
@@ -119,13 +105,6 @@ export function App({
     ) {
       throw new Error("Session is no longer current.");
     }
-  }
-
-  function startAssessedShift() {
-    setSessionRequest((current) => ({
-      kind: "assessed",
-      attempt: current.attempt + 1,
-    }));
   }
 
   async function loadDebrief(session: {
@@ -303,16 +282,14 @@ export function App({
             : { success: "Workplace updated." }),
         };
       } catch (cause) {
-        throw new Error("That workplace interaction could not be completed.", {
-          cause,
-        });
+        const detail =
+          cause instanceof Error && cause.message
+            ? cause.message
+            : "That workplace interaction could not be completed.";
+        throw new Error(detail, { cause });
       }
     });
   }
-
-  const tutorialComplete =
-    phase === "tutorial" && view && !getTutorialStep(view);
-  const phaseLabel = phase === "tutorial" ? "Practice shift" : "Assessed shift";
 
   return (
     <main>
@@ -325,7 +302,7 @@ export function App({
             and learn what the work is really like.
           </p>
           <p className="site-meta">
-            <span className="site-chip">{phaseLabel}</span>
+            <span className="site-chip">Assessed shift</span>
             <span className="site-chip site-chip-muted">{COMPANY.floor}</span>
           </p>
         </div>
@@ -338,41 +315,12 @@ export function App({
             <button
               type="button"
               onClick={() => {
-                setSessionRequest((current) => ({
-                  ...current,
-                  attempt: current.attempt + 1,
-                }));
+                setSessionRequest((current) => current + 1);
               }}
             >
               Retry starting shift
             </button>
           ) : null}
-        </div>
-      ) : null}
-
-      {phase === "tutorial" && view ? (
-        <div className="shift-cta-row">
-          {tutorialComplete ? (
-            <button
-              className="start-shift"
-              onClick={() => {
-                startAssessedShift();
-              }}
-              type="button"
-            >
-              Start real shift
-            </button>
-          ) : (
-            <button
-              className="skip-tutorial"
-              onClick={() => {
-                startAssessedShift();
-              }}
-              type="button"
-            >
-              Skip practice — start real shift
-            </button>
-          )}
         </div>
       ) : null}
 
@@ -404,18 +352,9 @@ export function App({
             <p>Loading your debrief…</p>
           )}
         </section>
-      ) : activeSurface === "briefing" ? (
-        <ShiftBriefing
-          onOpen={() => {
-            setActiveSurface("dashboard");
-          }}
-        />
       ) : (
         <ExperienceShell
-          guided={phase === "tutorial"}
-          mode={experienceMode}
           onAction={(action, freeText) => void perform(action, freeText)}
-          onModeChange={setExperienceMode}
           onNotification={respondToWorkNotification}
           onTaskAttempt={submitTaskAttempt}
           onWorkplaceInteraction={performWorkplaceInteraction}
@@ -437,6 +376,6 @@ export function App({
 }
 
 export { DebriefView } from "./components/DebriefView.js";
-export { ShiftBriefing, Tutorial } from "./components/shell.js";
+export { ShiftBriefing } from "./components/shell.js";
 export type { SimulationClient } from "./client.js";
 export { HttpSimulationClient } from "./client.js";

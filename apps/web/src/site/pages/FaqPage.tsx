@@ -15,7 +15,7 @@ const FAQS = [
   },
   {
     q: "Can I play with just my keyboard or a screen reader?",
-    a: "Yes. The Simple list version is the same shift, just presented as a clear list with keyboard and screen-reader support. The walk-around office is just a different view — not a harder level. A full accessibility audit is still to come, but we don’t make the simple version the worse one.",
+    a: "The workplace supports keyboard navigation. If office navigation is inaccessible, open Accessibility recovery to continue at the workstation with your current work preserved. A full accessibility audit is still to come.",
   },
   {
     q: "So what does the AI actually do?",
@@ -26,8 +26,8 @@ const FAQS = [
     a: "Only you — unless you make a sharing link on purpose. That link expires, and you can take it back anytime.",
   },
   {
-    q: "Do I have to walk around in 3D?",
-    a: "No. You can play the whole shift from your desk, or as a simple list. Same buttons, same story.",
+    q: "What happens if the office cannot load?",
+    a: "If the office renderer fails, a recovery workstation opens automatically. Your current session and work stay intact.",
   },
   {
     q: "Is there more after this first day?",

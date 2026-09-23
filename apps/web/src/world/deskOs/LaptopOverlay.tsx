@@ -21,7 +21,6 @@ export function LaptopOverlay({
   onTaskAttempt,
   onNotification,
   onWorkplaceInteraction,
-  guided = false,
   maximized = false,
   onLoginSuccess,
   onStand,
@@ -35,7 +34,6 @@ export function LaptopOverlay({
   onTaskAttempt?: TaskAttemptHandler;
   onNotification?: NotificationHandler;
   onWorkplaceInteraction?: WorkplaceInteractionHandler;
-  guided?: boolean;
   maximized?: boolean;
   onLoginSuccess: () => void;
   onStand: () => void;
@@ -65,7 +63,9 @@ export function LaptopOverlay({
       window.removeEventListener(DESK_OS_FILL_EVENT, fill);
       window.removeEventListener("keydown", onKey);
       if (document.fullscreenElement === laptopRef.current) {
-        void document.exitFullscreen();
+        document.exitFullscreen().catch(() => {
+          /* Document may already be inactive during navigation. */
+        });
       }
     };
   }, [disabled, toggleOsFullscreen]);
@@ -80,7 +80,9 @@ export function LaptopOverlay({
       focused.blur();
     }
     if (document.fullscreenElement === laptopRef.current) {
-      void document.exitFullscreen();
+      document.exitFullscreen().catch(() => {
+        /* Document may already be inactive during navigation. */
+      });
     }
   }, [disabled]);
 
@@ -96,7 +98,6 @@ export function LaptopOverlay({
         ref={laptopRef}
       >
         <DeskOs
-          guided={guided}
           maximized={maximized}
           onAction={onAction}
           {...(onTaskAttempt ? { onTaskAttempt } : {})}

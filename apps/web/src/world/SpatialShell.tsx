@@ -83,7 +83,6 @@ function SpatialShellStage({
   onWorkplaceInteraction,
   mutationState = EMPTY_MUTATION_STATE,
   onRetryMutation,
-  guided = false,
   onAcceptedDistance,
   onRoomExit,
 }: {
@@ -94,7 +93,6 @@ function SpatialShellStage({
   onWorkplaceInteraction?: WorkplaceInteractionHandler;
   mutationState?: MutationState;
   onRetryMutation?: () => void;
-  guided?: boolean;
   onAcceptedDistance?: (meters: number) => void;
   onRoomExit?: () => void;
 }) {
@@ -392,7 +390,6 @@ function SpatialShellStage({
         </Suspense>
         {atDesk && deskPhase ? (
           <LaptopOverlay
-            guided={guided}
             maximized={maximized}
             onAction={onAction}
             mutationState={mutationState}

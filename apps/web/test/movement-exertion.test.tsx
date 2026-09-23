@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createInitialWorldState, toClientView } from "@sim/core";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import { useMovementExertion } from "../src/world/useMovementExertion.js";
+import { createAppRouter, InMemoryRepository } from "../../server/src/index.js";
 
 afterEach(() => {
   cleanup();
@@ -15,6 +16,25 @@ const view = toClientView(
 );
 
 describe("canonical movement submission", () => {
+  it("drains rapid movement through the real router without rate failures or duplicate saves", async () => {
+    vi.useFakeTimers();
+    const repository = new InMemoryRepository();
+    const caller = createAppRouter(repository).createCaller({ userId: "walker" });
+    const created = await caller.session.create({ seed: 24, sessionKind: "assessed", pacingMode: "standard" });
+    const submit = vi.fn((interaction: Parameters<typeof caller.simulation.performWorkplaceInteraction>[0]["interaction"]) =>
+      caller.simulation.performWorkplaceInteraction({ sessionId: created.sessionId, interaction }));
+    const { result } = renderHook(() => useMovementExertion(created.view, submit, {}));
+    act(() => {
+      for (let index = 0; index < 40; index++) result.current.addDistance(0.5);
+    });
+    await act(() => vi.advanceTimersByTimeAsync(4500));
+    expect(submit).toHaveBeenCalledTimes(4);
+    for (const promise of submit.mock.results) await expect(promise.value).resolves.toMatchObject({ feedback: "movement_recorded" });
+    const stored = await repository.getSession("walker", created.sessionId);
+    expect(stored.actionLog).toHaveLength(4);
+    expect(stored.state.workplace.energy.current).toBe(96);
+    expect(stored.evidence).toEqual([]);
+  });
   it("accumulates accepted distance, preserves remainder and never changes energy optimistically", async () => {
     vi.useFakeTimers();
     const submit = vi

@@ -5,14 +5,13 @@ import userEvent from "@testing-library/user-event";
 import type { ClientTaskView, ClientView } from "@sim/schemas";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SystemToolPanel } from "../src/components/SystemToolPanel.js";
-import { AccessibleMode } from "../src/components/AccessibleMode.js";
 
 afterEach(cleanup);
 
 function guideView(): ClientView {
   return {
     sessionId: "session-1",
-    sessionKind: "tutorial",
+    sessionKind: "assessed",
     simClock: 0,
     currentLocation: {
       id: "operations-center",
@@ -23,7 +22,7 @@ function guideView(): ClientView {
     events: [],
     availableActions: [],
     operationalMessages: [],
-    pacingMode: "practice",
+    pacingMode: "standard",
     artifacts: [
       {
         id: "phishing-guide",
@@ -106,8 +105,7 @@ describe("Guide search", () => {
     const onAction = vi.fn();
     const onOpen = vi.fn().mockResolvedValue(undefined);
     render(
-      <AccessibleMode
-        view={guideView()}
+      <SystemToolPanel systemId="knowledge_base" actions={[]} view={guideView()}
         onAction={onAction}
         onWorkplaceInteraction={onOpen}
       />,

@@ -19,7 +19,6 @@ afterEach(() => {
     // Storage unavailable in this environment.
   }
   try {
-    window.localStorage.removeItem("career-expo-mode");
     window.localStorage.removeItem("career-expo-theme");
   } catch {
     // Storage unavailable in this environment.

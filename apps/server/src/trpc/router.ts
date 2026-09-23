@@ -51,24 +51,6 @@ export function createAppRouter(
   } = {},
 ) {
   const careerPack = options.careerPack ?? getDefaultCareerPack();
-  const acceptedMovementTimesBySession = new Map<string, number[]>();
-
-  function canAcceptMovement(sessionId: string, now: number): boolean {
-    const acceptedTimes = (
-      acceptedMovementTimesBySession.get(sessionId) ?? []
-    ).filter((timestamp) => timestamp > now - 1_000);
-    if (acceptedTimes.length === 0) {
-      acceptedMovementTimesBySession.delete(sessionId);
-    } else {
-      acceptedMovementTimesBySession.set(sessionId, acceptedTimes);
-    }
-    return acceptedTimes.length < 2;
-  }
-
-  function recordAcceptedMovement(sessionId: string, now: number): void {
-    const acceptedTimes = acceptedMovementTimesBySession.get(sessionId) ?? [];
-    acceptedMovementTimesBySession.set(sessionId, [...acceptedTimes, now]);
-  }
 
   return t.router({
     session: t.router({
@@ -201,15 +183,13 @@ export function createAppRouter(
             sequence,
             interaction: { type: "action", action },
           });
-          if (session.state.sessionKind === "assessed") {
-            session.evidence.push(
-              evidenceFromAction({
-                state: session.state,
-                actionId: input.actionId,
-                eventId: input.eventId,
-              }),
-            );
-          }
+          session.evidence.push(
+            evidenceFromAction({
+              state: session.state,
+              actionId: input.actionId,
+              eventId: input.eventId,
+            }),
+          );
           await repository.saveSession(session);
           return {
             view: toClientView(session.state),
@@ -239,16 +219,6 @@ export function createAppRouter(
             session.state,
             input.interaction,
           );
-          const now = Date.now();
-          if (
-            input.interaction.type === "movement_exertion" &&
-            !canAcceptMovement(input.sessionId, now)
-          ) {
-            throw new Error("Movement submissions are temporarily limited");
-          }
-          if (input.interaction.type === "movement_exertion") {
-            recordAcceptedMovement(input.sessionId, now);
-          }
           const sequence = session.actionLog.length + 1;
           session.state = turn.state;
           session.actionLog.push({
@@ -301,11 +271,7 @@ export function createAppRouter(
             sequence,
             interaction: { type: "task_attempt", attempt },
           });
-          if (
-            turn.completed &&
-            task &&
-            session.state.sessionKind === "assessed"
-          ) {
+          if (turn.completed && task) {
             session.evidence.push(
               evidenceFromAction({
                 state: session.state,

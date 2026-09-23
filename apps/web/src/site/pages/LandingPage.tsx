@@ -219,7 +219,7 @@ export function LandingPage() {
           <span className="site-chip">No stress %</span>
           <span className="site-chip">No fit scores</span>
           <span className="site-chip">Keyboard + screen reader friendly</span>
-          <span className="site-chip site-chip-muted">Same shift, all three ways to play</span>
+          <span className="site-chip site-chip-muted">One continuous workday</span>
         </div>
       </section>
 

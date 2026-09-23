@@ -12,7 +12,6 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ClientTaskView, ClientView } from "@sim/schemas";
 import type { SimulationClient } from "../src/client.js";
-import { AccessibleMode } from "../src/components/AccessibleMode.js";
 import { App } from "../src/index.js";
 import { SystemToolPanel } from "../src/components/SystemToolPanel.js";
 import { WorkSurface } from "../src/components/WorkSurface.js";
@@ -105,7 +104,7 @@ const reviewAction = {
 function makeView(overrides: Partial<ClientView> = {}): ClientView {
   return {
     sessionId: "session-1",
-    sessionKind: "tutorial",
+    sessionKind: "assessed",
     simClock: 10,
     currentLocation: {
       id: "operations-center",
@@ -129,7 +128,7 @@ function makeView(overrides: Partial<ClientView> = {}): ClientView {
     ],
     availableActions: [reviewAction],
     operationalMessages: [],
-    pacingMode: "practice",
+    pacingMode: "standard",
     artifacts: [
       {
         id: "artifact-alert-1",
@@ -193,9 +192,7 @@ function makeClient(
 }
 
 async function enterDesk(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(
-    await screen.findByRole("button", { name: /Enter the Verdaly floor/i }),
-  );
+
   await user.click(
     await screen.findByRole(
       "button",
@@ -302,12 +299,12 @@ describe("Desk OS mutation coordination", () => {
   it("keeps a late response from an old session from replacing the newer view", async () => {
     const user = userEvent.setup();
     const oldAction = deferred<ClientView>();
-    const tutorialView = makeView();
+    const previousView = makeView();
     const staleView = makeView({
       events: [
         {
-          ...first(tutorialView.events),
-          title: "Stale tutorial response",
+          ...first(previousView.events),
+          title: "Stale previous response",
         },
       ],
     });
@@ -317,22 +314,15 @@ describe("Desk OS mutation coordination", () => {
       pacingMode: "standard",
       events: [
         {
-          ...first(tutorialView.events),
+          ...first(previousView.events),
           title: "Current assessed case",
         },
       ],
     });
-    const createSession = vi.fn(
-      (input: Parameters<SimulationClient["createSession"]>[0]) =>
-        Promise.resolve(
-          input.sessionKind === "tutorial"
-            ? { sessionId: tutorialView.sessionId, view: tutorialView }
-            : { sessionId: assessedView.sessionId, view: assessedView },
-        ),
-    );
-    render(
+    const createSession = vi.fn().mockResolvedValueOnce({ sessionId: previousView.sessionId, view: previousView }).mockResolvedValueOnce({ sessionId: assessedView.sessionId, view: assessedView });
+    const { rerender } = render(
       <App
-        client={makeClient(tutorialView, {
+        client={makeClient(previousView, {
           createSession,
           performAction: () => oldAction.promise,
         })}
@@ -347,8 +337,9 @@ describe("Desk OS mutation coordination", () => {
         name: /Review alert/i,
       }),
     );
-    await user.click(screen.getByRole("button", { name: /Skip practice/i }));
-    await screen.findByText("Assessed shift");
+    rerender(<App client={makeClient(assessedView, { createSession })} />);
+    await waitFor(() => { expect(createSession).toHaveBeenCalledTimes(2); });
+    await screen.findByRole("button", { name: "Security Operations" });
 
     await act(async () => {
       oldAction.resolve(staleView);
@@ -362,24 +353,24 @@ describe("Desk OS mutation coordination", () => {
     expect(
       screen.getByRole("heading", { name: "Current assessed case" }),
     ).toBeVisible();
-    expect(screen.queryByText("Stale tutorial response")).toBeNull();
+    expect(screen.queryByText("Stale previous response")).toBeNull();
   });
 
   it("revokes queued workplace continuations before an assessed session starts", async () => {
     const user = userEvent.setup();
-    const tutorialOpen =
+    const previousOpen =
       deferred<
         Awaited<ReturnType<SimulationClient["performWorkplaceInteraction"]>>
       >();
-    const tutorialView = makeView();
-    const openedTutorialView = makeView({
-      workplace: { ...tutorialView.workplace, fridgeOpen: true },
+    const previousView = makeView();
+    const openedPreviousView = makeView({
+      workplace: { ...previousView.workplace, fridgeOpen: true },
     });
     const staleClosedView = makeView({
       events: [
         {
-          ...first(tutorialView.events),
-          title: "Stale tutorial close response",
+          ...first(previousView.events),
+          title: "Stale previous close response",
         },
       ],
     });
@@ -389,38 +380,29 @@ describe("Desk OS mutation coordination", () => {
       pacingMode: "standard",
       events: [
         {
-          ...first(tutorialView.events),
+          ...first(previousView.events),
           title: "Current assessed case",
         },
       ],
     });
-    const createSession = vi.fn(
-      (input: Parameters<SimulationClient["createSession"]>[0]) =>
-        Promise.resolve(
-          input.sessionKind === "tutorial"
-            ? { sessionId: tutorialView.sessionId, view: tutorialView }
-            : { sessionId: assessedView.sessionId, view: assessedView },
-        ),
-    );
+    const createSession = vi.fn().mockResolvedValueOnce({ sessionId: previousView.sessionId, view: previousView }).mockResolvedValueOnce({ sessionId: assessedView.sessionId, view: assessedView });
     const performWorkplaceInteraction = vi
       .fn<SimulationClient["performWorkplaceInteraction"]>()
-      .mockImplementationOnce(() => tutorialOpen.promise)
+      .mockImplementationOnce(() => previousOpen.promise)
       .mockResolvedValue({
         view: staleClosedView,
         sequence: 2,
         feedback: "fridge_closed",
       });
-    render(
+    const { rerender } = render(
       <App
-        client={makeClient(tutorialView, {
+        client={makeClient(previousView, {
           createSession,
           performWorkplaceInteraction,
         })}
       />,
     );
-    await user.click(
-      await screen.findByRole("button", { name: /Enter the Verdaly floor/i }),
-    );
+  
     await user.click(
       await screen.findByRole(
         "button",
@@ -433,16 +415,17 @@ describe("Desk OS mutation coordination", () => {
     );
     await user.click(screen.getByRole("button", { name: "Exit break room" }));
 
-    await user.click(screen.getByRole("button", { name: /Skip practice/i }));
-    await screen.findByText("Assessed shift");
+    rerender(<App client={makeClient(assessedView, { createSession })} />);
+    await waitFor(() => { expect(createSession).toHaveBeenCalledTimes(2); });
+    await screen.findByRole("button", { name: "Security Operations" });
 
     await act(async () => {
-      tutorialOpen.resolve({
-        view: openedTutorialView,
+      previousOpen.resolve({
+        view: openedPreviousView,
         sequence: 1,
         feedback: "fridge_opened",
       });
-      await tutorialOpen.promise;
+      await previousOpen.promise;
     });
 
     await waitFor(() => {
@@ -457,7 +440,7 @@ describe("Desk OS mutation coordination", () => {
     expect(
       screen.getByRole("heading", { name: "Current assessed case" }),
     ).toBeVisible();
-    expect(screen.queryByText("Stale tutorial close response")).toBeNull();
+    expect(screen.queryByText("Stale previous close response")).toBeNull();
   });
 
   it("keeps failed canonical state unchanged and retries only the failed operation", async () => {
@@ -1013,7 +996,7 @@ describe("notification focus parity", () => {
     });
   }
 
-  it("keeps WorkSurface and structured focus unchanged after failed Handle and alternate success", async () => {
+  it("keeps recovery workstation focus unchanged after failed Handle and alternate success", async () => {
     const user = userEvent.setup();
     const view = notificationView();
     const workNotification = vi.fn<NotificationHandler>(async () => undefined);
@@ -1032,30 +1015,9 @@ describe("notification focus parity", () => {
       screen.queryByRole("heading", { name: "Structured Handle email" }),
     ).toBeNull();
     work.unmount();
-
-    const structuredNotification = vi.fn<NotificationHandler>(
-      async () => undefined,
-    );
-    render(
-      <AccessibleMode
-        onAction={() => undefined}
-        onNotification={structuredNotification}
-        view={view}
-      />,
-    );
-    const structuredTarget = document.getElementById(
-      "structured-event-email-1",
-    );
-    if (!structuredTarget) throw new Error("Expected structured email target");
-
-    await user.click(screen.getByRole("button", { name: "Handle now" }));
-    await user.click(
-      screen.getByRole("button", { name: "Continue current case" }),
-    );
-    expect(structuredTarget).not.toHaveFocus();
   });
 
-  it("uses the retained Handle callback after a successful retry in both modes", async () => {
+  it("uses the retained Handle callback after a successful retry in recovery workstation", async () => {
     const user = userEvent.setup();
     const view = notificationView();
     let applyWorkHandle: (() => void) | undefined;
@@ -1081,33 +1043,6 @@ describe("notification focus parity", () => {
       screen.getByRole("heading", { name: "Structured Handle email" }),
     ).toBeVisible();
     work.unmount();
-
-    let applyStructuredHandle: (() => void) | undefined;
-    const structuredNotification = vi.fn<NotificationHandler>(
-      async (_notification, response, onApplied) => {
-        if (response === "handle") applyStructuredHandle = onApplied;
-      },
-    );
-    render(
-      <AccessibleMode
-        onAction={() => undefined}
-        onNotification={structuredNotification}
-        view={view}
-      />,
-    );
-    const structuredTarget = document.getElementById(
-      "structured-event-email-1",
-    );
-    if (!structuredTarget) throw new Error("Expected structured email target");
-
-    await user.click(screen.getByRole("button", { name: "Handle now" }));
-    expect(structuredTarget).not.toHaveFocus();
-    act(() => {
-      applyStructuredHandle?.();
-    });
-    await waitFor(() => {
-      expect(structuredTarget).toHaveFocus();
-    });
   });
 });
 

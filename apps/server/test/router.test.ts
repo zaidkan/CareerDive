@@ -114,17 +114,12 @@ describe("authenticated simulation API", () => {
       expect(saveCount).toBe(0);
     });
 
-    it("never produces evidence for workplace interactions in assessed or tutorial sessions", async () => {
+    it("never produces evidence for workplace interactions in assessed sessions", async () => {
       const { caller, repository } = setup();
       const assessed = await caller.session.create({
         seed: 42,
         sessionKind: "assessed",
         pacingMode: "standard",
-      });
-      const tutorial = await caller.session.create({
-        seed: 24,
-        sessionKind: "tutorial",
-        pacingMode: "practice",
       });
 
       await caller.simulation.performWorkplaceInteraction({
@@ -132,15 +127,14 @@ describe("authenticated simulation API", () => {
         interaction: { type: "open_fridge" },
       });
       await caller.simulation.performWorkplaceInteraction({
-        sessionId: tutorial.sessionId,
+        sessionId: assessed.sessionId,
         interaction: { type: "talk_to_jules", topic: "first_day" },
       });
 
       expect(repository.evidenceFor("user-1", assessed.sessionId)).toEqual([]);
-      expect(repository.evidenceFor("user-1", tutorial.sessionId)).toEqual([]);
     });
 
-    it("limits accepted movement without limiting other interactions", async () => {
+    it("accepts rapid movement deterministically without rate failures", async () => {
       const { caller, repository } = setup();
       const created = await caller.session.create({
         seed: 42,
@@ -152,23 +146,24 @@ describe("authenticated simulation API", () => {
         interaction: { type: "movement_exertion", distanceMeters: 5 } as const,
       };
 
-      await caller.simulation.performWorkplaceInteraction(movement);
-      await caller.simulation.performWorkplaceInteraction(movement);
-      await expect(
-        caller.simulation.performWorkplaceInteraction(movement),
-      ).rejects.toThrow("Movement submissions are temporarily limited");
+      for (let index = 0; index < 4; index += 1) {
+        const result =
+          await caller.simulation.performWorkplaceInteraction(movement);
+        expect(result.feedback).toBe("movement_recorded");
+      }
       const opened = await caller.simulation.performWorkplaceInteraction({
         sessionId: created.sessionId,
         interaction: { type: "open_fridge" },
       });
 
-      expect(opened.sequence).toBe(3);
+      expect(opened.sequence).toBe(5);
       const stored = await repository.getSession("user-1", created.sessionId);
-      expect(stored.state.workplace.energy.current).toBe(98);
-      expect(stored.actionLog).toHaveLength(3);
+      expect(stored.state.workplace.energy.current).toBe(96);
+      expect(stored.actionLog).toHaveLength(5);
+      expect(stored.evidence).toEqual([]);
     });
 
-    it("does not consume movement capacity when the reducer rejects movement", async () => {
+    it("rejects movement without energy and recovers when energy returns", async () => {
       const { caller, repository } = setup();
       const created = await caller.session.create({
         seed: 42,
@@ -284,20 +279,15 @@ describe("authenticated simulation API", () => {
     ).rejects.toThrow("Session not found");
   });
 
-  it("records assessed evidence but never tutorial evidence", async () => {
+  it("records assessed evidence", async () => {
     const { caller, repository } = setup();
     const assessed = await caller.session.create({
       seed: 1,
       sessionKind: "assessed",
       pacingMode: "standard",
     });
-    const tutorial = await caller.session.create({
-      seed: 2,
-      sessionKind: "tutorial",
-      pacingMode: "practice",
-    });
 
-    for (const sessionId of [assessed.sessionId, tutorial.sessionId]) {
+    for (const sessionId of [assessed.sessionId]) {
       await caller.simulation.performAction({
         sessionId,
         actionId: "read_handoff",
@@ -312,9 +302,6 @@ describe("authenticated simulation API", () => {
 
     expect(repository.evidenceFor("user-1", assessed.sessionId)).toHaveLength(
       2,
-    );
-    expect(repository.evidenceFor("user-1", tutorial.sessionId)).toHaveLength(
-      0,
     );
   });
 

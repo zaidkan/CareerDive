@@ -13,8 +13,8 @@ export function HowItWorksPage() {
         <div className="trust-strip" style={{marginTop:"1.15rem"}}>
           <span className="site-chip">About 10 minutes</span>
           <span className="site-chip">You set the pace</span>
-          <span className="site-chip">Same work, three ways to play</span>
-          <span className="site-chip site-chip-muted">Desk, walk, or list — your choice</span>
+          <span className="site-chip">One workplace, your decisions</span>
+          <span className="site-chip site-chip-muted">One continuous workday</span>
         </div>
       </section>
 
@@ -102,14 +102,14 @@ export function HowItWorksPage() {
         <div className="chapter-head">
           <span className="chapter-num">05</span>
           <div>
-            <h2 id="beat-05">How you want to play</h2>
-            <p className="lede">Some people like to walk the floor, some like to just focus at the desk. Both are the same work, same consequences. Pick what feels comfortable — we don’t measure how well you click.</p>
+            <h2 id="beat-05">One workplace, start to finish</h2>
+            <p className="lede">You walk the floor, sit down, and continue the same assessed shift in Desk OS. If the 3D office cannot load, Accessibility recovery opens the workstation with your session intact — not a separate product mode.</p>
           </div>
         </div>
         <div className="card-grid">
-          <article className="info-card"><p className="mono-label">WALK</p><h3>Wander</h3><p>A quiet, low-poly office. Approach a spot and it opens the same desk.</p></article>
-          <article className="info-card"><p className="mono-label">DESK</p><h3>Focus</h3><p>Just the screens. Calm, paper-y, like the rest of the site.</p></article>
-          <article className="info-card"><p className="mono-label">LIST</p><h3>Simple</h3><p>Keyboard and screen reader friendly. Same buttons, same story — not an afterthought.</p></article>
+          <article className="info-card"><p className="mono-label">FLOOR</p><h3>Walk in</h3><p>Move through the office to your marked desk and log in.</p></article>
+          <article className="info-card"><p className="mono-label">DESK OS</p><h3>Continue</h3><p>Read mail, open tickets, and make the same decisions on one continuous shift.</p></article>
+          <article className="info-card"><p className="mono-label">RECOVERY</p><h3>If needed</h3><p>If navigation is inaccessible or WebGL fails, keep working at the workstation with state preserved.</p></article>
         </div>
       </section>
 

@@ -44,7 +44,7 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
 afterEach(cleanup);
 const pack = loadDefaultCybersecurityPack();
 
-it("submits the same movement ID through spatial and keyboard-only controls, without evidence", async () => {
+it("submits spatial movement buckets without evidence", async () => {
   const user = userEvent.setup();
   let state = createInitialWorldState("movement-parity", 24, {}, pack);
   const submit = vi.fn(async (interaction: WorkplaceInteraction) => {
@@ -60,11 +60,10 @@ it("submits the same movement ID through spatial and keyboard-only controls, wit
   const props = () => ({
     view: toClientView(state),
     onAction: vi.fn(),
-    onModeChange: vi.fn(),
     onWorkplaceInteraction: submit,
   });
-  const { rerender, container } = render(
-    <ExperienceShell {...props()} mode="walk" />,
+  const { container } = render(
+    <ExperienceShell {...props()} />,
   );
   await user.click(
     await screen.findByRole(
@@ -92,25 +91,8 @@ it("submits the same movement ID through spatial and keyboard-only controls, wit
   await user.click(screen.getByRole("button", { name: "Blocked walk" }));
   await user.click(screen.getByRole("button", { name: "Return to aisle" }));
   expect(submit).toHaveBeenCalledTimes(1);
-  for (const mode of ["list", "desk"] as const) {
-    rerender(<ExperienceShell {...props()} mode={mode} />);
-    const button = await screen.findByRole(
-      "button",
-      { name: "Walk 5 meters" },
-      { timeout: 6000 },
-    );
-    expect(button).toHaveAttribute("data-interaction-id", "movement_exertion");
-    button.focus();
-    await user.keyboard("{Enter}");
-    await waitFor(
-      () => {
-        expect(state.workplace.energy.current).toBe(mode === "list" ? 98 : 97);
-      },
-      { timeout: 2500 },
-    );
-  }
   expect(submit.mock.calls.map(([interaction]) => interaction)).toEqual(
-    Array.from({ length: 3 }, () => ({
+    Array.from({ length: 1 }, () => ({
       type: "movement_exertion",
       distanceMeters: 5,
     })),
@@ -129,8 +111,6 @@ it("keeps spatial movement enabled while routine exertion sync is pending", asyn
   render(
     <ExperienceShell
       view={toClientView(state)}
-      mode="walk"
-      onModeChange={vi.fn()}
       onAction={vi.fn()}
       mutationState={{ pendingKey: "workplace:movement_exertion" }}
       onWorkplaceInteraction={submit}
@@ -158,9 +138,9 @@ it("keeps spatial movement enabled while routine exertion sync is pending", asyn
   await pending;
 });
 
-it.each(["walk", "desk", "list"] as const)(
+it.each(["spatial"] as const)(
   "exposes canonical emergency recovery without evidence in %s",
-  async (mode) => {
+  async () => {
     const user = userEvent.setup();
     const state = createInitialWorldState("recovery-parity", 24, {}, pack);
     state.workplace = {
@@ -182,13 +162,10 @@ it.each(["walk", "desk", "list"] as const)(
     render(
       <ExperienceShell
         view={toClientView(state)}
-        mode={mode}
-        onModeChange={vi.fn()}
         onAction={vi.fn()}
         onWorkplaceInteraction={submit}
       />,
     );
-    if (mode === "walk")
       await user.click(
         await screen.findByRole(
           "button",
@@ -216,8 +193,6 @@ it("shows mutation retry while walking", async () => {
   render(
     <ExperienceShell
       view={toClientView(createInitialWorldState("retry", 24, {}, pack))}
-      mode="walk"
-      onModeChange={vi.fn()}
       onAction={vi.fn()}
       mutationState={{ error: "Movement save failed" }}
       onRetryMutation={vi.fn()}
