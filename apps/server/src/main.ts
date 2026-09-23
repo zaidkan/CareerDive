@@ -11,7 +11,10 @@ import {
 import Fastify from "fastify";
 import { InMemoryRepository, createAppRouter, type AppContext } from "./index.js";
 import { createPostgresRepository } from "./db/repository.js";
-import { allowedWebOrigins } from "./config.js";
+import {
+  allowedWebOrigins,
+  describeListenFailure,
+} from "./config.js";
 
 const port = Number(process.env.PORT ?? 3001);
 const isProduction = process.env.NODE_ENV === "production";
@@ -117,4 +120,9 @@ await server.register(fastifyTRPCPlugin, {
   },
 });
 
-await server.listen({ host: "0.0.0.0", port });
+try {
+  await server.listen({ host: "0.0.0.0", port });
+} catch (error) {
+  server.log.error(describeListenFailure(port, error));
+  process.exit(1);
+}
