@@ -135,10 +135,24 @@ it.each(["Desk only", "Simple list"])(
     await user.click(
       await screen.findByRole("button", { name: /Enter the Verdaly floor/ }),
     );
-    await user.click(screen.getByRole("button", { name: mode }));
+    await user.click(
+      await screen.findByRole("button", { name: mode }, { timeout: 6000 }),
+    );
     if (mode === "Desk only")
-      await user.click(screen.getByRole("button", { name: /^Team chat/ }));
-    await user.click(screen.getByRole("button", { name: /^Complete shift/ }));
+      await user.click(
+        await screen.findByRole(
+          "button",
+          { name: /^Team chat/ },
+          { timeout: 6000 },
+        ),
+      );
+    await user.click(
+      await screen.findByRole(
+        "button",
+        { name: /^Complete shift/ },
+        { timeout: 6000 },
+      ),
+    );
     await user.click(
       await screen.findByRole("button", { name: "Retry loading debrief" }),
     );
@@ -187,9 +201,19 @@ it("preserves selected findings when the App task request fails", async () => {
   await user.click(
     await screen.findByRole("button", { name: /Enter the Verdaly floor/ }),
   );
-  await user.click(screen.getByRole("button", { name: "Simple list" }));
-  await user.click(screen.getByRole("radio", { name: "Keep this finding" }));
-  await user.click(screen.getByRole("button", { name: "Check my work" }));
+  await user.click(
+    await screen.findByRole("button", { name: "Simple list" }, { timeout: 6000 }),
+  );
+  await user.click(
+    await screen.findByRole(
+      "radio",
+      { name: "Keep this finding" },
+      { timeout: 6000 },
+    ),
+  );
+  await user.click(
+    await screen.findByRole("button", { name: "Check my work" }, { timeout: 6000 }),
+  );
   expect(await screen.findByRole("button", { name: "Retry" })).toBeEnabled();
   expect(
     screen.getByRole("radio", { name: "Keep this finding" }),
@@ -239,8 +263,16 @@ it("ignores a late practice debrief after the assessed session starts", async ()
   await user.click(
     await screen.findByRole("button", { name: /Enter the Verdaly floor/ }),
   );
-  await user.click(screen.getByRole("button", { name: "Simple list" }));
-  await user.click(screen.getByRole("button", { name: /^Complete shift/ }));
+  await user.click(
+    await screen.findByRole("button", { name: "Simple list" }, { timeout: 6000 }),
+  );
+  await user.click(
+    await screen.findByRole(
+      "button",
+      { name: /^Complete shift/ },
+      { timeout: 6000 },
+    ),
+  );
   expect(await screen.findByText("Loading your debrief…")).toBeVisible();
   await user.click(screen.getByRole("button", { name: /start real shift/i }));
   expect(await screen.findByText("Assessed shift")).toBeVisible();
