@@ -124,8 +124,8 @@ describe("site routes", () => {
         screen.queryByRole("button", { name: /skip|continue to briefing/i }),
       ).toBeNull();
       expect(
-        screen.getByText(/finish the film to unlock the simulator/i),
-      ).toBeVisible();
+        screen.queryByText(/finish the film to unlock the simulator/i),
+      ).toBeNull();
 
       // Simulate doors freeze: play then end the video.
       fireEvent.click(
@@ -185,7 +185,7 @@ describe("site routes", () => {
           name: /start your first day/i,
         }),
       ).toBeVisible();
-      expect(screen.getByRole("dialog", { name: /verdaly doors/i })).toBeVisible();
+      expect(screen.getByRole("region", { name: /verdaly doors/i })).toBeVisible();
       expect(screen.getByText(/film unavailable/i)).toBeVisible();
       // Poster fallback is present and accessible.
       expect(

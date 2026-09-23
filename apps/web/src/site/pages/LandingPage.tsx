@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { navigate } from "../routes.js";
+import { SiteLink } from "../SiteLink.js";
 
 const GATE_KEY = "first-shift-start-gate";
 
@@ -72,27 +72,16 @@ export function LandingPage() {
               no chatbot. Just you, trying the job.
             </p>
             <div className="hero-ctas">
-              <a
+              <SiteLink
                 className="start-shift"
+                to="/start"
                 style={{ textDecoration: "none", display: "inline-flex", alignItems: "center" }}
-                href="/start"
-                onClick={(event) => {
-                  event.preventDefault();
-                  navigate("/start");
-                }}
               >
                 {hasSeenFilm ? "Continue to Verdaly →" : "Start your first day →"}
-              </a>
-              <a
-                className="button-secondary"
-                href="/how-it-works"
-                onClick={(event) => {
-                  event.preventDefault();
-                  navigate("/how-it-works");
-                }}
-              >
+              </SiteLink>
+              <SiteLink className="button-secondary" to="/how-it-works">
                 How the shift works
-              </a>
+              </SiteLink>
             </div>
             <ul className="trust-chips" aria-label="What to expect">
               <li className="site-chip">13+ · made for teens, respectful</li>
@@ -222,7 +211,7 @@ export function LandingPage() {
             <p className="lede">
               No scores. No “you should become ___.” Your reflections are yours until you choose to
               share them. The AI just helps Morgan sound human — it never makes the decision for you.{" "}
-              <a href="/trust">How we keep it honest →</a>
+              <SiteLink to="/trust">How we keep it honest →</SiteLink>
             </p>
           </div>
         </div>
@@ -240,12 +229,16 @@ export function LandingPage() {
           A short film at the tower doors, then you’re at your desk on Floor 12.
         </p>
         <div className="hero-ctas">
-          <a className="start-shift" href="/start" onClick={(e) => { e.preventDefault(); navigate("/start"); }}>
+          <SiteLink
+            className="start-shift"
+            to="/start"
+            style={{ textDecoration: "none" }}
+          >
             {hasSeenFilm ? "Continue to Verdaly →" : "Start your first day →"}
-          </a>
-          <a className="button-secondary" href="/faq" onClick={(e) => { e.preventDefault(); navigate("/faq"); }}>
+          </SiteLink>
+          <SiteLink className="button-secondary" to="/faq">
             Questions? Start here →
-          </a>
+          </SiteLink>
         </div>
       </section>
     </>

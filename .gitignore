@@ -6,6 +6,7 @@
 .worktrees/
 coverage/
 dist/
+out/
 node_modules/
 playwright-report/
 test-results/

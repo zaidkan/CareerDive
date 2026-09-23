@@ -25,6 +25,12 @@
   --font-body: "DM Sans", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 18%);
+  --shadow-lift: 0 10px 28px rgb(0 0 0 / 28%);
+  --grid: rgb(255 255 255 / 7%);
   color: var(--fog);
   background: var(--ink);
   font-family: var(--font-body);
@@ -59,6 +65,9 @@
   --mode-line: #a8a29e;
   --mode-active-bg: #1c1917;
   --mode-active-ink: #faf6ef;
+  --shadow-soft: 0 1px 2px rgb(28 25 23 / 10%);
+  --shadow-lift: 0 10px 28px rgb(28 25 23 / 14%);
+  --grid: rgb(28 25 23 / 7%);
 }
 
 * {
@@ -214,10 +223,10 @@ h1 {
   display: inline-flex;
   align-items: center;
   padding: 0.28rem 0.55rem;
-  border: 1px solid rgb(45 212 191 / 30%);
+  border: 1px solid color-mix(in srgb, var(--signal) 30%, transparent);
   border-radius: 4px;
   color: var(--signal);
-  background: rgb(45 212 191 / 8%);
+  background: color-mix(in srgb, var(--signal) 8%, transparent);
   font-family: var(--font-body);
   font-size: 0.7rem;
   font-weight: 600;
@@ -227,7 +236,7 @@ h1 {
 .site-chip-muted {
   border-color: var(--line);
   color: var(--mute);
-  background: rgb(255 255 255 / 2%);
+  background: color-mix(in srgb, var(--paper) 4%, transparent);
 }
 
 .eyebrow {

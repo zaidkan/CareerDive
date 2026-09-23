@@ -1,10 +1,10 @@
 export function TrustPage() {
   return (
     <>
-      <section className="page-section" aria-labelledby="trust-title" style={{borderTop:0, marginTop:"1.5rem"}}>
+      <section className="page-section page-hero" aria-labelledby="trust-title">
         <p className="eyebrow">Privacy and safety — plain talk</p>
-        <h1 id="trust-title" style={{fontFamily:"var(--font-display)", color:"var(--paper)", letterSpacing:"-0.03em", lineHeight:0.98, fontSize:"clamp(2rem,4.5vw,2.9rem)", margin:"0.35rem 0 0.7rem"}}>We keep your stuff private. Here’s how.</h1>
-        <p className="lede" style={{maxWidth:"65ch"}}>
+        <h1 id="trust-title">We keep your stuff private. Here’s how.</h1>
+        <p className="lede">
           If you’re trying this as a teen, you deserve straight answers. This page is what’s actually built right now —
           not fancy legal language. The final policy before launch will be reviewed by real lawyers, but this is the honest
           version while we’re in beta.

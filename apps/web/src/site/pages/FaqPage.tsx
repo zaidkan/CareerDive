@@ -1,3 +1,5 @@
+import { SiteLink } from "../SiteLink.js";
+
 const FAQS = [
   {
     q: "Is this a real job application?",
@@ -36,10 +38,10 @@ const FAQS = [
 export function FaqPage() {
   return (
     <>
-      <section className="page-section" aria-labelledby="faq-title" style={{borderTop:0, marginTop:"1.5rem"}}>
+      <section className="page-section page-hero" aria-labelledby="faq-title">
         <p className="eyebrow">The plain version</p>
-        <h1 id="faq-title" style={{fontFamily:"var(--font-display)", color:"var(--paper)", letterSpacing:"-0.03em", lineHeight:0.98, fontSize:"clamp(2rem,4.5vw,2.9rem)", margin:"0.35rem 0 0.7rem"}}>Quick answers, honestly</h1>
-        <p className="lede" style={{maxWidth:"65ch"}}>
+        <h1 id="faq-title">Quick answers, honestly</h1>
+        <p className="lede">
           No long policy — just what people usually ask. If we change anything before launch, we’ll update the privacy page first and say what changed.
         </p>
         <div className="trust-strip" style={{marginTop:"1rem", justifyContent:"flex-start"}}>
@@ -54,7 +56,7 @@ export function FaqPage() {
             <summary style={{listStyle:"none", cursor:"pointer", display:"flex", gap:"0.75rem", alignItems:"flex-start"}}>
               <span style={{flex:"none", marginTop:"0.2rem", width:22, height:22, borderRadius:"50%", border:"1px solid var(--line-bright)", display:"grid", placeItems:"center", fontFamily:"var(--font-mono)", fontSize:"0.7rem", color:"var(--phosphor)"}}>?</span>
               <span style={{flex:1, color:"var(--paper)", fontWeight:650, fontSize:"1.02rem", lineHeight:1.35}}>{q}</span>
-              <span aria-hidden="true" style={{color:"var(--mute)", fontWeight:700}}>+</span>
+              <span aria-hidden="true" className="faq-toggle" style={{color:"var(--mute)", fontWeight:700, width:22, height:22, borderRadius:"50%", border:"1px solid var(--line-bright)", display:"grid", placeItems:"center", lineHeight:1}}>+</span>
             </summary>
             <p style={{margin:"0.7rem 0 0 2.35rem", color:"var(--fog)", lineHeight:1.65, maxWidth:"65ch"}}>{a}</p>
           </details>
@@ -62,7 +64,14 @@ export function FaqPage() {
       </section>
 
       <p className="mode-note" style={{marginTop:"1.5rem", maxWidth:"70ch"}}>
-        Still wondering? The straight story is on <a href="/trust" style={{color:"var(--phosphor)", fontWeight:600}}>Privacy and safety →</a> — same calm page, same honest headings.
+        Still wondering? The straight story is on{" "}
+        <SiteLink
+          to="/trust"
+          style={{ color: "var(--phosphor)", fontWeight: 600 }}
+        >
+          Privacy and safety →
+        </SiteLink>{" "}
+        — same calm page, same honest headings.
       </p>
 
       <script

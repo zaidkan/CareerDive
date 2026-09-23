@@ -8,7 +8,7 @@ export function DoorHud({
   return (
     <div
       className={`door-hud${reducedMotion ? " door-hud-static" : ""}`}
-      role="dialog"
+      role="region"
       aria-label="Verdaly doors: start your first day"
     >
       <div className="door-hud-frame" aria-hidden="true">

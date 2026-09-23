@@ -85,12 +85,7 @@ export function SiteChrome({
             </ul>
           </nav>
           <ThemeToggle />
-          <a
-            className="button-secondary"
-            href="/start"
-            onClick={go("/start")}
-            style={{ minHeight: 44 }}
-          >
+          <a className="button-secondary" href="/start" onClick={go("/start")}>
             {hasSeenFilm ? "Continue" : "Start"}
           </a>
         </div>

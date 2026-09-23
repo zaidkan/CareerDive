@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { navigate } from "./routes.js";
 import { DoorHud } from "./DoorHud.js";
 
@@ -8,6 +8,34 @@ function prefersReducedMotion(): boolean {
     typeof window.matchMedia === "function" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
+}
+
+type SiteTheme = "dark" | "light";
+
+function readTheme(): SiteTheme {
+  if (typeof document === "undefined") return "dark";
+  return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+}
+
+function useSiteTheme(): SiteTheme {
+  const [theme, setTheme] = useState<SiteTheme>(readTheme);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const observer = new MutationObserver(() => {
+      setTheme(readTheme());
+    });
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    setTheme(readTheme());
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  return theme;
 }
 
 /**
@@ -28,6 +56,11 @@ export function ArrivalFilm({
   const [reducedMotion] = useState(prefersReducedMotion);
   const [doorHold, setDoorHold] = useState(false);
   const [mediaError, setMediaError] = useState(false);
+  const theme = useSiteTheme();
+  const posterSrc =
+    theme === "light"
+      ? "/verdaly-tower-doors-light.svg"
+      : "/verdaly-tower-doors.svg";
 
   function triggerDoorHold() {
     setDoorHold(true);
@@ -71,7 +104,7 @@ export function ArrivalFilm({
           {reducedMotion ? (
             <>
               <img
-                src="/verdaly-tower-doors.svg"
+                src={posterSrc}
                 alt="Verdaly tower entrance — doors hold"
                 width={1600}
                 height={900}
@@ -83,7 +116,7 @@ export function ArrivalFilm({
           ) : !playing ? (
             <>
               <img
-                src="/verdaly-tower-doors.svg"
+                src={posterSrc}
                 alt="Arrival film poster: Verdaly tower doors"
                 width={1600}
                 height={900}
@@ -110,7 +143,7 @@ export function ArrivalFilm({
                   autoPlay
                   muted
                   preload="metadata"
-                  poster="/verdaly-tower-doors.svg"
+                  poster={posterSrc}
                   aria-label="Arrival at Verdaly: from bedroom to tower doors"
                   playsInline
                   onEnded={triggerDoorHold}
@@ -133,7 +166,7 @@ export function ArrivalFilm({
                 </video>
               ) : (
                 <img
-                  src="/verdaly-tower-doors.svg"
+                  src={posterSrc}
                   alt="Arrival film unavailable — Verdaly tower doors poster"
                   width={1600}
                   height={900}
@@ -158,10 +191,6 @@ export function ArrivalFilm({
             </>
           )}
         </div>
-
-        {!doorHold && !reducedMotion && !playing ? (
-          <p className="mode-note film-cinema-note">No skip — finish the film to unlock the simulator.</p>
-        ) : null}
 
         <details className="film-transcript">
           <summary>Transcript and stills</summary>

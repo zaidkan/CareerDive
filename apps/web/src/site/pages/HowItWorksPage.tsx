@@ -1,10 +1,12 @@
+import { SiteLink } from "../SiteLink.js";
+
 export function HowItWorksPage() {
   return (
     <>
-      <section className="page-section" aria-labelledby="how-title" style={{borderTop:0, marginTop:"1.5rem"}}>
+      <section className="page-section page-hero" aria-labelledby="how-title">
         <p className="eyebrow">A calm way to try work · No hype</p>
-        <h1 id="how-title" style={{fontFamily:"var(--font-display)", color:"var(--paper)", letterSpacing:"-0.03em", lineHeight:0.98, fontSize:"clamp(2rem,4.5vw,2.9rem)", margin:"0.35rem 0 0.7rem"}}>How your Verdaly day actually goes</h1>
-        <p className="lede" style={{maxWidth:"65ch"}}>
+        <h1 id="how-title">How your Verdaly day actually goes</h1>
+        <p className="lede">
           One short shift, start to finish. You’ll move between a few simple screens — the same tools a
           junior analyst really uses. No scores chasing you, just work to try at your own pace.
         </p>
@@ -46,11 +48,17 @@ export function HowItWorksPage() {
         </div>
         <div className="showcase-grid">
           <article className="showcase-card">
-            <img src="/verdaly-tower-doors.svg" alt="Alert detail — who, when, how" loading="lazy" />
+            <div className="showcase-mock showcase-mock-alert">
+              <span className="showcase-mock-dot" aria-hidden="true" />
+              <span>Alert · j.patel · 08:41 · new device</span>
+            </div>
             <div><h3>The alert</h3><p>Who logged in, when, from where. You open it before you judge it.</p></div>
           </article>
           <article className="showcase-card">
-            <img src="/verdaly-tower-doors.svg" alt="Your notes — what you know and what you don’t" loading="lazy" />
+            <div className="showcase-mock showcase-mock-notes">
+              <span aria-hidden="true">▍</span>
+              <span>Saw: route via SOHO · Still fuzzy: MFA push · Next: check device list</span>
+            </div>
             <div><h3>Your notes</h3><p>What you’ve seen, what’s still unclear, what you’ll ask. That’s the actual ticket.</p></div>
           </article>
         </div>
@@ -114,8 +122,8 @@ export function HowItWorksPage() {
           <a href="https://github.com/zaidkan/Career-Expo">github.com/zaidkan/Career-Expo</a> — the shift script lives in <code>content/packs/cybersecurity-analyst/pack.yaml</code>.
         </p>
         <div className="hero-ctas" style={{marginTop:"1rem"}}>
-          <a className="start-shift" href="/start" style={{textDecoration:"none"}}>Try your first day →</a>
-          <a className="button-secondary" href="/trust">How we keep it honest →</a>
+          <SiteLink className="start-shift" to="/start" style={{textDecoration:"none"}}>Try your first day →</SiteLink>
+          <SiteLink className="button-secondary" to="/trust">How we keep it honest →</SiteLink>
         </div>
       </section>
     </>
