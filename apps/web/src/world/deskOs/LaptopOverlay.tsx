@@ -63,9 +63,13 @@ export function LaptopOverlay({
       window.removeEventListener(DESK_OS_FILL_EVENT, fill);
       window.removeEventListener("keydown", onKey);
       if (document.fullscreenElement === laptopRef.current) {
-        document.exitFullscreen().catch(() => {
+        try {
+          document.exitFullscreen().catch(() => {
+            /* Document may already be inactive during navigation. */
+          });
+        } catch {
           /* Document may already be inactive during navigation. */
-        });
+        }
       }
     };
   }, [disabled, toggleOsFullscreen]);
@@ -80,9 +84,13 @@ export function LaptopOverlay({
       focused.blur();
     }
     if (document.fullscreenElement === laptopRef.current) {
-      document.exitFullscreen().catch(() => {
+      try {
+        document.exitFullscreen().catch(() => {
+          /* Document may already be inactive during navigation. */
+        });
+      } catch {
         /* Document may already be inactive during navigation. */
-      });
+      }
     }
   }, [disabled]);
 
