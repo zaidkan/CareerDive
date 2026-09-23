@@ -23,6 +23,10 @@ export const SimulationActionIdSchema = z.enum([
   "check_link_destination",
   "quarantine_message",
   "notify_reporter",
+  "route_access_request",
+  "resolve_login_help",
+  "send_status_update",
+  "submit_shift_handoff",
   "ask_manager",
   "complete_shift",
 ]);

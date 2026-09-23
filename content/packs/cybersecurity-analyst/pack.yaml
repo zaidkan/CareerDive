@@ -24,9 +24,13 @@ career:
     - knowledge_base
     - team_chat
   events:
-    - suspicious_login
     - incomplete_handoff
+    - suspicious_login
+    - access_request
     - routine_alert_review
+    - employee_login_help
+    - morgan_status_check
+    - end_shift_handoff
   rhythmBiasReview:
     ordinaryWorkRepresented: true
     calmWorkRepresented: true
@@ -45,11 +49,11 @@ scenario:
       - team-chat
   maxAiCostUsd: 0.05
   briefing: >
-    Morning. The previous analyst left a handoff in your inbox. An alert
-    also arrived as you signed in. Read what is available, keep notes, and
-    use the team channel when you need context. More routine work may
-    arrive while you investigate.
-  initialTaskBacklog: 3
+    Morning. The previous analyst left a handoff in your inbox, and a suspicious
+    login needs review. Work will also arrive from coworkers and routine monitoring.
+    Read what is available, keep uncertainty visible, follow approval boundaries,
+    and leave the next analyst enough context to continue.
+  initialTaskBacklog: 7
   workplaceDefaults:
     energyMax: 100
     fridgeSnackBars: 2
@@ -676,7 +680,259 @@ scenario:
           coachOnFailure: Closure should say what matched and avoid unsupported claims.
           successText: Routine alert is documented and ready to close.
 
+    - id: access-authority-check
+      eventTemplateId: access_request
+      actionId: route_access_request
+      systemId: team_chat
+      kind: choose_response
+      title: Keep an urgent access request inside policy
+      whyItMatters: Junior analysts help work move safely, but they do not approve access owned by another team.
+      steps:
+        - id: identify-approval-boundary
+          title: Route the request
+          prompt: The project is urgent and may be legitimate. Decide what you can do in your role.
+          instruction: Choose the response supported by the request and access guide.
+          relatedArtifactIds: [access-request-email, access-approval-guide]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: route-to-owner
+              label: Verify the request details and route it to the finance data owner; keep access pending.
+              source:
+                artifactId: access-approval-guide
+                quote: "Only the finance data owner can approve this role."
+            - id: self-approve
+              label: Approve it yourself because the project deadline is urgent.
+              source:
+                artifactId: access-request-email
+                quote: "Director Chen approved the project deadline in chat."
+            - id: reject-as-attack
+              label: Reject it as malicious because an urgent request is suspicious.
+              source:
+                artifactId: access-approval-guide
+                quote: "Urgency does not change the approval owner."
+          requiredOptionIds: [route-to-owner]
+          coachOnFailure: Urgency can be real without changing your authority. The project approval is not the same as access approval.
+          successText: You kept the request moving and left the authorization decision with its owner.
+
+    - id: employee-login-troubleshooting
+      eventTemplateId: employee_login_help
+      actionId: resolve_login_help
+      systemId: ticket_queue
+      kind: build_summary
+      title: Document a login problem without jumping to an attack
+      whyItMatters: Analysts compare ordinary explanations with records before escalating routine trouble.
+      steps:
+        - id: login-help-evidence
+          title: Compare the device activity
+          prompt: Identify what the login records actually show.
+          instruction: Select both observations that explain why more troubleshooting is appropriate.
+          relatedArtifactIds: [rivera-login-email, rivera-auth-summary]
+          minSelections: 2
+          maxSelections: 2
+          options:
+            - id: phone-retries
+              label: The managed phone made repeated saved-password retries.
+              source:
+                artifactId: rivera-auth-summary
+                quote: "08:36–08:41: corp-phone-rivera made five failed saved-password retries."
+            - id: laptop-success
+              label: The managed laptop successfully used the updated password.
+              source:
+                artifactId: rivera-auth-summary
+                quote: "08:42: corp-macbook-rivera completed a successful sign-in with the updated password."
+            - id: attack-confirmed
+              label: Five failures confirm that another person has the password.
+              source:
+                artifactId: rivera-login-email
+                quote: "I can still sign in on my work laptop."
+          requiredOptionIds: [phone-retries, laptop-success]
+          coachOnFailure: Compare which known device failed and which known device succeeded. Attempt counts alone do not identify a person.
+          successText: You found a device-specific pattern instead of treating every failure as an attack.
+        - id: login-help-next-step
+          title: Record the bounded next step
+          prompt: Choose a troubleshooting step that fits the evidence while leaving room to reassess.
+          instruction: Use the approved guide and preserve what is still uncertain.
+          relatedArtifactIds: [login-troubleshooting-guide, ticket-login-help]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: update-saved-password
+              label: Ask the employee to update the saved password in the phone app, then monitor for retries.
+              source:
+                artifactId: login-troubleshooting-guide
+                quote: "A working sign-in on one known device plus repeated retries from another known device can indicate a stale saved password."
+            - id: name-attacker
+              label: Record an attacker as the confirmed cause of the failed attempts.
+              source:
+                artifactId: login-troubleshooting-guide
+                quote: "Failed attempts do not identify an attacker."
+            - id: grant-access
+              label: Change the employee's access role so the phone can sign in.
+              source:
+                artifactId: ticket-login-help
+                quote: "No access-role change is requested or supported by these records."
+          requiredOptionIds: [update-saved-password]
+          coachOnFailure: Use the least disruptive step that tests the ordinary explanation. Keep monitoring if the retries continue.
+          successText: The ticket records a safe troubleshooting step and a reason to reopen if the pattern continues.
+
+    - id: morgan-midshift-update
+      eventTemplateId: morgan_status_check
+      actionId: send_status_update
+      systemId: team_chat
+      kind: build_summary
+      title: Give Morgan a useful status update
+      whyItMatters: Teammates need facts, uncertainty, and the next action—not a confident guess.
+      steps:
+        - id: status-confirmed
+          title: State what is confirmed
+          prompt: Give Morgan one concise confirmed observation from A-1042.
+          instruction: Choose what the opened record directly supports.
+          relatedArtifactIds: [suspicious-login-alert]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: confirmed-sequence
+              label: A-1042 records six failed checks followed by a successful session from unknown-laptop-17.
+              source:
+                artifactId: suspicious-login-alert
+                quote: "07:38–07:40: Source IP 203.0.113.44 reported 6 failed MFA challenges."
+            - id: confirmed-person
+              label: A-1042 confirms who controlled the session.
+              source:
+                artifactId: suspicious-login-alert
+                quote: "Location is an estimate associated with a network address, not verified travel or a person's identity."
+          requiredOptionIds: [confirmed-sequence]
+          coachOnFailure: Report the recorded sequence. The alert does not identify a person.
+          successText: Your update starts with a fact another analyst can verify.
+        - id: status-uncertain
+          title: Name the uncertainty
+          prompt: Tell Morgan what the current records cannot establish.
+          instruction: Keep the collection limit visible.
+          relatedArtifactIds: [login-session-timeline]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: identity-uncertain
+              label: The records do not establish who controlled S-0741 or what data was accessed.
+              source:
+                artifactId: login-session-timeline
+                quote: "Collection ends at 07:45. This export has no file-access or mailbox activity and cannot establish what was accessed."
+            - id: nothing-accessed
+              label: The export proves that no files or mail were accessed.
+              source:
+                artifactId: login-session-timeline
+                quote: "Missing fields may require a fuller record from the reviewer."
+          requiredOptionIds: [identity-uncertain]
+          coachOnFailure: Missing activity fields are a collection gap, not proof that nothing happened.
+          successText: Morgan can see the boundary between evidence and inference.
+        - id: status-next
+          title: Name the next action
+          prompt: Finish with the concrete work you will do next.
+          instruction: Choose the step that preserves evidence and keeps authority with the reviewer.
+          relatedArtifactIds: [ticket-suspicious-login]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: document-and-review
+              label: Finish the evidence/uncertainty note, then request bounded senior review.
+              source:
+                artifactId: ticket-suspicious-login
+                quote: "Next step: name the review you are requesting and the question it should resolve."
+            - id: close-on-location
+              label: Close the case because the displayed city explains the session.
+              source:
+                artifactId: ticket-suspicious-login
+                quote: "Uncertainty: distinguish the location estimate and working explanation from what is independently supported."
+          requiredOptionIds: [document-and-review]
+          coachOnFailure: Name a reversible next step that uses the records and preserves the open question.
+          successText: Morgan has a status update that supports the next handoff without revealing an answer.
+
+    - id: end-shift-continuity
+      eventTemplateId: end_shift_handoff
+      actionId: submit_shift_handoff
+      systemId: team_chat
+      kind: build_summary
+      title: Leave the next analyst a usable handoff
+      whyItMatters: Professional continuity means unfinished work can continue without repeating the whole shift.
+      steps:
+        - id: handoff-checked
+          title: Record completed checks
+          prompt: Name the work that was completed this shift.
+          instruction: Select the two traceable checks the next analyst can rely on.
+          relatedArtifactIds: [ticket-suspicious-login, scanner-run-log]
+          minSelections: 2
+          maxSelections: 2
+          options:
+            - id: login-records-checked
+              label: A-1042 was compared with the exact device, session route, employee report, and record-coverage limits.
+              source:
+                artifactId: ticket-suspicious-login
+                quote: "Case references to preserve after comparison: A-1042, the two session identifiers, the exact inventory label, and the route-catalogue and work-travel coverage limits."
+            - id: scanner-checked
+              label: A-1180 matched RUN-FIN-031 and the approved finance scanning window.
+              source:
+                artifactId: scanner-run-log
+                quote: "A-1180 refers to connection activity at 10:18 within this run."
+            - id: everything-secure
+              label: The scanner run proves every finance system is secure.
+              source:
+                artifactId: scanner-run-log
+                quote: "Coverage: this log records discovery connections only; it does not establish vulnerability findings or prove every finance system is secure."
+          requiredOptionIds: [login-records-checked, scanner-checked]
+          coachOnFailure: Preserve the checks and their references. Do not broaden a routine closure into a security guarantee.
+          successText: The next analyst can see what was already checked.
+        - id: handoff-open-question
+          title: Preserve the unresolved question
+          prompt: State what remains unresolved after escalation.
+          instruction: Choose the uncertainty that still needs reviewer work.
+          relatedArtifactIds: [login-session-timeline, shift-handoff-prompt]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: reviewer-question
+              label: Senior review still needs to determine who controlled S-0741 and whether containment is warranted.
+              source:
+                artifactId: shift-handoff-prompt
+                quote: "An escalation can end your junior-analyst step while the underlying question remains open."
+            - id: attack-proven
+              label: Escalation proves an attacker controlled S-0741.
+              source:
+                artifactId: login-session-timeline
+                quote: "The summary groups attempts by account and source; it does not identify a person."
+          requiredOptionIds: [reviewer-question]
+          coachOnFailure: Escalation transfers review; it does not turn suspicion into proof.
+          successText: Your handoff keeps the unresolved question visible.
+        - id: handoff-next-owner
+          title: Name the next owner and action
+          prompt: Finish with who should continue and what they should use.
+          instruction: Choose a bounded continuity step.
+          relatedArtifactIds: [shift-handoff-prompt]
+          minSelections: 1
+          maxSelections: 1
+          options:
+            - id: next-analyst-review
+              label: Next analyst monitors the senior review and uses the saved ticket sources instead of rebuilding the case.
+              source:
+                artifactId: shift-handoff-prompt
+                quote: "Point the next analyst to saved sources and the pending reviewer question."
+            - id: start-over
+              label: Next analyst should discard the notes and repeat every check.
+              source:
+                artifactId: shift-handoff-prompt
+                quote: "Good continuity avoids making the next person reconstruct completed work."
+          requiredOptionIds: [next-analyst-review]
+          coachOnFailure: A good handoff preserves useful completed work and names the pending owner.
+          successText: The next analyst has a clear continuation point.
+
   notifications:
+    - id: access-request-arrived
+      eventTemplateId: access_request
+      systemId: email
+      title: Urgent access request
+      body: A coworker needs project access. Check who owns approval before acting.
+      priority: normal
+      snoozeMinutes: 10
     - id: routine-scanner-arrived
       eventTemplateId: routine_alert_review
       systemId: alert_dashboard
@@ -684,6 +940,27 @@ scenario:
       body: A routine-looking alert arrived while you were investigating the login. Triage it now, snooze it once, or keep your current view open.
       priority: low
       snoozeMinutes: 15
+    - id: login-help-arrived
+      eventTemplateId: employee_login_help
+      systemId: email
+      title: Employee login trouble
+      body: An employee reports repeated password prompts while another device still works.
+      priority: normal
+      snoozeMinutes: 10
+    - id: status-check-arrived
+      eventTemplateId: morgan_status_check
+      systemId: team_chat
+      title: Morgan asks for a status update
+      body: Share what is confirmed, what remains uncertain, and what you will do next.
+      priority: normal
+      snoozeMinutes: 10
+    - id: handoff-reminder
+      eventTemplateId: end_shift_handoff
+      systemId: team_chat
+      title: Prepare shift handoff
+      body: Leave the next analyst completed checks, uncertainty, and a clear continuation point.
+      priority: normal
+      snoozeMinutes: 10
   facts:
     - id: alert-visible
       content: >
@@ -838,6 +1115,30 @@ scenario:
       tracksCompletion: false
       defaultEffect:
         setNotebookFromFreeText: true
+    - id: route_access_request
+      systemId: team_chat
+      label: Route request to the data owner
+      description: Keep the urgent request moving without approving access outside your role.
+      simulatedMinutes: 4
+      energyCost: 1
+    - id: resolve_login_help
+      systemId: ticket_queue
+      label: Record login troubleshooting outcome
+      description: Document the ordinary cause, remaining uncertainty, and safe next step.
+      simulatedMinutes: 6
+      energyCost: 2
+    - id: send_status_update
+      systemId: team_chat
+      label: Send mid-shift status
+      description: Tell Morgan what is confirmed, uncertain, and happening next.
+      simulatedMinutes: 4
+      energyCost: 1
+    - id: submit_shift_handoff
+      systemId: team_chat
+      label: Send end-of-shift handoff
+      description: Leave confirmed facts, uncertainty, completed checks, and the next step.
+      simulatedMinutes: 5
+      energyCost: 1
     # R1 QUARANTINE (Phase 1): five incomplete phishing actions removed from the
     # active pack — open_phishing_report, inspect_email_headers,
     # check_link_destination, quarantine_message, notify_reporter. They were
@@ -983,6 +1284,33 @@ scenario:
         allowManager: true
         sequence: [read_handoff, acknowledge_handoff]
 
+    access_request:
+      instanceId: access-request-1
+      title: Urgent finance access request
+      summary: A coworker needs temporary reporting access and cites an approved deadline.
+      priority: normal
+      systemId: email
+      triggerAt: 20
+      deadlineMinutes: 180
+      initialStatus: pending
+      managerGuidance: >
+        Confirm the resource, requested duration, and approval owner. I can help with
+        process, but I cannot replace the finance data owner's authorization. Urgency
+        is context, not permission.
+      progression:
+        kind: linear
+        allowManager: true
+        sequence: [route_access_request]
+      actionEffects:
+        route_access_request:
+          resolve: true
+          resolution: The request was verified and routed to the finance data owner; access remains pending their decision.
+          emitEventResolved: true
+          consequence:
+            description: The data owner received the request with its resource, duration, and business context. The coworker can track the pending decision without the junior analyst approving access.
+          hidden:
+            taskBacklog: -1
+
     routine_alert_review:
       instanceId: routine-alert-1
       title: Expected scanner activity
@@ -1030,6 +1358,86 @@ scenario:
           hidden:
             taskBacklog: -1
 
+    employee_login_help:
+      instanceId: login-help-1
+      title: Employee cannot stay signed in
+      summary: A coworker reports repeated password prompts on a managed phone while their laptop still works.
+      priority: normal
+      systemId: email
+      triggerAt: 45
+      deadlineMinutes: 240
+      initialStatus: pending
+      managerGuidance: >
+        Compare the devices and results before deciding what the failures mean. A known
+        device retrying an old saved password is an ordinary possibility; keep monitoring
+        if the retries continue after the employee updates it.
+      progression:
+        kind: linear
+        allowManager: true
+        sequence: [resolve_login_help]
+      actionEffects:
+        resolve_login_help:
+          resolve: true
+          resolution: The phone app's saved password was updated; the employee confirmed sign-in works and monitoring shows no further retries in this bounded check.
+          emitEventResolved: true
+          consequence:
+            description: A. Rivera confirmed the phone mail app had kept the old saved password. Updating it stopped the retries; the ticket preserves the device-specific evidence and the condition for reopening.
+          hidden:
+            accuracy: 1
+            taskBacklog: -1
+
+    morgan_status_check:
+      instanceId: status-check-1
+      title: Morgan's mid-shift check-in
+      summary: Morgan asks for confirmed facts, remaining uncertainty, and the next action.
+      priority: normal
+      systemId: team_chat
+      triggerAt: 65
+      deadlineMinutes: 260
+      initialStatus: pending
+      managerGuidance: >
+        Use three short parts: what a record confirms, what it cannot establish, and the
+        next action you own. I will not decide the case from a status message.
+      progression:
+        kind: linear
+        allowManager: false
+        sequence: [send_status_update]
+      actionEffects:
+        send_status_update:
+          resolve: true
+          resolution: Morgan received a bounded update separating facts, uncertainty, and next work.
+          emitEventResolved: true
+          consequence:
+            description: Morgan confirmed the update is actionable and asked you to finish the ticket before requesting senior review.
+          hidden:
+            taskBacklog: -1
+
+    end_shift_handoff:
+      instanceId: shift-handoff-1
+      title: End-of-shift continuity
+      summary: Leave the next analyst completed checks, open uncertainty, and the next owner.
+      priority: normal
+      systemId: team_chat
+      triggerAt: 90
+      deadlineMinutes: 320
+      initialStatus: pending
+      managerGuidance: >
+        A strong handoff does not pretend every question is closed. Preserve the source
+        references, say what remains under review, and name who should act next.
+      progression:
+        kind: linear
+        allowManager: false
+        sequence: [submit_shift_handoff]
+      actionEffects:
+        submit_shift_handoff:
+          resolve: true
+          resolution: The next analyst has completed checks, open uncertainty, and a clear continuation point.
+          emitEventResolved: true
+          consequence:
+            description: The next analyst acknowledged the handoff and can continue from the saved ticket sources while senior review remains pending.
+          hidden:
+            taskBacklog: -1
+
   artifacts:
     - id: login-session-timeline
       systemId: alert_dashboard
@@ -1047,7 +1455,7 @@ scenario:
 
         Collection ends at 07:45. This export has no file-access or mailbox activity and cannot establish what was accessed. Missing fields may require a fuller record from the reviewer.
         A-1042 and login-context-1 summarize this same source; counting them separately does not create independent corroboration.
-      eventIds: [suspicious-login-1]
+      eventIds: [suspicious-login-1, status-check-1, shift-handoff-1]
       relatedArtifactIds:
         [suspicious-login-alert, prior-session-1, vpn-context-1]
       searchableText: login timeline session source route MFA
@@ -1147,7 +1555,7 @@ scenario:
 
         Keep the alert reference with your notes. A high-priority label asks for attention; it is not a finding of compromise.
         The expanded timeline separates earlier S-0731 from flagged S-0741. Compare those session identifiers before carrying an explanation from one sign-in to the other.
-      eventIds: [suspicious-login-1]
+      eventIds: [suspicious-login-1, status-check-1]
       relatedArtifactIds:
         [
           login-context-1,
@@ -1263,7 +1671,7 @@ scenario:
         A vulnerability scanner checks systems for weaknesses. VLAN means a separately managed network segment; here the target is the finance network.
         This alert summarizes connection activity, not confirmed exploitation or data access.
         Before closing, compare source, time, and target scope with the approved reference and leave that match in the ticket.
-      eventIds: [routine-alert-1]
+      eventIds: [routine-alert-1, shift-handoff-1]
       relatedArtifactIds: [scanner-window, scanner-run-log]
       searchableText: vuln-scan finance VLAN
       metadata:
@@ -1284,7 +1692,7 @@ scenario:
         Coverage: this log records discovery connections only; it does not establish vulnerability findings or prove every finance system is secure.
         Correlation: match the alert's source, target, and event time to the run and approved entry. The shared alert reference links the records; it does not turn the alert summary into an independent measurement.
         Closure applies to A-1180 only. A different source, target, or time needs its own review; this maintenance record does not explain the unrelated login case.
-      eventIds: [routine-alert-1]
+      eventIds: [routine-alert-1, shift-handoff-1]
       relatedArtifactIds: [scanner-alert, scanner-window]
       searchableText: scanner run execution correlation coverage
     - id: scanner-window
@@ -1308,6 +1716,123 @@ scenario:
         If a detail does not match, keep the uncertainty visible and ask Morgan for procedural guidance.
       eventIds: [routine-alert-1]
       searchableText: approved scanner window finance
+    - id: access-request-email
+      systemId: email
+      kind: email
+      title: Temporary finance reporting access
+      summary: From Sam Lee · 08:20 · urgent project request
+      body: |
+        Requested access: finance-reporting-prod, today until 17:00.
+        I need the read-only reporting role to finish a board packet. Director Chen approved the project deadline in chat.
+
+        I know this is late notice. Please approve it if you can, or tell me who owns the decision. I have not included a password or approval code.
+      eventIds: [access-request-1]
+      relatedArtifactIds: [access-approval-guide]
+      searchableText: access request finance reporting approval
+    - id: access-approval-guide
+      systemId: knowledge_base
+      kind: kb_document
+      title: Finance reporting access approvals
+      summary: Role boundary and routing procedure
+      body: |
+        Only the finance data owner can approve this role.
+        Security analysts may verify the requested resource, duration, and business contact, then route the request to that owner. Keep access pending until the owner records a decision.
+
+        A manager's support for a project is not approval for a data role. Urgency does not change the approval owner. A request can be legitimate and still require the normal process.
+      eventIds: [access-request-1]
+      relatedArtifactIds: [access-request-email]
+      searchableText: finance access approval owner urgent
+    - id: rivera-login-email
+      systemId: email
+      kind: email
+      title: Phone keeps asking for my password
+      summary: From A. Rivera · 08:45 · help request
+      body: |
+        My work phone keeps asking for my password after I changed it this morning. I can still sign in on my work laptop.
+        The phone is corp-phone-rivera and the laptop is corp-macbook-rivera. I have not sent the password; I only need help knowing what to update.
+      eventIds: [login-help-1]
+      relatedArtifactIds: [rivera-auth-summary, login-troubleshooting-guide]
+      searchableText: Rivera login phone password prompt
+    - id: rivera-auth-summary
+      systemId: alert_dashboard
+      kind: login_record
+      title: Authentication summary · A. Rivera
+      summary: Known-device results around the password change
+      body: |
+        08:36–08:41: corp-phone-rivera made five failed saved-password retries.
+        08:42: corp-macbook-rivera completed a successful sign-in with the updated password.
+
+        Both labels match enrolled devices in inventory. The grouped retries show a device pattern; they do not identify a person or prove an attack.
+      eventIds: [login-help-1]
+      relatedArtifactIds: [rivera-login-email, rivera-device-inventory]
+      searchableText: Rivera authentication phone laptop retries
+    - id: rivera-device-inventory
+      systemId: knowledge_base
+      kind: device_record
+      title: Device inventory · A. Rivera
+      summary: Active managed phone and laptop
+      body: |
+        corp-phone-rivera — enrolled, active, assigned to a.rivera@example.com.
+        corp-macbook-rivera — enrolled, active, assigned to a.rivera@example.com.
+
+        Exact labels match the help request and authentication summary. Enrollment supports device context; it does not prove who was holding either device.
+      eventIds: [login-help-1]
+      relatedArtifactIds: [rivera-auth-summary]
+      searchableText: Rivera inventory phone laptop
+      metadata:
+        lookupKeys: corp-phone-rivera,corp-macbook-rivera
+    - id: login-troubleshooting-guide
+      systemId: knowledge_base
+      kind: kb_document
+      title: Repeated prompts after a password change
+      summary: Beginner troubleshooting and escalation boundary
+      body: |
+        A working sign-in on one known device plus repeated retries from another known device can indicate a stale saved password.
+        Ask the employee to update the saved password in the affected approved app, then check whether retries stop. Escalate if retries continue, an unknown device appears, or the employee reports activity they did not perform.
+
+        Failed attempts do not identify an attacker. Record the device labels, results, time range, and what would cause the ticket to reopen.
+      eventIds: [login-help-1]
+      relatedArtifactIds: [rivera-login-email, rivera-auth-summary]
+      searchableText: password change stale saved password retries
+    - id: ticket-login-help
+      systemId: ticket_queue
+      kind: ticket
+      title: Ticket · Rivera login prompts
+      summary: Troubleshooting note
+      body: |
+        Record the device-specific results, the ordinary explanation being tested, and the condition for reopening.
+        No access-role change is requested or supported by these records.
+      eventIds: [login-help-1]
+      relatedArtifactIds: [rivera-auth-summary, login-troubleshooting-guide]
+      searchableText: Rivera login troubleshooting ticket
+    - id: morgan-status-prompt
+      systemId: team_chat
+      kind: chat_thread
+      title: Morgan · mid-shift check-in
+      summary: Three-part status request
+      body: |
+        Morgan: Quick check-in. What is confirmed? What is still uncertain? What are you doing next?
+        Keep it short and source-based. I need your status, not a final answer from the alert alone.
+      eventIds: [status-check-1]
+      relatedArtifactIds:
+        [
+          suspicious-login-alert,
+          login-session-timeline,
+          ticket-suspicious-login,
+        ]
+      searchableText: Morgan status confirmed uncertain next
+    - id: shift-handoff-prompt
+      systemId: team_chat
+      kind: chat_thread
+      title: Morgan · end-of-shift handoff
+      summary: Continuity checklist
+      body: |
+        An escalation can end your junior-analyst step while the underlying question remains open.
+        Point the next analyst to saved sources and the pending reviewer question.
+        Good continuity avoids making the next person reconstruct completed work.
+      eventIds: [shift-handoff-1]
+      relatedArtifactIds: [ticket-suspicious-login, scanner-run-log]
+      searchableText: handoff continuity next analyst review
     - id: chat-morgan
       systemId: team_chat
       kind: chat_thread
@@ -1319,7 +1844,7 @@ scenario:
         Morgan · investigation guidance: Separate what a record shows from what you think it means. When asking for help, name the record, the mismatch, and the question you need answered. Do not paste passwords or approval codes.
 
         Morgan · handoff guidance: Keep verified evidence, uncertainty, and the next step distinct. A reviewer should be able to follow your note without guessing what you opened. I can guide the procedure, but your tools and records remain the basis for the decision.
-      eventIds: [handoff-1, suspicious-login-1]
+      eventIds: [handoff-1, suspicious-login-1, status-check-1, shift-handoff-1]
       searchableText: Morgan team chat guidance
 
     - id: ticket-suspicious-login
@@ -1337,7 +1862,7 @@ scenario:
         Investigation notes are your separate working draft. Save them before switching work; the structured summary records the selected findings for handoff.
         Do not include passwords, approval codes, or claims about the employee's intentions.
         Case references to preserve after comparison: A-1042, the two session identifiers, the exact inventory label, and the route-catalogue and work-travel coverage limits. These references are a review checklist, not a finding.
-      eventIds: [suspicious-login-1]
+      eventIds: [suspicious-login-1, status-check-1, shift-handoff-1]
       searchableText: ticket investigation notes
 
   # Phase 2 structured datasets translated from
@@ -1353,7 +1878,15 @@ scenario:
   # SC-NOTE-01 excluded (a memo does not fit the run-record schema).
   datasets:
     auth:
-      allowedFilterFields: [user, sourceIp, deviceLabel, sessionId, windowStartSimMinutes, windowEndSimMinutes]
+      allowedFilterFields:
+        [
+          user,
+          sourceIp,
+          deviceLabel,
+          sessionId,
+          windowStartSimMinutes,
+          windowEndSimMinutes,
+        ]
       records:
         - id: AUTH-0731-PATEL
           datasetId: auth
@@ -1484,6 +2017,28 @@ scenario:
           vpnConnectionId: V-219
           relatedRecordIds: []
           note: Second VPN user on a different connection; connection IDs are per-connection.
+        - id: AUTH-0836-RIVERA-PHONE-RETRIES
+          datasetId: auth
+          simMinutes: 516
+          user: a.rivera@example.com
+          sourceIp: 10.20.4.9
+          deviceLabel: corp-phone-rivera
+          method: saved_password
+          result: fail
+          attemptCount: 5
+          relatedRecordIds: [AUTH-0842-RIVERA-LAPTOP]
+          note: Five retries from the enrolled phone after a password change; a failed retry does not identify who held the device.
+        - id: AUTH-0842-RIVERA-LAPTOP
+          datasetId: auth
+          simMinutes: 522
+          user: a.rivera@example.com
+          sourceIp: 10.20.4.18
+          deviceLabel: corp-macbook-rivera
+          method: password + extra_identity_check
+          result: success
+          sessionId: S-0842
+          relatedRecordIds: [AUTH-0836-RIVERA-PHONE-RETRIES]
+          note: Successful updated-password sign-in from the enrolled laptop; compare by exact device label.
         - id: AUTH-0755-SVC-BACKUP
           datasetId: auth
           simMinutes: 475
@@ -1527,7 +2082,16 @@ scenario:
           relatedRecordIds: []
           note: Routine failed login with no follow-through.
     vpn:
-      allowedFilterFields: [user, sourceIp, sessionId, vpnId, status, windowStartSimMinutes, windowEndSimMinutes]
+      allowedFilterFields:
+        [
+          user,
+          sourceIp,
+          sessionId,
+          vpnId,
+          status,
+          windowStartSimMinutes,
+          windowEndSimMinutes,
+        ]
       records:
         - id: V-218
           datasetId: vpn
@@ -1611,7 +2175,14 @@ scenario:
           relatedRecordIds: []
           note: Yesterday's ordinary session; outside the 07:25-07:45 target window, so it carries no office-local time on this shift.
     devices:
-      allowedFilterFields: [deviceLabel, assignedUser, assignmentState, windowStartSimMinutes, windowEndSimMinutes]
+      allowedFilterFields:
+        [
+          deviceLabel,
+          assignedUser,
+          assignmentState,
+          windowStartSimMinutes,
+          windowEndSimMinutes,
+        ]
       records:
         - id: corp-macbook-patel
           datasetId: devices
@@ -1723,7 +2294,15 @@ scenario:
           relatedRecordIds: []
           note: Assigned but stale with no check-in for 90 days. Assigned is not recently seen.
     alerts:
-      allowedFilterFields: [alertId, account, deviceLabel, state, windowStartSimMinutes, windowEndSimMinutes]
+      allowedFilterFields:
+        [
+          alertId,
+          account,
+          deviceLabel,
+          state,
+          windowStartSimMinutes,
+          windowEndSimMinutes,
+        ]
       records:
         - id: A-1042
           datasetId: alerts
@@ -1783,7 +2362,8 @@ scenario:
           relatedRecordIds: []
           note: Single host re-alert inside the approved scan window; monitor through the window, then close with a run-log reference.
     scanner:
-      allowedFilterFields: [scannerId, runId, scope, windowStartSimMinutes, windowEndSimMinutes]
+      allowedFilterFields:
+        [scannerId, runId, scope, windowStartSimMinutes, windowEndSimMinutes]
       records:
         - id: RUN-FIN-031
           datasetId: scanner
