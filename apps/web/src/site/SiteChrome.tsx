@@ -9,13 +9,15 @@ function useGateSeen(): boolean {
   const [seen, setSeen] = useState(false);
   useEffect(() => {
     try {
-      if (window.sessionStorage.getItem(GATE_KEY) === "briefing") setSeen(true);
+      const v = window.sessionStorage.getItem(GATE_KEY);
+      if (v === "briefing" || v === "sim") setSeen(true);
     } catch {
       // ignore
     }
     const onStorage = () => {
       try {
-        if (window.sessionStorage.getItem(GATE_KEY) === "briefing") setSeen(true);
+        const v = window.sessionStorage.getItem(GATE_KEY);
+        if (v === "briefing" || v === "sim") setSeen(true);
       } catch {
         // ignore
       }
@@ -64,9 +66,9 @@ export function SiteChrome({
             className="site-nav-brand"
             href="/"
             onClick={go("/")}
-            aria-label="First Shift home — Career Expo"
+            aria-label="Career Expo home"
           >
-            First Shift <span className="brand-beta">Beta</span>
+            Career Expo <span className="brand-beta">Beta</span>
           </a>
           <ul className="site-nav-links">
             {NAV.map(({ route: target, label }) => (

@@ -116,52 +116,29 @@ describe("site routes", () => {
           name: /short preview film/i,
         }),
       ).toBeVisible();
-      // Enter action is unreachable before the gate resolves.
+      // Direct sim entry is unreachable before the doors freeze — no briefing page.
       expect(
         screen.queryByRole("button", { name: /enter the verdaly floor/i }),
       ).toBeNull();
-
-      // TEMP screenshotsBypass in ArrivalFilm: film asset is not uploaded yet,
-      // so the gate exposes a direct continue instead of a forced play-through.
-      // When screenshotsBypass flips to false, restore the doors-freeze path:
-      // no skip button, "finish the film…" note, play → ended → start → enter.
-      const bypass = screen.queryByRole("button", {
-        name: /continue to briefing|bypass film/i,
-      });
-      if (bypass) {
-        expect(
-          screen.queryByRole("button", { name: /play arrival film/i }),
-        ).toBeNull();
-        fireEvent.click(bypass);
-        fireEvent.click(
-          await screen.findByRole("button", {
-            name: /enter the verdaly floor/i,
-          }),
-        );
-      } else {
-        expect(
-          screen.queryByRole("button", { name: /skip|continue to briefing/i }),
-        ).toBeNull();
-        expect(
-          screen.getByText(/finish the film to unlock the simulator/i),
-        ).toBeVisible();
-        fireEvent.click(
-          screen.getByRole("button", { name: /play arrival film/i }),
-        );
-        const video = document.querySelector("video");
-        if (!video) throw new Error("arrival video missing");
-        fireEvent(video, new Event("ended"));
-        fireEvent.click(
-          await screen.findByRole("button", {
-            name: /start your first day/i,
-          }),
-        );
-        fireEvent.click(
-          await screen.findByRole("button", {
-            name: /enter the verdaly floor/i,
-          }),
-        );
-      }
+      expect(
+        screen.queryByRole("button", { name: /skip|continue to briefing/i }),
+      ).toBeNull();
+      expect(
+        screen.getByText(/finish the film to unlock the simulator/i),
+      ).toBeVisible();
+      // Cinematic play overlay inside the doors frame.
+      fireEvent.click(
+        screen.getByRole("button", { name: /play arrival film/i }),
+      );
+      const video = document.querySelector("video");
+      if (!video) throw new Error("arrival video missing");
+      fireEvent(video, new Event("ended"));
+      // DoorHud animates onto the frozen doors (center) — this is the only entry.
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: /start your first day/i,
+        }),
+      );
       expect(createSession).toHaveBeenCalledTimes(1);
       expect(createSession).toHaveBeenCalledWith(
         expect.objectContaining({ sessionKind: "assessed" }),
@@ -175,22 +152,31 @@ describe("site routes", () => {
     expect(document.title).toMatch(/privacy and safety/i);
   });
 
-  it("resumes gate at briefing after refresh when film seen", async () => {
+  it("resumes at sim after film seen (legacy briefing key maps to sim)", async () => {
     window.sessionStorage.setItem("first-shift-start-gate", "briefing");
     const client = {
-      createSession: vi.fn(),
+      createSession: vi.fn(() =>
+        Promise.resolve({
+          sessionId: "s-1",
+          view: undefined as never,
+        }),
+      ),
       performAction: vi.fn(),
       performWorkplaceInteraction: vi.fn(),
       submitTaskAttempt: vi.fn(),
       respondToNotification: vi.fn(),
       getDebrief: vi.fn(),
     };
-    render(<StartPage client={client} />);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+    render(<StartPage client={client as any} />);
+    // legacy "briefing" now maps directly to sim — no intermediate page.
     expect(
-      await screen.findByRole("heading", {
-        name: /you are at the doors/i,
-      }),
-    ).toBeVisible();
-    expect(client.createSession).not.toHaveBeenCalled();
+      screen.queryByRole("heading", { name: /you are at the doors/i }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("heading", { name: /short preview film/i }),
+    ).toBeNull();
+    // Sim bootstraps immediately (no film re-gate).
+    expect(client.createSession).toHaveBeenCalledTimes(1);
   });
 });
