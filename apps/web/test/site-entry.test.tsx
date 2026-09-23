@@ -139,11 +139,6 @@ describe("site routes", () => {
           name: /start your first day/i,
         }),
       );
-      fireEvent.click(
-        await screen.findByRole("button", {
-          name: /enter the verdaly floor/i,
-        }),
-      );
       await waitFor(() => {
         expect(createSession).toHaveBeenCalledTimes(1);
       });
@@ -196,14 +191,9 @@ describe("site routes", () => {
       expect(
         screen.getByAltText(/arrival film unavailable/i),
       ).toBeVisible();
-      // Can still proceed to briefing and sim.
+      // Can still proceed directly to sim — no intermediate briefing page.
       fireEvent.click(
         screen.getByRole("button", { name: /start your first day/i }),
-      );
-      fireEvent.click(
-        await screen.findByRole("button", {
-          name: /enter the verdaly floor/i,
-        }),
       );
       await waitFor(() => {
         expect(createSession).toHaveBeenCalledTimes(1);
@@ -221,22 +211,31 @@ describe("site routes", () => {
     expect(document.title).toMatch(/privacy and safety/i);
   });
 
-  it("resumes gate at briefing after refresh when film seen", async () => {
+  it("resumes at sim after film seen (legacy briefing key maps to sim)", async () => {
     window.sessionStorage.setItem("first-shift-start-gate", "briefing");
     const client = {
-      createSession: vi.fn(),
+      createSession: vi.fn(() =>
+        Promise.resolve({
+          sessionId: "s-1",
+          view: undefined as never,
+        }),
+      ),
       performAction: vi.fn(),
       performWorkplaceInteraction: vi.fn(),
       submitTaskAttempt: vi.fn(),
       respondToNotification: vi.fn(),
       getDebrief: vi.fn(),
     };
-    render(<StartPage client={client} />);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+    render(<StartPage client={client as any} />);
+    // legacy "briefing" now maps directly to sim — no intermediate page.
     expect(
-      await screen.findByRole("heading", {
-        name: /you are at the doors/i,
-      }),
-    ).toBeVisible();
-    expect(client.createSession).not.toHaveBeenCalled();
+      screen.queryByRole("heading", { name: /you are at the doors/i }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("heading", { name: /short preview film/i }),
+    ).toBeNull();
+    // Sim bootstraps immediately (no film re-gate).
+    expect(client.createSession).toHaveBeenCalledTimes(1);
   });
 });

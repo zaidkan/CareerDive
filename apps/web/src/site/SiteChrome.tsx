@@ -1,7 +1,37 @@
+import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { navigate, type SiteRoute } from "./routes.js";
 import { ThemeToggle } from "./ThemeToggle.js";
 
+const GATE_KEY = "first-shift-start-gate";
+
+function useGateSeen(): boolean {
+  const [seen, setSeen] = useState(false);
+  useEffect(() => {
+    try {
+      const v = window.sessionStorage.getItem(GATE_KEY);
+      if (v === "briefing" || v === "sim") setSeen(true);
+    } catch {
+      // ignore
+    }
+    const onStorage = () => {
+      try {
+        const v = window.sessionStorage.getItem(GATE_KEY);
+        if (v === "briefing" || v === "sim") setSeen(true);
+      } catch {
+        // ignore
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    // also listen to popstate/navigate changes - poll on route changes
+    window.addEventListener("popstate", onStorage);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("popstate", onStorage);
+    };
+  }, []);
+  return seen;
+}
 const NAV: Array<{ route: SiteRoute; label: string }> = [
   { route: "/", label: "Home" },
   { route: "/how-it-works", label: "How it works" },
@@ -23,6 +53,7 @@ export function SiteChrome({
   route: SiteRoute;
   children: ReactNode;
 }) {
+  const hasSeenFilm = useGateSeen();
   return (
     <>
       <a className="skip-link" href="#main-content">
@@ -34,9 +65,9 @@ export function SiteChrome({
             className="site-nav-brand"
             href="/"
             onClick={go("/")}
-            aria-label="First Shift home — Career Expo"
+            aria-label="Career Expo home"
           >
-            First Shift <span className="brand-beta">Beta</span>
+            Career Expo <span className="brand-beta">Beta</span>
           </a>
           <nav aria-label="Primary">
             <ul className="site-nav-links">
@@ -60,7 +91,7 @@ export function SiteChrome({
             onClick={go("/start")}
             style={{ minHeight: 44 }}
           >
-            Start
+            {hasSeenFilm ? "Continue" : "Start"}
           </a>
         </div>
       </header>
@@ -90,7 +121,7 @@ export function SiteChrome({
             </li>
             <li>
               <a href="/start" onClick={go("/start")}>
-                Start your first day
+                {hasSeenFilm ? "Continue to Verdaly" : "Start your first day"}
               </a>
             </li>
             <li>
