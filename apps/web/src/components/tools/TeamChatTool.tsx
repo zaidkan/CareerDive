@@ -1,5 +1,10 @@
 import { useState } from "react";
 import type { AvailableAction, ClientView } from "@sim/schemas";
+import { useOptionalOsSession } from "../../world/deskOs/osSession.js";
+import {
+  MORGAN_INTRO_BODY,
+  MORGAN_INTRO_LABEL,
+} from "../../world/deskOs/os/morganIntro.js";
 import type { MutationState } from "../../useMutationCoordinator.js";
 import { ArtifactDetail } from "../artifacts.js";
 
@@ -18,6 +23,8 @@ export function TeamChatTool({
   onAction?: (action: AvailableAction, freeText?: string) => void;
 }) {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const osSession = useOptionalOsSession();
+  const morganIntroSeen = osSession?.state.morganIntroSeen ?? false;
   const chatActions = actions.filter(
     ({ id }) => id === "ask_manager" || id === "acknowledge_handoff",
   );
@@ -62,6 +69,12 @@ export function TeamChatTool({
   return (
     <>
       <article className="team-chat-thread" aria-label="Morgan message thread">
+        {morganIntroSeen ? (
+          <p className="team-chat-intro" data-testid="morgan-intro">
+            <strong>{MORGAN_INTRO_LABEL}: </strong>
+            {MORGAN_INTRO_BODY}
+          </p>
+        ) : null}
         {messages.map((artifact) => (
           <ArtifactDetail
             key={artifact.id}

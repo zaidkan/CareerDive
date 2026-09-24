@@ -38,6 +38,7 @@ export interface OsSessionState {
   fakeFs: FakeFs;
   browserHistory: BrowserHistory;
   notesText: string;
+  morganIntroSeen: boolean;
 }
 
 export type OsSessionAction =
@@ -47,7 +48,8 @@ export type OsSessionAction =
   | { type: "browser_navigate"; nav: BrowserNav }
   | { type: "browser_back" }
   | { type: "browser_forward" }
-  | { type: "set_notes_text"; text: string };
+  | { type: "set_notes_text"; text: string }
+  | { type: "mark_morgan_intro_seen" };
 
 export function createInitialOsSession(): OsSessionState {
   return {
@@ -56,6 +58,7 @@ export function createInitialOsSession(): OsSessionState {
     fakeFs: initialFakeFs(),
     browserHistory: { entries: [{ kind: "page", page: "ops" }], index: 0 },
     notesText: "",
+    morganIntroSeen: false,
   };
 }
 
@@ -110,6 +113,10 @@ export function osSessionReducer(
       return state.notesText === action.text
         ? state
         : { ...state, notesText: action.text };
+    case "mark_morgan_intro_seen":
+      return state.morganIntroSeen
+        ? state
+        : { ...state, morganIntroSeen: true };
     default:
       return state;
   }
@@ -142,4 +149,9 @@ export function useOsSession(): OsSessionContextValue {
     throw new Error("useOsSession requires an OsSessionProvider ancestor");
   }
   return value;
+}
+
+/** For tools also rendered outside Desk OS (tests, accessibility recovery). */
+export function useOptionalOsSession(): OsSessionContextValue | null {
+  return useContext(OsSessionContext);
 }

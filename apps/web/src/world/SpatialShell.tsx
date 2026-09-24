@@ -27,7 +27,7 @@ import {
 import { coffeeControl, fridgeControl } from "./breakRoom.js";
 import { ControlsHelp } from "./ControlsHelp.js";
 import { LaptopOverlay } from "./deskOs/LaptopOverlay.js";
-import { OsSessionProvider } from "./deskOs/osSession.js";
+import { OsSessionProvider, useOsSession } from "./deskOs/osSession.js";
 import { FloorMap } from "./FloorMap.js";
 import { JulesDialogue } from "./JulesDialogue.js";
 import { getJourneyStep } from "../journey.js";
@@ -97,6 +97,7 @@ function SpatialShellStage({
   onRoomExit?: () => void;
 }) {
   const [spatial, dispatch] = useReducer(reduceSpatialEvent, INITIAL_SPATIAL);
+  const { dispatch: osDispatch } = useOsSession();
   const [nearbyLabel, setNearbyLabel] = useState<string>();
   const [pointerLocked, setPointerLocked] = useState(false);
   const [mouseSensitivity, setMouseSensitivity] = useState(
@@ -399,6 +400,7 @@ function SpatialShellStage({
             {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
             onLoginSuccess={() => {
               dispatch({ type: "login_success" });
+              osDispatch({ type: "mark_morgan_intro_seen" });
             }}
             onStand={() => {
               dispatch({ type: "stand" });
