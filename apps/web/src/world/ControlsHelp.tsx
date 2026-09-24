@@ -2,8 +2,9 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 const CONTROLS: ReadonlyArray<{ keys: string; action: string }> = [
   { keys: "W A S D / arrows", action: "Move around the floor" },
-  { keys: "Click + mouse", action: "Look around (click, hold drag, F to fullscreen, Esc to release)" },
+  { keys: "Click + drag", action: "Look around" },
   { keys: "E", action: "Interact with what is in front of you" },
+  { keys: "F / Esc", action: "Fullscreen on and off" },
 ];
 
 export function ControlsHelp() {

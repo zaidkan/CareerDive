@@ -74,6 +74,11 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  overflow-x: clip;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -3470,7 +3475,7 @@ section[aria-labelledby="structured-title"],
   border-color: var(--line-bright);
   background: var(--panel);
   color: var(--paper);
-  box-shadow: inset 0 2px 0 #2563eb;
+  box-shadow: inset 0 2px 0 var(--cta);
 }
 
 .os-taskbar-clock {
@@ -3770,7 +3775,7 @@ section[aria-labelledby="structured-title"],
 .os-open-file {
   padding: 0.6rem 0.7rem;
   border: 1px solid var(--line);
-  border-left: 3px solid #2563eb;
+  border-left: 3px solid var(--cta);
   border-radius: 8px;
   background: var(--ink-lift);
 }
@@ -3973,6 +3978,29 @@ section[aria-labelledby="structured-title"],
   .desk-os-system {
     grid-template-columns: 1fr;
     grid-template-rows: minmax(5.5rem, 0.3fr) minmax(0, 1fr);
+  }
+
+  .desk-os-lock {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .desk-os-bezel-note {
+    top: 0;
+    transform: rotate(-3deg);
+  }
+
+  .os-taskbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .os-taskbar-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .os-files-body {
+    grid-template-columns: 1fr;
   }
 
   .desk-os-queue {

@@ -9,7 +9,12 @@ never the Remotion runtime.
 ```bash
 pnpm --filter @sim/video preview   # Remotion Studio
 pnpm --filter @sim/video render    # renders HeroSting → out/hero-sting.mp4
+pnpm --filter @sim/video render:ambient  # AmbientGlow → out/hero-ambient.mp4
 ```
+
+Shipped: `AmbientGlow` (12s seamless text-free loop) renders to
+`apps/web/public/hero-ambient.mp4` and plays as the landing hero
+background (`LandingPage`, skipped under `prefers-reduced-motion`).
 
 Or directly: `npx remotion studio`, `npx remotion render HeroSting out/hero-sting.mp4`.
 

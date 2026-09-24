@@ -18,6 +18,10 @@
   padding: 0.85rem 0;
 }
 
+.site-nav-inner > * {
+  min-width: 0;
+}
+
 .site-nav-brand {
   display: inline-flex;
   align-items: center;
@@ -163,6 +167,7 @@ a:focus-visible {
   position: relative;
   display: grid;
   align-content: center;
+  min-width: 0;
   padding: clamp(2.25rem, 5vw, 3.5rem) clamp(1.75rem, 4vw, 3rem);
   background:
     radial-gradient(ellipse 90% 65% at 15% 20%, color-mix(in srgb, var(--phosphor) 10%, transparent) 0%, transparent 60%),
@@ -199,6 +204,16 @@ a:focus-visible {
   object-fit: cover;
 }
 
+.hero-media-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
 .hero-copy {
   position: relative;
   max-width: 36rem;
@@ -213,6 +228,7 @@ a:focus-visible {
   line-height: 0.98;
   letter-spacing: -0.04em;
   font-weight: 800;
+  overflow-wrap: anywhere;
 }
 
 .hero-copy p {
@@ -269,6 +285,7 @@ a:focus-visible {
   position: relative;
   display: grid;
   place-items: center;
+  min-width: 0;
   padding: 1.25rem;
   background: var(--ink-lift);
   border-left: 1px solid var(--line);
@@ -475,6 +492,15 @@ a:focus-visible {
 @media (max-width: 640px){
   .chapter-head { grid-template-columns: 1fr; gap: 0.6rem; }
   .chapter-num { width: 36px; height: 36px; font-size: 0.7rem; }
+  .hero-media { padding: 1.75rem 1.1rem; }
+  .hero-copy h1,
+  .hero-copy h2 { font-size: clamp(1.9rem, 10vw, 2.4rem); }
+  .hero-copy p { font-size: 1rem; }
+  .hero-ctas .start-shift,
+  .hero-ctas .button-secondary {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
 }
 
 .film-gate {

@@ -44,7 +44,7 @@ export function MutationStatus({
         className="mutation-status mutation-status-pending"
         ref={messageRef}
       >
-        Saving change…
+        Saving…
       </div>
     );
   }
@@ -62,5 +62,5 @@ export function MutationStatus({
     );
   }
 
-  return <div className="mutation-status">Ready</div>;
+  return null;
 }

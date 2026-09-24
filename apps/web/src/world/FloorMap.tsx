@@ -147,8 +147,8 @@ export function FloorMap({
           <p className="floor-guide-callout">Go here next — gold door on the plan</p>
         ) : null}
         <p>
-          Walk the halls to a door, then step inside. Coffee lives in the glass
-          break corner inside Security Operations — not a separate map room.
+          Walk the halls to a door, then step inside. Coffee is in the glass
+          break corner inside Security Operations.
         </p>
         <ul className="floor-legend">
           <li>

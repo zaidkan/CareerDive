@@ -452,7 +452,7 @@ function SpatialShellStage({
               ) : null}
               {walkBlocked ? (
                 <div className="room-flavor" role="status">
-                  Route blocked. Return to the aisle to continue safely.
+                  That way is blocked — head back to the aisle.
                   <button className="guidance-secondary" type="button" onClick={() => {
                     window.dispatchEvent(new Event("soc-recover-aisle"));
                     setWalkBlocked(false);

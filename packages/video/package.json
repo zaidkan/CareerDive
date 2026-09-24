@@ -6,6 +6,7 @@
   "scripts": {
     "preview": "remotion studio",
     "render": "remotion render HeroSting out/hero-sting.mp4",
+    "render:ambient": "remotion render AmbientGlow out/hero-ambient.mp4 --scale=0.5 --crf=28",
     "lint": "eslint src",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

@@ -87,7 +87,11 @@ export function LockScreen({
               value={pass}
             />
           </label>
-          {error ? <p className="desk-os-error">{error}</p> : null}
+          {error ? (
+            <p className="desk-os-error" role="alert">
+              {error}
+            </p>
+          ) : null}
           <div className="desk-os-lock-actions">
             <button className="desk-os-primary" disabled={signingIn} type="submit">
               {signingIn ? "Signing in…" : "Login"}

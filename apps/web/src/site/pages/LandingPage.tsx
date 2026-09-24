@@ -3,6 +3,28 @@ import { SiteLink } from "../SiteLink.js";
 
 const GATE_KEY = "first-shift-start-gate";
 
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
+      return;
+    }
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduced(query.matches);
+    const onChange = (event: MediaQueryListEvent) => {
+      setReduced(event.matches);
+    };
+    query.addEventListener("change", onChange);
+    return () => {
+      query.removeEventListener("change", onChange);
+    };
+  }, []);
+  return reduced;
+}
+
 function useHasSeenFilm(): boolean {
   const [seen, setSeen] = useState(false);
   useEffect(() => {
@@ -59,10 +81,25 @@ function ChapterNum({ n }: { n: string }) {
 
 export function LandingPage() {
   const hasSeenFilm = useHasSeenFilm();
+  const reducedMotion = usePrefersReducedMotion();
   return (
     <>
       <section className="hero" aria-labelledby="home-hero">
         <div className="hero-media">
+          {reducedMotion ? null : (
+            <video
+              className="hero-media-video"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              aria-hidden="true"
+              tabIndex={-1}
+            >
+              <source src="/hero-ambient.mp4" type="video/mp4" />
+            </video>
+          )}
           <div className="hero-copy">
             <p className="eyebrow">Career Expo · a calm way to try work</p>
             <h1 id="home-hero">Try day one as a cybersecurity analyst</h1>
@@ -86,7 +123,7 @@ export function LandingPage() {
             <ul className="trust-chips" aria-label="What to expect">
               <li className="site-chip">13+ · made for teens, respectful</li>
               <li className="site-chip">About 10 minutes</li>
-              <li className="site-chip">Same story, your choices</li>
+              <li className="site-chip">Same shift, your choices</li>
               <li className="site-chip site-chip-muted">Your notes stay private</li>
             </ul>
             <p className="platform-note">

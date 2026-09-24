@@ -69,7 +69,7 @@ export function DashboardHome({
                 {system.label.charAt(0)}
               </span>
               <strong>{system.label}</strong>
-              <span className={count > 0 ? "desk-os-tile-count" : undefined}>
+              <span className={count > 0 ? "desk-os-tile-count" : "desk-os-tile-hint"}>
                 {count > 0 ? `${String(count)} open` : system.hint}
               </span>
             </button>
@@ -147,9 +147,8 @@ export function CalendarPanel({
         <p>No current work checkpoints.</p>
       ) : null}
       <p className="desk-os-hint">
-        These checkpoints reflect your visible queue and available guidance, not
-        scheduled meetings. They do not gate progress or affect your work
-        evidence.
+        These checkpoints mirror your visible queue and available guidance —
+        not scheduled meetings. They don’t gate progress.
       </p>
       <button className="desk-os-primary" onClick={onOpenEmail} type="button">
         Open Email

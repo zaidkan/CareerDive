@@ -142,7 +142,7 @@ export function OpsConsole({
             <small>Time</small> {formatShiftClock(view.simClock)}
           </span>
           <span>
-            <small>Energy</small> Energy {view.workplace.energy.current}/
+            <small>Energy</small> {view.workplace.energy.current}/
             {view.workplace.energy.max}
           </span>
           <span className="desk-os-status-objective">

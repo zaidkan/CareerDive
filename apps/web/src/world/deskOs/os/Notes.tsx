@@ -22,11 +22,11 @@ export function Notes({ openFile }: { openFile: OpenableFile | null }) {
         onChange={(event) => {
           dispatch({ type: "set_notes_text", text: event.target.value });
         }}
-        placeholder="Jot a reminder. Notes stay here and are never assessed."
+        placeholder="Jot a reminder — private to this workstation."
         rows={8}
         value={text}
       />
-      <p className="os-status-note">Local scratch only — never part of shift evidence.</p>
+      <p className="os-status-note">Private scratch — only you can see this.</p>
     </section>
   );
 }

@@ -102,8 +102,8 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
             <p className="eyebrow">Intranet</p>
             <h3>Company intranet</h3>
             <p>
-              Office news, lunch menus, and the IT helpdesk live here. Shift work happens in the
-              SOC Ops Console bookmark.
+              Office news, lunch menus, and the IT helpdesk live here. Your open
+              work is in the SOC Ops Console bookmark.
             </p>
           </article>
         ) : null}

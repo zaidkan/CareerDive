@@ -1,9 +1,9 @@
 import type { OsAppId } from "./browserState.js";
 
 const APPS: ReadonlyArray<{ id: Exclude<OsAppId, "desktop">; label: string; glyph: string }> = [
-  { id: "browser", label: "Browser", glyph: "B" },
-  { id: "files", label: "Files", glyph: "F" },
-  { id: "notes", label: "Notes", glyph: "N" },
+  { id: "browser", label: "Browser", glyph: "◉" },
+  { id: "files", label: "Files", glyph: "▤" },
+  { id: "notes", label: "Notes", glyph: "✎" },
 ];
 
 export function Desktop({ onOpen }: { onOpen: (app: OsAppId) => void }) {
@@ -28,7 +28,7 @@ export function Desktop({ onOpen }: { onOpen: (app: OsAppId) => void }) {
           </li>
         ))}
       </ul>
-      <p className="os-desktop-hint">Select an app to open it. The shift continues in the Browser.</p>
+      <p className="os-desktop-hint">Open the Browser to continue your shift.</p>
     </section>
   );
 }

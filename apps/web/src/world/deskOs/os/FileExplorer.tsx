@@ -17,7 +17,7 @@ export function FileExplorer({ onOpenFile }: { onOpenFile: (file: OpenableFile) 
   const [folder, setFolder] = useState<FsFolderId>("documents");
   const [selected, setSelected] = useState<string | null>(null);
   const [clipboard, setClipboard] = useState<string | null>(null);
-  const [notice, setNotice] = useState("File moves stay on this workstation. They never affect shift state or evidence.");
+  const [notice, setNotice] = useState("File moves stay on this workstation.");
   const [dropTarget, setDropTarget] = useState<FsFolderId | null>(null);
 
   const folderLabel = (id: FsFolderId) => fs.folders.find((entry) => entry.id === id)?.label ?? id;
@@ -33,7 +33,7 @@ export function FileExplorer({ onOpenFile }: { onOpenFile: (file: OpenableFile) 
     const name = fs.filesByFolder[fromFolder].find((file) => file.id === fileId)?.name ?? fileId;
     dispatch({ type: "set_fake_fs", fs: moveFile(fs, fileId, toFolder) });
     if (fileId === "field-notes-draft.txt" && toFolder === "desktop") {
-      setNotice(`Moved ${name} to Desktop. Nice — a tidy desktop. Cosmetic only; the shift does not track files.`);
+      setNotice(`Moved ${name} to Desktop. Nice — a tidy desktop.`);
     } else {
       setNotice(`Moved ${name} from ${folderLabel(fromFolder)} to ${folderLabel(toFolder)}.`);
     }
@@ -141,7 +141,7 @@ export function FileExplorer({ onOpenFile }: { onOpenFile: (file: OpenableFile) 
           ) : null}
         </ul>
         <span className="visually-hidden" id="os-file-open-hint">
-          Press Enter to open in Notes, Space to select for Cut and Paste. Opening a file never affects the shift.
+          Press Enter to open in Notes, Space to select for Cut and Paste.
         </span>
       </div>
       {selected ? (
