@@ -1,11 +1,31 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { BROWSER_PAGES, pageUrl, useBrowserHistory, type BrowserPageId } from "./browserState.js";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
+import {
+  BROWSER_PAGES,
+  navUrl,
+  resolveAddress,
+  useBrowserHistory,
+} from "./browserState.js";
 import { prefersReducedMotion } from "./reducedMotion.js";
 
 export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
-  const { page, canBack, canForward, back, forward, navigate } = useBrowserHistory("ops");
+  const { nav, page, canBack, canForward, back, forward, openPage, navigate } =
+    useBrowserHistory();
+  const currentUrl = navUrl(nav);
+  const [draft, setDraft] = useState(currentUrl);
+  const addressRef = useRef<HTMLInputElement | null>(null);
   const [reloading, setReloading] = useState(false);
   const timer = useRef<number | null>(null);
+
+  useEffect(() => {
+    setDraft(currentUrl);
+  }, [currentUrl]);
+
   useEffect(
     () => () => {
       if (timer.current !== null) {
@@ -15,6 +35,7 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
     },
     [],
   );
+
   const reload = () => {
     if (reloading) return;
     // Cosmetic only: never touches canonical state. Under reduced-motion the
@@ -26,9 +47,34 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
       setReloading(false);
     }, 400);
   };
-  const openPage = (next: BrowserPageId) => {
+
+  const submitAddress = () => {
+    const trimmed = draft.trim();
+    if (!trimmed) {
+      setDraft(currentUrl);
+      return;
+    }
+    const next = resolveAddress(trimmed);
     navigate(next);
+    // Show the canonical URL for the destination (aliases collapse to the page URL).
+    setDraft(navUrl(next));
   };
+
+  const onAddressKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      submitAddress();
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setDraft(currentUrl);
+      addressRef.current?.select();
+    }
+  };
+
+  const blocked = nav.kind === "blocked" ? nav : null;
+
   return (
     <section aria-label="Browser" className="os-window os-browser">
       <div className="os-browser-bar">
@@ -65,12 +111,22 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
           Address bar
         </label>
         <input
+          aria-describedby="os-address-bar-hint"
           className="os-address-input"
           id="os-address-bar"
-          readOnly
+          onChange={(event) => {
+            setDraft(event.target.value);
+          }}
+          onKeyDown={onAddressKeyDown}
+          ref={addressRef}
+          spellCheck={false}
           type="text"
-          value={pageUrl(page)}
+          value={draft}
         />
+        <span className="visually-hidden" id="os-address-bar-hint">
+          Press Enter to open an approved address. Other addresses are blocked by
+          organization policy.
+        </span>
       </div>
       <nav aria-label="Bookmarks" className="os-bookmarks">
         {BROWSER_PAGES.map((entry) => (
@@ -105,6 +161,27 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
               Office news, lunch menus, and the IT helpdesk live here. Your open
               work is in the SOC Ops Console bookmark.
             </p>
+          </article>
+        ) : null}
+        {blocked ? (
+          <article aria-label="Address unavailable" className="os-blocked">
+            <p className="eyebrow">Managed workstation</p>
+            <h3>Address unavailable</h3>
+            <p className="os-blocked-policy">
+              This destination is blocked by organization policy. This workstation
+              only opens approved Verdaly resources — Mail, Cases, Guides, Team,
+              and Meetings stay available inside the SOC Ops Console.
+            </p>
+            <p className="os-blocked-url">{blocked.url}</p>
+            <button
+              className="os-blocked-return"
+              onClick={() => {
+                openPage("ops");
+              }}
+              type="button"
+            >
+              Return to SOC Ops Console
+            </button>
           </article>
         ) : null}
       </div>

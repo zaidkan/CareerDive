@@ -6,7 +6,7 @@ import {
   type Dispatch,
   type ReactNode,
 } from "react";
-import type { BrowserPageId, OsAppId } from "./os/browserState.js";
+import type { BrowserNav, OsAppId } from "./os/browserState.js";
 import { initialFakeFs, type FakeFs } from "./os/useFakeFs.js";
 
 export interface OpenableFile {
@@ -16,8 +16,15 @@ export interface OpenableFile {
 }
 
 export interface BrowserHistory {
-  entries: BrowserPageId[];
+  entries: BrowserNav[];
   index: number;
+}
+
+function sameNav(a: BrowserNav, b: BrowserNav): boolean {
+  if (a.kind !== b.kind) return false;
+  if (a.kind === "page" && b.kind === "page") return a.page === b.page;
+  if (a.kind === "blocked" && b.kind === "blocked") return a.url === b.url;
+  return false;
 }
 
 /**
@@ -37,7 +44,7 @@ export type OsSessionAction =
   | { type: "set_active_app"; app: OsAppId }
   | { type: "set_open_file"; file: OpenableFile | null }
   | { type: "set_fake_fs"; fs: FakeFs }
-  | { type: "browser_navigate"; page: BrowserPageId }
+  | { type: "browser_navigate"; nav: BrowserNav }
   | { type: "browser_back" }
   | { type: "browser_forward" }
   | { type: "set_notes_text"; text: string };
@@ -47,7 +54,7 @@ export function createInitialOsSession(): OsSessionState {
     activeApp: "browser",
     openFile: null,
     fakeFs: initialFakeFs(),
-    browserHistory: { entries: ["ops"], index: 0 },
+    browserHistory: { entries: [{ kind: "page", page: "ops" }], index: 0 },
     notesText: "",
   };
 }
@@ -72,8 +79,9 @@ export function osSessionReducer(
         0,
         state.browserHistory.index + 1,
       );
-      if (base[base.length - 1] === action.page) return state;
-      const entries = [...base, action.page];
+      const top = base[base.length - 1];
+      if (top && sameNav(top, action.nav)) return state;
+      const entries = [...base, action.nav];
       return {
         ...state,
         browserHistory: { entries, index: entries.length - 1 },

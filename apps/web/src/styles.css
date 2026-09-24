@@ -3554,10 +3554,16 @@ section[aria-labelledby="structured-title"],
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--ink);
-  color: var(--mute);
+  color: var(--paper);
   font-family: var(--font-mono);
   font-size: 0.74rem;
   text-overflow: ellipsis;
+}
+
+.os-address-input:focus {
+  border-color: rgb(110 168 254 / 55%);
+  outline: none;
+  box-shadow: 0 0 0 2px rgb(110 168 254 / 18%);
 }
 
 .os-bookmarks {
@@ -3618,6 +3624,63 @@ section[aria-labelledby="structured-title"],
   color: var(--fog);
   font-size: 0.88rem;
   line-height: 1.55;
+}
+
+.os-blocked {
+  height: 100%;
+  overflow-y: auto;
+  padding: 1.35rem 1.2rem;
+  display: grid;
+  align-content: start;
+  gap: 0.55rem;
+  background:
+    linear-gradient(180deg, rgb(110 168 254 / 6%), transparent 42%),
+    var(--desk);
+}
+
+.os-blocked h3 {
+  margin: 0;
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.os-blocked-policy {
+  max-width: 58ch;
+  margin: 0;
+  color: var(--fog);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.os-blocked-url {
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--mute);
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+}
+
+.os-blocked-return {
+  justify-self: start;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid rgb(110 168 254 / 45%);
+  border-radius: 999px;
+  background: rgb(110 168 254 / 14%);
+  color: var(--paper);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.os-blocked-return:hover {
+  background: rgb(110 168 254 / 22%);
 }
 
 .os-files {
