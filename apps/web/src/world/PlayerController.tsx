@@ -1,4 +1,4 @@
-import { useFrame, useThree } from "@react-three/fiber";
+import { invalidate, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { clampToRoom, collidesAt, type Aabb } from "./collision.js";
@@ -270,6 +270,7 @@ export function PlayerController({
       wasSeated.current = true;
       movingRef.current = false;
       vel.current.set(0, 0, 0);
+      if (seatSettled.current) return;
       seatScratch.current.set(
         seatPosition[0],
         seatPosition[1],
@@ -277,17 +278,12 @@ export function PlayerController({
       );
       lookTarget.current.set(seatLookAt[0], seatLookAt[1], seatLookAt[2]);
       const seatAlpha = expAlpha(SEAT_DAMP, dt);
-      if (!seatSettled.current) {
-        camera.position.lerp(seatScratch.current, seatAlpha);
-        look.current.lerp(lookTarget.current, seatAlpha);
-        if (camera.position.distanceTo(seatScratch.current) < SETTLE) {
-          camera.position.copy(seatScratch.current);
-          look.current.copy(lookTarget.current);
-          seatSettled.current = true;
-        }
-      } else {
+      camera.position.lerp(seatScratch.current, seatAlpha);
+      look.current.lerp(lookTarget.current, seatAlpha);
+      if (camera.position.distanceTo(seatScratch.current) < SETTLE) {
         camera.position.copy(seatScratch.current);
         look.current.copy(lookTarget.current);
+        seatSettled.current = true;
       }
       camera.lookAt(look.current);
       if (camera instanceof THREE.PerspectiveCamera) {
@@ -295,8 +291,15 @@ export function PlayerController({
         if (Math.abs(camera.fov - targetFov) > 0.05) {
           camera.fov += (targetFov - camera.fov) * expAlpha(3, dt);
           camera.updateProjectionMatrix();
+        } else {
+          camera.fov = targetFov;
+          camera.updateProjectionMatrix();
+          seatSettled.current = true;
         }
+      } else {
+        seatSettled.current = true;
       }
+      invalidate();
       return;
     }
 
