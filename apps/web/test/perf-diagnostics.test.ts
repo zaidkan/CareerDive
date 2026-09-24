@@ -17,6 +17,7 @@ describe("performance diagnostics", () => {
     ring.push(0.5);
     ring.push(0.02);
     const stats = ring.stats();
+    expect(stats.fps).toBeCloseTo(50);
     expect(stats.avgFps).toBeCloseTo(50);
     expect(stats.p95Ms).toBeCloseTo(20);
     expect(stats.worstMs).toBeCloseTo(20);
