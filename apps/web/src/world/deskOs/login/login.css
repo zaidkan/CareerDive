@@ -1,0 +1,268 @@
+/* —— Workstation boot + lock/login surface (login-scoped stylesheet) ——
+   Layers the enterprise lock/login redesign on top of the existing
+   desk-os lock classes (kept in use) and adds the boot atmosphere.
+   Tokens come from styles.css; nothing outside the login surface. */
+
+/* State A — surface wake: the monitor comes up softly, no theatrics. */
+.desk-os-lock.login-surface {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1rem;
+  min-height: 100%;
+  padding: 1.1rem 1.3rem 1.3rem;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ink-lift) 55%, transparent),
+      transparent 34%
+    ),
+    var(--desk);
+  animation: login-surface-wake 240ms var(--ease-out) both;
+}
+
+@keyframes login-surface-wake {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* State F — successful unlock: the surface resolves into the desktop. */
+.desk-os-lock.login-surface[data-stage="unlocking"] {
+  animation: login-unlock 180ms ease-in both;
+}
+
+@keyframes login-unlock {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+/* —— Identity band (top) —— */
+
+.login-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.login-mark {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 1px solid var(--line-bright);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.login-identity-copy {
+  display: grid;
+  min-width: 0;
+}
+
+.login-identity-copy strong {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.login-identity-copy small {
+  color: var(--mute);
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.02em;
+}
+
+.login-clock {
+  margin: 0 0 0 auto;
+  color: var(--mute);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+/* —— Lock + sign-in content —— */
+
+.login-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1.2rem 2.4rem;
+  margin-top: auto;
+  margin-bottom: auto;
+  padding-left: clamp(0rem, 4vw, 3.5rem);
+}
+
+.desk-os-lock.login-surface .desk-os-lock-card {
+  width: min(23rem, 100%);
+  padding: 1.2rem 1.3rem 1.3rem;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+}
+
+.login-panel h2 {
+  font-size: 1.45rem;
+  line-height: 1.15;
+}
+
+.login-content .desk-os-bezel-note {
+  margin-top: 2.2rem;
+}
+
+.desk-os-lock.login-surface .desk-os-login-form input {
+  padding: 0.55rem 0.65rem;
+}
+
+.desk-os-lock.login-surface .desk-os-error {
+  font-size: 0.8rem;
+}
+
+/* —— State B —— initialization atmosphere (decorative, non-blocking) —— */
+
+.login-boot {
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  display: grid;
+  place-items: center;
+  background: #07090b;
+  pointer-events: none;
+  animation: login-monitor-wake 220ms var(--ease-out) both;
+}
+
+@keyframes login-monitor-wake {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.login-boot.login-boot-closing {
+  animation: none;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+
+.login-boot-center {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 0 1rem;
+  text-align: center;
+  animation: login-boot-copy 260ms 180ms var(--ease-out) both;
+}
+
+@keyframes login-boot-copy {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.login-boot-title {
+  margin: 0;
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.login-boot-status {
+  margin: 0;
+  color: var(--fog);
+  font-size: 0.8rem;
+}
+
+.login-boot-meta {
+  margin: 0;
+  color: var(--mute);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.login-boot-bar {
+  position: relative;
+  width: 7.5rem;
+  height: 2px;
+  margin-top: 0.5rem;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.login-boot-bar::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  border-radius: 2px;
+  background: var(--phosphor-dim);
+  animation: login-boot-scan 900ms ease-in-out infinite;
+}
+
+@keyframes login-boot-scan {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(280%);
+  }
+}
+
+/* Reduced motion: near-instant transitions, no boot theater. */
+@media (prefers-reduced-motion: reduce) {
+  .desk-os-lock.login-surface,
+  .desk-os-lock.login-surface[data-stage="unlocking"],
+  .login-boot,
+  .login-boot-center {
+    animation: none;
+    transition: none;
+  }
+
+  .login-boot {
+    display: none;
+  }
+}
+
+/* Narrow workstation surfaces (e.g. 1024px and below, in-scene laptop). */
+@media (max-width: 1080px) {
+  .login-content {
+    padding-left: 0;
+    gap: 1rem 1.4rem;
+  }
+}
