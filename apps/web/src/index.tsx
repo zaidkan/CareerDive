@@ -19,6 +19,7 @@ import {
   useMutationCoordinator,
   workplaceMutationKey,
 } from "./useMutationCoordinator.js";
+import "./styles.css";
 
 export function App({
   client = defaultClient,

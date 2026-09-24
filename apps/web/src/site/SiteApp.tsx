@@ -3,9 +3,6 @@ import { SiteChrome } from "./SiteChrome.js";
 import { parseRoute, type SiteRoute } from "./routes.js";
 import { useRouteMeta } from "./seo.js";
 import { LandingPage } from "./pages/LandingPage.js";
-import { HowItWorksPage } from "./pages/HowItWorksPage.js";
-import { TrustPage } from "./pages/TrustPage.js";
-import { FaqPage } from "./pages/FaqPage.js";
 import "./site.css";
 
 /** Start path owns the sim shell — keep it off the landing critical path. */
@@ -13,6 +10,51 @@ const StartPage = lazy(async () => {
   const mod = await import("./pages/StartPage.js");
   return { default: mod.StartPage };
 });
+
+const HowItWorksPage = lazy(async () => {
+  const mod = await import("./pages/HowItWorksPage.js");
+  return { default: mod.HowItWorksPage };
+});
+
+const TrustPage = lazy(async () => {
+  const mod = await import("./pages/TrustPage.js");
+  return { default: mod.TrustPage };
+});
+
+const FaqPage = lazy(async () => {
+  const mod = await import("./pages/FaqPage.js");
+  return { default: mod.FaqPage };
+});
+
+function scheduleIdle(run: () => void, timeout = 2000): () => void {
+  const idle = window as Window & {
+    requestIdleCallback?: (
+      cb: () => void,
+      opts?: { timeout: number },
+    ) => number;
+    cancelIdleCallback?: (handle: number) => void;
+  };
+  if (typeof idle.requestIdleCallback === "function") {
+    const handle = idle.requestIdleCallback(run, { timeout });
+    return () => {
+      idle.cancelIdleCallback(handle);
+    };
+  }
+  const handle = window.setTimeout(run, 400);
+  return () => {
+    window.clearTimeout(handle);
+  };
+}
+
+/** Warm the start/film route after landing paint without blocking first content. */
+function usePrefetchStartChunk(route: SiteRoute): void {
+  useEffect(() => {
+    if (route !== "/") return;
+    return scheduleIdle(() => {
+      void import("./pages/StartPage.js");
+    }, 3000);
+  }, [route]);
+}
 
 export function SiteApp({ initialRoute }: { initialRoute?: SiteRoute }) {
   const [route, setRoute] = useState<SiteRoute>(
@@ -44,13 +86,28 @@ export function SiteApp({ initialRoute }: { initialRoute?: SiteRoute }) {
   }, [route, initialRoute]);
 
   useRouteMeta(route);
+  usePrefetchStartChunk(route);
+
+  const pageFallback = <p className="mode-note">Loading…</p>;
 
   return (
     <SiteChrome route={route}>
       {route === "/" ? <LandingPage /> : null}
-      {route === "/how-it-works" ? <HowItWorksPage /> : null}
-      {route === "/trust" ? <TrustPage /> : null}
-      {route === "/faq" ? <FaqPage /> : null}
+      {route === "/how-it-works" ? (
+        <Suspense fallback={pageFallback}>
+          <HowItWorksPage />
+        </Suspense>
+      ) : null}
+      {route === "/trust" ? (
+        <Suspense fallback={pageFallback}>
+          <TrustPage />
+        </Suspense>
+      ) : null}
+      {route === "/faq" ? (
+        <Suspense fallback={pageFallback}>
+          <FaqPage />
+        </Suspense>
+      ) : null}
       {route === "/start" ? (
         <Suspense fallback={<p className="mode-note">Loading start…</p>}>
           <StartPage />

@@ -82,24 +82,56 @@ function ChapterNum({ n }: { n: string }) {
 export function LandingPage() {
   const hasSeenFilm = useHasSeenFilm();
   const reducedMotion = usePrefersReducedMotion();
+  const [ambientVideoReady, setAmbientVideoReady] = useState(false);
+
+  // Mount the ambient hero video only after idle so the 2MB+ file never races
+  // JS/CSS on first paint. Same file, same look — just later.
+  useEffect(() => {
+    if (reducedMotion || ambientVideoReady) return;
+    const idle = window as Window & {
+      requestIdleCallback?: (
+        cb: () => void,
+        opts?: { timeout: number },
+      ) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    if (typeof idle.requestIdleCallback === "function") {
+      const handle = idle.requestIdleCallback(
+        () => {
+          setAmbientVideoReady(true);
+        },
+        { timeout: 2500 },
+      );
+      return () => {
+        idle.cancelIdleCallback(handle);
+      };
+    }
+    const handle = window.setTimeout(() => {
+      setAmbientVideoReady(true);
+    }, 600);
+    return () => {
+      window.clearTimeout(handle);
+    };
+  }, [ambientVideoReady, reducedMotion]);
+
   return (
     <>
       <section className="hero" aria-labelledby="home-hero">
         <div className="hero-media">
-          {reducedMotion ? null : (
+          {!reducedMotion && ambientVideoReady ? (
             <video
               className="hero-media-video"
               autoPlay
               muted
               loop
               playsInline
-              preload="metadata"
+              preload="none"
               aria-hidden="true"
               tabIndex={-1}
             >
               <source src="/hero-ambient.mp4" type="video/mp4" />
             </video>
-          )}
+          ) : null}
           <div className="hero-copy">
             <p className="eyebrow">Career Expo · a calm way to try work</p>
             <h1 id="home-hero">Try day one as a cybersecurity analyst</h1>

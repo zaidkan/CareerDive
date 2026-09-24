@@ -1,0 +1,221 @@
+/* Critical path only: tokens, base layout, and site chrome shared by the
+   public pages. Full sim/desktop CSS lives in styles.css and loads with App. */
+
+:root {
+  --ink: #0d0f12;
+  --ink-lift: #14171b;
+  --desk: #16191d;
+  --panel: #1e2227;
+  --line: #2a2f36;
+  --line-bright: #3d444d;
+  --phosphor: #6ea8fe;
+  --phosphor-dim: #9aa0a6;
+  --signal: #2dd4bf;
+  --signal-hot: #f26d5f;
+  --paper: #e6e8eb;
+  --paper-ink: #17191d;
+  --fog: #c3c9d1;
+  --mute: #9aa0a6;
+  --ok: #34d399;
+  --cta: #2563eb;
+  --cta-hover: #1d4ed8;
+  --mode-surface: #17302d;
+  --mode-ink: #dce9e4;
+  --mode-line: #8aa69e;
+  --mode-active-bg: #f3d47a;
+  --mode-active-ink: #152b27;
+  --font-display: "Syne", "DM Sans", system-ui, sans-serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 18%);
+  --shadow-lift: 0 10px 28px rgb(0 0 0 / 28%);
+  --grid: rgb(255 255 255 / 7%);
+  color: var(--fog);
+  background: var(--ink);
+  font-family: var(--font-body);
+  font-synthesis: none;
+  line-height: 1.55;
+  font-size: 16px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Light warm theme. Dark SOC remains default; toggle sets data-theme="light". */
+:root[data-theme="light"] {
+  --ink: #faf6ef;
+  --ink-lift: #f3ecdf;
+  --desk: #fffdf8;
+  --panel: #ffffff;
+  --line: #e3d9c7;
+  --line-bright: #c9bda6;
+  --phosphor: #1d4ed8;
+  --phosphor-dim: #5b6470;
+  --signal: #0f766e;
+  --signal-hot: #b91c1c;
+  --paper: #1c1917;
+  --paper-ink: #1c1917;
+  --fog: #44403c;
+  --mute: #57534e;
+  --ok: #047857;
+  --cta: #1d4ed8;
+  --cta-hover: #1e40af;
+  --mode-surface: #fffdf8;
+  --mode-ink: #1c1917;
+  --mode-line: #a8a29e;
+  --mode-active-bg: #1c1917;
+  --mode-active-ink: #faf6ef;
+  --shadow-soft: 0 1px 2px rgb(28 25 23 / 10%);
+  --shadow-lift: 0 10px 28px rgb(28 25 23 / 14%);
+  --grid: rgb(28 25 23 / 7%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  overflow-x: clip;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, #111418 0%, var(--ink) 45%, #0a0c0e 100%);
+  background-attachment: fixed;
+}
+
+:root[data-theme="light"] body {
+  background:
+    linear-gradient(180deg, #fffdf8 0%, var(--ink) 55%, #f3ecdf 100%);
+  background-attachment: fixed;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 40;
+}
+
+button {
+  color: inherit;
+  font: inherit;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--phosphor);
+  outline-offset: 3px;
+}
+
+main {
+  position: relative;
+  width: min(1240px, calc(100% - 1.5rem));
+  margin: 0 auto;
+  padding: 1.35rem 0 5.5rem;
+  z-index: 1;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  max-width: 18ch;
+  margin-bottom: 0.65rem;
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: clamp(2.15rem, 5.2vw, 3.35rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.site-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--signal) 30%, transparent);
+  border-radius: 4px;
+  color: var(--signal);
+  background: color-mix(in srgb, var(--signal) 8%, transparent);
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.site-chip-muted {
+  border-color: var(--line);
+  color: var(--mute);
+  background: color-mix(in srgb, var(--paper) 4%, transparent);
+}
+
+.eyebrow {
+  margin-bottom: 0.35rem;
+  color: var(--mute);
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.privacy-note {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--mute);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+
+  body::before {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  button {
+    transition:
+      border-color 140ms ease,
+      background 140ms ease,
+      box-shadow 140ms ease,
+      transform 140ms ease;
+  }
+}

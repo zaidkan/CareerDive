@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { SiteApp } from "./site/SiteApp.js";
-import "./styles.css";
+import "./foundation.css";
 
 const root = document.getElementById("root");
 if (!root) {

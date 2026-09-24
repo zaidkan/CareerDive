@@ -16,6 +16,10 @@ test-results/
 # Local code-intelligence / editor settings
 .kiro/settings/
 
+# Local tool state / rendered media not wired into the site yet.
+.impeccable/
+apps/web/public/hero-sting.mp4
+
 # Personal developer/orchestration infra — NOT part of the public product.
 # Lives on the private brain branch; must never re-enter the public main line.
 .codex/
