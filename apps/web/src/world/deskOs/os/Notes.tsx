@@ -1,4 +1,5 @@
 import { useOsSession, type OpenableFile } from "../osSession.js";
+import { fileKindLabel } from "./useFakeFs.js";
 
 export function Notes({ openFile }: { openFile: OpenableFile | null }) {
   const { state, dispatch } = useOsSession();
@@ -8,8 +9,15 @@ export function Notes({ openFile }: { openFile: OpenableFile | null }) {
       <p className="eyebrow">Scratch pad</p>
       <h3 className="os-notes-title">Notes</h3>
       {openFile ? (
-        <article aria-label={`Opened file ${openFile.name}`} className="os-open-file">
-          <p className="os-open-file-name">{openFile.name}</p>
+        <article
+          aria-label={`Opened file ${openFile.name}`}
+          className="os-open-file"
+          data-filetype={openFile.kind}
+        >
+          <p className="os-open-file-name">
+            {openFile.name}
+            <span className="os-open-file-kind">{fileKindLabel(openFile.kind)}</span>
+          </p>
           <p className="os-open-file-body">{openFile.body}</p>
         </article>
       ) : null}
@@ -26,7 +34,9 @@ export function Notes({ openFile }: { openFile: OpenableFile | null }) {
         rows={8}
         value={text}
       />
-      <p className="os-status-note">Private scratch — only you can see this.</p>
+      <p className="os-status-note">
+        Private scratch — not case evidence. Only you can see this.
+      </p>
     </section>
   );
 }

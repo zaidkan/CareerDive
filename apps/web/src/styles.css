@@ -3888,6 +3888,7 @@ section[aria-labelledby="structured-title"],
 
 .os-toolbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.35rem;
   padding: 0.5rem 0.7rem;
   border-bottom: 1px solid var(--line);
@@ -3897,6 +3898,72 @@ section[aria-labelledby="structured-title"],
 .os-toolbar .desk-os-ghost:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+.os-path {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.os-path-root {
+  color: var(--mute);
+}
+
+.os-path-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.os-path-sep {
+  color: var(--mute);
+}
+
+.os-path-crumb {
+  max-width: 14rem;
+  overflow: hidden;
+  padding: 0.15rem 0.35rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fog);
+  font-family: inherit;
+  font-size: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.os-path-crumb:hover,
+.os-path-crumb[aria-current="page"] {
+  border-color: var(--line-bright);
+  background: var(--panel);
+  color: var(--paper);
+}
+
+.os-path-crumb:focus-visible {
+  outline: 2px solid var(--phosphor);
+  outline-offset: 1px;
+}
+
+.os-open-file-kind {
+  margin-left: 0.45rem;
+  padding: 0.05rem 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--mute);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .os-files-body {
@@ -3977,6 +4044,9 @@ section[aria-labelledby="structured-title"],
   font-family: var(--font-mono);
   font-size: 0.78rem;
   font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .os-file span {
