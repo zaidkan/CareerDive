@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   createQualityMachine,
   isLowEndDevice,
@@ -7,19 +7,16 @@ import {
   smoothedFps,
   stepQuality,
   type NavBits,
+  type QualityMachine,
 } from "../src/world/effects/useAdaptiveQuality.js";
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-});
 
 const FPS_60 = 1 / 60;
 const FPS_30 = 1 / 30;
 const FPS_58 = 1 / 58;
-const FPS_44 = 1 / 44;
+const FPS_56 = 1 / 56;
 
 function drive(
-  machine: ReturnType<typeof createQualityMachine>,
+  machine: QualityMachine,
   delta: number,
   seconds: number,
   hidden = false,
@@ -58,157 +55,188 @@ describe("isLowEndDevice", () => {
 
 describe("quality machine", () => {
   it("uses a fixed-size ring buffer", () => {
-    const machine = createQualityMachine({ startOn: true, allowRestore: true });
+    const machine = createQualityMachine({ startTier: 2, allowRestore: true });
     drive(machine, FPS_60, 3);
     expect(machine.sampler.deltas.length).toBe(QUALITY.sampleCount);
     expect(machine.sampler.count).toBe(QUALITY.sampleCount);
   });
 
-  it("starts enabled on capable devices", () => {
-    const machine = createQualityMachine({ startOn: true, allowRestore: true });
-    expect(machine.composerOn).toBe(true);
+  it("starts capable devices at high quality", () => {
+    const machine = createQualityMachine({ startTier: 2, allowRestore: true });
+    expect(machine.tier).toBe(2);
   });
 
-  it("does not disable during warmup even at 30 fps", () => {
-    const machine = createQualityMachine({ startOn: true, allowRestore: true });
+  it("does not degrade during warmup", () => {
+    const machine = createQualityMachine({ startTier: 2, allowRestore: true });
     const changes = drive(machine, FPS_30, QUALITY.warmupSeconds);
     expect(changes).toBe(0);
-    expect(machine.composerOn).toBe(true);
+    expect(machine.tier).toBe(2);
   });
 
-  it("drops off after smoothed fps stays below 45 for ~1.5s", () => {
-    const machine = createQualityMachine({ startOn: true, allowRestore: true });
+  it("drops one tier after sustained sub-55 fps", () => {
+    const machine = createQualityMachine({ startTier: 2, allowRestore: true });
     drive(machine, FPS_30, QUALITY.warmupSeconds);
-    const early = drive(machine, FPS_30, 1.0);
-    expect(early).toBe(0);
-    expect(machine.composerOn).toBe(true);
-    drive(machine, FPS_30, 0.7);
-    expect(machine.composerOn).toBe(false);
-    expect(smoothedFps(machine.sampler)).toBeLessThan(QUALITY.disableFps);
+    expect(drive(machine, FPS_30, 1)).toBe(0);
+    expect(machine.tier).toBe(2);
+    drive(machine, FPS_30, QUALITY.degradeHoldSeconds + 0.2);
+    expect(machine.tier).toBe(1);
   });
 
-  it("does not drop from a single long hitch", () => {
-    const machine = createQualityMachine({ startOn: true, allowRestore: true });
+  it("continues dropping to low after another sustained interval", () => {
+    const machine = createQualityMachine({ startTier: 2, allowRestore: true });
+    drive(machine, FPS_30, QUALITY.warmupSeconds + QUALITY.degradeHoldSeconds + 0.2);
+    drive(machine, FPS_30, QUALITY.degradeHoldSeconds + 0.2);
+    expect(machine.tier).toBe(0);
+  });
+
+  it("does not count a single long hitch", () => {
+    const machine = createQualityMachine({ startTier: 2, allowRestore: true });
     drive(machine, FPS_60, QUALITY.warmupSeconds + 0.3);
     expect(stepQuality(machine, 0.5, false)).toBe(false);
-    expect(machine.composerOn).toBe(true);
+    expect(machine.tier).toBe(2);
   });
 
-  it("does not count frames while the document is hidden", () => {
-    const machine = createQualityMachine({ startOn: true, allowRestore: true });
+  it("does not count hidden frames", () => {
+    const machine = createQualityMachine({ startTier: 2, allowRestore: true });
     drive(machine, FPS_30, QUALITY.warmupSeconds);
-    const changes = drive(machine, FPS_30, 3, true);
-    expect(changes).toBe(0);
-    expect(machine.composerOn).toBe(true);
+    const count = machine.sampler.count;
+    expect(drive(machine, FPS_30, 3, true)).toBe(0);
+    expect(machine.sampler.count).toBe(count);
+    expect(machine.tier).toBe(2);
   });
 
-  it("restores after smoothed fps holds near 58 for several seconds", () => {
-    const machine = createQualityMachine({ startOn: true, allowRestore: true });
-    drive(machine, FPS_30, QUALITY.warmupSeconds + QUALITY.disableHoldSeconds + 0.3);
-    expect(machine.composerOn).toBe(false);
-    drive(machine, FPS_58, 2);
-    expect(machine.composerOn).toBe(false);
-    drive(machine, FPS_58, QUALITY.restoreHoldSeconds);
-    expect(machine.composerOn).toBe(true);
-  });
-
-  it("does not restore on a noisy 50 fps line", () => {
-    const machine = createQualityMachine({ startOn: true, allowRestore: true });
-    drive(machine, FPS_44, QUALITY.warmupSeconds + QUALITY.disableHoldSeconds + 0.3);
-    expect(machine.composerOn).toBe(false);
-    drive(machine, 1 / 50, QUALITY.restoreHoldSeconds + 1);
-    expect(machine.composerOn).toBe(false);
-  });
-
-  it("never turns on when the device started low-end", () => {
-    const machine = createQualityMachine({ startOn: false, allowRestore: false });
-    expect(machine.composerOn).toBe(false);
-    drive(machine, FPS_60, QUALITY.warmupSeconds + QUALITY.restoreHoldSeconds + 1);
-    expect(machine.composerOn).toBe(false);
-  });
-
-  it("only reports a change when composer on/off flips", () => {
-    const machine = createQualityMachine({ startOn: true, allowRestore: true });
-    expect(stepQuality(machine, FPS_60, false)).toBe(false);
+  it("restores one tier after sustained 58 fps", () => {
+    const machine = createQualityMachine({ startTier: 1, allowRestore: true });
     drive(machine, FPS_30, QUALITY.warmupSeconds);
-    const changes = drive(machine, FPS_30, QUALITY.disableHoldSeconds + 0.4);
-    expect(changes).toBe(1);
-    expect(stepQuality(machine, FPS_30, false)).toBe(false);
+    drive(machine, FPS_30, QUALITY.degradeHoldSeconds + 0.2);
+    expect(machine.tier).toBe(0);
+    drive(machine, FPS_58, QUALITY.restoreHoldSeconds + 1);
+    expect(machine.tier).toBe(1);
+  });
+
+  it("does not restore in the hysteresis dead zone", () => {
+    const machine = createQualityMachine({ startTier: 1, allowRestore: true });
+    drive(machine, FPS_60, QUALITY.warmupSeconds);
+    expect(drive(machine, FPS_56, QUALITY.restoreHoldSeconds + 1)).toBe(0);
+    expect(machine.tier).toBe(1);
+  });
+
+  it("does not sample when a low-end machine cannot restore", () => {
+    const machine = createQualityMachine({ startTier: 0, allowRestore: false });
+    drive(machine, FPS_60, 5);
+    expect(machine.tier).toBe(0);
+    expect(machine.sampler.count).toBe(0);
+  });
+
+  it("reports a smoothed frame rate", () => {
+    const machine = createQualityMachine({ startTier: 2, allowRestore: true });
+    drive(machine, FPS_60, 2);
+    expect(smoothedFps(machine.sampler)).toBeGreaterThan(59);
   });
 });
 
 describe("resolveEffects", () => {
-  it("keeps bloom and vignette while dropping grain for reduced motion", () => {
+  it("keeps the high walking scene at bounded DPR", () => {
     expect(
       resolveEffects({
-        composerOn: true,
+        tier: 2,
         seated: false,
-        reducedMotion: true,
+        reducedMotion: false,
         lowEnd: false,
       }),
     ).toEqual({
+      tier: 2,
       composer: true,
       grain: false,
       cheapGlass: true,
-      dustMul: 0.5,
+      dustMul: 1,
       contactShadows: true,
       dpr: 1,
       directionalShadows: true,
+      ambientEnabled: true,
+      ambientHz: 12,
     });
   });
 
-  it("turns the composer off while seated so desk UI text stays sharp", () => {
+  it("uses the medium tier without the composer", () => {
     expect(
       resolveEffects({
-        composerOn: true,
-        seated: true,
-        reducedMotion: false,
-        lowEnd: false,
-      }),
-    ).toEqual({
-      composer: false,
-      grain: false,
-      cheapGlass: true,
-      dustMul: 0,
-      contactShadows: false,
-      dpr: 1,
-      directionalShadows: false,
-    });
-  });
-
-  it("allows grain only when the composer is actually running", () => {
-    expect(
-      resolveEffects({
-        composerOn: false,
-        seated: false,
-        reducedMotion: false,
-        lowEnd: false,
-      }),
-    ).toEqual({
-      composer: false,
-      grain: false,
-      cheapGlass: true,
-      dustMul: 0,
-      contactShadows: false,
-      dpr: 1,
-      directionalShadows: false,
-    });
-  });
-
-  it("drops particles, DPR, and directional shadows with the composer", () => {
-    expect(
-      resolveEffects({
-        composerOn: false,
+        tier: 1,
         seated: false,
         reducedMotion: false,
         lowEnd: false,
       }),
     ).toMatchObject({
+      tier: 1,
       composer: false,
+      grain: false,
+      dustMul: 0.5,
+      contactShadows: false,
+      dpr: 1,
+      directionalShadows: true,
+      ambientEnabled: true,
+      ambientHz: 8,
+    });
+  });
+
+  it("freezes effects and ambient motion on the low tier", () => {
+    expect(
+      resolveEffects({
+        tier: 0,
+        seated: false,
+        reducedMotion: false,
+        lowEnd: true,
+      }),
+    ).toEqual({
+      tier: 0,
+      composer: false,
+      grain: false,
+      cheapGlass: true,
       dustMul: 0,
       contactShadows: false,
       dpr: 1,
       directionalShadows: false,
+      ambientEnabled: false,
+      ambientHz: 6,
+    });
+  });
+
+  it("drops the composer and scene motion while seated", () => {
+    expect(
+      resolveEffects({
+        tier: 2,
+        seated: true,
+        reducedMotion: false,
+        lowEnd: false,
+      }),
+    ).toEqual({
+      tier: 2,
+      composer: false,
+      grain: false,
+      cheapGlass: true,
+      dustMul: 0,
+      contactShadows: false,
+      dpr: 1,
+      directionalShadows: false,
+      ambientEnabled: false,
+      ambientHz: 6,
+    });
+  });
+
+  it("halves particles for reduced motion", () => {
+    expect(
+      resolveEffects({
+        tier: 2,
+        seated: false,
+        reducedMotion: true,
+        lowEnd: false,
+      }),
+    ).toMatchObject({
+      composer: true,
+      grain: false,
+      dustMul: 0.5,
+      contactShadows: true,
+      ambientEnabled: true,
     });
   });
 });

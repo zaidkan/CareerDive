@@ -6,6 +6,7 @@ import { PlayerController } from "../src/world/PlayerController.js";
 const harness = vi.hoisted(() => ({
   frames: [] as Array<(state: unknown, dt: number) => void>,
   cleanups: [] as Array<() => void>,
+  invalidates: 0,
   scene: {},
 }));
 vi.mock("react", async (original) => ({
@@ -21,7 +22,9 @@ vi.mock("@react-three/fiber", () => ({
   useFrame: (frame: (state: unknown, dt: number) => void) => {
     harness.frames.push(frame);
   },
-  invalidate: () => undefined,
+  invalidate: () => {
+    harness.invalidates += 1;
+  },
 }));
 afterEach(() => {
   harness.cleanups.forEach((cleanup) => {
@@ -29,6 +32,7 @@ afterEach(() => {
   });
   harness.cleanups = [];
   harness.frames = [];
+  harness.invalidates = 0;
 });
 function setup(props: Partial<Parameters<typeof PlayerController>[0]> = {}) {
   const camera = new PerspectiveCamera();
@@ -104,5 +108,14 @@ describe("office movement", () => {
     const beforeShift = camera.position.z;
     tick();
     expect(beforeShift - camera.position.z).toBeCloseTo(normalDistance, 1);
+  });
+  it("stops invalidating once the seated pose settles", () => {
+    setup({ seated: true });
+    tick();
+    tick();
+    expect(harness.invalidates).toBeGreaterThan(0);
+    const settled = harness.invalidates;
+    tick();
+    expect(harness.invalidates).toBe(settled);
   });
 });

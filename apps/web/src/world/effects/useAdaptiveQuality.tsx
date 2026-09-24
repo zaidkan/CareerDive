@@ -14,15 +14,23 @@ export type NavBits = {
   deviceMemory?: number;
 };
 
+/**
+ * Frame-time hysteresis tuned for a true smooth-60 target.
+ * A 46–50 fps line still feels choppy, so we degrade at 55 rather than 45,
+ * and require a solid 58+ before climbing back — one tier at a time.
+ */
 export const QUALITY = {
   sampleCount: 48,
   warmupSeconds: 0.5,
-  disableFps: 45,
-  disableHoldSeconds: 1.5,
+  degradeFps: 55,
+  degradeHoldSeconds: 1.5,
   restoreFps: 58,
   restoreHoldSeconds: 4,
   maxDeltaSeconds: 0.1,
 } as const;
+
+/** 0 = LOW, 1 = MEDIUM, 2 = HIGH. */
+export type QualityTier = 0 | 1 | 2;
 
 export type FpsSampler = {
   deltas: Float32Array;
@@ -32,7 +40,7 @@ export type FpsSampler = {
 
 export type QualityMachine = {
   sampler: FpsSampler;
-  composerOn: boolean;
+  tier: QualityTier;
   allowRestore: boolean;
   warmed: number;
   lowHold: number;
@@ -40,6 +48,7 @@ export type QualityMachine = {
 };
 
 export type AdaptiveQuality = {
+  tier: QualityTier;
   composer: boolean;
   grain: boolean;
   cheapGlass: boolean;
@@ -47,9 +56,14 @@ export type AdaptiveQuality = {
   contactShadows: boolean;
   dpr: 1 | 1.25;
   directionalShadows: boolean;
+  /** Cosmetic emitters (LEDs, screen breath, fans) run only when true. */
+  ambientEnabled: boolean;
+  /** Shared cadence for cosmetic updates — never needs full frame rate. */
+  ambientHz: number;
 };
 
 export const DEFAULT_QUALITY: AdaptiveQuality = {
+  tier: 0,
   composer: false,
   grain: false,
   cheapGlass: true,
@@ -57,6 +71,8 @@ export const DEFAULT_QUALITY: AdaptiveQuality = {
   contactShadows: false,
   dpr: 1,
   directionalShadows: false,
+  ambientEnabled: false,
+  ambientHz: 8,
 };
 
 /**
@@ -86,7 +102,7 @@ export function isLowEndDevice(nav: NavBits | undefined): boolean {
 }
 
 export function createQualityMachine(opts: {
-  startOn: boolean;
+  startTier: QualityTier;
   allowRestore: boolean;
 }): QualityMachine {
   return {
@@ -95,7 +111,7 @@ export function createQualityMachine(opts: {
       write: 0,
       count: 0,
     },
-    composerOn: opts.startOn,
+    tier: opts.startTier,
     allowRestore: opts.allowRestore,
     warmed: 0,
     lowHold: 0,
@@ -121,13 +137,12 @@ export function smoothedFps(sampler: FpsSampler): number {
 }
 
 /**
- * Hysteresis: drop below 45 fps for 1.5s to disable, then require ~58 fps for
- * 4s to come back. Restore (not a one-way latch) so a shader-compile hitch
- * after warmup does not permanently strip the look; the 45/58 gap plus long
- * holds stop a noisy 50 fps line from flickering. Large deltas and hidden
- * documents are ignored so an alt-tab does not count as a GPU failure.
- * Low-end devices start off and `allowRestore` is false, so they never pay
- * for the postprocessing chunk.
+ * Step the tier machine. Returns true only when the tier actually changed.
+ *
+ * Hysteresis: sustained <55 fps for 1.5s drops one tier; sustained ≥58 fps
+ * for 4s raises one tier (never skips). Large deltas and hidden documents
+ * are ignored so alt-tab does not count as a GPU failure. Low-end devices
+ * start at LOW with restore disabled, so they never pay for bloom.
  */
 export function stepQuality(
   machine: QualityMachine,
@@ -135,6 +150,7 @@ export function stepQuality(
   hidden: boolean,
 ): boolean {
   if (hidden || delta <= 0 || delta > QUALITY.maxDeltaSeconds) return false;
+  if (!machine.allowRestore && machine.tier === 0) return false;
   pushDelta(machine.sampler, delta);
   if (machine.warmed < QUALITY.warmupSeconds) {
     machine.warmed += delta;
@@ -142,57 +158,78 @@ export function stepQuality(
   }
 
   const fps = smoothedFps(machine.sampler);
-  const wasOn = machine.composerOn;
+  const before = machine.tier;
 
-  if (machine.composerOn) {
-    if (fps < QUALITY.disableFps) {
-      machine.lowHold += delta;
-      machine.highHold = 0;
-      if (machine.lowHold >= QUALITY.disableHoldSeconds) {
-        machine.composerOn = false;
-        machine.lowHold = 0;
-        machine.highHold = 0;
-      }
-    } else {
+  // Dead zone (degradeFps ≤ fps < restoreFps) resets both holds so a mixed
+  // line never accumulates a partial degrade or restore.
+  if (fps < QUALITY.degradeFps) {
+    machine.lowHold += delta;
+    machine.highHold = 0;
+    if (machine.lowHold >= QUALITY.degradeHoldSeconds && machine.tier > 0) {
+      machine.tier = (machine.tier - 1) as QualityTier;
       machine.lowHold = 0;
-    }
-  } else if (machine.allowRestore) {
-    if (fps >= QUALITY.restoreFps) {
-      machine.highHold += delta;
-      machine.lowHold = 0;
-      if (machine.highHold >= QUALITY.restoreHoldSeconds) {
-        machine.composerOn = true;
-        machine.highHold = 0;
-        machine.lowHold = 0;
-      }
-    } else {
       machine.highHold = 0;
     }
+  } else if (
+    machine.allowRestore &&
+    fps >= QUALITY.restoreFps &&
+    machine.tier < 2
+  ) {
+    machine.highHold += delta;
+    machine.lowHold = 0;
+    if (machine.highHold >= QUALITY.restoreHoldSeconds) {
+      machine.tier = (machine.tier + 1) as QualityTier;
+      machine.highHold = 0;
+      machine.lowHold = 0;
+    }
+  } else {
+    machine.lowHold = 0;
+    machine.highHold = 0;
   }
 
-  return machine.composerOn !== wasOn;
+  return machine.tier !== before;
 }
 
 export function resolveEffects(input: {
-  composerOn: boolean;
+  tier: QualityTier;
   seated: boolean;
   reducedMotion: boolean;
   lowEnd: boolean;
 }): AdaptiveQuality {
-  const composer = input.composerOn && !input.seated;
-  const lean =
-    input.seated || input.lowEnd || input.reducedMotion || !input.composerOn;
-  const fullScene = !input.seated && !input.lowEnd && input.composerOn;
+  const walking = !input.seated;
+  const leanMotion =
+    input.seated || input.reducedMotion || input.lowEnd || input.tier < 2;
+
+  if (!walking || input.tier === 0) {
+    return {
+      tier: input.tier,
+      composer: false,
+      grain: false,
+      cheapGlass: true,
+      dustMul: 0,
+      contactShadows: false,
+      dpr: 1,
+      directionalShadows: false,
+      // Seated Desk OS still animates figure/hands via their own flags;
+      // decorative emitters stay frozen.
+      ambientEnabled: walking && input.tier > 0,
+      ambientHz: 6,
+    };
+  }
+
+  const high = input.tier === 2;
   return {
-    composer,
-    grain: composer && !input.reducedMotion,
+    tier: input.tier,
+    composer: high,
+    grain: false,
     cheapGlass: true,
-    dustMul:
-      input.seated || input.lowEnd || !input.composerOn ? 0 : lean ? 0.5 : 1,
-    contactShadows: fullScene,
+    dustMul: high ? (leanMotion ? 0.5 : 1) : 0.5,
+    contactShadows: high,
     // Avoid supersampling the dense room; quality still scales effects/shadows.
     dpr: 1,
-    directionalShadows: fullScene,
+    directionalShadows: true,
+    ambientEnabled: true,
+    ambientHz: high ? 12 : 8,
   };
 }
 
@@ -249,11 +286,11 @@ export function useAdaptiveQuality(seated: boolean): AdaptiveQuality {
     () => false,
   );
   const [lowEnd] = useState(() => isLowEndDevice(readNavigator()));
-  const [composerOn, setComposerOn] = useState(() => !lowEnd);
+  const [tier, setTier] = useState<QualityTier>(() => (lowEnd ? 0 : 2));
   const machineRef = useRef<QualityMachine | undefined>(undefined);
   if (machineRef.current === undefined) {
     machineRef.current = createQualityMachine({
-      startOn: !lowEnd,
+      startTier: lowEnd ? 0 : 2,
       allowRestore: !lowEnd,
     });
   }
@@ -266,10 +303,10 @@ export function useAdaptiveQuality(seated: boolean): AdaptiveQuality {
     if (machine === undefined) return;
     const hidden = typeof document !== "undefined" && document.hidden;
     if (!stepQuality(machine, delta, hidden)) return;
-    setComposerOn(machine.composerOn);
+    setTier(machine.tier);
   });
 
-  const quality = resolveEffects({ composerOn, seated, reducedMotion, lowEnd });
+  const quality = resolveEffects({ tier, seated, reducedMotion, lowEnd });
   useEffect(() => {
     setDpr(quality.dpr);
   }, [quality.dpr, setDpr]);
