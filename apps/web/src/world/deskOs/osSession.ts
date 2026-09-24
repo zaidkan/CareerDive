@@ -7,12 +7,19 @@ import {
   type ReactNode,
 } from "react";
 import type { BrowserNav, OsAppId } from "./os/browserState.js";
-import { initialFakeFs, type FakeFs } from "./os/useFakeFs.js";
+import {
+  FS_FALLBACK_FOLDER,
+  initialFakeFs,
+  type FakeFs,
+  type FsFileKind,
+  type FsFolderId,
+} from "./os/useFakeFs.js";
 
 export interface OpenableFile {
   id: string;
   name: string;
   body: string;
+  kind: FsFileKind;
 }
 
 export interface BrowserHistory {
@@ -38,6 +45,9 @@ export interface OsSessionState {
   fakeFs: FakeFs;
   browserHistory: BrowserHistory;
   notesText: string;
+  /** File Explorer folder + selection survive DeskOs remounts (session-scoped). */
+  explorerFolder: FsFolderId;
+  explorerSelected: string | null;
 }
 
 export type OsSessionAction =
@@ -47,7 +57,9 @@ export type OsSessionAction =
   | { type: "browser_navigate"; nav: BrowserNav }
   | { type: "browser_back" }
   | { type: "browser_forward" }
-  | { type: "set_notes_text"; text: string };
+  | { type: "set_notes_text"; text: string }
+  | { type: "set_explorer_folder"; folder: FsFolderId }
+  | { type: "set_explorer_selected"; fileId: string | null };
 
 export function createInitialOsSession(): OsSessionState {
   return {
@@ -56,6 +68,8 @@ export function createInitialOsSession(): OsSessionState {
     fakeFs: initialFakeFs(),
     browserHistory: { entries: [{ kind: "page", page: "ops" }], index: 0 },
     notesText: "",
+    explorerFolder: FS_FALLBACK_FOLDER,
+    explorerSelected: null,
   };
 }
 
@@ -110,6 +124,14 @@ export function osSessionReducer(
       return state.notesText === action.text
         ? state
         : { ...state, notesText: action.text };
+    case "set_explorer_folder":
+      return state.explorerFolder === action.folder
+        ? state
+        : { ...state, explorerFolder: action.folder };
+    case "set_explorer_selected":
+      return state.explorerSelected === action.fileId
+        ? state
+        : { ...state, explorerSelected: action.fileId };
     default:
       return state;
   }
