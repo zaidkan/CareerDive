@@ -36,10 +36,12 @@ export class FrameTimeRing {
   private sorted: Float32Array = new Float32Array(SAMPLE_WINDOW);
   private write = 0;
   private count = 0;
+  private latest = 0;
 
   push(delta: number): void {
     if (!(delta > 0) || delta > 0.25) return;
     this.deltas[this.write] = delta;
+    this.latest = delta;
     this.write = (this.write + 1) % SAMPLE_WINDOW;
     if (this.count < SAMPLE_WINDOW) this.count += 1;
   }
@@ -62,7 +64,7 @@ export class FrameTimeRing {
     view.sort();
     const p95 = view[Math.min(view.length - 1, Math.floor(view.length * 0.95))];
     return {
-      fps: 1 / (view[view.length - 1] ?? mean),
+      fps: this.latest > 0 ? 1 / this.latest : 0,
       avgFps: mean > 0 ? 1 / mean : 0,
       p95Ms: (p95 ?? mean) * 1000,
       worstMs: worst * 1000,

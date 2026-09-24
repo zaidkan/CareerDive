@@ -236,7 +236,7 @@ describe("resolveEffects", () => {
       grain: false,
       dustMul: 0.5,
       contactShadows: true,
-      ambientEnabled: true,
+      ambientEnabled: false,
     });
   });
 });

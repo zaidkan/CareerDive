@@ -228,7 +228,7 @@ export function resolveEffects(input: {
     // Avoid supersampling the dense room; quality still scales effects/shadows.
     dpr: 1,
     directionalShadows: true,
-    ambientEnabled: true,
+    ambientEnabled: !input.reducedMotion,
     ambientHz: high ? 12 : 8,
   };
 }
