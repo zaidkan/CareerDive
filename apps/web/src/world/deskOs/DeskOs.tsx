@@ -6,6 +6,7 @@ import { Desktop } from "./os/Desktop.js";
 import { FileExplorer, type OpenableFile } from "./os/FileExplorer.js";
 import { Notes } from "./os/Notes.js";
 import { Taskbar } from "./os/Taskbar.js";
+import { WindowFrame } from "./os/WindowFrame.js";
 import type { OsAppId } from "./os/browserState.js";
 import { useOsSession } from "./osSession.js";
 import type {
@@ -90,13 +91,19 @@ export function DeskOs({
           <Desktop onOpen={setActiveApp} />
         </div>
         <div hidden={locked || activeApp !== "browser"}>
-          <BrowserApp opsConsole={opsConsole} />
+          <WindowFrame active app="browser" title="Browser">
+            <BrowserApp opsConsole={opsConsole} />
+          </WindowFrame>
         </div>
         <div hidden={locked || activeApp !== "files"}>
-          <FileExplorer onOpenFile={openFileInNotes} />
+          <WindowFrame active app="files" title="Files">
+            <FileExplorer onOpenFile={openFileInNotes} />
+          </WindowFrame>
         </div>
         <div hidden={locked || activeApp !== "notes"}>
-          <Notes openFile={openFile} />
+          <WindowFrame active app="notes" title="Notes">
+            <Notes openFile={openFile} />
+          </WindowFrame>
         </div>
       </div>
       {locked ? (

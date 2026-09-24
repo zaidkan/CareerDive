@@ -3506,6 +3506,204 @@ section[aria-labelledby="structured-title"],
   background: var(--desk);
 }
 
+/* —— Multi-window frame system (W1 visual foundation) —— */
+
+.os-window-frame {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--desk);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Focused window: brighter frame, lift, paper title. */
+.os-window-frame-active {
+  border-color: var(--line-bright);
+  box-shadow: var(--shadow-lift);
+}
+
+.os-window-frame-active .os-window-identity strong {
+  color: var(--paper);
+}
+
+/* Maximized window: full bleed, square corners. */
+.os-window-frame-maximized {
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  box-shadow: none;
+}
+
+/* Minimized windows render no frame; the taskbar carries the state. */
+.os-window-frame[data-minimized="true"] {
+  display: none;
+}
+
+.os-window-bar {
+  min-width: 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--ink-lift);
+}
+
+.os-window-active .os-window-bar {
+  background: color-mix(in srgb, var(--panel) 72%, var(--ink-lift));
+}
+
+.os-window-bar-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.4rem 0.45rem 0.4rem 0.6rem;
+}
+
+.os-app-glyph {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 1px solid var(--line-bright);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--phosphor);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.os-window-identity {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.os-window-identity strong {
+  color: var(--fog);
+  font-size: 0.8rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.os-window-identity small {
+  color: var(--mute);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.os-window-controls {
+  flex: none;
+  display: flex;
+  gap: 0.2rem;
+  margin-left: auto;
+}
+
+.os-window-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.7rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--mute);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.os-window-control:hover {
+  border-color: var(--line-bright);
+  background: var(--panel);
+  color: var(--paper);
+}
+
+.os-window-control-close:hover {
+  border-color: color-mix(in srgb, var(--signal-hot) 55%, transparent);
+  background: color-mix(in srgb, var(--signal-hot) 16%, transparent);
+  color: var(--paper);
+}
+
+.os-window-toolbar {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.35rem 0.6rem;
+  border-top: 1px solid var(--line);
+  overflow-x: auto;
+}
+
+.os-window-body {
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  display: grid;
+}
+
+.os-window-body > * {
+  min-height: 0;
+  min-width: 0;
+}
+
+/* Taskbar window entries: running dot, active bar, minimized dim. */
+.os-taskbar-btn {
+  position: relative;
+}
+
+.os-taskbar-glyph {
+  display: inline-block;
+  margin-right: 0.35rem;
+  color: var(--phosphor-dim);
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.os-taskbar-btn-active .os-taskbar-glyph {
+  color: var(--phosphor);
+}
+
+.os-taskbar-btn[data-running="true"]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--mute);
+  transform: translateX(-50%);
+}
+
+.os-taskbar-btn-active[data-running="true"]::after {
+  background: var(--phosphor);
+}
+
+.os-taskbar-btn[data-minimized="true"] {
+  opacity: 0.62;
+}
+
+.os-taskbar-btn[data-minimized="true"]::after {
+  background: transparent;
+  border: 1px solid var(--mute);
+}
+
 .os-browser {
   grid-template-rows: auto auto minmax(0, 1fr);
 }

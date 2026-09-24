@@ -14,26 +14,26 @@ const DEFINITIONS: Record<OsAppId, OsAppDefinition> = {
   desktop: {
     id: "desktop",
     label: "Desktop",
-    glyph: "D",
+    glyph: "▦",
     role: "Workspace overview",
   },
   browser: {
     id: "browser",
     label: "Browser",
-    glyph: "B",
+    glyph: "◉",
     role: "SOC Ops Console and intranet",
   },
   files: {
     id: "files",
     label: "Files",
-    glyph: "F",
+    glyph: "▤",
     role: "Workstation documents",
   },
   notes: {
     id: "notes",
     label: "Notes",
-    glyph: "N",
-    role: "Scratch pad, never assessed",
+    glyph: "✎",
+    role: "Private scratch pad",
   },
 };
 
