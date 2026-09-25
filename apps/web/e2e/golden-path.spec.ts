@@ -253,6 +253,11 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
       'section[aria-label="Workplace space"] .room-canvas canvas',
     );
     await canvas.click({ position: { x: 200, y: 180 } });
+    await page.evaluate(() => {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    });
 
     await page.keyboard.down("w");
     try {
@@ -331,6 +336,11 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
       'section[aria-label="Workplace space"] .room-canvas canvas',
     );
     await canvas.click({ position: { x: 200, y: 180 } });
+    await page.evaluate(() => {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    });
 
     await page.keyboard.down("s");
     try {
