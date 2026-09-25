@@ -101,6 +101,25 @@ async function scanStaleConcepts(page: Page): Promise<string[]> {
 }
 
 /** Fast-forward a playing arrival film to its door-hold beat (0.5s from end). */
+async function setMovementKey(
+  page: Page,
+  code: "KeyW" | "KeyS" | "KeyD",
+  down: boolean,
+): Promise<void> {
+  await page.evaluate(
+    ({ code, down }) => {
+      window.dispatchEvent(
+        new KeyboardEvent(down ? "keydown" : "keyup", {
+          code,
+          key: code === "KeyW" ? "w" : code === "KeyS" ? "s" : "d",
+          bubbles: true,
+        }),
+      );
+    },
+    { code, down },
+  );
+}
+
 async function advanceArrivalFilmToDoors(page: Page): Promise<boolean> {
   return page.evaluate(() => {
     const videos = document.querySelectorAll<HTMLVideoElement>(
@@ -259,7 +278,7 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
       }
     });
 
-    await page.keyboard.down("w");
+    await setMovementKey(page, "KeyW", true);
     try {
       await expect
         .poll(
@@ -272,11 +291,11 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
         )
         .toBeGreaterThanOrEqual(1);
     } finally {
-      await page.keyboard.up("w");
+      await setMovementKey(page, "KeyW", false);
     }
 
-    await page.keyboard.down("w");
-    await page.keyboard.down("d");
+    await setMovementKey(page, "KeyW", true);
+    await setMovementKey(page, "KeyD", true);
     try {
       await expect
         .poll(
@@ -289,8 +308,8 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
         )
         .toBe(true);
     } finally {
-      await page.keyboard.up("d");
-      await page.keyboard.up("w");
+      await setMovementKey(page, "KeyD", false);
+      await setMovementKey(page, "KeyW", false);
     }
   });
 
@@ -342,7 +361,7 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
       }
     });
 
-    await page.keyboard.down("s");
+    await setMovementKey(page, "KeyS", true);
     try {
       await expect
         .poll(
@@ -355,10 +374,10 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
         )
         .toBe(true);
     } finally {
-      await page.keyboard.up("s");
+      await setMovementKey(page, "KeyS", false);
     }
 
-    await page.keyboard.down("w");
+    await setMovementKey(page, "KeyW", true);
     try {
       await expect
         .poll(
@@ -371,7 +390,7 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
         )
         .toBe(true);
     } finally {
-      await page.keyboard.up("w");
+      await setMovementKey(page, "KeyW", false);
     }
 
     await page.getByRole("button", { name: "Sit at computer" }).click();
