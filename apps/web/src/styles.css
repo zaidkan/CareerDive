@@ -3483,6 +3483,21 @@ section[aria-labelledby="structured-title"],
   border-radius: 6px;
   background: var(--panel);
   color: var(--paper);
+  pointer-events: none;
+}
+
+.os-notification-host {
+  position: absolute;
+  z-index: 1000;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: min(36rem, calc(100% - 1.5rem));
+  max-height: calc(100% - 1.5rem);
+  overflow: auto;
+}
+
+.os-notification-host .work-notification {
+  margin: 0;
 }
 
 .os-taskbar-btn {
@@ -3725,6 +3740,17 @@ section[aria-labelledby="structured-title"],
 
 .os-taskbar-btn-active[data-running="true"]::after {
   background: var(--phosphor);
+}
+
+.os-taskbar-attention {
+  display: inline-block;
+  width: 0.4rem;
+  height: 0.4rem;
+  margin-left: 0.35rem;
+  border: 1px solid var(--paper);
+  border-radius: 50%;
+  background: var(--signal-hot);
+  vertical-align: middle;
 }
 
 .os-taskbar-btn[data-minimized="true"] {

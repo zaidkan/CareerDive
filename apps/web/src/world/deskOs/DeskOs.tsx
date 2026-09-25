@@ -11,6 +11,7 @@ import { WindowFrame } from "./os/WindowFrame.js";
 import type { OsAppId } from "./os/browserState.js";
 import { MAX_OPEN_WINDOWS, canOpenWindow, type WorkspaceSize } from "./os/windows.js";
 import { useOsSession } from "./osSession.js";
+import { NotificationBanner } from "../../components/NotificationBanner.js";
 import type {
   NotificationHandler,
   TaskAttemptHandler,
@@ -77,6 +78,27 @@ export function DeskOs({
     if (existing) dispatch({ type: "restore_window", id: existing.id });
     else launch(app);
   };
+  const respondToNotification: NotificationHandler = async (notification, response) => {
+    if (!onNotification) return;
+    if (response !== "handle") {
+      if (state.notificationTarget?.notificationId === notification.id) {
+        dispatch({ type: "clear_notification_target", requestId: state.notificationTarget.requestId });
+      }
+      await onNotification(notification, response);
+      return;
+    }
+    const browser = state.windows.windows.find((window) => window.id === state.windows.focusedWindowId && window.app === "browser")
+      ?? state.windows.windows.filter((window) => window.app === "browser").sort((a, b) => b.z - a.z)[0];
+    if (!browser && !canOpenWindow(state.windows, "browser")) {
+      setWindowNotice("Up to 4 windows can be open at once. Close one to open another.");
+      return;
+    }
+    const requestId = state.nextNotificationRequestId;
+    dispatch({ type: "queue_notification_target", notificationId: notification.id, windowId: browser?.id ?? null, eventId: notification.eventId, systemId: notification.systemId });
+    await onNotification(notification, response, () => {
+      dispatch({ type: "route_notification_target", requestId, workspace: workspaceSize() });
+    });
+  };
   // Opened files live at session level so they survive overlay unmount/remount.
   const openFile = state.openFile;
   const setOpenFile = (file: OpenableFile | null) => {
@@ -101,7 +123,6 @@ export function DeskOs({
       view={view}
       onAction={onAction}
       {...(onTaskAttempt ? { onTaskAttempt } : {})}
-      {...(onNotification ? { onNotification } : {})}
       {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
       mutationState={mutationState}
       {...(onRetryMutation ? { onRetryMutation } : {})}
@@ -136,7 +157,12 @@ export function DeskOs({
               : <Notes openFile={openFile} />}
           </WindowFrame>
         ))}
-        {windowNotice ? <p className="os-window-notice" role="status">{windowNotice}</p> : null}
+        {!locked && view.notifications.some(({ status }) => status === "unread") ? (
+          <aside aria-label="Work notification" className="os-notification-host">
+            <NotificationBanner notifications={view.notifications} {...(onNotification ? { onNotification: respondToNotification } : {})} mutationState={mutationState} />
+          </aside>
+        ) : null}
+        {windowNotice ? <p aria-atomic="true" className="os-window-notice" role="status">{windowNotice}</p> : null}
       </div>
       {locked ? (
         <div className="desk-os-body">
@@ -158,6 +184,7 @@ export function DeskOs({
       ) : (
         <Taskbar
           simClock={view.simClock}
+          attention={view.notifications.some(({ status }) => status === "unread")}
           osFullscreen={osFullscreen}
           onLaunch={selectPinned}
           windows={state.windows.windows.map((window) => ({

@@ -6,10 +6,11 @@ import {
   type Dispatch,
   type ReactNode,
 } from "react";
+import type { WorkSystemId } from "@sim/schemas";
 import type { BrowserNav, OsAppId } from "./os/browserState.js";
 import type { DeskOsTab } from "./tabs.js";
 import {
-  closeWindow, focusWindow, initialWindowState, maximizeWindow, minimizeWindow,
+  canOpenWindow, closeWindow, focusWindow, initialWindowState, maximizeWindow, minimizeWindow,
   moveWindow, openWindow, restoreMaximizedWindow, restoreWindow,
   selectTaskbarWindow, type WindowState, type WorkspaceSize,
 } from "./os/windows.js";
@@ -32,6 +33,15 @@ export interface BrowserHistory {
   entries: BrowserNav[];
   index: number;
 }
+
+export type NotificationTarget = {
+  notificationId: string;
+  windowId: string | null;
+  eventId: string;
+  systemId: WorkSystemId;
+  requestId: number;
+  phase: "pending" | "routed";
+};
 
 function sameNav(a: BrowserNav, b: BrowserNav): boolean {
   if (a.kind !== b.kind) return false;
@@ -58,6 +68,8 @@ export interface OsSessionState {
   explorerFolder: FsFolderId;
   explorerSelected: string | null;
   filesClipboard: string | null;
+  notificationTarget: NotificationTarget | null;
+  nextNotificationRequestId: number;
 }
 
 export type OsSessionAction =
@@ -81,7 +93,10 @@ export type OsSessionAction =
   | { type: "mark_morgan_intro_seen" }
   | { type: "set_explorer_folder"; folder: FsFolderId }
   | { type: "set_explorer_selected"; fileId: string | null }
-  | { type: "set_files_clipboard"; fileId: string | null };
+  | { type: "set_files_clipboard"; fileId: string | null }
+  | { type: "queue_notification_target"; notificationId: string; windowId: string | null; eventId: string; systemId: WorkSystemId }
+  | { type: "route_notification_target"; requestId: number; workspace: WorkspaceSize }
+  | { type: "clear_notification_target"; requestId: number };
 
 export function createInitialOsSession(): OsSessionState {
   return {
@@ -96,6 +111,8 @@ export function createInitialOsSession(): OsSessionState {
     explorerFolder: FS_FALLBACK_FOLDER,
     explorerSelected: null,
     filesClipboard: null,
+    notificationTarget: null,
+    nextNotificationRequestId: 1,
   };
 }
 
@@ -139,7 +156,8 @@ export function osSessionReducer(
         Object.entries(state.opsTabByWindow).filter(([id]) => id !== action.id),
       );
       return { ...state, windows: closeWindow(state.windows, action.id), browserHistories, browserDraftByWindow,
-        opsTabByWindow, filesClipboard: closedApp === "files" ? null : state.filesClipboard };
+        opsTabByWindow, filesClipboard: closedApp === "files" ? null : state.filesClipboard,
+        notificationTarget: state.notificationTarget?.windowId === action.id ? null : state.notificationTarget };
     }
     case "select_taskbar_window":
       return { ...state, windows: selectTaskbarWindow(state.windows, action.id) };
@@ -214,6 +232,62 @@ export function osSessionReducer(
       return state.filesClipboard === action.fileId
         ? state
         : { ...state, filesClipboard: action.fileId };
+    case "queue_notification_target": {
+      if (action.windowId && !state.windows.windows.some((window) => window.id === action.windowId && window.app === "browser")) {
+        return { ...state, notificationTarget: null };
+      }
+      return {
+        ...state,
+        notificationTarget: {
+          notificationId: action.notificationId,
+          windowId: action.windowId,
+          eventId: action.eventId,
+          systemId: action.systemId,
+          requestId: state.nextNotificationRequestId,
+          phase: "pending",
+        },
+        nextNotificationRequestId: state.nextNotificationRequestId + 1,
+      };
+    }
+    case "route_notification_target": {
+      const target = state.notificationTarget;
+      if (!target || target.phase !== "pending" || target.requestId !== action.requestId) return state;
+      if (target.windowId && !state.windows.windows.some((window) => window.id === target.windowId && window.app === "browser")) {
+        return { ...state, notificationTarget: null };
+      }
+      const existing = target.windowId ?? state.windows.windows
+        .filter((window) => window.app === "browser")
+        .sort((a, b) => b.z - a.z)[0]?.id;
+      if (!existing && !canOpenWindow(state.windows, "browser")) return { ...state, notificationTarget: null };
+      const windows = existing
+        ? restoreWindow(state.windows, existing)
+        : openWindow(state.windows, "browser", action.workspace);
+      const windowId = existing ?? windows.focusedWindowId;
+      if (!windowId || !windows.windows.some((window) => window.id === windowId && window.app === "browser")) {
+        return { ...state, notificationTarget: null };
+      }
+      const history = state.browserHistories[windowId] ?? { entries: [{ kind: "page" as const, page: "ops" as const }], index: 0 };
+      const base = history.entries.slice(0, history.index + 1);
+      const current = base[base.length - 1];
+      const alreadyAtOps = current?.kind === "page" && current.page === "ops";
+      const entries: BrowserNav[] = alreadyAtOps
+        ? history.entries
+        : [...base, { kind: "page", page: "ops" }];
+      return {
+        ...state,
+        windows,
+        browserHistories: { ...state.browserHistories, [windowId]: { entries, index: alreadyAtOps ? history.index : entries.length - 1 } },
+        browserDraftByWindow: alreadyAtOps
+          ? state.browserDraftByWindow
+          : { ...state.browserDraftByWindow, [windowId]: "verdaly://ops" },
+        opsTabByWindow: { ...state.opsTabByWindow, [windowId]: target.systemId },
+        notificationTarget: { ...target, windowId, phase: "routed" },
+      };
+    }
+    case "clear_notification_target":
+      return state.notificationTarget?.requestId === action.requestId
+        ? { ...state, notificationTarget: null }
+        : state;
     default:
       return state;
   }

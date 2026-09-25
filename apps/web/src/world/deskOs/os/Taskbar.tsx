@@ -15,6 +15,7 @@ export type TaskbarWindow = {
 
 export function Taskbar({
   simClock,
+  attention = false,
   osFullscreen,
   onLaunch,
   onOsFullscreen,
@@ -23,6 +24,7 @@ export function Taskbar({
   onSelectWindow,
 }: {
   simClock: number;
+  attention?: boolean;
   osFullscreen: boolean;
   onLaunch: (app: WindowApp) => void;
   onOsFullscreen: () => void;
@@ -36,6 +38,7 @@ export function Taskbar({
         <div className="os-taskbar-pinned" role="group" aria-label="Pinned apps">
           {(["browser", "files", "notes"] as const).map((app) => (
             <button
+              aria-label={app === "browser" && attention ? "Browser, new work" : undefined}
               aria-pressed={windows.some((window) => window.app === app && window.active)}
               className="os-taskbar-btn os-taskbar-launcher"
               key={app}
@@ -44,6 +47,7 @@ export function Taskbar({
             >
               <span aria-hidden="true" className="os-taskbar-glyph">{appDefinition(app).glyph}</span>
               {appDefinition(app).label}
+              {app === "browser" && attention ? <span aria-hidden="true" className="os-taskbar-attention" /> : null}
             </button>
           ))}
         </div>
@@ -55,6 +59,7 @@ export function Taskbar({
               : entry.active
                 ? `${entry.label}, active`
                 : `${entry.label}, background`;
+            const needsAttention = attention && entry.app === "browser";
             return (
               <button
                 aria-pressed={entry.active}
@@ -62,7 +67,7 @@ export function Taskbar({
                 data-minimized={entry.minimized}
                 data-running="true"
                 key={entry.key}
-                aria-label={stateLabel}
+                aria-label={needsAttention ? `${stateLabel}, new work` : stateLabel}
                 onClick={() => {
                   onSelectWindow(entry.key);
                 }}
@@ -72,6 +77,7 @@ export function Taskbar({
                   {meta.glyph}
                 </span>
                 {entry.label}
+                {needsAttention ? <span aria-hidden="true" className="os-taskbar-attention" /> : null}
               </button>
             );
           })}

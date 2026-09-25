@@ -7,9 +7,7 @@ import { APP_TABS, type DeskOsTab } from "./tabs.js";
 import { useOsSession } from "./osSession.js";
 import { CaseRail } from "../../components/CaseRail.js";
 import { MutationStatus } from "../../components/MutationStatus.js";
-import { NotificationBanner } from "../../components/NotificationBanner.js";
 import type {
-  NotificationHandler,
   TaskAttemptHandler,
   WorkplaceInteractionHandler,
 } from "../../components/shared.js";
@@ -29,7 +27,6 @@ export function OpsConsole({
   view,
   onAction,
   onTaskAttempt,
-  onNotification,
   onWorkplaceInteraction,
   mutationState = EMPTY_MUTATION_STATE,
   onRetryMutation,
@@ -39,7 +36,6 @@ export function OpsConsole({
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
   onTaskAttempt?: TaskAttemptHandler;
-  onNotification?: NotificationHandler;
   onWorkplaceInteraction?: WorkplaceInteractionHandler;
   mutationState?: MutationState;
   onRetryMutation?: () => void;
@@ -64,11 +60,6 @@ export function OpsConsole({
     eventId?: string;
     requestId: number;
   }>();
-  const [pendingNotificationTarget, setPendingNotificationTarget] = useState<{
-    eventId: string;
-    systemId: DeskOsTab;
-    requestId: number;
-  }>();
 
   const openTab = (nextTab: DeskOsTab, eventId?: string) => {
     setTab(nextTab);
@@ -79,19 +70,14 @@ export function OpsConsole({
   };
 
   useEffect(() => {
-    if (!pendingNotificationTarget) return;
-    const notification = view.notifications.find(
-      ({ eventId }) => eventId === pendingNotificationTarget.eventId,
-    );
-    if (notification?.status === "unread") return;
-    setTab(pendingNotificationTarget.systemId);
-    setFocusTarget({
-      eventId: pendingNotificationTarget.eventId,
-      requestId: pendingNotificationTarget.requestId,
-    });
-    setPendingNotificationTarget(undefined);
-  }, [pendingNotificationTarget, view.notifications]);
-
+    const target = state.notificationTarget;
+    if (target?.phase !== "routed" || target.windowId !== windowId) return;
+    setFocusTarget((current) => ({
+      eventId: target.eventId,
+      requestId: (current?.requestId ?? 0) + 1,
+    }));
+    dispatch({ type: "clear_notification_target", requestId: target.requestId });
+  }, [dispatch, state.notificationTarget, windowId]);
 
   const locked = phase === "desk_login";
   const activeTab = APP_TABS.find((item) => item.id === tab) ?? APP_TABS[0];
@@ -168,23 +154,6 @@ export function OpsConsole({
       <div className="desk-os-body">
         {!locked ? (
           <>
-            <NotificationBanner
-              mutationState={mutationState}
-              notifications={view.notifications}
-              onNotification={async (notification, response) => {
-                if (response !== "handle") {
-                  await onNotification?.(notification, response);
-                  return;
-                }
-                await onNotification?.(notification, response, () => {
-                  setPendingNotificationTarget((current) => ({
-                    eventId: notification.eventId,
-                    systemId: notification.systemId,
-                    requestId: (current?.requestId ?? 0) + 1,
-                  }));
-                });
-              }}
-            />
             <CaseRail
               onResume={({ eventId, systemId }) => {
                 openTab(systemId, eventId);
