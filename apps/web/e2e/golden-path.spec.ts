@@ -208,7 +208,6 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
 
   await test.step("1 · landing loads and the start action works", async () => {
     await page.setViewportSize({ width: 800, height: 600 });
-    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(
       page.getByRole("heading", { name: "Try day one as a cybersecurity analyst" }),
@@ -284,11 +283,13 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
     try {
       await expect
         .poll(
-          () =>
-            workplaceCalls.filter(
+          async () => {
+            await setMovementKey(page, "KeyW", true);
+            return workplaceCalls.filter(
               ({ type, status }) =>
                 type === "movement_exertion" && status >= 200 && status < 300,
-            ).length,
+            ).length;
+          },
           { timeout: 90_000, intervals: [100, 200, 400, 800, 1200] },
         )
         .toBeGreaterThanOrEqual(1);
@@ -301,11 +302,14 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
     try {
       await expect
         .poll(
-          async () =>
-            page
+          async () => {
+            await setMovementKey(page, "KeyW", true);
+            await setMovementKey(page, "KeyD", true);
+            return page
               .getByRole("button", { name: "Sit at computer" })
               .isVisible()
-              .catch(() => false),
+              .catch(() => false);
+          },
           { timeout: 90_000, intervals: [100, 200, 400, 800, 1200] },
         )
         .toBe(true);
@@ -367,11 +371,13 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
     try {
       await expect
         .poll(
-          async () =>
-            !(await page
+          async () => {
+            await setMovementKey(page, "KeyS", true);
+            return !(await page
               .getByRole("button", { name: "Sit at computer" })
               .isVisible()
-              .catch(() => false)),
+              .catch(() => false));
+          },
           { timeout: 45_000, intervals: [100, 200, 400, 800] },
         )
         .toBe(true);
@@ -383,11 +389,13 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
     try {
       await expect
         .poll(
-          async () =>
-            page
+          async () => {
+            await setMovementKey(page, "KeyW", true);
+            return page
               .getByRole("button", { name: "Sit at computer" })
               .isVisible()
-              .catch(() => false),
+              .catch(() => false);
+          },
           { timeout: 45_000, intervals: [100, 200, 400, 800] },
         )
         .toBe(true);
