@@ -289,6 +289,99 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
     }
   });
 
+  await test.step("8 · sit and reach the intended workstation login", async () => {
+    await page.getByRole("button", { name: "Sit at computer" }).click();
+    await expect(page.getByTestId("desk-os-overlay")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Sign in to Verdaly" }),
+    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByLabel("Username")).toBeVisible();
+    await expect(page.getByLabel("Password")).toBeVisible();
+    await expect(page.locator("body")).not.toContainText("Click to look around");
+  });
+
+  await test.step("9 · login unlocks the current session into Desk OS", async () => {
+    await page.getByLabel("Username").fill(DESK_LOGIN.username);
+    await page.getByLabel("Password").fill(DESK_LOGIN.password);
+    await page.getByRole("button", { name: /^Login$/ }).click();
+
+    await expect(
+      page.getByRole("heading", { name: "Your workstation" }),
+    ).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("toolbar", { name: "Taskbar" })).toBeVisible();
+    await expect(page.locator('[data-desk-os="true"]')).toBeVisible();
+    expect(sessionCreates.length, "login does not create another session").toBe(1);
+  });
+
+  await test.step("10 · Desk OS state survives stand, walk away, return, and sit", async () => {
+    await page.getByRole("button", { name: "Company intranet" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Company intranet" }),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "Notes" }).click();
+    const notes = page.getByLabel("Scratch notes");
+    await notes.fill("CHAT12 continuity marker");
+    await expect(notes).toHaveValue("CHAT12 continuity marker");
+
+    await page.getByRole("button", { name: "Leave desk" }).click();
+    await expect(page.locator("body")).toContainText("Click to look around");
+
+    const canvas = page.locator(
+      'section[aria-label="Workplace space"] .room-canvas canvas',
+    );
+    await canvas.click({ position: { x: 200, y: 180 } });
+
+    await page.keyboard.down("s");
+    try {
+      await expect
+        .poll(
+          async () =>
+            !(await page
+              .getByRole("button", { name: "Sit at computer" })
+              .isVisible()
+              .catch(() => false)),
+          { timeout: 15_000, intervals: [100, 200, 400] },
+        )
+        .toBe(true);
+    } finally {
+      await page.keyboard.up("s");
+    }
+
+    await page.keyboard.down("w");
+    try {
+      await expect
+        .poll(
+          async () =>
+            page
+              .getByRole("button", { name: "Sit at computer" })
+              .isVisible()
+              .catch(() => false),
+          { timeout: 15_000, intervals: [100, 200, 400] },
+        )
+        .toBe(true);
+    } finally {
+      await page.keyboard.up("w");
+    }
+
+    await page.getByRole("button", { name: "Sit at computer" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Sign in to Verdaly" }),
+    ).toHaveCount(0);
+    await expect(page.getByRole("toolbar", { name: "Taskbar" })).toBeVisible();
+
+    const resumedNotes = page.getByLabel("Scratch notes");
+    await expect(resumedNotes).toBeVisible();
+    await expect(resumedNotes).toHaveValue("CHAT12 continuity marker");
+
+    await page.getByRole("button", { name: "Browser" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Company intranet" }),
+    ).toBeVisible();
+
+    expect(sessionCreates.length, "stand/return does not create a second session").toBe(1);
+  });
+
   await test.step("7 · runtime product-contract and session integrity hold", async () => {
     await expect(page.locator("body")).toContainText("Career Expo");
     await expect(page.locator("body")).not.toContainText(
