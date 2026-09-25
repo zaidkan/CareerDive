@@ -1,11 +1,11 @@
 import type { AnchorHTMLAttributes, ReactNode } from "react";
-import { navigate, type SiteRoute } from "./routes.js";
+import { navigate, type SitePath } from "./routes.js";
 
 type SiteLinkProps = Omit<
   AnchorHTMLAttributes<HTMLAnchorElement>,
   "href" | "onClick"
 > & {
-  to: SiteRoute;
+  to: SitePath;
   children: ReactNode;
 };
 
@@ -14,6 +14,7 @@ export function SiteLink({ to, children, ...rest }: SiteLinkProps) {
     <a
       href={to}
       onClick={(event) => {
+        if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
         navigate(to);
       }}

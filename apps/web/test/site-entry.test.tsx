@@ -27,13 +27,17 @@ afterEach(() => {
 });
 
 describe("site routes", () => {
-  it("parses known routes and falls back to landing", () => {
-    expect(parseRoute("/")).toBe("/");
-    expect(parseRoute("/how-it-works")).toBe("/how-it-works");
-    expect(parseRoute("/trust")).toBe("/trust");
-    expect(parseRoute("/faq")).toBe("/faq");
-    expect(parseRoute("/start")).toBe("/start");
-    expect(parseRoute("/unknown")).toBe("/");
+  it("parses known routes and represents unknown paths explicitly", () => {
+    expect(parseRoute("/")).toEqual({ kind: "home" });
+    expect(parseRoute("/careers")).toEqual({ kind: "careers" });
+    expect(parseRoute("/careers/cybersecurity-analyst")).toEqual({ kind: "career", slug: "cybersecurity-analyst" });
+    expect(parseRoute("/careers/registered-nurse")).toEqual({ kind: "not-found", pathname: "/careers/registered-nurse" });
+    expect(parseRoute("/careers/missing")).toEqual({ kind: "not-found", pathname: "/careers/missing" });
+    expect(parseRoute("/how-it-works")).toEqual({ kind: "how-it-works" });
+    expect(parseRoute("/trust")).toEqual({ kind: "trust" });
+    expect(parseRoute("/faq")).toEqual({ kind: "faq" });
+    expect(parseRoute("/start")).toEqual({ kind: "start" });
+    expect(parseRoute("/unknown")).toEqual({ kind: "not-found", pathname: "/unknown" });
   });
 
   it("renders landing without creating a simulation session", () => {

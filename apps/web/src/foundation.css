@@ -1,31 +1,47 @@
 /* Critical path only: tokens, base layout, and site chrome shared by the
    public pages. Full sim/desktop CSS lives in styles.css and loads with App. */
+/* CHAT 04 is the public color authority. Legacy names below are aliases for
+   existing site CSS; the semantic values are defined only here. */
 
 :root {
-  --ink: #0d0f12;
-  --ink-lift: #14171b;
-  --desk: #16191d;
-  --panel: #1e2227;
-  --line: #2a2f36;
-  --line-bright: #3d444d;
-  --phosphor: #6ea8fe;
-  --phosphor-dim: #9aa0a6;
-  --signal: #2dd4bf;
-  --signal-hot: #f26d5f;
-  --paper: #e6e8eb;
-  --paper-ink: #17191d;
-  --fog: #c3c9d1;
-  --mute: #9aa0a6;
-  --ok: #34d399;
-  --cta: #2563eb;
-  --cta-hover: #1d4ed8;
-  --mode-surface: #17302d;
-  --mode-ink: #dce9e4;
-  --mode-line: #8aa69e;
-  --mode-active-bg: #f3d47a;
-  --mode-active-ink: #152b27;
-  --font-display: "Syne", "DM Sans", system-ui, sans-serif;
-  --font-body: "DM Sans", system-ui, sans-serif;
+  --canvas: #0C0F14;
+  --surface-base: #12171E;
+  --surface-subtle: #181F28;
+  --surface-strong: #202936;
+  --surface-raised: #27313F;
+  --text-primary: #F5F7FA;
+  --text-secondary: #B9C2CF;
+  --text-muted: #919DAE;
+  --border-subtle: #2D3744;
+  --border-strong: #5B697B;
+  --action-primary: #8CB7FF;
+  --action-on-primary: #08111F;
+  --focus-ring: #A7C8FF;
+  --status-info-fg: #8CB7FF;
+  --status-info-bg: #152236;
+  --status-success-fg: #72D6A3;
+  --status-success-bg: #132A20;
+  --status-warning-fg: #F2CA7A;
+  --status-warning-bg: #2B2414;
+  --status-danger-fg: #FF8A92;
+  --status-danger-bg: #2C171B;
+
+  --ink: var(--canvas);
+  --ink-lift: var(--surface-subtle);
+  --desk: var(--surface-base);
+  --panel: var(--surface-raised);
+  --line: var(--border-subtle);
+  --line-bright: var(--border-strong);
+  --phosphor: var(--action-primary);
+  --phosphor-dim: var(--text-muted);
+  --signal: var(--status-success-fg);
+  --signal-hot: var(--status-danger-fg);
+  --paper: var(--text-primary);
+  --fog: var(--text-secondary);
+  --mute: var(--text-muted);
+  --cta: var(--action-primary);
+  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --radius-sm: 6px;
@@ -33,9 +49,9 @@
   --radius-lg: 14px;
   --shadow-soft: 0 1px 2px rgb(0 0 0 / 18%);
   --shadow-lift: 0 10px 28px rgb(0 0 0 / 28%);
-  --grid: rgb(255 255 255 / 7%);
-  color: var(--fog);
-  background: var(--ink);
+  --grid: color-mix(in srgb, var(--text-primary) 7%, transparent);
+  color: var(--text-secondary);
+  background: var(--canvas);
   font-family: var(--font-body);
   font-synthesis: none;
   line-height: 1.55;
@@ -44,33 +60,62 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* Light warm theme. Dark SOC remains default; toggle sets data-theme="light". */
+/* Theme toggle and early initialization both set data-theme on the root. */
 :root[data-theme="light"] {
-  --ink: #faf6ef;
-  --ink-lift: #f3ecdf;
-  --desk: #fffdf8;
-  --panel: #ffffff;
-  --line: #e3d9c7;
-  --line-bright: #c9bda6;
-  --phosphor: #1d4ed8;
-  --phosphor-dim: #5b6470;
-  --signal: #0f766e;
-  --signal-hot: #b91c1c;
-  --paper: #1c1917;
-  --paper-ink: #1c1917;
-  --fog: #44403c;
-  --mute: #57534e;
-  --ok: #047857;
-  --cta: #1d4ed8;
-  --cta-hover: #1e40af;
-  --mode-surface: #fffdf8;
-  --mode-ink: #1c1917;
-  --mode-line: #a8a29e;
-  --mode-active-bg: #1c1917;
-  --mode-active-ink: #faf6ef;
+  --canvas: #F6F7F9;
+  --surface-base: #FFFFFF;
+  --surface-subtle: #EEF1F5;
+  --surface-strong: #E4E9EF;
+  --surface-raised: #FFFFFF;
+  --text-primary: #171B22;
+  --text-secondary: #495568;
+  --text-muted: #596678;
+  --border-subtle: #D6DCE4;
+  --border-strong: #8996A7;
+  --action-primary: #245EA8;
+  --action-on-primary: #FFFFFF;
+  --focus-ring: #1F5EA8;
+  --status-info-fg: #245EA8;
+  --status-info-bg: #EAF2FF;
+  --status-success-fg: #176941;
+  --status-success-bg: #E9F7EF;
+  --status-warning-fg: #795100;
+  --status-warning-bg: #FFF4D8;
+  --status-danger-fg: #B42332;
+  --status-danger-bg: #FDEBEC;
   --shadow-soft: 0 1px 2px rgb(28 25 23 / 10%);
   --shadow-lift: 0 10px 28px rgb(28 25 23 / 14%);
-  --grid: rgb(28 25 23 / 7%);
+}
+
+/* The simulation stylesheet loads only after entering /start. Scope these
+   public aliases so returning to the website still uses CHAT 04 colors. */
+.site-nav,
+.site-footer,
+.site-main-public {
+  --ink: var(--canvas);
+  --ink-lift: var(--surface-subtle);
+  --desk: var(--surface-base);
+  --panel: var(--surface-raised);
+  --line: var(--border-subtle);
+  --line-bright: var(--border-strong);
+  --phosphor: var(--action-primary);
+  --phosphor-dim: var(--text-muted);
+  --signal: var(--status-success-fg);
+  --signal-hot: var(--status-danger-fg);
+  --paper: var(--text-primary);
+  --fog: var(--text-secondary);
+  --mute: var(--text-muted);
+  --cta: var(--action-primary);
+  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: var(--font-body);
+}
+
+:root body:has(.site-main-public),
+:root[data-theme="light"] body:has(.site-main-public) {
+  color: var(--text-secondary);
+  background: var(--canvas);
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
 }
 
 * {
@@ -97,15 +142,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background:
-    linear-gradient(180deg, #111418 0%, var(--ink) 45%, #0a0c0e 100%);
-  background-attachment: fixed;
-}
-
-:root[data-theme="light"] body {
-  background:
-    linear-gradient(180deg, #fffdf8 0%, var(--ink) 55%, #f3ecdf 100%);
-  background-attachment: fixed;
+  background: var(--canvas);
 }
 
 body::before {
@@ -123,7 +160,7 @@ button {
 }
 
 button:focus-visible {
-  outline: 2px solid var(--phosphor);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 
@@ -158,10 +195,10 @@ h1 {
   display: inline-flex;
   align-items: center;
   padding: 0.28rem 0.55rem;
-  border: 1px solid color-mix(in srgb, var(--signal) 30%, transparent);
+  border: 1px solid var(--status-success-fg);
   border-radius: 4px;
-  color: var(--signal);
-  background: color-mix(in srgb, var(--signal) 8%, transparent);
+  color: var(--status-success-fg);
+  background: var(--status-success-bg);
   font-family: var(--font-body);
   font-size: 0.7rem;
   font-weight: 600;
@@ -171,7 +208,7 @@ h1 {
 .site-chip-muted {
   border-color: var(--line);
   color: var(--mute);
-  background: color-mix(in srgb, var(--paper) 4%, transparent);
+  background: var(--surface-subtle);
 }
 
 .eyebrow {
