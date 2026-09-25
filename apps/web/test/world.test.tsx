@@ -130,6 +130,31 @@ describe("spatial presentation", () => {
     expect(state.phase).toBe("seated_monitor");
   });
 
+  it("keeps workstation authentication across stand, floor map, and return", () => {
+    let state = reduceSpatialEvent(INITIAL_SPATIAL, {
+      type: "enter_room",
+      roomId: "soc",
+    });
+    state = reduceSpatialEvent(state, { type: "sit_desk" });
+    state = reduceSpatialEvent(state, { type: "login_success" });
+    expect(state.phase).toBe("seated_monitor");
+    expect(state.deskAuthenticated).toBe(true);
+
+    state = reduceSpatialEvent(state, { type: "stand" });
+    expect(state.phase).toBe("room_walk");
+    state = reduceSpatialEvent(state, { type: "leave_room" });
+    expect(state.phase).toBe("floor_map");
+    expect(state.deskAuthenticated).toBe(true);
+
+    state = reduceSpatialEvent(state, {
+      type: "enter_room",
+      roomId: "soc",
+    });
+    state = reduceSpatialEvent(state, { type: "sit_desk" });
+    expect(state.phase).toBe("seated_monitor");
+    expect(state.deskAuthenticated).toBe(true);
+  });
+
   it("stands and can return to the floor map", () => {
     let state = reduceSpatialEvent(INITIAL_SPATIAL, {
       type: "enter_room",
