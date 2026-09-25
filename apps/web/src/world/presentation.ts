@@ -25,23 +25,25 @@ export function reduceSpatialEvent(
         phase: "room_walk",
         roomId: event.roomId,
         ...(state.visitedDesk ? { visitedDesk: true } : {}),
+        ...(state.deskAuthenticated ? { deskAuthenticated: true } : {}),
       };
     case "leave_room":
       return {
         phase: "floor_map",
         ...(state.visitedDesk ? { visitedDesk: true } : {}),
+        ...(state.deskAuthenticated ? { deskAuthenticated: true } : {}),
       };
     case "sit_desk": {
       const next: SpatialState = {
         ...state,
-        phase: "desk_login",
+        phase: state.deskAuthenticated ? "seated_monitor" : "desk_login",
         visitedDesk: true,
       };
       delete next.flavorMessage;
       return next;
     }
     case "login_success":
-      return { ...state, phase: "seated_monitor" };
+      return { ...state, phase: "seated_monitor", deskAuthenticated: true };
     case "focus_desk":
       return { ...state, phase: "focus_desk" };
     case "unfocus_desk":

@@ -1,27 +1,26 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Request } from "@playwright/test";
+import { DESK_LOGIN } from "../src/world/deskLogin.js";
 
 /**
  * Career Expo golden-path smoke test — the permanent product experience.
  *
  * Landing → arrival film → Begin your first day → exactly ONE assessed session
- * → 3D workplace. Also checks stale architecture/copy at runtime.
+ * → 3D workplace → walk → sit → login → Desk OS → leave/return.
  *
  * Determinism rules:
- *  - Every wait is state/selector/network-based. No arbitrary sleeps except the
- *    arrival-film fast-forward (moves a real <video> to its final beat because
- *    playing a full 5MB film in a headless run is not the point of the smoke
- *    test) and the walk poll (bounded, not a blanket sleep).
- *  - Workstation walking is covered separately by the spatial unit tests. In
- *    headless SwiftShader, movement timing is too slow for a reliable browser
- *    gate; keep this smoke focused on the entry and real 3D render.
+ *  - Arrival film is fast-forwarded to its real door HUD.
+ *  - Walking uses physical keyboard input. Its first waypoint is the successful
+ *    five-meter movement mutation; the chair prompt is the second waypoint.
  */
 
 const WEB_ORIGIN = process.env.WEB_ORIGIN ?? "http://localhost:5173";
 const API_ORIGIN = process.env.API_ORIGIN ?? "http://localhost:3001";
 
 type SessionCreateCall = { url: string; sessionKind: string | undefined; status: number };
+type MovementCall = { request: Request; status: number };
 
 const TRPC_SESSION_CREATE_PATH = "/trpc/session.create";
+const TRPC_WORKPLACE_PATH = "/trpc/simulation.performWorkplaceInteraction";
 
 /**
  * User-facing concepts that must NOT come back. Multi-word phrases and
@@ -82,7 +81,7 @@ async function scanStaleConcepts(page: Page): Promise<string[]> {
     .evaluateAll((els) =>
       els.map((el) => {
         const label = el.getAttribute("aria-label");
-        return `${label ?? ""} ${el.textContent ?? ""}`.trim().replace(/\s+/g, " ").toLowerCase();
+        return `${label ?? ""} ${el.textContent}`.trim().replace(/\s+/g, " ").toLowerCase();
       }),
     );
 
@@ -117,18 +116,23 @@ async function advanceArrivalFilmToDoors(page: Page): Promise<boolean> {
   });
 }
 
-test("landing → arrival → one assessed session → 3D workplace", async ({
+test("entry → walk → sit → login → Desk OS continuity", async ({
   page,
 }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(150_000);
 
   const sessionCreates: SessionCreateCall[] = [];
+  const movementCalls: MovementCall[] = [];
   const failedApiResponses: string[] = [];
   const failedAssets: string[] = [];
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
 
   page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().endsWith(TRPC_WORKPLACE_PATH)) {
+      const body = request.postDataJSON() as { interaction?: { type?: string } } | undefined;
+      if (body?.interaction?.type === "movement_exertion") movementCalls.push({ request, status: 0 });
+    }
     if (
       request.method() === "POST" &&
       request.url().endsWith(TRPC_SESSION_CREATE_PATH)
@@ -145,13 +149,26 @@ test("landing → arrival → one assessed session → 3D workplace", async ({
     for (const create of sessionCreates) {
       if (create.url === response.url()) create.status = response.status();
     }
+    const movement = movementCalls.find(({ request }) => request === response.request());
+    if (movement) movement.status = response.status();
     if (response.status() >= 400 && response.url().startsWith(`${API_ORIGIN}/`)) {
       failedApiResponses.push(
-        `${response.status()} ${response.request().method()} ${response.url()}`,
+        `${String(response.status())} ${response.request().method()} ${response.url()}`,
       );
     }
     if (response.status() >= 400 && response.url().startsWith(`${WEB_ORIGIN}/`)) {
-      failedAssets.push(`${response.status()} ${response.url()}`);
+      failedAssets.push(`${String(response.status())} ${response.url()}`);
+    }
+  });
+  page.on("requestfailed", (request) => {
+    if (request.url().startsWith(`${API_ORIGIN}/`)) {
+      failedApiResponses.push(`NETWORK ${request.method()} ${request.url()}: ${request.failure()?.errorText ?? "unknown"}`);
+    }
+    const expectedMediaSeekAbort =
+      /\.(mp4|webm)(?:\?|$)/.test(request.url()) &&
+      request.failure()?.errorText === "net::ERR_ABORTED";
+    if (request.url().startsWith(`${WEB_ORIGIN}/`) && !expectedMediaSeekAbort) {
+      failedAssets.push(`NETWORK ${request.url()}: ${request.failure()?.errorText ?? "unknown"}`);
     }
   });
   page.on("pageerror", (error) => pageErrors.push(String(error)));
@@ -218,9 +235,8 @@ test("landing → arrival → one assessed session → 3D workplace", async ({
 
   await test.step("5 · exactly one ASSESSED session is created", async () => {
     expect(sessionCreates.length, "exactly one session.create call").toBe(1);
-    const [create] = sessionCreates;
-    expect(create.sessionKind, "sessionKind is assessed").toBe("assessed");
-    expect(create.url).toContain("/trpc/session.create");
+    expect(sessionCreates[0]?.sessionKind, "sessionKind is assessed").toBe("assessed");
+    expect(sessionCreates[0]?.url).toContain("/trpc/session.create");
   });
 
   await test.step("6 · spatial workplace renders", async () => {
@@ -230,7 +246,69 @@ test("landing → arrival → one assessed session → 3D workplace", async ({
     await expect(page.locator("body")).toContainText("press E to sit", { timeout: 30_000 });
   });
 
-  await test.step("7 · runtime product-contract and session integrity hold", async () => {
+  await test.step("7 · walk with WASD to the workstation", async () => {
+    await page.locator('section[aria-label="Workplace space"] .room-canvas canvas').click({ position: { x: 100, y: 100 } });
+    expect(await page.evaluate(() => document.hasFocus()), "browser receives keyboard input").toBe(true);
+    await page.keyboard.down("w");
+    try {
+      await expect.poll(
+        async () => {
+          // Canvas can appear before PlayerController's keyboard effect mounts.
+          // Real held keyboards repeat keydown; Playwright's down() does not.
+          await page.keyboard.down("w");
+          return movementCalls.length;
+        },
+        { timeout: 45_000, intervals: [100] },
+      ).toBeGreaterThan(0);
+      // First 5m bucket fires before the chair's south approach. Continue
+      // roughly one meter, then turn east; waiting for API response here can
+      // overshoot the chair under variable headless frame rates.
+      await page.waitForTimeout(450);
+    } finally { await page.keyboard.up("w"); }
+    await expect.poll(() => movementCalls[0]?.status, { timeout: 10_000 }).toBe(200);
+    await page.keyboard.down("d");
+    try {
+      await expect(page.getByRole("button", { name: "Sit at computer" })).toBeVisible({ timeout: 20_000 });
+    } finally { await page.keyboard.up("d"); }
+  });
+
+  await test.step("8 · sit and sign in", async () => {
+    await page.getByRole("button", { name: "Sit at computer" }).click();
+    await expect(page.getByRole("heading", { name: "Sign in to Verdaly" })).toBeVisible();
+    await page.getByRole("textbox", { name: "Username" }).fill(DESK_LOGIN.username);
+    await page.getByRole("textbox", { name: "Password" }).fill(DESK_LOGIN.password);
+    await page.getByRole("button", { name: "Login" }).click();
+    await expect(page.getByRole("toolbar", { name: "Taskbar" })).toBeVisible();
+    await expect(page.locator('[data-desk-os="true"]')).toBeVisible();
+    expect(sessionCreates.length, "login creates no extra session").toBe(1);
+  });
+
+  await test.step("9 · leave, walk away, return, and resume Desk OS state", async () => {
+    await page.getByRole("button", { name: "Company intranet" }).click();
+    await expect(page.getByRole("heading", { name: "Company intranet" })).toBeVisible();
+    await page.getByRole("button", { name: "Notes" }).click();
+    await page.getByRole("textbox", { name: "Scratch notes" }).fill("continuity probe");
+    await page.getByRole("button", { name: "Leave desk" }).click();
+    await expect(page.getByRole("button", { name: "Sit at computer" })).toBeVisible();
+    await page.locator('section[aria-label="Workplace space"] .room-canvas canvas').click({ position: { x: 100, y: 100 } });
+    await page.keyboard.down("s");
+    try {
+      await expect(page.getByRole("button", { name: "Sit at computer" })).toBeHidden({ timeout: 20_000 });
+    } finally { await page.keyboard.up("s"); }
+    await page.keyboard.down("w");
+    try {
+      await expect(page.getByRole("button", { name: "Sit at computer" })).toBeVisible({ timeout: 20_000 });
+    } finally { await page.keyboard.up("w"); }
+    await page.getByRole("button", { name: "Sit at computer" }).click();
+    await expect(page.getByRole("heading", { name: "Sign in to Verdaly" })).toHaveCount(0);
+    await expect(page.getByRole("toolbar", { name: "Taskbar" })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Scratch notes" })).toHaveValue("continuity probe");
+    await page.getByRole("button", { name: "Browser" }).click();
+    await expect(page.getByRole("heading", { name: "Company intranet" })).toBeVisible();
+    expect(sessionCreates.length, "return creates no extra session").toBe(1);
+  });
+
+  await test.step("10 · runtime product-contract and session integrity hold", async () => {
     await expect(page.locator("body")).toContainText("Career Expo");
     await expect(page.locator("body")).not.toContainText(
       "That workplace interaction could not be completed.",
@@ -240,9 +318,10 @@ test("landing → arrival → one assessed session → 3D workplace", async ({
     expect(await page.locator("select").count()).toBe(0);
     expect(await page.locator('[role="radio"]').count()).toBe(0);
     expect(sessionCreates.length).toBe(1);
+    expect(sessionCreates[0]?.status).toBe(200);
+    expect(movementCalls.some(({ status }) => status === 200), "walk submitted successfully").toBe(true);
     assertQuiet();
   });
 
-  expect(failedApiResponses).toEqual([]);
-  console.log(`Browser QA: session.create=${sessionCreates.length}, sessionKind=${sessionCreates[0]?.sessionKind}, API errors=${failedApiResponses.length}, asset errors=${failedAssets.length}, page errors=${pageErrors.length}, console errors=${consoleErrors.length}`);
+  console.log(`Browser QA: session.create=${String(sessionCreates.length)}, sessionKind=${sessionCreates[0]?.sessionKind ?? "missing"}, successful movement calls=${String(movementCalls.filter(({ status }) => status === 200).length)}, API errors=${String(failedApiResponses.length)}, asset errors=${String(failedAssets.length)}, page errors=${String(pageErrors.length)}, console errors=${String(consoleErrors.length)}`);
 });

@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json && vite build",
     "dev": "vite",
-    "lint": "eslint src test",
+    "lint": "eslint src test e2e",
     "test": "vitest run --environment jsdom",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

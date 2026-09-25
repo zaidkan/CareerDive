@@ -203,7 +203,7 @@ describe("once-per-session Morgan introduction", () => {
     expect(introNodes()).toHaveLength(0);
   });
 
-  it("does not duplicate the intro across leave/return re-login, app switching, or Team Chat reopen", async () => {
+  it("does not duplicate the intro across leave/return, app switching, or Team Chat reopen", async () => {
     const user = userEvent.setup();
     render(<SpatialShell view={makeView()} onAction={vi.fn()} />);
 
@@ -221,9 +221,7 @@ describe("once-per-session Morgan introduction", () => {
     await user.click(
       await screen.findByRole("button", { name: "Sit at desk" }, { timeout: 6000 }),
     );
-    await user.type(await screen.findByLabelText(/Username/i), "day1.analyst");
-    await user.type(await screen.findByLabelText(/Password/i), "FirstDay!");
-    await user.click(await screen.findByRole("button", { name: /^Login$/i }));
+    expect(screen.queryByRole("heading", { name: /Sign in/i })).toBeNull();
     await screen.findByRole("heading", { name: "Your workstation" });
     await openTeamChat(user);
     expect(introNodes()).toHaveLength(1);
