@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { getCareerBySlug } from "../careers/careers.js";
 import type { SiteRoute } from "./routes.js";
 
 const SITE_NAME = "First Shift";
@@ -7,47 +8,75 @@ const BASE_URL = "https://careerexpo.example.com";
 type RouteMeta = {
   title: string;
   description: string;
-  path: SiteRoute;
+  path: string;
   index: boolean;
 };
 
-export const ROUTE_META: Record<SiteRoute, RouteMeta> = {
-  "/": {
+export const ROUTE_META: Record<Exclude<SiteRoute["kind"], "career" | "not-found">, RouteMeta> = {
+  home: {
     title: "First Shift · Try day one as a cybersecurity analyst",
     description:
       "First Shift, the first playable workday from Career Expo: day one as a Junior Cybersecurity Analyst at Verdaly Technologies — a bounded 10–15 minute career simulation. Read evidence, decide, see consequences.",
     path: "/",
     index: true,
   },
-  "/how-it-works": {
+  "how-it-works": {
     title: "How the First Shift workday works · Career Expo",
     description:
       "Handoff, suspicious-login investigation, routine monitoring, phishing report and false-positive review across email, alerts, tickets, knowledge base and team chat.",
     path: "/how-it-works",
     index: true,
   },
-  "/trust": {
+  trust: {
     title: "Privacy and safety, honest beta summary · First Shift",
     description:
       "Owner-only reflections, explicit expiring sharing grants, bounded AI dialogue only, no fit scores or rankings. Beta summary, not legal advice.",
     path: "/trust",
     index: true,
   },
-  "/faq": {
+  faq: {
     title: "FAQ: scope, access, assessment limits · First Shift",
     description:
       "How long is the shift, do you need gaming skill, what does AI do, are reflections shared, is 3D required, is this a real job assessment?",
     path: "/faq",
     index: true,
   },
-  "/start": {
+  start: {
     title: "Start your First Shift workday · Career Expo",
     description:
       "Watch the short preview film, then work the Verdaly SOC the way you prefer.",
     path: "/start",
     index: false,
   },
+  careers: {
+    title: "Explore careers · Career Expo",
+    description: "Explore one ready career simulation and previews of careers in the workshop.",
+    path: "/careers",
+    index: true,
+  },
 };
+
+function metaForRoute(route: SiteRoute): RouteMeta {
+  if (route.kind === "not-found") {
+    return {
+      title: "Page not found · Career Expo",
+      description: "This Career Expo page could not be found.",
+      path: route.pathname,
+      index: false,
+    };
+  }
+  if (route.kind === "career") {
+    const career = getCareerBySlug(route.slug);
+    if (!career?.detailPublished) return metaForRoute({ kind: "not-found", pathname: `/careers/${route.slug}` });
+    return {
+      title: `${career.title} · Career Expo`,
+      description: career.shortSummary,
+      path: `/careers/${career.slug}`,
+      index: true,
+    };
+  }
+  return ROUTE_META[route.kind];
+}
 
 function upsertMeta(selector: string, create: () => HTMLElement): HTMLElement {
   const existing = document.querySelector(selector);
@@ -59,7 +88,7 @@ function upsertMeta(selector: string, create: () => HTMLElement): HTMLElement {
 
 export function useRouteMeta(route: SiteRoute): void {
   useEffect(() => {
-    const meta = ROUTE_META[route];
+    const meta = metaForRoute(route);
     document.title = meta.title;
 
     const description = upsertMeta('meta[name="description"]', () => {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import { navigate, type SiteRoute } from "./routes.js";
+import { navigate, type SitePath, type SiteRoute } from "./routes.js";
 import { ThemeToggle } from "./ThemeToggle.js";
 
 const GATE_KEY = "first-shift-start-gate";
@@ -32,14 +32,15 @@ function useGateSeen(): boolean {
   }, []);
   return seen;
 }
-const NAV: Array<{ route: SiteRoute; label: string }> = [
+const NAV: Array<{ route: SitePath; label: string }> = [
   { route: "/", label: "Home" },
+  { route: "/careers", label: "Careers" },
   { route: "/how-it-works", label: "How it works" },
   { route: "/trust", label: "Privacy and safety" },
   { route: "/faq", label: "FAQ" },
 ];
 
-function go(route: SiteRoute) {
+function go(route: SitePath) {
   return (event: { preventDefault: () => void }) => {
     event.preventDefault();
     navigate(route);
@@ -75,7 +76,9 @@ export function SiteChrome({
                 <li key={target}>
                   <a
                     href={target}
-                    aria-current={route === target ? "page" : undefined}
+                    aria-current={(route.kind === "career" && target === "/careers") ||
+                      (route.kind === "home" && target === "/") ||
+                      (route.kind === target.slice(1)) ? "page" : undefined}
                     onClick={go(target)}
                   >
                     {label}
@@ -90,7 +93,7 @@ export function SiteChrome({
           </a>
         </div>
       </header>
-      <main id="main-content">{children}</main>
+      <main id="main-content" className={route.kind === "start" ? undefined : "site-main-public"}>{children}</main>
       <footer className="site-footer">
         <nav aria-label="Footer">
           <ul>
@@ -98,6 +101,9 @@ export function SiteChrome({
               <a href="/" onClick={go("/")}>
                 Home
               </a>
+            </li>
+            <li>
+              <a href="/careers" onClick={go("/careers")}>Careers</a>
             </li>
             <li>
               <a href="/how-it-works" onClick={go("/how-it-works")}>
