@@ -4,24 +4,25 @@ import { expect, test, type Page } from "@playwright/test";
  * Career Expo golden-path smoke test — the permanent product experience.
  *
  * Landing → arrival film → Begin your first day → exactly ONE assessed session
- * → 3D workplace. Also checks stale architecture/copy at runtime.
+ * → 3D workplace → real WASD walk → sit → login → Desk OS → stand/walk/return.
  *
  * Determinism rules:
  *  - Every wait is state/selector/network-based. No arbitrary sleeps except the
  *    arrival-film fast-forward (moves a real <video> to its final beat because
  *    playing a full 5MB film in a headless run is not the point of the smoke
  *    test) and the walk poll (bounded, not a blanket sleep).
- *  - Workstation walking is covered separately by the spatial unit tests. In
- *    headless SwiftShader, movement timing is too slow for a reliable browser
- *    gate; keep this smoke focused on the entry and real 3D render.
+ *  - Walking uses supported WASD controls with network/DOM waypoints so
+ *    headless frame rate cannot change the pass condition.
  */
 
 const WEB_ORIGIN = process.env.WEB_ORIGIN ?? "http://localhost:5173";
 const API_ORIGIN = process.env.API_ORIGIN ?? "http://localhost:3001";
 
 type SessionCreateCall = { url: string; sessionKind: string | undefined; status: number };
+type WorkplaceCall = { url: string; type: string | undefined; status: number };
 
 const TRPC_SESSION_CREATE_PATH = "/trpc/session.create";
+const TRPC_WORKPLACE_PATH = "/trpc/simulation.performWorkplaceInteraction";
 
 /**
  * User-facing concepts that must NOT come back. Multi-word phrases and
@@ -117,12 +118,13 @@ async function advanceArrivalFilmToDoors(page: Page): Promise<boolean> {
   });
 }
 
-test("landing → arrival → one assessed session → 3D workplace", async ({
+test("canonical entry → walk → sit → login → Desk OS continuity", async ({
   page,
 }) => {
-  test.setTimeout(90_000);
+  test.setTimeout(150_000);
 
   const sessionCreates: SessionCreateCall[] = [];
+  const workplaceCalls: WorkplaceCall[] = [];
   const failedApiResponses: string[] = [];
   const failedAssets: string[] = [];
   const pageErrors: string[] = [];
@@ -140,11 +142,26 @@ test("landing → arrival → one assessed session → 3D workplace", async ({
         status: 0,
       });
     }
+    if (request.method() === "POST" && request.url().endsWith(TRPC_WORKPLACE_PATH)) {
+      const body = request.postDataJSON() as
+        | { interaction?: { type?: string } }
+        | undefined;
+      workplaceCalls.push({
+        url: request.url(),
+        type: body?.interaction?.type,
+        status: 0,
+      });
+    }
   });
   page.on("response", (response) => {
-    for (const create of sessionCreates) {
-      if (create.url === response.url()) create.status = response.status();
-    }
+    const create = sessionCreates.find(
+      (entry) => entry.url === response.url() && entry.status === 0,
+    );
+    if (create) create.status = response.status();
+    const workplace = workplaceCalls.find(
+      (entry) => entry.url === response.url() && entry.status === 0,
+    );
+    if (workplace) workplace.status = response.status();
     if (response.status() >= 400 && response.url().startsWith(`${API_ORIGIN}/`)) {
       failedApiResponses.push(
         `${response.status()} ${response.request().method()} ${response.url()}`,
