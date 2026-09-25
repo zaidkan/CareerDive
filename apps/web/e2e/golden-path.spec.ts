@@ -297,14 +297,34 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
       await setMovementKey(page, "KeyW", false);
     }
 
-    await setMovementKey(page, "KeyW", true);
+    // Cross east while still south of the cubicle. Waiting on the second
+    // canonical 5m exertion checkpoint gives us a deterministic distance
+    // waypoint without exposing player coordinates to the test.
     await setMovementKey(page, "KeyD", true);
     try {
       await expect
         .poll(
           async () => {
-            await setMovementKey(page, "KeyW", true);
             await setMovementKey(page, "KeyD", true);
+            return workplaceCalls.filter(
+              ({ type, status }) =>
+                type === "movement_exertion" && status >= 200 && status < 300,
+            ).length;
+          },
+          { timeout: 90_000, intervals: [100, 200, 400, 800, 1200] },
+        )
+        .toBeGreaterThanOrEqual(2);
+    } finally {
+      await setMovementKey(page, "KeyD", false);
+    }
+
+    // Now approach north from the open south side of the player's cubicle.
+    await setMovementKey(page, "KeyW", true);
+    try {
+      await expect
+        .poll(
+          async () => {
+            await setMovementKey(page, "KeyW", true);
             return page
               .getByRole("button", { name: "Sit at computer" })
               .isVisible()
@@ -314,7 +334,6 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
         )
         .toBe(true);
     } finally {
-      await setMovementKey(page, "KeyD", false);
       await setMovementKey(page, "KeyW", false);
     }
   });
