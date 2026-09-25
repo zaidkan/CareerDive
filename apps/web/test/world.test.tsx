@@ -143,6 +143,24 @@ describe("spatial presentation", () => {
     expect(state.roomId).toBeUndefined();
   });
 
+  it("keeps desk login through stand and room reentry within the simulation", () => {
+    let state = reduceSpatialEvent(INITIAL_SPATIAL, {
+      type: "enter_room",
+      roomId: "soc",
+    });
+    state = reduceSpatialEvent(state, { type: "sit_desk" });
+    expect(state.phase).toBe("desk_login");
+    state = reduceSpatialEvent(state, { type: "login_success" });
+    state = reduceSpatialEvent(state, { type: "stand" });
+    state = reduceSpatialEvent(state, { type: "sit_desk" });
+    expect(state.phase).toBe("seated_monitor");
+    state = reduceSpatialEvent(state, { type: "stand" });
+    state = reduceSpatialEvent(state, { type: "leave_room" });
+    state = reduceSpatialEvent(state, { type: "enter_room", roomId: "soc" });
+    state = reduceSpatialEvent(state, { type: "sit_desk" });
+    expect(state.phase).toBe("seated_monitor");
+  });
+
   it("lets the player enter the unlocked SOC room", async () => {
     const user = userEvent.setup();
     let entered: string | undefined;

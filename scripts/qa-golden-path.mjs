@@ -3,6 +3,8 @@ import { setTimeout as delay } from "node:timers/promises";
 
 const web = process.env.WEB_ORIGIN ?? "http://localhost:5173";
 const api = process.env.API_ORIGIN ?? "http://localhost:3001";
+const webUrl = new URL(web);
+const apiUrl = new URL(api);
 
 async function healthy(url) {
   try {
@@ -28,8 +30,12 @@ if (webReady || apiReady) {
 
 const servers = [];
 try {
-  servers.push(spawn("pnpm", ["--filter", "@sim/web", "dev"], { detached: true, stdio: "inherit" }));
-  servers.push(spawn("pnpm", ["--filter", "@sim/server", "exec", "tsx", "src/main.ts"], { detached: true, stdio: "inherit" }));
+  servers.push(spawn("pnpm", ["--filter", "@sim/web", "exec", "vite", "--host", webUrl.hostname, "--port", webUrl.port || "5173", "--strictPort"], {
+    detached: true, stdio: "inherit", env: { ...process.env, VITE_SERVER_URL: api },
+  }));
+  servers.push(spawn("pnpm", ["--filter", "@sim/server", "exec", "tsx", "src/main.ts"], {
+    detached: true, stdio: "inherit", env: { ...process.env, PORT: apiUrl.port || "3001" },
+  }));
   for (let attempt = 0; attempt < 120; attempt += 1) {
     if (await healthy(web) && await healthy(`${api}/health`)) break;
     if (servers.some((server) => server.exitCode !== null) || attempt === 119) {
