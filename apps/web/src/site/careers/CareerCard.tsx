@@ -2,10 +2,7 @@ import { careerPath } from "../../careers/careers.js";
 import type { PublicCareer } from "../../careers/types.js";
 import { SiteLink } from "../SiteLink.js";
 import { CareerPreview } from "./CareerPreview.js";
-import {
-  CareerRequestToggle,
-  type SetCareerRequest,
-} from "./CareerRequestToggle.js";
+import type { SetCareerRequest } from "./CareerRequestToggle.js";
 
 export function CareerCard({
   career,
@@ -30,20 +27,27 @@ export function CareerCard({
       </p>
       <Heading>{career.title}</Heading>
       <p className="career-card-summary">{career.shortSummary}</p>
-      <p className="career-card-workplace">
-        <strong>Workplace</strong> {career.workplaceSummary}
-      </p>
+      {ready ? (
+        <p className="career-card-workplace">
+          <strong>Workplace</strong> {career.workplaceSummary}
+        </p>
+      ) : null}
       {career.plannedTasks[0] ? (
         <p className="career-card-task">
           <strong>{ready ? "First task" : "Possible task"}</strong>{" "}
           {career.plannedTasks[0]}
         </p>
       ) : null}
-      <ul className="career-card-skills" aria-label={`${career.title} skills`}>
-        {career.skills.map((skill) => (
-          <li key={skill}>{skill}</li>
-        ))}
-      </ul>
+      {ready ? (
+        <ul
+          className="career-card-skills"
+          aria-label={`${career.title} skills`}
+        >
+          {career.skills.map((skill) => (
+            <li key={skill}>{skill}</li>
+          ))}
+        </ul>
+      ) : null}
       <div className="career-card-actions">
         {career.simulationRoute ? (
           <SiteLink className="start-shift" to={career.simulationRoute}>
@@ -56,14 +60,7 @@ export function CareerCard({
           </SiteLink>
         ) : null}
       </div>
-      <CareerPreview career={career} />
-      {career.requestable ? (
-        <CareerRequestToggle
-          careerId={career.id}
-          careerTitle={career.title}
-          setCareerRequest={setCareerRequest}
-        />
-      ) : null}
+      <CareerPreview career={career} setCareerRequest={setCareerRequest} />
     </article>
   );
 }

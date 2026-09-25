@@ -1,5 +1,5 @@
 /** Public career descriptions. Deliberately independent of simulation CareerPackSchema. */
-export type CareerAvailability = "ready_now" | "in_workshop";
+export type CareerAvailability = "ready_now" | "in_workshop" | "coming_soon";
 
 export type PublicCareer = {
   id: string;

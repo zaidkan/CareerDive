@@ -40,25 +40,20 @@ export function CareerRequestToggle({
       <button
         type="button"
         className="button-secondary"
+        aria-label={`Request ${careerTitle}`}
         aria-pressed={requested}
         disabled={pending}
         onClick={() => {
           void update();
         }}
       >
-        Request {careerTitle}
-        <span aria-hidden="true">{requested ? " · requested" : ""}</span>
+        {requested ? "Requested ✓ · click to undo" : `Request ${careerTitle}`}
       </button>
       {error ? (
         <p className="career-request-note" role="alert">
           Request change failed. Try again.
         </p>
       ) : null}
-      <p className="career-request-note">
-        {setCareerRequest
-          ? "You can change your request."
-          : "Preview only. Your choice stays on this page; requests are not collected yet."}
-      </p>
     </div>
   );
 }

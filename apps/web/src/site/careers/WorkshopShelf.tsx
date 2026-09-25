@@ -16,9 +16,21 @@ export function WorkshopShelf({
     <section className="career-shelf" aria-labelledby="workshop-title">
       <Heading id="workshop-title">In the Workshop</Heading>
       <p>
-        Explore work still being planned. These roles have previews, not
-        simulations yet.
+        Workshop roles show the kinds of decisions you’d make — previews only,
+        for now. Want one of these first? Mark it — you can undo anytime.
       </p>
+      <div className="career-request-intro">
+        <h3>Which career do you want to try?</h3>
+        <p>
+          Mark any Workshop role you'd like built next. Change your mind with
+          one click — no account, no email.
+        </p>
+        <p className="career-request-honesty">
+          Preview only: requests stay on this page and aren't collected yet.
+          When we start collecting, they'll guide what we prioritize — they
+          won't guarantee build order.
+        </p>
+      </div>
       <ul className="career-workshop-grid">
         {careers.map((career) => (
           <li key={career.id}>
