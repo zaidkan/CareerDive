@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { DESK_LOGIN } from "../src/world/deskLogin.js";
 
 /**
  * Career Expo golden-path smoke test — the permanent product experience.
@@ -245,6 +246,47 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
     await expect(page.getByRole("region", { name: "Workplace space" })).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('section[aria-label="Workplace space"] .room-canvas canvas')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator("body")).toContainText("press E to sit", { timeout: 30_000 });
+  });
+
+  await test.step("7 · walk to the workstation using supported WASD controls", async () => {
+    const canvas = page.locator(
+      'section[aria-label="Workplace space"] .room-canvas canvas',
+    );
+    await canvas.click({ position: { x: 200, y: 180 } });
+
+    await page.keyboard.down("w");
+    try {
+      await expect
+        .poll(
+          () =>
+            workplaceCalls.filter(
+              ({ type, status }) =>
+                type === "movement_exertion" && status >= 200 && status < 300,
+            ).length,
+          { timeout: 30_000, intervals: [100, 200, 400, 800] },
+        )
+        .toBeGreaterThanOrEqual(1);
+    } finally {
+      await page.keyboard.up("w");
+    }
+
+    await page.keyboard.down("w");
+    await page.keyboard.down("d");
+    try {
+      await expect
+        .poll(
+          async () =>
+            page
+              .getByRole("button", { name: "Sit at computer" })
+              .isVisible()
+              .catch(() => false),
+          { timeout: 30_000, intervals: [100, 200, 400] },
+        )
+        .toBe(true);
+    } finally {
+      await page.keyboard.up("d");
+      await page.keyboard.up("w");
+    }
   });
 
   await test.step("7 · runtime product-contract and session integrity hold", async () => {
