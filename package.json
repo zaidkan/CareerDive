@@ -13,7 +13,7 @@
     "dev": "node scripts/dev-banner.mjs && turbo dev",
     "lint": "turbo lint",
     "test": "vitest run",
-    "test:golden-path": "playwright test",
+    "test:golden-path": "node scripts/qa-golden-path.mjs",
     "test:red": "vitest run --config vitest.red.config.ts",
     "test:packages": "turbo test",
     "test:unit": "vitest run",

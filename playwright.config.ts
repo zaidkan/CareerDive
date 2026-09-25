@@ -3,7 +3,7 @@ import { defineConfig } from "@playwright/test";
 /**
  * Career Expo golden-path browser smoke test.
  *
- * Playwright owns the dev stack for a standalone developer check.
+ * scripts/qa-golden-path.mjs owns the dev stack and its process group.
  */
 const WEB_ORIGIN = process.env.WEB_ORIGIN ?? "http://localhost:5173";
 
@@ -15,12 +15,6 @@ export default defineConfig({
   timeout: 180_000,
   expect: { timeout: 20_000 },
   reporter: [["list"]],
-  webServer: {
-    command: "pnpm dev",
-    url: WEB_ORIGIN,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
   use: {
     baseURL: WEB_ORIGIN,
     headless: true,

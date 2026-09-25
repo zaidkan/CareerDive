@@ -124,6 +124,7 @@ test("landing → arrival → one assessed session → 3D workplace", async ({
 
   const sessionCreates: SessionCreateCall[] = [];
   const failedApiResponses: string[] = [];
+  const failedAssets: string[] = [];
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
 
@@ -149,6 +150,9 @@ test("landing → arrival → one assessed session → 3D workplace", async ({
         `${response.status()} ${response.request().method()} ${response.url()}`,
       );
     }
+    if (response.status() >= 400 && response.url().startsWith(`${WEB_ORIGIN}/`)) {
+      failedAssets.push(`${response.status()} ${response.url()}`);
+    }
   });
   page.on("pageerror", (error) => pageErrors.push(String(error)));
   page.on("console", (message) => {
@@ -160,6 +164,7 @@ test("landing → arrival → one assessed session → 3D workplace", async ({
       (text) => !CONSOLE_ERROR_ALLOWLIST.some((allowed) => text.includes(allowed)),
     );
     expect(failedApiResponses, "no failed tRPC/API calls").toEqual([]);
+    expect(failedAssets, "no missing web assets").toEqual([]);
     expect(pageErrors, "no uncaught browser errors").toEqual([]);
     expect(unexpected, "no unexpected app console errors").toEqual([]);
   };
@@ -239,4 +244,5 @@ test("landing → arrival → one assessed session → 3D workplace", async ({
   });
 
   expect(failedApiResponses).toEqual([]);
+  console.log(`Browser QA: session.create=${sessionCreates.length}, sessionKind=${sessionCreates[0]?.sessionKind}, API errors=${failedApiResponses.length}, asset errors=${failedAssets.length}, page errors=${pageErrors.length}, console errors=${consoleErrors.length}`);
 });
