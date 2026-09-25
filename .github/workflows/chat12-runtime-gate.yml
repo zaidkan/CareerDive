@@ -1,0 +1,32 @@
+name: CHAT12 Runtime Gate
+
+on:
+  pull_request:
+    branches: [zaidkan/product-experimental]
+
+jobs:
+  canonical-runtime-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Focused continuity test
+        run: pnpm --filter @sim/web exec vitest run test/world.test.tsx --environment jsdom
+      - run: pnpm check:product-contract
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - name: Browser golden path run 1
+        run: pnpm test:golden-path
+      - name: Browser golden path run 2
+        run: pnpm test:golden-path
