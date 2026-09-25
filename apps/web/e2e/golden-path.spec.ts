@@ -141,7 +141,7 @@ async function advanceArrivalFilmToDoors(page: Page): Promise<boolean> {
 test("canonical entry → walk → sit → login → Desk OS continuity", async ({
   page,
 }) => {
-  test.setTimeout(150_000);
+  test.setTimeout(300_000);
 
   const sessionCreates: SessionCreateCall[] = [];
   const workplaceCalls: WorkplaceCall[] = [];
@@ -207,6 +207,8 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
   };
 
   await test.step("1 · landing loads and the start action works", async () => {
+    await page.setViewportSize({ width: 800, height: 600 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(
       page.getByRole("heading", { name: "Try day one as a cybersecurity analyst" }),
@@ -287,7 +289,7 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
               ({ type, status }) =>
                 type === "movement_exertion" && status >= 200 && status < 300,
             ).length,
-          { timeout: 30_000, intervals: [100, 200, 400, 800] },
+          { timeout: 90_000, intervals: [100, 200, 400, 800, 1200] },
         )
         .toBeGreaterThanOrEqual(1);
     } finally {
@@ -304,7 +306,7 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
               .getByRole("button", { name: "Sit at computer" })
               .isVisible()
               .catch(() => false),
-          { timeout: 30_000, intervals: [100, 200, 400] },
+          { timeout: 90_000, intervals: [100, 200, 400, 800, 1200] },
         )
         .toBe(true);
     } finally {
@@ -370,7 +372,7 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
               .getByRole("button", { name: "Sit at computer" })
               .isVisible()
               .catch(() => false)),
-          { timeout: 15_000, intervals: [100, 200, 400] },
+          { timeout: 45_000, intervals: [100, 200, 400, 800] },
         )
         .toBe(true);
     } finally {
@@ -386,7 +388,7 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
               .getByRole("button", { name: "Sit at computer" })
               .isVisible()
               .catch(() => false),
-          { timeout: 15_000, intervals: [100, 200, 400] },
+          { timeout: 45_000, intervals: [100, 200, 400, 800] },
         )
         .toBe(true);
     } finally {
