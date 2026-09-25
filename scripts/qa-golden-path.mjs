@@ -21,23 +21,21 @@ function waitForExit(child) {
 
 const webReady = await healthy(web);
 const apiReady = await healthy(`${api}/health`);
-if (webReady !== apiReady) {
-  console.error(`Dev stack incomplete: web=${webReady}, API=${apiReady}. Free ports 5173/3001, then retry.`);
+if (webReady || apiReady) {
+  console.error(`Dev ports already in use: web=${webReady}, API=${apiReady}. Free ports 5173/3001, then retry.`);
   process.exit(1);
 }
 
 const servers = [];
 try {
-  if (!webReady) {
-    servers.push(spawn("pnpm", ["--filter", "@sim/web", "dev"], { detached: true, stdio: "inherit" }));
-    servers.push(spawn("pnpm", ["--filter", "@sim/server", "exec", "tsx", "src/main.ts"], { detached: true, stdio: "inherit" }));
-    for (let attempt = 0; attempt < 120; attempt += 1) {
-      if (await healthy(web) && await healthy(`${api}/health`)) break;
-      if (servers.some((server) => server.exitCode !== null) || attempt === 119) {
-        throw new Error("Dev stack did not become healthy within 120 seconds");
-      }
-      await delay(1000);
+  servers.push(spawn("pnpm", ["--filter", "@sim/web", "dev"], { detached: true, stdio: "inherit" }));
+  servers.push(spawn("pnpm", ["--filter", "@sim/server", "exec", "tsx", "src/main.ts"], { detached: true, stdio: "inherit" }));
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    if (await healthy(web) && await healthy(`${api}/health`)) break;
+    if (servers.some((server) => server.exitCode !== null) || attempt === 119) {
+      throw new Error("Dev stack did not become healthy within 120 seconds");
     }
+    await delay(1000);
   }
   const test = spawn("pnpm", ["exec", "playwright", "test"], { stdio: "inherit" });
   process.exitCode = await waitForExit(test);
