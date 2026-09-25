@@ -382,7 +382,7 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
     expect(sessionCreates.length, "stand/return does not create a second session").toBe(1);
   });
 
-  await test.step("7 · runtime product-contract and session integrity hold", async () => {
+  await test.step("11 · runtime product-contract, route, and session integrity hold", async () => {
     await expect(page.locator("body")).toContainText("Career Expo");
     await expect(page.locator("body")).not.toContainText(
       "That workplace interaction could not be completed.",
@@ -392,6 +392,13 @@ test("canonical entry → walk → sit → login → Desk OS continuity", async 
     expect(await page.locator("select").count()).toBe(0);
     expect(await page.locator('[role="radio"]').count()).toBe(0);
     expect(sessionCreates.length).toBe(1);
+    expect(sessionCreates[0]?.status).toBeGreaterThanOrEqual(200);
+    expect(sessionCreates[0]?.status).toBeLessThan(300);
+    expect(new URL(page.url()).pathname).toBe("/start");
+    expect(
+      await page.evaluate(() => performance.getEntriesByType("navigation").length),
+      "no full-page reload/reinitialization occurred",
+    ).toBe(1);
     assertQuiet();
   });
 
