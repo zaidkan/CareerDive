@@ -25,4 +25,6 @@ export type SpatialState = {
   flavorMessage?: string;
   /** True once the player has used the workstation, so guidance stops onboarding them to it. */
   visitedDesk?: boolean;
+  /** True after successful workstation sign-in for this simulation session. */
+  deskAuthenticated?: boolean;
 };
