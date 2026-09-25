@@ -22,11 +22,11 @@ jobs:
       - name: Focused continuity test
         run: pnpm --filter @sim/web exec vitest run test/world.test.tsx --environment jsdom
       - run: pnpm check:product-contract
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm build
       - name: Browser golden path run 1
         run: pnpm test:golden-path
       - name: Browser golden path run 2
         run: pnpm test:golden-path
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
