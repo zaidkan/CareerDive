@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import type { BrowserNav, OsAppId } from "./os/browserState.js";
+import type { DeskOsTab } from "./tabs.js";
 import {
   closeWindow, focusWindow, initialWindowState, maximizeWindow, minimizeWindow,
   moveWindow, openWindow, restoreMaximizedWindow, restoreWindow,
@@ -49,11 +50,14 @@ export interface OsSessionState {
   openFile: OpenableFile | null;
   fakeFs: FakeFs;
   browserHistories: Record<string, BrowserHistory>;
+  browserDraftByWindow: Record<string, string>;
+  opsTabByWindow: Record<string, DeskOsTab>;
   notesText: string;
   morganIntroSeen: boolean;
   /** File Explorer folder + selection survive DeskOs remounts (session-scoped). */
   explorerFolder: FsFolderId;
   explorerSelected: string | null;
+  filesClipboard: string | null;
 }
 
 export type OsSessionAction =
@@ -71,10 +75,13 @@ export type OsSessionAction =
   | { type: "browser_navigate"; windowId: string; nav: BrowserNav }
   | { type: "browser_back"; windowId: string }
   | { type: "browser_forward"; windowId: string }
+  | { type: "set_browser_draft"; windowId: string; draft: string }
+  | { type: "set_ops_tab"; windowId: string; tab: DeskOsTab }
   | { type: "set_notes_text"; text: string }
   | { type: "mark_morgan_intro_seen" }
   | { type: "set_explorer_folder"; folder: FsFolderId }
-  | { type: "set_explorer_selected"; fileId: string | null };
+  | { type: "set_explorer_selected"; fileId: string | null }
+  | { type: "set_files_clipboard"; fileId: string | null };
 
 export function createInitialOsSession(): OsSessionState {
   return {
@@ -82,10 +89,13 @@ export function createInitialOsSession(): OsSessionState {
     openFile: null,
     fakeFs: initialFakeFs(),
     browserHistories: { "window-1": { entries: [{ kind: "page", page: "ops" }], index: 0 } },
+    browserDraftByWindow: {},
+    opsTabByWindow: {},
     notesText: "",
     morganIntroSeen: false,
     explorerFolder: FS_FALLBACK_FOLDER,
     explorerSelected: null,
+    filesClipboard: null,
   };
 }
 
@@ -118,10 +128,18 @@ export function osSessionReducer(
     case "restore_maximized_window":
       return { ...state, windows: restoreMaximizedWindow(state.windows, action.id) };
     case "close_window": {
+      const closedApp = state.windows.windows.find((window) => window.id === action.id)?.app;
       const browserHistories = Object.fromEntries(
         Object.entries(state.browserHistories).filter(([id]) => id !== action.id),
       );
-      return { ...state, windows: closeWindow(state.windows, action.id), browserHistories };
+      const browserDraftByWindow = Object.fromEntries(
+        Object.entries(state.browserDraftByWindow).filter(([id]) => id !== action.id),
+      );
+      const opsTabByWindow = Object.fromEntries(
+        Object.entries(state.opsTabByWindow).filter(([id]) => id !== action.id),
+      );
+      return { ...state, windows: closeWindow(state.windows, action.id), browserHistories, browserDraftByWindow,
+        opsTabByWindow, filesClipboard: closedApp === "files" ? null : state.filesClipboard };
     }
     case "select_taskbar_window":
       return { ...state, windows: selectTaskbarWindow(state.windows, action.id) };
@@ -168,6 +186,14 @@ export function osSessionReducer(
         } },
       };
     }
+    case "set_browser_draft":
+      return state.windows.windows.some((window) => window.id === action.windowId && window.app === "browser")
+        ? { ...state, browserDraftByWindow: { ...state.browserDraftByWindow, [action.windowId]: action.draft } }
+        : state;
+    case "set_ops_tab":
+      return state.windows.windows.some((window) => window.id === action.windowId && window.app === "browser")
+        ? { ...state, opsTabByWindow: { ...state.opsTabByWindow, [action.windowId]: action.tab } }
+        : state;
     case "set_notes_text":
       return state.notesText === action.text
         ? state
@@ -184,6 +210,10 @@ export function osSessionReducer(
       return state.explorerSelected === action.fileId
         ? state
         : { ...state, explorerSelected: action.fileId };
+    case "set_files_clipboard":
+      return state.filesClipboard === action.fileId
+        ? state
+        : { ...state, filesClipboard: action.fileId };
     default:
       return state;
   }

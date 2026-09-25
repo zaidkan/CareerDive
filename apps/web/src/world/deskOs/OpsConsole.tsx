@@ -4,6 +4,7 @@ import { getShiftGuidance } from "../../guidance.js";
 import { CalendarPanel, DashboardHome } from "./DashboardHome.js";
 import { SystemApp } from "./SystemApp.js";
 import { APP_TABS, type DeskOsTab } from "./tabs.js";
+import { useOsSession } from "./osSession.js";
 import { CaseRail } from "../../components/CaseRail.js";
 import { MutationStatus } from "../../components/MutationStatus.js";
 import { NotificationBanner } from "../../components/NotificationBanner.js";
@@ -19,10 +20,11 @@ import {
 } from "../../useMutationCoordinator.js";
 
 /**
- * The existing tabbed ops console, unchanged. Rendered as the Browser's
- * bookmarked SOC Ops Console page. All canonical wiring passes through.
+ * Tabbed ops console within a Browser window. Its selected tab belongs to the
+ * window session; canonical actions still pass through unchanged.
  */
 export function OpsConsole({
+  windowId,
   phase,
   view,
   onAction,
@@ -32,6 +34,7 @@ export function OpsConsole({
   mutationState = EMPTY_MUTATION_STATE,
   onRetryMutation,
 }: {
+  windowId: string;
   phase: "desk_login" | "seated_monitor" | "focus_desk";
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
@@ -41,15 +44,22 @@ export function OpsConsole({
   mutationState?: MutationState;
   onRetryMutation?: () => void;
 }) {
+  const { state, dispatch } = useOsSession();
   const guidance = getShiftGuidance(view);
   const initialTab: DeskOsTab =
     guidance?.systemId ??
     (view.events.some(({ systemId }) => systemId === "email")
       ? "email"
       : "home");
-  const [tab, setTab] = useState<DeskOsTab>(
-    phase === "desk_login" ? "home" : initialTab,
-  );
+  const tab = state.opsTabByWindow[windowId] ?? (phase === "desk_login" ? "home" : initialTab);
+  const setTab = (nextTab: DeskOsTab) => {
+    dispatch({ type: "set_ops_tab", windowId, tab: nextTab });
+  };
+  useEffect(() => {
+    if (state.opsTabByWindow[windowId] === undefined) {
+      dispatch({ type: "set_ops_tab", windowId, tab });
+    }
+  }, [dispatch, state.opsTabByWindow, tab, windowId]);
   const [focusTarget, setFocusTarget] = useState<{
     eventId?: string;
     requestId: number;

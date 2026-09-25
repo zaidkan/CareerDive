@@ -94,8 +94,9 @@ export function DeskOs({
     return ordinal > 1 ? `Browser ${String(ordinal)}` : "Browser";
   };
 
-  const opsConsole = (
+  const opsConsole = (windowId: string) => (
     <OpsConsole
+      windowId={windowId}
       phase={phase}
       view={view}
       onAction={onAction}
@@ -130,7 +131,7 @@ export function DeskOs({
             onToggleMaximize={() => { dispatch({ type: window.maximized ? "restore_maximized_window" : "maximize_window", id: window.id }); }}
             onClose={() => { dispatch({ type: "close_window", id: window.id }); }}
           >
-            {window.app === "browser" ? <BrowserApp opsConsole={opsConsole} windowId={window.id} />
+            {window.app === "browser" ? <BrowserApp opsConsole={opsConsole(window.id)} windowId={window.id} />
               : window.app === "files" ? <FileExplorer onOpenFile={openFileInNotes} />
               : <Notes openFile={openFile} />}
           </WindowFrame>

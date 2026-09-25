@@ -14,20 +14,15 @@ import {
 import { prefersReducedMotion } from "./reducedMotion.js";
 
 export function BrowserApp({ opsConsole, windowId = "window-1" }: { opsConsole: ReactNode; windowId?: string }) {
-  const { nav, page, canBack, canForward, back, forward, openPage, navigate } =
+  const { nav, page, draft, setDraft, canBack, canForward, back, forward, openPage, navigate } =
     useBrowserHistory(windowId);
   const currentUrl = navUrl(nav);
-  const [draft, setDraft] = useState(currentUrl);
   const addressRef = useRef<HTMLInputElement | null>(null);
   const [reloading, setReloading] = useState(false);
   const timer = useRef<number | null>(null);
   const addressId = `${windowId}-os-address-bar`;
   const addressHintId = `${windowId}-os-address-bar-hint`;
   const bookmarkHintId = `${windowId}-os-ops-bookmark-hint`;
-
-  useEffect(() => {
-    setDraft(currentUrl);
-  }, [currentUrl]);
 
   useEffect(
     () => () => {
@@ -59,8 +54,6 @@ export function BrowserApp({ opsConsole, windowId = "window-1" }: { opsConsole: 
     }
     const next = resolveAddress(trimmed);
     navigate(next);
-    // Show the canonical URL for the destination (aliases collapse to the page URL).
-    setDraft(navUrl(next));
   };
 
   const onAddressKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {

@@ -44,7 +44,10 @@ export function FileExplorer({
   const selected = state.explorerSelected;
   const selectedFile = selected ? findFile(fs, selected) : null;
   const selectedId = selectedFile ? selected : null;
-  const [clipboard, setClipboard] = useState<string | null>(null);
+  const clipboard = state.filesClipboard;
+  const setClipboard = (fileId: string | null) => {
+    dispatch({ type: "set_files_clipboard", fileId });
+  };
   const [notice, setNotice] = useState("File moves stay on this workstation.");
   const [dropTarget, setDropTarget] = useState<FsFolderId | null>(null);
 

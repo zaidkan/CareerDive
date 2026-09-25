@@ -222,7 +222,7 @@ describe("once-per-session Morgan introduction", () => {
       await screen.findByRole("button", { name: "Sit at desk" }, { timeout: 6000 }),
     );
     expect(screen.queryByRole("heading", { name: /Sign in/i })).toBeNull();
-    await screen.findByRole("heading", { name: "Your workstation" });
+    expect(await screen.findByRole("tab", { name: /^Team/ })).toHaveAttribute("aria-selected", "true");
     await openTeamChat(user);
     expect(introNodes()).toHaveLength(1);
     expect(screen.getByTestId("morgan-intro")).toHaveTextContent(

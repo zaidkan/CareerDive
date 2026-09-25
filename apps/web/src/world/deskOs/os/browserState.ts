@@ -83,19 +83,27 @@ export function useBrowserHistory(windowId = "window-1") {
   const history = state.browserHistories[windowId] ?? { entries: [pageNav("ops")], index: 0 };
   const nav = history.entries[history.index] ?? pageNav("ops");
   const page = nav.kind === "page" ? nav.page : null;
+  const setDraft = (draft: string) => {
+    dispatch({ type: "set_browser_draft", windowId, draft });
+  };
   const navigate = (next: BrowserNav) => {
     dispatch({ type: "browser_navigate", windowId, nav: next });
+    setDraft(navUrl(next));
   };
   return {
     nav,
     page,
+    draft: state.browserDraftByWindow[windowId] ?? navUrl(nav),
+    setDraft,
     canBack: history.index > 0,
     canForward: history.index < history.entries.length - 1,
     back: () => {
       dispatch({ type: "browser_back", windowId });
+      setDraft(navUrl(history.entries[Math.max(0, history.index - 1)] ?? nav));
     },
     forward: () => {
       dispatch({ type: "browser_forward", windowId });
+      setDraft(navUrl(history.entries[Math.min(history.entries.length - 1, history.index + 1)] ?? nav));
     },
     navigate,
     openPage: (pageId: BrowserPageId) => {
