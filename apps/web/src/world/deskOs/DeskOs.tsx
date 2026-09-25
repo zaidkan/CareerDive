@@ -1,4 +1,5 @@
 import type { AvailableAction, ClientView } from "@sim/schemas";
+import { useEffect, useRef, useState } from "react";
 import { LockScreen } from "./LockScreen.js";
 import { OpsConsole } from "./OpsConsole.js";
 import { BrowserApp } from "./os/BrowserApp.js";
@@ -8,6 +9,7 @@ import { Notes } from "./os/Notes.js";
 import { Taskbar } from "./os/Taskbar.js";
 import { WindowFrame } from "./os/WindowFrame.js";
 import type { OsAppId } from "./os/browserState.js";
+import { MAX_OPEN_WINDOWS, canOpenWindow, type WorkspaceSize } from "./os/windows.js";
 import { useOsSession } from "./osSession.js";
 import type {
   NotificationHandler,
@@ -49,10 +51,31 @@ export function DeskOs({
   onRetryMutation?: () => void;
 }) {
   const { state, dispatch } = useOsSession();
-  // Single-active-window model: exactly one app fills the workspace.
-  const activeApp = state.activeApp;
-  const setActiveApp = (app: OsAppId) => {
-    dispatch({ type: "set_active_app", app });
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const [windowNotice, setWindowNotice] = useState("");
+  useEffect(() => {
+    if (!windowNotice) return;
+    const timer = window.setTimeout(() => { setWindowNotice(""); }, 4000);
+    return () => { window.clearTimeout(timer); };
+  }, [windowNotice]);
+  const workspaceSize = (): WorkspaceSize => ({
+    w: workspaceRef.current?.clientWidth || 1024,
+    h: workspaceRef.current?.clientHeight || 720,
+  });
+  const launch = (app: OsAppId) => {
+    if (!canOpenWindow(state.windows, app)) {
+      setWindowNotice(state.windows.windows.length >= MAX_OPEN_WINDOWS
+        ? "Up to 4 windows can be open at once. Close one to open another."
+        : "Browser already has 2 windows open.");
+      return;
+    }
+    setWindowNotice("");
+    dispatch({ type: "open_window", app, workspace: workspaceSize() });
+  };
+  const selectPinned = (app: OsAppId) => {
+    const existing = state.windows.windows.find((window) => window.app === app);
+    if (existing) dispatch({ type: "restore_window", id: existing.id });
+    else launch(app);
   };
   // Opened files live at session level so they survive overlay unmount/remount.
   const openFile = state.openFile;
@@ -63,7 +86,12 @@ export function DeskOs({
 
   const openFileInNotes = (file: OpenableFile) => {
     setOpenFile(file);
-    setActiveApp("notes");
+    launch("notes");
+  };
+  const windowLabel = (id: string, app: "browser" | "files" | "notes") => {
+    if (app !== "browser") return app === "files" ? "Files" : "Notes";
+    const ordinal = state.windows.windows.filter((entry) => entry.app === "browser").findIndex((entry) => entry.id === id) + 1;
+    return ordinal > 1 ? `Browser ${String(ordinal)}` : "Browser";
   };
 
   const opsConsole = (
@@ -84,27 +112,30 @@ export function DeskOs({
       className={`desk-os${maximized ? " desk-os-max" : ""}${osFullscreen ? " desk-os-os-fs" : ""}${locked ? " desk-os-locked" : " desk-os-shell"}`}
       data-desk-os="true"
     >
-      {/* Ops console stays mounted while locked so tab state matches the
-          pre-login mount behavior; the locked pane hides it. */}
-      <div className="os-workspace" hidden={locked}>
-        <div hidden={locked || activeApp !== "desktop"}>
-          <Desktop onOpen={setActiveApp} />
-        </div>
-        <div hidden={locked || activeApp !== "browser"}>
-          <WindowFrame active app="browser" title="Browser">
-            <BrowserApp opsConsole={opsConsole} />
+      <div className="os-workspace" hidden={locked} ref={workspaceRef}>
+        <Desktop onOpen={launch} />
+        {state.windows.windows.filter((window) => !window.minimized).map((window) => (
+          <WindowFrame
+            key={window.id}
+            id={window.id}
+            app={window.app}
+            title={windowLabel(window.id, window.app)}
+            active={state.windows.focusedWindowId === window.id}
+            maximized={window.maximized}
+            bounds={window.bounds}
+            z={window.z}
+            onFocus={() => { dispatch({ type: "focus_window", id: window.id }); }}
+            onMove={(x, y) => { dispatch({ type: "move_window", id: window.id, x, y, workspace: workspaceSize() }); }}
+            onMinimize={() => { dispatch({ type: "minimize_window", id: window.id }); }}
+            onToggleMaximize={() => { dispatch({ type: window.maximized ? "restore_maximized_window" : "maximize_window", id: window.id }); }}
+            onClose={() => { dispatch({ type: "close_window", id: window.id }); }}
+          >
+            {window.app === "browser" ? <BrowserApp opsConsole={opsConsole} windowId={window.id} />
+              : window.app === "files" ? <FileExplorer onOpenFile={openFileInNotes} />
+              : <Notes openFile={openFile} />}
           </WindowFrame>
-        </div>
-        <div hidden={locked || activeApp !== "files"}>
-          <WindowFrame active app="files" title="Files">
-            <FileExplorer onOpenFile={openFileInNotes} />
-          </WindowFrame>
-        </div>
-        <div hidden={locked || activeApp !== "notes"}>
-          <WindowFrame active app="notes" title="Notes">
-            <Notes openFile={openFile} />
-          </WindowFrame>
-        </div>
+        ))}
+        {windowNotice ? <p className="os-window-notice" role="status">{windowNotice}</p> : null}
       </div>
       {locked ? (
         <div className="desk-os-body">
@@ -125,10 +156,17 @@ export function DeskOs({
         </div>
       ) : (
         <Taskbar
-          activeApp={activeApp}
           simClock={view.simClock}
           osFullscreen={osFullscreen}
-          onSelect={setActiveApp}
+          onLaunch={selectPinned}
+          windows={state.windows.windows.map((window) => ({
+            key: window.id,
+            app: window.app,
+            label: windowLabel(window.id, window.app),
+            active: state.windows.focusedWindowId === window.id,
+            minimized: window.minimized,
+          }))}
+          onSelectWindow={(id) => { dispatch({ type: "select_taskbar_window", id }); }}
           onOsFullscreen={onOsFullscreen}
           onStand={onStand}
         />

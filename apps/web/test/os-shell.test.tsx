@@ -75,8 +75,8 @@ describe("fake-OS desktop shell", () => {
     );
     expect(screen.getByLabelText("Address bar")).toHaveValue("verdaly://ops");
 
-    // Taskbar swaps to the desktop: single active window, ops tabs hidden.
-    await user.click(screen.getByRole("button", { name: "Desktop" }));
+    // Closing the only window exposes the desktop workspace.
+    await user.click(screen.getByRole("button", { name: "Close Browser" }));
     expect(screen.queryByRole("tab", { name: "Dashboard" })).toBeNull();
     expect(screen.getByRole("button", { name: "Open Browser" })).toBeVisible();
     expect(screen.getByRole("button", { name: "Open Files" })).toBeVisible();

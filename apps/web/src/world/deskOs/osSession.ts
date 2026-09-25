@@ -8,6 +8,11 @@ import {
 } from "react";
 import type { BrowserNav, OsAppId } from "./os/browserState.js";
 import {
+  closeWindow, focusWindow, initialWindowState, maximizeWindow, minimizeWindow,
+  moveWindow, openWindow, restoreMaximizedWindow, restoreWindow,
+  selectTaskbarWindow, type WindowState, type WorkspaceSize,
+} from "./os/windows.js";
+import {
   FS_FALLBACK_FOLDER,
   initialFakeFs,
   type FakeFs,
@@ -40,10 +45,10 @@ function sameNav(a: BrowserNav, b: BrowserNav): boolean {
  * evidence/assessment/time/actions.
  */
 export interface OsSessionState {
-  activeApp: OsAppId;
+  windows: WindowState;
   openFile: OpenableFile | null;
   fakeFs: FakeFs;
-  browserHistory: BrowserHistory;
+  browserHistories: Record<string, BrowserHistory>;
   notesText: string;
   morganIntroSeen: boolean;
   /** File Explorer folder + selection survive DeskOs remounts (session-scoped). */
@@ -52,12 +57,20 @@ export interface OsSessionState {
 }
 
 export type OsSessionAction =
-  | { type: "set_active_app"; app: OsAppId }
+  | { type: "open_window"; app: OsAppId; workspace?: WorkspaceSize }
+  | { type: "focus_window"; id: string }
+  | { type: "move_window"; id: string; x: number; y: number; workspace: WorkspaceSize }
+  | { type: "minimize_window"; id: string }
+  | { type: "restore_window"; id: string }
+  | { type: "maximize_window"; id: string }
+  | { type: "restore_maximized_window"; id: string }
+  | { type: "close_window"; id: string }
+  | { type: "select_taskbar_window"; id: string }
   | { type: "set_open_file"; file: OpenableFile | null }
   | { type: "set_fake_fs"; fs: FakeFs }
-  | { type: "browser_navigate"; nav: BrowserNav }
-  | { type: "browser_back" }
-  | { type: "browser_forward" }
+  | { type: "browser_navigate"; windowId: string; nav: BrowserNav }
+  | { type: "browser_back"; windowId: string }
+  | { type: "browser_forward"; windowId: string }
   | { type: "set_notes_text"; text: string }
   | { type: "mark_morgan_intro_seen" }
   | { type: "set_explorer_folder"; folder: FsFolderId }
@@ -65,10 +78,10 @@ export type OsSessionAction =
 
 export function createInitialOsSession(): OsSessionState {
   return {
-    activeApp: "browser",
+    windows: initialWindowState(),
     openFile: null,
     fakeFs: initialFakeFs(),
-    browserHistory: { entries: [{ kind: "page", page: "ops" }], index: 0 },
+    browserHistories: { "window-1": { entries: [{ kind: "page", page: "ops" }], index: 0 } },
     notesText: "",
     morganIntroSeen: false,
     explorerFolder: FS_FALLBACK_FOLDER,
@@ -81,10 +94,37 @@ export function osSessionReducer(
   action: OsSessionAction,
 ): OsSessionState {
   switch (action.type) {
-    case "set_active_app":
-      return state.activeApp === action.app
-        ? state
-        : { ...state, activeApp: action.app };
+    case "open_window": {
+      const windows = openWindow(state.windows, action.app, action.workspace);
+      const id = windows.focusedWindowId;
+      return {
+        ...state,
+        windows,
+        browserHistories: id && !state.browserHistories[id] && windows.windows.find((window) => window.id === id)?.app === "browser"
+          ? { ...state.browserHistories, [id]: { entries: [{ kind: "page", page: "ops" }], index: 0 } }
+          : state.browserHistories,
+      };
+    }
+    case "focus_window":
+      return { ...state, windows: focusWindow(state.windows, action.id) };
+    case "move_window":
+      return { ...state, windows: moveWindow(state.windows, action.id, action.x, action.y, action.workspace) };
+    case "minimize_window":
+      return { ...state, windows: minimizeWindow(state.windows, action.id) };
+    case "restore_window":
+      return { ...state, windows: restoreWindow(state.windows, action.id) };
+    case "maximize_window":
+      return { ...state, windows: maximizeWindow(state.windows, action.id) };
+    case "restore_maximized_window":
+      return { ...state, windows: restoreMaximizedWindow(state.windows, action.id) };
+    case "close_window": {
+      const browserHistories = Object.fromEntries(
+        Object.entries(state.browserHistories).filter(([id]) => id !== action.id),
+      );
+      return { ...state, windows: closeWindow(state.windows, action.id), browserHistories };
+    }
+    case "select_taskbar_window":
+      return { ...state, windows: selectTaskbarWindow(state.windows, action.id) };
     case "set_open_file":
       return state.openFile === action.file
         ? state
@@ -92,37 +132,42 @@ export function osSessionReducer(
     case "set_fake_fs":
       return state.fakeFs === action.fs ? state : { ...state, fakeFs: action.fs };
     case "browser_navigate": {
-      const base = state.browserHistory.entries.slice(
+      const history = state.browserHistories[action.windowId];
+      if (!history) return state;
+      const base = history.entries.slice(
         0,
-        state.browserHistory.index + 1,
+        history.index + 1,
       );
       const top = base[base.length - 1];
       if (top && sameNav(top, action.nav)) return state;
       const entries = [...base, action.nav];
       return {
         ...state,
-        browserHistory: { entries, index: entries.length - 1 },
+        browserHistories: { ...state.browserHistories, [action.windowId]: { entries, index: entries.length - 1 } },
       };
     }
-    case "browser_back":
+    case "browser_back": {
+      const history = state.browserHistories[action.windowId];
+      if (!history) return state;
       return {
         ...state,
-        browserHistory: {
-          ...state.browserHistory,
-          index: Math.max(0, state.browserHistory.index - 1),
-        },
+        browserHistories: { ...state.browserHistories, [action.windowId]: { ...history, index: Math.max(0, history.index - 1) } },
       };
-    case "browser_forward":
+    }
+    case "browser_forward": {
+      const history = state.browserHistories[action.windowId];
+      if (!history) return state;
       return {
         ...state,
-        browserHistory: {
-          ...state.browserHistory,
+        browserHistories: { ...state.browserHistories, [action.windowId]: {
+          ...history,
           index: Math.min(
-            state.browserHistory.entries.length - 1,
-            state.browserHistory.index + 1,
+            history.entries.length - 1,
+            history.index + 1,
           ),
-        },
+        } },
       };
+    }
     case "set_notes_text":
       return state.notesText === action.text
         ? state

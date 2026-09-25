@@ -13,14 +13,17 @@ import {
 } from "./browserState.js";
 import { prefersReducedMotion } from "./reducedMotion.js";
 
-export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
+export function BrowserApp({ opsConsole, windowId = "window-1" }: { opsConsole: ReactNode; windowId?: string }) {
   const { nav, page, canBack, canForward, back, forward, openPage, navigate } =
-    useBrowserHistory();
+    useBrowserHistory(windowId);
   const currentUrl = navUrl(nav);
   const [draft, setDraft] = useState(currentUrl);
   const addressRef = useRef<HTMLInputElement | null>(null);
   const [reloading, setReloading] = useState(false);
   const timer = useRef<number | null>(null);
+  const addressId = `${windowId}-os-address-bar`;
+  const addressHintId = `${windowId}-os-address-bar-hint`;
+  const bookmarkHintId = `${windowId}-os-ops-bookmark-hint`;
 
   useEffect(() => {
     setDraft(currentUrl);
@@ -107,13 +110,13 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
             ⟳
           </button>
         </div>
-        <label className="visually-hidden" htmlFor="os-address-bar">
+        <label className="visually-hidden" htmlFor={addressId}>
           Address bar
         </label>
         <input
-          aria-describedby="os-address-bar-hint"
+          aria-describedby={addressHintId}
           className="os-address-input"
-          id="os-address-bar"
+          id={addressId}
           onChange={(event) => {
             setDraft(event.target.value);
           }}
@@ -123,7 +126,7 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
           type="text"
           value={draft}
         />
-        <span className="visually-hidden" id="os-address-bar-hint">
+        <span className="visually-hidden" id={addressHintId}>
           Press Enter to open an approved address. Other addresses are blocked by
           organization policy.
         </span>
@@ -132,7 +135,7 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
         {BROWSER_PAGES.map((entry) => (
           <button
             aria-current={entry.id === "ops" && page === entry.id ? "page" : undefined}
-            aria-describedby={entry.id === "ops" ? "os-ops-bookmark-hint" : undefined}
+            aria-describedby={entry.id === "ops" ? bookmarkHintId : undefined}
             aria-pressed={page === entry.id}
             className={`os-bookmark${page === entry.id ? " os-bookmark-active" : ""}`}
             key={entry.id}
@@ -144,7 +147,7 @@ export function BrowserApp({ opsConsole }: { opsConsole: ReactNode }) {
             {entry.title}
           </button>
         ))}
-        <span className="visually-hidden" id="os-ops-bookmark-hint">
+        <span className="visually-hidden" id={bookmarkHintId}>
           Start your shift here — opens the SOC work console.
         </span>
       </nav>

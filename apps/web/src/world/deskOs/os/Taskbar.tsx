@@ -1,49 +1,60 @@
 import { formatShiftClock } from "../../../systems.js";
 import { appDefinition } from "./appCatalog.js";
-import type { OsAppId } from "./browserState.js";
+import type { WindowApp } from "./windows.js";
 
 /**
- * Visual contract for one taskbar entry in the future multi-window system.
- * W1 owns the window list; the taskbar only renders state it is given.
+ * One taskbar entry per actual window record.
  */
 export type TaskbarWindow = {
   key: string;
-  app: OsAppId;
+  app: WindowApp;
   label: string;
   active: boolean;
   minimized: boolean;
 };
 
 export function Taskbar({
-  activeApp,
   simClock,
   osFullscreen,
-  onSelect,
+  onLaunch,
   onOsFullscreen,
   onStand,
   windows,
   onSelectWindow,
 }: {
-  activeApp: OsAppId;
   simClock: number;
   osFullscreen: boolean;
-  onSelect: (app: OsAppId) => void;
+  onLaunch: (app: WindowApp) => void;
   onOsFullscreen: () => void;
   onStand: () => void;
-  windows?: ReadonlyArray<TaskbarWindow>;
-  onSelectWindow?: (key: string) => void;
+  windows: ReadonlyArray<TaskbarWindow>;
+  onSelectWindow: (key: string) => void;
 }) {
   return (
     <div className="os-taskbar" role="toolbar" aria-label="Taskbar">
-      <div className="os-taskbar-apps" role="group" aria-label="Open apps">
-        {windows && onSelectWindow ? (
-          windows.map((entry) => {
+      <div className="os-taskbar-apps">
+        <div className="os-taskbar-pinned" role="group" aria-label="Pinned apps">
+          {(["browser", "files", "notes"] as const).map((app) => (
+            <button
+              aria-pressed={windows.some((window) => window.app === app && window.active)}
+              className="os-taskbar-btn os-taskbar-launcher"
+              key={app}
+              onClick={() => { onLaunch(app); }}
+              type="button"
+            >
+              <span aria-hidden="true" className="os-taskbar-glyph">{appDefinition(app).glyph}</span>
+              {appDefinition(app).label}
+            </button>
+          ))}
+        </div>
+        <div className="os-taskbar-windows" role="group" aria-label="Open windows">
+          {windows.map((entry) => {
             const meta = appDefinition(entry.app);
             const stateLabel = entry.minimized
               ? `${entry.label}, minimized`
               : entry.active
                 ? `${entry.label}, active`
-                : entry.label;
+                : `${entry.label}, background`;
             return (
               <button
                 aria-pressed={entry.active}
@@ -63,48 +74,8 @@ export function Taskbar({
                 {entry.label}
               </button>
             );
-          })
-        ) : (
-          <>
-            <button
-              aria-pressed={activeApp === "desktop"}
-              className={`os-taskbar-btn${activeApp === "desktop" ? " os-taskbar-btn-active" : ""}`}
-              data-running="true"
-              onClick={() => {
-                onSelect("desktop");
-              }}
-              type="button"
-            >
-              <span aria-hidden="true" className="os-taskbar-glyph">
-                {appDefinition("desktop").glyph}
-              </span>
-              Desktop
-            </button>
-            {(
-              [
-                { id: "browser", label: "Browser" },
-                { id: "files", label: "Files" },
-                { id: "notes", label: "Notes" },
-              ] as const
-            ).map((app) => (
-              <button
-                aria-pressed={activeApp === app.id}
-                className={`os-taskbar-btn${activeApp === app.id ? " os-taskbar-btn-active" : ""}`}
-                data-running="true"
-                key={app.id}
-                onClick={() => {
-                  onSelect(app.id);
-                }}
-                type="button"
-              >
-                <span aria-hidden="true" className="os-taskbar-glyph">
-                  {appDefinition(app.id).glyph}
-                </span>
-                {app.label}
-              </button>
-            ))}
-          </>
-        )}
+          })}
+        </div>
       </div>
       <span className="os-taskbar-clock">Shift {formatShiftClock(simClock)}</span>
       <div className="os-taskbar-actions">

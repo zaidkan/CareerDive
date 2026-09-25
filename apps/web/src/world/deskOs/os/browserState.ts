@@ -78,13 +78,13 @@ export function isAllowlisted(raw: string): boolean {
   return key in ALLOWED_PAGE_BY_URL;
 }
 
-export function useBrowserHistory() {
+export function useBrowserHistory(windowId = "window-1") {
   const { state, dispatch } = useOsSession();
-  const history = state.browserHistory;
+  const history = state.browserHistories[windowId] ?? { entries: [pageNav("ops")], index: 0 };
   const nav = history.entries[history.index] ?? pageNav("ops");
   const page = nav.kind === "page" ? nav.page : null;
   const navigate = (next: BrowserNav) => {
-    dispatch({ type: "browser_navigate", nav: next });
+    dispatch({ type: "browser_navigate", windowId, nav: next });
   };
   return {
     nav,
@@ -92,10 +92,10 @@ export function useBrowserHistory() {
     canBack: history.index > 0,
     canForward: history.index < history.entries.length - 1,
     back: () => {
-      dispatch({ type: "browser_back" });
+      dispatch({ type: "browser_back", windowId });
     },
     forward: () => {
-      dispatch({ type: "browser_forward" });
+      dispatch({ type: "browser_forward", windowId });
     },
     navigate,
     openPage: (pageId: BrowserPageId) => {

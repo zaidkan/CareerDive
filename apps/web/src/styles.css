@@ -3356,12 +3356,13 @@ section[aria-labelledby="structured-title"],
   font-weight: 700;
 }
 
-/* —— Fake-OS desktop shell: single active window + taskbar —— */
+/* —— Desk OS workspace and taskbar —— */
 .desk-os-shell {
   grid-template-rows: minmax(0, 1fr) auto;
 }
 
 .os-workspace {
+  position: relative;
   min-height: 0;
   overflow: hidden;
   background: var(--desk);
@@ -3459,6 +3460,31 @@ section[aria-labelledby="structured-title"],
   overflow-x: auto;
 }
 
+.os-taskbar-pinned,
+.os-taskbar-windows {
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+}
+
+.os-taskbar-pinned {
+  padding-right: 0.4rem;
+  border-right: 1px solid var(--line);
+}
+
+.os-window-notice {
+  position: absolute;
+  z-index: 10000;
+  bottom: 0.6rem;
+  left: 0.6rem;
+  max-width: min(28rem, calc(100% - 1.2rem));
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line-bright);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--paper);
+}
+
 .os-taskbar-btn {
   flex: 0 0 auto;
   padding: 0.4rem 0.7rem;
@@ -3522,6 +3548,11 @@ section[aria-labelledby="structured-title"],
   box-shadow: var(--shadow-soft);
 }
 
+.os-window-frame:not(.os-window-frame-active) {
+  border-color: var(--line);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 18%);
+}
+
 /* Focused window: brighter frame, lift, paper title. */
 .os-window-frame-active {
   border-color: var(--line-bright);
@@ -3551,7 +3582,7 @@ section[aria-labelledby="structured-title"],
   background: var(--ink-lift);
 }
 
-.os-window-active .os-window-bar {
+.os-window-frame-active .os-window-bar {
   background: color-mix(in srgb, var(--panel) 72%, var(--ink-lift));
 }
 
@@ -3561,6 +3592,7 @@ section[aria-labelledby="structured-title"],
   gap: 0.5rem;
   min-width: 0;
   padding: 0.4rem 0.45rem 0.4rem 0.6rem;
+  touch-action: none;
 }
 
 .os-app-glyph {

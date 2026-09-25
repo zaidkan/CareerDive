@@ -286,7 +286,7 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
   await test.step("9 · leave, walk away, return, and resume Desk OS state", async () => {
     await page.getByRole("button", { name: "Company intranet" }).click();
     await expect(page.getByRole("heading", { name: "Company intranet" })).toBeVisible();
-    await page.getByRole("button", { name: "Notes" }).click();
+    await page.getByRole("group", { name: "Pinned apps" }).getByRole("button", { name: "Notes", exact: true }).click();
     await page.getByRole("textbox", { name: "Scratch notes" }).fill("continuity probe");
     await page.getByRole("button", { name: "Leave desk" }).click();
     await expect(page.getByRole("button", { name: "Sit at computer" })).toBeVisible();
@@ -303,7 +303,7 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
     await expect(page.getByRole("heading", { name: "Sign in to Verdaly" })).toHaveCount(0);
     await expect(page.getByRole("toolbar", { name: "Taskbar" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Scratch notes" })).toHaveValue("continuity probe");
-    await page.getByRole("button", { name: "Browser" }).click();
+    await page.getByRole("group", { name: "Pinned apps" }).getByRole("button", { name: "Browser", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Company intranet" })).toBeVisible();
     expect(sessionCreates.length, "return creates no extra session").toBe(1);
   });
