@@ -1,10 +1,11 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { getCareerBySlug } from "../careers/careers.js";
 import { SiteChrome } from "./SiteChrome.js";
 import { parseRoute, type SitePath, type SiteRoute } from "./routes.js";
 import { useRouteMeta } from "./seo.js";
 import { LandingPage } from "./pages/LandingPage.js";
 import "./site.css";
+import "./v2.css";
 
 /** Start path owns the sim shell — keep it off the landing critical path. */
 const StartPage = lazy(async () => {
@@ -73,6 +74,7 @@ function usePrefetchStartChunk(route: SiteRoute): void {
 }
 
 export function SiteApp({ initialRoute }: { initialRoute?: SitePath }) {
+  const previousPath = useRef<string | null>(null);
   const [route, setRoute] = useState<SiteRoute>(
     initialRoute ? parseRoute(initialRoute) :
       (typeof window === "undefined"
@@ -93,11 +95,20 @@ export function SiteApp({ initialRoute }: { initialRoute?: SitePath }) {
 
   useEffect(() => {
     if (initialRoute) return;
+    const path = window.location.pathname;
+    if (previousPath.current === null) {
+      previousPath.current = path;
+      return;
+    }
+    if (previousPath.current === path) return;
+    previousPath.current = path;
     const main = document.getElementById("main-content");
     if (!main) return;
+    const initialFocus = document.activeElement;
     const focusHeading = () => {
       const heading = main.querySelector<HTMLElement>("h1");
       if (!heading) return false;
+      if (document.activeElement !== initialFocus && document.activeElement !== document.body) return true;
       heading.tabIndex = -1;
       heading.focus({ preventScroll: true });
       return true;
@@ -107,7 +118,8 @@ export function SiteApp({ initialRoute }: { initialRoute?: SitePath }) {
       if (focusHeading()) observer.disconnect();
     });
     observer.observe(main, { childList: true, subtree: true });
-    return () => { observer.disconnect(); };
+    const timeout = window.setTimeout(() => { observer.disconnect(); }, 10000);
+    return () => { observer.disconnect(); window.clearTimeout(timeout); };
   }, [route, initialRoute]);
 
   useRouteMeta(route);

@@ -703,8 +703,8 @@ a:focus-visible {
   top: -4rem;
   z-index: 50;
   padding: 0.7rem 1rem;
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--text-primary);
+  color: var(--canvas);
   font-weight: 700;
   border-radius: 0 0 8px 8px;
 }
@@ -1148,7 +1148,8 @@ a:focus-visible {
   color: var(--signal);
 }
 
-.career-card h3 {
+.career-card h3,
+.career-card h4 {
   margin-bottom: 0.55rem;
   color: var(--paper);
   font-family: var(--font-display);

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { navigate, type SitePath, type SiteRoute } from "./routes.js";
 import { ThemeToggle } from "./ThemeToggle.js";
 
@@ -41,7 +41,8 @@ const NAV: Array<{ route: SitePath; label: string }> = [
 ];
 
 function go(route: SitePath) {
-  return (event: { preventDefault: () => void }) => {
+  return (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     navigate(route);
   };

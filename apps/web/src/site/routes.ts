@@ -20,13 +20,14 @@ export type SiteRoute =
   | { kind: "not-found"; pathname: string };
 
 export function parseRoute(pathname: string): SiteRoute {
-  if (pathname === "/") return { kind: "home" };
-  if (pathname === "/careers") return { kind: "careers" };
-  if (pathname === "/how-it-works") return { kind: "how-it-works" };
-  if (pathname === "/trust") return { kind: "trust" };
-  if (pathname === "/faq") return { kind: "faq" };
-  if (pathname === "/start") return { kind: "start" };
-  const match = /^\/careers\/([a-z0-9]+(?:-[a-z0-9]+)*)$/.exec(pathname);
+  const path = pathname === "/" ? pathname : pathname.replace(/\/+$/, "");
+  if (path === "/") return { kind: "home" };
+  if (path === "/careers") return { kind: "careers" };
+  if (path === "/how-it-works") return { kind: "how-it-works" };
+  if (path === "/trust") return { kind: "trust" };
+  if (path === "/faq") return { kind: "faq" };
+  if (path === "/start") return { kind: "start" };
+  const match = /^\/careers\/([a-z0-9]+(?:-[a-z0-9]+)*)$/.exec(path);
   if (match?.[1] && getCareerBySlug(match[1])?.detailPublished) {
     return { kind: "career", slug: match[1] };
   }

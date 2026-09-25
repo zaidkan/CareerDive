@@ -189,7 +189,7 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
   await test.step("1 · landing loads and the start action works", async () => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(
-      page.getByRole("heading", { name: "Try day one as a cybersecurity analyst" }),
+      page.getByRole("heading", { name: "Know the work before you choose the career." }),
     ).toBeVisible();
     await expect(page.getByRole("link", { name: /Start your first day/ }).first()).toBeVisible();
     expect(await scanStaleConcepts(page)).toEqual([]);

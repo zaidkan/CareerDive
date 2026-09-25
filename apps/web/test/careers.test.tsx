@@ -86,10 +86,12 @@ describe("Career Explorer interaction", () => {
     button.focus();
     await user.keyboard("{Enter}");
     expect(button).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText(task)).toBeVisible();
+    const preview = document.querySelector(".career-preview-panel");
+    if (!(preview instanceof HTMLElement)) throw new Error("Preview panel missing");
+    expect(within(preview).getByText(task)).toBeVisible();
     await user.keyboard("{Enter}");
     expect(button).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText(task)).not.toBeVisible();
+    expect(within(preview).getByText(task)).not.toBeVisible();
   });
 
   it("sends reversible desired request states without a count", async () => {
@@ -98,8 +100,11 @@ describe("Career Explorer interaction", () => {
     render(<CareerCard career={careerAt(1)} setCareerRequest={setCareerRequest} />);
     const button = screen.getByRole("button", { name: "Request Registered Nurse" });
     expect(button).toHaveAttribute("aria-pressed", "false");
+    expect(button).toHaveTextContent("Request Registered Nurse");
     await user.click(button);
     expect(button).toHaveAttribute("aria-pressed", "true");
+    expect(button).toHaveAccessibleName("Request Registered Nurse");
+    expect(button).toHaveTextContent("requested");
     expect(setCareerRequest).toHaveBeenLastCalledWith({ careerId: "registered-nurse", requested: true });
     await user.click(button);
     expect(button).toHaveAttribute("aria-pressed", "false");
@@ -112,6 +117,13 @@ describe("Career Explorer interaction", () => {
     render(<CareerCard career={careerAt(1)} />);
     await user.click(screen.getByRole("button", { name: "Request Registered Nurse" }));
     expect(screen.getByText(/requests are not collected yet/i)).toBeVisible();
+  });
+
+  it("shows Workshop safety and authenticity notes in the Preview", async () => {
+    const user = userEvent.setup();
+    render(<CareerCard career={careerAt(1)} />);
+    await user.click(screen.getByRole("button", { name: "Preview Registered Nurse" }));
+    expect(screen.getByText(careerAt(1).contentCaveats?.[0] ?? "missing caveat")).toBeVisible();
   });
 });
 
@@ -142,6 +154,23 @@ describe("public routes", () => {
     expect(await screen.findByRole("heading", { name: careerAt(0).title, level: 1 })).toBeVisible();
     expect(within(detailHeader()).getByText(careerAt(0).workplaceSummary)).toBeVisible();
     expect(screen.getByRole("link", { name: "Begin your first day" })).toHaveAttribute("href", "/start");
+    expect(screen.queryByRole("button", { name: /preview cybersecurity analyst/i })).toBeNull();
+    expect(screen.getAllByText(careerAt(0).plannedTasks[0] ?? "missing task")).toHaveLength(1);
+  });
+
+  it.each([
+    { ctrlKey: true },
+    { metaKey: true },
+    { button: 1 },
+  ])("keeps modified navigation clicks available to the browser: %j", (options) => {
+    render(<SiteApp initialRoute="/" />);
+    const nav = screen.getByRole("navigation", { name: "Primary" });
+    const link = within(nav).getByRole("link", { name: "Careers" });
+    link.setAttribute("href", "#modified-click-test");
+    const modified = new MouseEvent("click", { bubbles: true, cancelable: true, ...options });
+    link.dispatchEvent(modified);
+    expect(modified.defaultPrevented).toBe(false);
+    expect(window.location.pathname).toBe("/");
   });
 
   it("keeps Workshop details unpublished and cards on the Explorer", async () => {
@@ -165,7 +194,7 @@ describe("public routes", () => {
 });
 
 describe("public page accessibility", () => {
-  it.each(["/careers", "/careers/cybersecurity-analyst", "/careers/registered-nurse", "/careers/missing"])("passes axe at %s", async (path) => {
+  it.each(["/", "/careers", "/careers/cybersecurity-analyst", "/careers/registered-nurse", "/careers/missing"])("passes axe at %s", async (path) => {
     window.history.replaceState(null, "", path);
     const { container } = render(<SiteApp />);
     await screen.findByRole("heading", { level: 1 });

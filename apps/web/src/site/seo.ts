@@ -14,9 +14,9 @@ type RouteMeta = {
 
 export const ROUTE_META: Record<Exclude<SiteRoute["kind"], "career" | "not-found">, RouteMeta> = {
   home: {
-    title: "First Shift · Try day one as a cybersecurity analyst",
+    title: "Experience the work before choosing a career · Career Expo",
     description:
-      "First Shift, the first playable workday from Career Expo: day one as a Junior Cybersecurity Analyst at Verdaly Technologies — a bounded 10–15 minute career simulation. Read evidence, decide, see consequences.",
+      "Explore careers through realistic first-day work. Try a playable simulation, inspect work previews, and reflect on how the job feels.",
     path: "/",
     index: true,
   },
@@ -50,7 +50,7 @@ export const ROUTE_META: Record<Exclude<SiteRoute["kind"], "career" | "not-found
   },
   careers: {
     title: "Explore careers · Career Expo",
-    description: "Explore one ready career simulation and previews of careers in the workshop.",
+    description: "Explore playable career simulations and previews of careers in the workshop.",
     path: "/careers",
     index: true,
   },

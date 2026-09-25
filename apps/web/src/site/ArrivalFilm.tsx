@@ -98,7 +98,7 @@ export function ArrivalFilm({
     return (
       <section className="film-gate film-cinema" aria-labelledby="arrival-film-gate">
         <p className="eyebrow">Arrival film · Verdaly Technologies</p>
-        <h2 id="arrival-film-gate">Short preview film before your first day</h2>
+        <h1 id="arrival-film-gate">Short preview film before your first day</h1>
 
         <div className="film-hold-wrap film-hold-wrap-cinema">
           {reducedMotion ? (

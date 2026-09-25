@@ -8,14 +8,16 @@ import type { SetCareerRequest } from "./CareerRequestToggle.js";
 export function CareerExplorer({
   items = careers,
   setCareerRequest,
+  headingLevel = 2,
 }: {
   items?: readonly PublicCareer[];
   setCareerRequest?: SetCareerRequest | undefined;
+  headingLevel?: 2 | 3;
 }) {
   return (
     <div className="career-explorer">
-      <ReadyNowStage careers={readyNowCareers(items)} />
-      <WorkshopShelf careers={workshopCareers(items)} setCareerRequest={setCareerRequest} />
+      <ReadyNowStage careers={readyNowCareers(items)} headingLevel={headingLevel} />
+      <WorkshopShelf careers={workshopCareers(items)} setCareerRequest={setCareerRequest} headingLevel={headingLevel} />
     </div>
   );
 }

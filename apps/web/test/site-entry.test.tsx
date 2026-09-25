@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SiteApp } from "../src/site/SiteApp.js";
 import { parseRoute } from "../src/site/routes.js";
 import { LandingPage } from "../src/site/pages/LandingPage.js";
@@ -10,6 +10,10 @@ import { StartPage } from "../src/site/pages/StartPage.js";
 vi.mock("../src/world/RoomCanvas.js", () => ({
   RoomCanvas: () => <div>room mock</div>,
 }));
+
+beforeEach(() => {
+  window.scrollTo = vi.fn();
+});
 
 afterEach(() => {
   cleanup();
@@ -30,7 +34,9 @@ describe("site routes", () => {
   it("parses known routes and represents unknown paths explicitly", () => {
     expect(parseRoute("/")).toEqual({ kind: "home" });
     expect(parseRoute("/careers")).toEqual({ kind: "careers" });
+    expect(parseRoute("/careers/")).toEqual({ kind: "careers" });
     expect(parseRoute("/careers/cybersecurity-analyst")).toEqual({ kind: "career", slug: "cybersecurity-analyst" });
+    expect(parseRoute("/careers/cybersecurity-analyst/")).toEqual({ kind: "career", slug: "cybersecurity-analyst" });
     expect(parseRoute("/careers/registered-nurse")).toEqual({ kind: "not-found", pathname: "/careers/registered-nurse" });
     expect(parseRoute("/careers/missing")).toEqual({ kind: "not-found", pathname: "/careers/missing" });
     expect(parseRoute("/how-it-works")).toEqual({ kind: "how-it-works" });
@@ -45,22 +51,29 @@ describe("site routes", () => {
     render(<SiteApp initialRoute="/" />);
     expect(
       screen.getByRole("heading", {
-        name: /try day one as a cybersecurity analyst/i,
+        name: /know the work before you choose the career/i,
       }),
     ).toBeVisible();
     expect(createSession).not.toHaveBeenCalled();
   });
 
-  it("landing has no fake quotes, no film teaser, no redundant surface section", () => {
+  it("does not place a visible focus ring on the first direct page load", () => {
+    render(<SiteApp />);
+    expect(screen.getByRole("heading", { level: 1 })).not.toHaveFocus();
+  });
+
+  it("landing presents the full career journey without fake proof", () => {
     render(<LandingPage />);
     expect(screen.queryByText(/early response/i)).toBeNull();
     expect(screen.queryByText(/felt like real triage/i)).toBeNull();
     expect(screen.queryByText(/arrival film · verdaly/i)).toBeNull();
     expect(screen.queryByRole("button", { name: /watch arrival film/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /play arrival film/i })).toBeNull();
-    expect(screen.getByRole("heading", { name: /how the 10 minutes move/i })).toBeVisible();
-    expect(screen.queryByRole("heading", { name: /three ways to work/i })).toBeNull();
-    expect(screen.queryByRole("heading", { name: /ready for day one/i })).toBeNull();
+    expect(screen.getByRole("heading", { name: /explore careers through the work/i })).toBeVisible();
+    expect(screen.getByRole("heading", { name: /what you’ll actually do/i })).toBeVisible();
+    expect(screen.getByRole("heading", { name: /first day, from arrival to reflection/i })).toBeVisible();
+    expect(screen.getByRole("heading", { name: /a real workstation, real decisions/i })).toBeVisible();
+    expect(screen.getByRole("heading", { name: /questions, answered plainly/i })).toBeVisible();
     expect(
       screen.getAllByRole("link", { name: /start your first day/i }).length,
     ).toBeGreaterThanOrEqual(1);
@@ -75,7 +88,7 @@ describe("site routes", () => {
     expect(screen.queryByText(/false-positive review/i)).toBeNull();
     expect(screen.queryByText(/phishing report/i)).toBeNull();
     expect(
-      screen.getByRole("heading", { name: /five workplace systems/i }),
+      screen.getByRole("heading", { name: /a real workstation, real decisions/i }),
     ).toBeVisible();
   });
 
@@ -91,6 +104,12 @@ describe("site routes", () => {
         name: /short preview film/i,
       }, { timeout: 6000 }),
     ).toBeVisible();
+    expect(screen.getByRole("heading", { name: /short preview film/i })).toHaveFocus();
+    const laterHeading = document.createElement("h1");
+    laterHeading.textContent = "Later simulation heading";
+    document.getElementById("main-content")?.appendChild(laterHeading);
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    expect(laterHeading).not.toHaveFocus();
     window.history.pushState(null, "", "/");
   });
 
