@@ -6,6 +6,7 @@ import {
   useFullscreen,
 } from "../useFullscreen.js";
 import { DeskOs } from "./DeskOs.js";
+import { ResumeVeil } from "./login/WorkstationBoot.js";
 import type {
   NotificationHandler,
   TaskAttemptHandler,
@@ -42,6 +43,13 @@ export function LaptopOverlay({
   disabled?: boolean;
 }) {
   const laptopRef = useRef<HTMLDivElement>(null);
+  /**
+   * Same-session return mounts the overlay straight onto the preserved
+   * desktop (a first sign-in mounts at "desk_login" instead). The brief
+   * resume veil is the only wake cue — presentation only: no lock screen,
+   * no second login, no session or authentication work.
+   */
+  const resumedAtMount = useRef(phase === "seated_monitor");
   const { active: osFullscreen, toggle: toggleOsFullscreen } =
     useFullscreen(laptopRef);
 
@@ -122,6 +130,7 @@ export function LaptopOverlay({
           phase={phase}
           view={view}
         />
+        {resumedAtMount.current ? <ResumeVeil /> : null}
       </div>
     </div>
   );

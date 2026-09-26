@@ -274,10 +274,12 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
 
   await test.step("8 · sit and sign in", async () => {
     await page.getByRole("button", { name: "Sit at computer" }).click();
+    await expect(page.getByTestId("login-curtain")).toBeVisible();
+    await page.getByTestId("login-surface").click();
     await expect(page.getByRole("heading", { name: "Sign in to Verdaly" })).toBeVisible();
     await page.getByRole("textbox", { name: "Username" }).fill(DESK_LOGIN.username);
     await page.getByRole("textbox", { name: "Password" }).fill(DESK_LOGIN.password);
-    await page.getByRole("button", { name: "Login" }).click();
+    await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page.getByRole("toolbar", { name: "Taskbar" })).toBeVisible();
     await expect(page.locator('[data-desk-os="true"]')).toBeVisible();
     expect(sessionCreates.length, "login creates no extra session").toBe(1);

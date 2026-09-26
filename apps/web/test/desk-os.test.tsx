@@ -202,10 +202,10 @@ async function enterDesk(user: ReturnType<typeof userEvent.setup>) {
     ),
   );
   await user.click(await screen.findByRole("button", { name: "Sit at desk" }));
-  await user.type(await screen.findByLabelText(/Username/i), "day1.analyst");
-  await user.type(await screen.findByLabelText(/Password/i), "FirstDay!");
+  await user.click(await screen.findByTestId("login-surface"));
+  await user.type(await screen.findByLabelText(/^Password$/i), "FirstDay!");
   await user.click(
-    await screen.findByRole("button", { name: /^Login$/i }),
+    await screen.findByRole("button", { name: /^Sign in$/i }),
   );
   await screen.findByRole("heading", { name: "Your workstation" });
 }

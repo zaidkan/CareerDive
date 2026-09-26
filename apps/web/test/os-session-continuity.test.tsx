@@ -94,10 +94,12 @@ it("restores the full authenticated workstation after stand, leave, return, and 
 
   await user.click(screen.getByRole("button", { name: "Enter workplace" }));
   await user.click(screen.getByRole("button", { name: "Sit at computer" }));
+  expect(screen.getByTestId("login-curtain")).toBeVisible();
+  await user.click(screen.getByTestId("login-surface"));
   expect(screen.getByRole("heading", { name: "Sign in to Verdaly" })).toBeVisible();
-  await user.type(screen.getByLabelText("Username"), DESK_LOGIN.username);
+  expect(screen.getByLabelText("Username")).toHaveValue(DESK_LOGIN.username);
   await user.type(screen.getByLabelText("Password"), DESK_LOGIN.password);
-  await user.click(screen.getByRole("button", { name: "Login" }));
+  await user.click(screen.getByRole("button", { name: "Sign in" }));
   expect(await screen.findByRole("toolbar", { name: "Taskbar" })).toBeVisible();
   expect(onLogin).toHaveBeenCalledTimes(1);
 
