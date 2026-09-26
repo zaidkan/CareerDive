@@ -13,6 +13,9 @@ export type PublicCareer = {
   artifactOrMediaConcepts: readonly string[];
   caveats: readonly string[];
   contentCaveats?: readonly string[];
+  pathway?: readonly string[];
+  misconceptions?: readonly { claim: string; correction: string }[];
+  realityNotes?: readonly string[];
   sources: readonly string[];
   availability: CareerAvailability;
   detailPublished: boolean;

@@ -86,6 +86,86 @@ describe("public career data", () => {
     expect(getCareerBySlug("film-video-editor")).toBeUndefined();
   });
 
+  it("keeps the locked public career set and the Workshop membership", () => {
+    expect(careers.map((career) => career.slug)).toEqual([
+      "cybersecurity-analyst",
+      "registered-nurse",
+      "mechanical-engineer",
+      "electrician",
+      "lawyer-attorney",
+    ]);
+    expect(careers.map((career) => career.availability)).toEqual([
+      "ready_now",
+      "in_workshop",
+      "in_workshop",
+      "in_workshop",
+      "coming_soon",
+    ]);
+    expect(readyNowCareers().map((career) => career.slug)).toEqual([
+      "cybersecurity-analyst",
+    ]);
+    expect(workshopCareers().map((career) => career.slug)).toEqual([
+      "registered-nurse",
+      "mechanical-engineer",
+      "electrician",
+      "lawyer-attorney",
+    ]);
+    expect(workshopCareers().every((career) => career.requestable)).toBe(true);
+    expect(careerAt(0).simulationRoute).toBe("/start");
+    expect(
+      workshopCareers().every((career) => career.simulationRoute === undefined),
+    ).toBe(true);
+  });
+
+  it("validates the optional pathway, misconception, and reality note fields", () => {
+    for (const career of careers) {
+      expect(career.pathway?.length ?? 0).toBeGreaterThan(0);
+      for (const step of career.pathway ?? []) {
+        expect(step.trim().length).toBeGreaterThan(0);
+      }
+      expect(career.misconceptions?.length ?? 0).toBeGreaterThan(0);
+      for (const entry of career.misconceptions ?? []) {
+        expect(entry.claim.trim().length).toBeGreaterThan(0);
+        expect(entry.correction.trim().length).toBeGreaterThan(0);
+        expect(entry.correction).not.toBe(entry.claim);
+      }
+      expect(career.realityNotes?.length ?? 0).toBeGreaterThan(0);
+      for (const note of career.realityNotes ?? []) {
+        expect(note.trim().length).toBeGreaterThan(0);
+      }
+      expect(career.sources).toContain(
+        "docs/content/public-career-content-packet.md",
+      );
+    }
+  });
+
+  it("keeps verification markers out of every published career string", () => {
+    const published: string[] = [];
+    for (const career of careers) {
+      published.push(
+        career.id,
+        career.slug,
+        career.title,
+        career.field,
+        career.shortSummary,
+        career.workplaceSummary,
+        ...career.skills,
+        ...career.plannedTasks,
+        ...career.artifactOrMediaConcepts,
+        ...career.caveats,
+        ...(career.contentCaveats ?? []),
+        ...(career.pathway ?? []),
+        ...(career.realityNotes ?? []),
+        ...career.sources,
+      );
+      for (const entry of career.misconceptions ?? []) {
+        published.push(entry.claim, entry.correction);
+      }
+    }
+    expect(published.join("\n")).not.toContain("[VERIFY]");
+    expect(published.join("\n")).not.toMatch(/\bTBD\b|\bTODO\b/);
+  });
+
   it("renders an arbitrary reordered Workshop fixture without position rules", () => {
     const original = workshopCareers();
     const reordered: PublicCareer[] = original.slice(0, 3).reverse();
