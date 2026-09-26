@@ -1,11 +1,12 @@
 import type { OsAppId } from "./browserState.js";
+import type { OsIconName } from "./Icons.js";
 
 export type OsAppDefinition = {
   id: OsAppId;
   /** Taskbar, launcher, and title-bar name. */
   label: string;
-  /** Monogram shown until real artwork exists. */
-  glyph: string;
+  /** Shared icon language mark for every surface. */
+  icon: OsIconName;
   /** One short line describing what the app is for. */
   role: string;
 };
@@ -14,25 +15,25 @@ const DEFINITIONS: Record<OsAppId, OsAppDefinition> = {
   desktop: {
     id: "desktop",
     label: "Desktop",
-    glyph: "▦",
+    icon: "app-desktop",
     role: "Workspace overview",
   },
   browser: {
     id: "browser",
     label: "Browser",
-    glyph: "◉",
+    icon: "app-browser",
     role: "SOC Ops Console and intranet",
   },
   files: {
     id: "files",
     label: "Files",
-    glyph: "▤",
+    icon: "app-files",
     role: "Workstation documents",
   },
   notes: {
     id: "notes",
     label: "Notes",
-    glyph: "✎",
+    icon: "app-notes",
     role: "Private scratch pad",
   },
 };

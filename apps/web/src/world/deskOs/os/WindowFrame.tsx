@@ -1,6 +1,7 @@
 import { useRef, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { appDefinition } from "./appCatalog.js";
 import type { OsAppId } from "./browserState.js";
+import { OsIcon } from "./Icons.js";
 import type { WindowBounds } from "./windows.js";
 
 /**
@@ -95,9 +96,7 @@ export function WindowFrame({
         onPointerCancel={(event) => { stopDrag(event, false); }}
       >
         <div className="os-window-bar-main">
-          <span aria-hidden="true" className="os-app-glyph">
-            {meta.glyph}
-          </span>
+          <OsIcon className="os-app-glyph" name={meta.icon} size={16} />
           <span className="os-window-identity">
             <strong>{title}</strong>
             {subtitle ? <small>{subtitle}</small> : null}
@@ -111,7 +110,7 @@ export function WindowFrame({
                 title={`Minimize ${title}`}
                 type="button"
               >
-                <span aria-hidden="true">–</span>
+                <OsIcon name="win-minimize" size={14} />
               </button>
             ) : null}
             {onToggleMaximize ? (
@@ -123,7 +122,7 @@ export function WindowFrame({
                 title={maximized ? `Restore ${title}` : `Maximize ${title}`}
                 type="button"
               >
-                <span aria-hidden="true">{maximized ? "❐" : "▢"}</span>
+                <OsIcon name={maximized ? "win-restore" : "win-maximize"} size={14} />
               </button>
             ) : null}
             {onClose ? (
@@ -134,7 +133,7 @@ export function WindowFrame({
                 title={`Close ${title}`}
                 type="button"
               >
-                <span aria-hidden="true">✕</span>
+                <OsIcon name="win-close" size={14} />
               </button>
             ) : null}
           </span>

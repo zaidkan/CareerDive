@@ -9,6 +9,7 @@ import { Notes } from "./os/Notes.js";
 import { Taskbar } from "./os/Taskbar.js";
 import { WindowFrame } from "./os/WindowFrame.js";
 import type { OsAppId } from "./os/browserState.js";
+import { OsIcon } from "./os/Icons.js";
 import { MAX_OPEN_WINDOWS, canOpenWindow, type WorkspaceSize } from "./os/windows.js";
 import { useOsSession } from "./osSession.js";
 import { NotificationBanner } from "../../components/NotificationBanner.js";
@@ -149,7 +150,13 @@ export function DeskOs({
             onFocus={() => { dispatch({ type: "focus_window", id: window.id }); }}
             onMove={(x, y) => { dispatch({ type: "move_window", id: window.id, x, y, workspace: workspaceSize() }); }}
             onMinimize={() => { dispatch({ type: "minimize_window", id: window.id }); }}
-            onToggleMaximize={() => { dispatch({ type: window.maximized ? "restore_maximized_window" : "maximize_window", id: window.id }); }}
+            onToggleMaximize={() => {
+              if (window.maximized) {
+                dispatch({ type: "restore_maximized_window", id: window.id, workspace: workspaceSize() });
+              } else {
+                dispatch({ type: "maximize_window", id: window.id });
+              }
+            }}
             onClose={() => { dispatch({ type: "close_window", id: window.id }); }}
           >
             {window.app === "browser" ? <BrowserApp opsConsole={opsConsole(window.id)} windowId={window.id} />
@@ -162,7 +169,12 @@ export function DeskOs({
             <NotificationBanner notifications={view.notifications} {...(onNotification ? { onNotification: respondToNotification } : {})} mutationState={mutationState} />
           </aside>
         ) : null}
-        {windowNotice ? <p aria-atomic="true" className="os-window-notice" role="status">{windowNotice}</p> : null}
+        {windowNotice ? (
+          <p aria-atomic="true" className="os-window-notice" role="status">
+            <OsIcon name="info" size={15} />
+            {windowNotice}
+          </p>
+        ) : null}
       </div>
       {locked ? (
         <div className="desk-os-body">
@@ -173,9 +185,11 @@ export function DeskOs({
               onClick={onOsFullscreen}
               type="button"
             >
+              <OsIcon name="expand" size={14} />
               Expand workstation
             </button>
             <button className="desk-os-ghost" onClick={onStand} type="button">
+              <OsIcon name="exit" size={14} />
               Leave desk
             </button>
           </div>

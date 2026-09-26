@@ -1,5 +1,6 @@
 import { formatShiftClock } from "../../../systems.js";
 import { appDefinition } from "./appCatalog.js";
+import { OsIcon } from "./Icons.js";
 import type { WindowApp } from "./windows.js";
 
 /**
@@ -45,7 +46,7 @@ export function Taskbar({
               onClick={() => { onLaunch(app); }}
               type="button"
             >
-              <span aria-hidden="true" className="os-taskbar-glyph">{appDefinition(app).glyph}</span>
+              <OsIcon className="os-taskbar-glyph" name={appDefinition(app).icon} size={16} />
               {appDefinition(app).label}
               {app === "browser" && attention ? <span aria-hidden="true" className="os-taskbar-attention" /> : null}
             </button>
@@ -73,9 +74,7 @@ export function Taskbar({
                 }}
                 type="button"
               >
-                <span aria-hidden="true" className="os-taskbar-glyph">
-                  {meta.glyph}
-                </span>
+                <OsIcon className="os-taskbar-glyph" name={meta.icon} size={16} />
                 {entry.label}
                 {needsAttention ? <span aria-hidden="true" className="os-taskbar-attention" /> : null}
               </button>
@@ -91,9 +90,11 @@ export function Taskbar({
           onClick={onOsFullscreen}
           type="button"
         >
+          <OsIcon name="expand" size={14} />
           Expand workstation
         </button>
         <button className="desk-os-ghost" onClick={onStand} type="button">
+          <OsIcon name="exit" size={14} />
           Leave desk
         </button>
       </div>

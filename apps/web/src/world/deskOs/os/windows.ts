@@ -2,6 +2,8 @@ import type { OsAppId } from "./browserState.js";
 
 export const MAX_OPEN_WINDOWS = 4;
 export const TITLE_BAR_REACH = 48;
+/** Restored windows keep wallpaper visible on every side of the workspace. */
+export const OPEN_MARGIN = 24;
 
 export type WindowApp = Exclude<OsAppId, "desktop">;
 export type WindowBounds = { x: number; y: number; w: number; h: number };
@@ -47,8 +49,8 @@ export function emptyWindowState(): WindowState {
 }
 
 export function clampWindowBounds(bounds: WindowBounds, workspace: WorkspaceSize): WindowBounds {
-  const w = Math.max(1, bounds.w);
-  const h = Math.max(1, bounds.h);
+  const w = Math.max(1, Math.min(bounds.w, workspace.w - 2 * OPEN_MARGIN));
+  const h = Math.max(1, Math.min(bounds.h, workspace.h - 2 * OPEN_MARGIN));
   return {
     x: Math.min(Math.max(bounds.x, TITLE_BAR_REACH - w), Math.max(0, workspace.w - TITLE_BAR_REACH)),
     y: Math.min(Math.max(bounds.y, 0), Math.max(0, workspace.h - TITLE_BAR_REACH)),
@@ -128,8 +130,19 @@ export function maximizeWindow(state: WindowState, id: string): WindowState {
   return { ...focused, windows: focused.windows.map((entry) => entry.id === id ? { ...entry, maximized: true } : entry) };
 }
 
-export function restoreMaximizedWindow(state: WindowState, id: string): WindowState {
-  return { ...state, windows: state.windows.map((entry) => entry.id === id ? { ...entry, maximized: false } : entry) };
+export function restoreMaximizedWindow(state: WindowState, id: string, workspace?: WorkspaceSize): WindowState {
+  return {
+    ...state,
+    windows: state.windows.map((entry) =>
+      entry.id === id
+        ? {
+            ...entry,
+            maximized: false,
+            ...(workspace ? { bounds: clampWindowBounds(entry.bounds, workspace) } : {}),
+          }
+        : entry,
+    ),
+  };
 }
 
 export function closeWindow(state: WindowState, id: string): WindowState {

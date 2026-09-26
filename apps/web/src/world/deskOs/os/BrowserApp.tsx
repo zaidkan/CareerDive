@@ -11,6 +11,7 @@ import {
   resolveAddress,
   useBrowserHistory,
 } from "./browserState.js";
+import { OsIcon } from "./Icons.js";
 import { prefersReducedMotion } from "./reducedMotion.js";
 
 export function BrowserApp({ opsConsole, windowId = "window-1" }: { opsConsole: ReactNode; windowId?: string }) {
@@ -82,7 +83,7 @@ export function BrowserApp({ opsConsole, windowId = "window-1" }: { opsConsole: 
             onClick={back}
             type="button"
           >
-            ←
+            <OsIcon name="nav-back" size={16} />
           </button>
           <button
             aria-label="Go forward"
@@ -91,7 +92,7 @@ export function BrowserApp({ opsConsole, windowId = "window-1" }: { opsConsole: 
             onClick={forward}
             type="button"
           >
-            →
+            <OsIcon name="nav-forward" size={16} />
           </button>
           <button
             aria-label="Reload page"
@@ -100,25 +101,28 @@ export function BrowserApp({ opsConsole, windowId = "window-1" }: { opsConsole: 
             onClick={reload}
             type="button"
           >
-            ⟳
+            <OsIcon name="nav-reload" size={16} />
           </button>
         </div>
         <label className="visually-hidden" htmlFor={addressId}>
           Address bar
         </label>
-        <input
-          aria-describedby={addressHintId}
-          className="os-address-input"
-          id={addressId}
-          onChange={(event) => {
-            setDraft(event.target.value);
-          }}
-          onKeyDown={onAddressKeyDown}
-          ref={addressRef}
-          spellCheck={false}
-          type="text"
-          value={draft}
-        />
+        <div className="os-address-field">
+          <OsIcon className="os-address-lock" name="lock" size={13} />
+          <input
+            aria-describedby={addressHintId}
+            className="os-address-input"
+            id={addressId}
+            onChange={(event) => {
+              setDraft(event.target.value);
+            }}
+            onKeyDown={onAddressKeyDown}
+            ref={addressRef}
+            spellCheck={false}
+            type="text"
+            value={draft}
+          />
+        </div>
         <span className="visually-hidden" id={addressHintId}>
           Press Enter to open an approved address. Other addresses are blocked by
           organization policy.

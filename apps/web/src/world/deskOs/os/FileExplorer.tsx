@@ -1,5 +1,6 @@
 import { useState, type DragEvent } from "react";
 import { useOsSession, type OpenableFile } from "../osSession.js";
+import { OsIcon } from "./Icons.js";
 import {
   FS_ROOT_LABEL,
   childFolders,
@@ -117,7 +118,8 @@ export function FileExplorer({
           }}
           type="button"
         >
-          ↑ Up
+          <OsIcon name="up" size={14} />
+          Up
         </button>
         <nav aria-label="Folder path" className="os-path">
           <span className="os-path-root">{FS_ROOT_LABEL}</span>
@@ -184,6 +186,7 @@ export function FileExplorer({
                 }}
                 type="button"
               >
+                <OsIcon className="os-folder-icon" name="folder" size={15} />
                 {entry.label}
                 <span className="os-folder-count">{itemCount(fs, entry.id)}</span>
               </button>
@@ -201,6 +204,7 @@ export function FileExplorer({
                 }}
                 type="button"
               >
+                <OsIcon className="os-file-icon" name="folder" size={15} />
                 <strong>{entry.label}/</strong>
                 <span>
                   Folder · {itemCount(fs, entry.id)} items
@@ -238,6 +242,7 @@ export function FileExplorer({
                 }}
                 type="button"
               >
+                <OsIcon className="os-file-icon" name="file" size={15} />
                 <strong>{file.name}</strong>
                 <span>
                   {fileKindLabel(file.kind)} · {file.body.split("\n").length} lines

@@ -1,5 +1,6 @@
 import { LAUNCHABLE_APPS } from "./appCatalog.js";
 import type { OsAppId } from "./browserState.js";
+import { OsIcon } from "./Icons.js";
 
 export function Desktop({ onOpen }: { onOpen: (app: OsAppId) => void }) {
   return (
@@ -16,7 +17,7 @@ export function Desktop({ onOpen }: { onOpen: (app: OsAppId) => void }) {
               type="button"
             >
               <span aria-hidden="true" className="os-icon-glyph">
-                {app.glyph}
+                <OsIcon name={app.icon} size={22} />
               </span>
               <span>{app.label}</span>
             </button>

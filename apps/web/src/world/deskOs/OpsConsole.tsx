@@ -4,6 +4,7 @@ import { getShiftGuidance } from "../../guidance.js";
 import { CalendarPanel, DashboardHome } from "./DashboardHome.js";
 import { SystemApp } from "./SystemApp.js";
 import { APP_TABS, type DeskOsTab } from "./tabs.js";
+import { OsIcon } from "./os/Icons.js";
 import { useOsSession } from "./osSession.js";
 import { CaseRail } from "../../components/CaseRail.js";
 import { MutationStatus } from "../../components/MutationStatus.js";
@@ -84,12 +85,8 @@ export function OpsConsole({
 
   return (
     <div className="desk-os-console">
-      <div className="desk-os-chrome">
-        <div className="desk-os-traffic" aria-hidden="true">
-          <span className="desk-os-dot desk-os-dot-close" />
-          <span className="desk-os-dot desk-os-dot-min" />
-          <span className="desk-os-dot desk-os-dot-max" />
-        </div>
+      <div className="desk-os-app-bar">
+        <strong className="desk-os-app-name">SOC Ops Console</strong>
         <div
           className="desk-os-tabs"
           role="tablist"
@@ -120,11 +117,8 @@ export function OpsConsole({
             );
           })}
         </div>
-      </div>
-
-      <div className="desk-os-address" aria-hidden={locked}>
-        <span className="desk-os-secure">Secure</span>
-        <span className="desk-os-url">
+        <span className="desk-os-app-route" aria-hidden={locked}>
+          <OsIcon name="lock" size={11} />
           {locked ? "verdaly://lock" : activeTab.path}
         </span>
       </div>

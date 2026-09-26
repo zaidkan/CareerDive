@@ -79,7 +79,7 @@ export type OsSessionAction =
   | { type: "minimize_window"; id: string }
   | { type: "restore_window"; id: string }
   | { type: "maximize_window"; id: string }
-  | { type: "restore_maximized_window"; id: string }
+  | { type: "restore_maximized_window"; id: string; workspace?: WorkspaceSize }
   | { type: "close_window"; id: string }
   | { type: "select_taskbar_window"; id: string }
   | { type: "set_open_file"; file: OpenableFile | null }
@@ -143,7 +143,7 @@ export function osSessionReducer(
     case "maximize_window":
       return { ...state, windows: maximizeWindow(state.windows, action.id) };
     case "restore_maximized_window":
-      return { ...state, windows: restoreMaximizedWindow(state.windows, action.id) };
+      return { ...state, windows: restoreMaximizedWindow(state.windows, action.id, action.workspace) };
     case "close_window": {
       const closedApp = state.windows.windows.find((window) => window.id === action.id)?.app;
       const browserHistories = Object.fromEntries(
