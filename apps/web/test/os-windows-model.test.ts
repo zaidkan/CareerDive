@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   MAX_OPEN_WINDOWS, canOpenWindow, clampWindowBounds, closeWindow,
-  emptyWindowState, focusWindow, maximizeWindow, minimizeWindow, moveWindow,
+  emptyWindowState, fitWindowBounds, focusWindow, maximizeWindow, minimizeWindow, moveWindow,
   openWindow, restoreMaximizedWindow, restoreWindow, selectTaskbarWindow,
   type WindowState,
 } from "../src/world/deskOs/os/windows.js";
@@ -65,6 +65,13 @@ describe("pure Desk OS window model", () => {
     expect(byId(state, "window-1")?.bounds).toMatchObject({ x: 752, y: 552 });
     expect(clampWindowBounds({ x: -9999, y: -9999, w: 480, h: 420 }, workspace)).toMatchObject({ x: -432, y: 0 });
     invariant(state);
+  });
+
+  it("fits rendered bounds after resize and restores saved size when space returns", () => {
+    const saved = { x: 700, y: 380, w: 680, h: 500 };
+    expect(fitWindowBounds(saved, { w: 800, h: 600 })).toEqual({ x: 120, y: 100, w: 680, h: 500 });
+    expect(fitWindowBounds(saved, { w: 500, h: 350 })).toEqual({ x: 0, y: 0, w: 500, h: 350 });
+    expect(fitWindowBounds(saved, { w: 1600, h: 1000 })).toEqual(saved);
   });
 
   it("enforces Browser 2, Files 1, Notes 1, and global 4 without eviction", () => {

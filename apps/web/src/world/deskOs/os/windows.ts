@@ -59,6 +59,18 @@ export function clampWindowBounds(bounds: WindowBounds, workspace: WorkspaceSize
   };
 }
 
+/** Fit a rendered window to the current display without changing saved bounds. */
+export function fitWindowBounds(bounds: WindowBounds, workspace: WorkspaceSize): WindowBounds {
+  const w = Math.min(bounds.w, Math.max(1, workspace.w));
+  const h = Math.min(bounds.h, Math.max(1, workspace.h));
+  return {
+    x: Math.min(Math.max(bounds.x, 0), Math.max(0, workspace.w - w)),
+    y: Math.min(Math.max(bounds.y, 0), Math.max(0, workspace.h - h)),
+    w,
+    h,
+  };
+}
+
 export function canOpenWindow(state: WindowState, app: OsAppId): boolean {
   if (app === "desktop") return false;
   if (app !== "browser" && state.windows.some((window) => window.app === app)) return true;

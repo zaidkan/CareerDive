@@ -1995,6 +1995,9 @@ section[aria-labelledby="structured-title"],
 
 .spatial-shell-engaged {
   margin-top: 1rem;
+  width: min(96dvw, 112rem);
+  margin-left: calc((100% - min(96dvw, 112rem)) / 2);
+  scroll-margin-top: 5.5rem;
 }
 
 .room-stage {
@@ -2010,9 +2013,9 @@ section[aria-labelledby="structured-title"],
 
 .room-stage:fullscreen,
 .room-stage:-webkit-full-screen {
-  width: 100vw;
-  height: 100vh;
-  min-height: 100vh;
+  width: 100dvw;
+  height: 100dvh;
+  min-height: 100dvh;
   border: 0;
   box-shadow: none;
 }
@@ -2023,19 +2026,20 @@ section[aria-labelledby="structured-title"],
 .room-stage:-webkit-full-screen.room-stage-desk .room-canvas,
 .room-stage:fullscreen.room-stage-desk-max .room-canvas,
 .room-stage:-webkit-full-screen.room-stage-desk-max .room-canvas {
-  height: 100vh;
+  height: 100dvh;
 }
 
 .room-stage-desk {
-  min-height: min(78vh, 42rem);
+  min-height: 0;
+  height: min(86dvh, 56rem);
 }
 
 .room-stage-desk .room-canvas {
-  height: min(78vh, 42rem);
+  height: 100%;
 }
 
 .room-stage-desk-max .room-canvas {
-  height: min(86vh, 48rem);
+  height: 100%;
 }
 
 .room-canvas {
@@ -2592,22 +2596,25 @@ section[aria-labelledby="structured-title"],
 .desk-os-overlay {
   position: absolute;
   inset: 0;
-  z-index: 4;
+  z-index: 7;
   display: grid;
   place-items: center;
-  padding: 3.1rem 1.1rem 1.1rem;
+  padding: clamp(0.75rem, 2dvh, 1.5rem) clamp(0.75rem, 2vw, 2rem);
   background: rgb(6 5 4 / 38%);
 }
 
 .desk-os-overlay-max {
-  padding: 2.6rem 0 0;
+  padding: clamp(0.75rem, 2dvh, 1.5rem) clamp(0.75rem, 2vw, 2rem);
   background: rgb(6 5 4 / 55%);
 }
 
 .desk-os-laptop {
   position: relative;
-  width: min(72rem, 96%);
-  height: min(82%, 46rem);
+  scroll-margin-top: 5.5rem;
+  width: min(100%, 106rem);
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   display: grid;
   grid-template-rows: minmax(0, 1fr);
   padding: 0.8rem 0.85rem 1.1rem;
@@ -2649,13 +2656,13 @@ section[aria-labelledby="structured-title"],
 
 .room-stage:fullscreen .desk-os-laptop,
 .room-stage:-webkit-full-screen .desk-os-laptop {
-  height: min(86vh, 54rem);
+  height: 100%;
 }
 
 .desk-os-laptop:fullscreen,
 .desk-os-laptop:-webkit-full-screen {
-  width: 100vw;
-  height: 100vh;
+  width: 100dvw;
+  height: 100dvh;
   max-width: none;
   padding: 0;
   border-radius: 0;
@@ -2690,7 +2697,26 @@ section[aria-labelledby="structured-title"],
 }
 
 .desk-os-locked {
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.desk-os-locked > .desk-os-body {
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0;
+  padding: 0;
+}
+
+.desk-os-locked .desk-os-body > .desk-os-lock {
+  grid-row: 1;
+  min-height: 0;
+}
+
+.desk-os-locked .desk-os-window-actions {
+  grid-row: 2;
+  justify-content: flex-end;
+  padding: 0.55rem 0.75rem;
+  border-top: 1px solid var(--line);
+  background: var(--ink-lift);
 }
 
 .desk-os-max {

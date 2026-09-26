@@ -10,7 +10,7 @@ import { Taskbar } from "./os/Taskbar.js";
 import { WindowFrame } from "./os/WindowFrame.js";
 import type { OsAppId } from "./os/browserState.js";
 import { OsIcon } from "./os/Icons.js";
-import { MAX_OPEN_WINDOWS, canOpenWindow, type WorkspaceSize } from "./os/windows.js";
+import { MAX_OPEN_WINDOWS, canOpenWindow, fitWindowBounds, type WindowBounds, type WorkspaceSize } from "./os/windows.js";
 import { useOsSession } from "./osSession.js";
 import { NotificationBanner } from "../../components/NotificationBanner.js";
 import type {
@@ -54,7 +54,21 @@ export function DeskOs({
 }) {
   const { state, dispatch } = useOsSession();
   const workspaceRef = useRef<HTMLDivElement>(null);
+  const [currentWorkspace, setCurrentWorkspace] = useState<WorkspaceSize>({ w: 0, h: 0 });
   const [windowNotice, setWindowNotice] = useState("");
+  useEffect(() => {
+    const workspace = workspaceRef.current;
+    if (!workspace || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      const w = workspace.clientWidth;
+      const h = workspace.clientHeight;
+      setCurrentWorkspace((previous) => previous.w === w && previous.h === h ? previous : { w, h });
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(workspace);
+    measure();
+    return () => { observer.disconnect(); };
+  }, []);
   useEffect(() => {
     if (!windowNotice) return;
     const timer = window.setTimeout(() => { setWindowNotice(""); }, 4000);
@@ -64,6 +78,10 @@ export function DeskOs({
     w: workspaceRef.current?.clientWidth || 1024,
     h: workspaceRef.current?.clientHeight || 720,
   });
+  const displayBounds = (bounds: WindowBounds): WindowBounds =>
+    currentWorkspace.w > 0 && currentWorkspace.h > 0
+      ? fitWindowBounds(bounds, currentWorkspace)
+      : bounds;
   const launch = (app: OsAppId) => {
     if (!canOpenWindow(state.windows, app)) {
       setWindowNotice(state.windows.windows.length >= MAX_OPEN_WINDOWS
@@ -145,7 +163,7 @@ export function DeskOs({
             title={windowLabel(window.id, window.app)}
             active={state.windows.focusedWindowId === window.id}
             maximized={window.maximized}
-            bounds={window.bounds}
+            bounds={displayBounds(window.bounds)}
             z={window.z}
             onFocus={() => { dispatch({ type: "focus_window", id: window.id }); }}
             onMove={(x, y) => { dispatch({ type: "move_window", id: window.id, x, y, workspace: workspaceSize() }); }}
