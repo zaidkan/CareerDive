@@ -66,6 +66,7 @@ export const DebriefSchema = z.object({
       decisionId: z.string(),
       userChoiceId: z.string().nullable(),
       availableChoiceIds: z.array(z.string()),
+      comparisonEligible: z.boolean(),
       evidenceUsedIds: z.array(z.string()),
       rubricSignals: z.array(z.object({ id: z.string(), supported: z.boolean() })),
       outcomeLabel: z.enum(["supported", "partially_supported", "needs_more_evidence"]),

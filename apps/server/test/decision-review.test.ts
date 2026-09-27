@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import { createInitialWorldState } from "@sim/core";
-import type { ActionLogEntry } from "@sim/schemas";
+import type { ActionLogEntry, WorldState } from "@sim/schemas";
 import {
   buildDecisionReview,
   cohortForDecision,
@@ -295,6 +295,40 @@ describe("end-of-shift decision review", () => {
     },
   );
 
+  it("requires scanner run and window inspections before a supported closure", () => {
+    const { state, log } = fixture();
+    const withoutRun = log.filter((entry) =>
+      entry.interaction.type !== "workplace_interaction" ||
+      entry.interaction.interaction.type !== "open_artifact" ||
+      entry.interaction.interaction.artifactId !== "scanner-run-log"
+    );
+    const review = buildDecisionReview(state, withoutRun);
+    expect(review.decisions[1]?.outcomeLabel).toBe("partially_supported");
+    expect(review.decisions[1]?.rubricSignals.find(({ id }) => id === "checked_run"))
+      .toEqual({ id: "checked_run", supported: false });
+    expect(review.decisions[1]?.explanation).not.toContain("Your later run and window checks");
+    const withoutBoth = withoutRun.filter((entry) =>
+      entry.interaction.type !== "workplace_interaction" ||
+      entry.interaction.interaction.type !== "open_artifact" ||
+      entry.interaction.interaction.artifactId !== "scanner-window"
+    );
+    expect(buildDecisionReview(state, withoutBoth).decisions[1]?.outcomeLabel)
+      .toBe("partially_supported");
+  });
+
+  it("does not praise completed work without inspected support", () => {
+    const { state, log } = fixture();
+    const noSources = log.filter((entry) => entry.interaction.type !== "workplace_interaction");
+    const review = buildDecisionReview(state, noSources);
+    expect(review.decisions[0]?.outcomeLabel).toBe("needs_more_evidence");
+    expect(review.decisions[1]?.outcomeLabel).toBe("partially_supported");
+    expect(review.decisions[2]?.outcomeLabel).toBe("partially_supported");
+    expect(review.decisions[3]?.outcomeLabel).toBe("partially_supported");
+    expect(review.decisions[4]?.outcomeLabel).toBe("partially_supported");
+    expect(review.decisions[3]?.explanation).not.toContain("You compared the phone retries");
+    expect(review.decisions[4]?.explanation).not.toContain("Your handoff named checked work");
+  });
+
   it("keeps unsupported task work and missing handoff visible", () => {
     const { state, log } = fixture();
     state.taskProgress = {};
@@ -308,6 +342,14 @@ describe("end-of-shift decision review", () => {
   });
 
   it("hides small cohorts and derives whole percentages from counts", () => {
+    const { state, log } = fixture();
+    const decisions = buildDecisionReview(state, log).decisions;
+    expect(decisions.find(({ decisionId }) => decisionId === "suspicious_login")?.comparisonEligible).toBe(true);
+    expect(decisions.find(({ decisionId }) => decisionId === "scanner_interruption")?.comparisonEligible).toBe(true);
+    expect(decisions.filter(({ comparisonEligible }) => !comparisonEligible)).toHaveLength(3);
+    expect(cohortForDecision("finance_access", [
+      { decisionId: "finance_access", choiceId: "route_access_request", count: 30 },
+    ])).toEqual({ status: "unavailable" });
     expect(
       cohortForDecision("scanner_interruption", [
         { decisionId: "scanner_interruption", choiceId: "handle", count: 29 },
@@ -325,6 +367,7 @@ describe("end-of-shift decision review", () => {
         Object.values(ready.percentages).reduce((sum, value) => sum + value, 0),
       ).toBe(100);
       expect(ready.counts.handle).toBe(10);
+      expect(ready.percentages).toEqual({ handle: 34, snooze: 33, continue: 33 });
     }
   });
 
@@ -356,6 +399,18 @@ describe("end-of-shift decision review", () => {
     ]);
   });
 
+  it("excludes tutorials and journeys without a recorded career version", () => {
+    const tutorial = { ...fixture().state, sessionKind: "tutorial" } as unknown as WorldState;
+    const log = fixture().log;
+    tutorial.completedActionIds.push("complete_shift");
+    expect(completedDecisions(tutorial, log, pack.career.id)).toEqual([]);
+    const oldJourney = fixture().state;
+    oldJourney.completedActionIds.push("complete_shift");
+    delete oldJourney.careerVersion;
+    expect(completedDecisions(oldJourney, log, pack.career.id)).toEqual([]);
+    expect(buildDecisionReview(oldJourney, log).careerVersion).toBe("unknown");
+  });
+
   it("counts each completed journey once; excludes incomplete and other career versions", async () => {
     const repository = new InMemoryRepository();
     for (let index = 0; index < 31; index++) {
@@ -366,8 +421,9 @@ describe("end-of-shift decision review", () => {
       const session = await repository.getSession(owner, state.sessionId);
       session.actionLog = log;
       const rows = completedDecisions(state, log, pack.career.id);
-      await repository.saveSession(session, rows);
-      await repository.saveSession(session, rows);
+      await repository.saveSession(session);
+      await repository.saveCompletedDecisions(rows);
+      await repository.saveCompletedDecisions(rows);
     }
     const counts = await repository.getCohortCounts(
       pack.career.id,
@@ -441,5 +497,48 @@ describe("end-of-shift decision review", () => {
     expect(debrief.decisionReview?.decisions[0]?.cohort).toEqual({
       status: "unavailable",
     });
+  });
+
+  it("keeps completion and personal recap when review persistence fails", async () => {
+    const repository = new InMemoryRepository();
+    const { state, log } = fixture("review-write-failure");
+    state.events.forEach((event) => { event.status = "resolved"; });
+    await repository.createSession(owner, state);
+    const session = await repository.getSession(owner, state.sessionId);
+    session.actionLog = log;
+    await repository.saveSession(session);
+    const saveCompletedDecisions = repository.saveCompletedDecisions.bind(repository);
+    repository.saveCompletedDecisions = async () => { throw new Error("review table unavailable"); };
+    const caller = createAppRouter(repository).createCaller({ userId: owner });
+    await caller.simulation.performAction({ sessionId: state.sessionId, actionId: "complete_shift", eventId: "shift" });
+    const saved = await repository.getSession(owner, state.sessionId);
+    expect(saved.state.completedActionIds).toContain("complete_shift");
+    const debrief = await caller.debrief.get({ sessionId: state.sessionId });
+    expect(debrief.decisionReview?.decisions).toHaveLength(5);
+    expect(debrief.decisionReview?.decisions[0]?.cohort).toEqual({ status: "unavailable" });
+    repository.saveCompletedDecisions = saveCompletedDecisions;
+    await caller.simulation.performAction({ sessionId: state.sessionId, actionId: "complete_shift", eventId: "shift" });
+    expect((await repository.getSession(owner, state.sessionId)).actionLog).toHaveLength(saved.actionLog.length);
+    expect((await caller.debrief.get({ sessionId: state.sessionId }))
+      .decisionReview?.decisions[0]?.cohort).toEqual({ status: "insufficient" });
+  });
+
+  it("deduplicates concurrent completion and retry", async () => {
+    const repository = new InMemoryRepository();
+    const { state, log } = fixture("concurrent-completion");
+    state.events.forEach((event) => { event.status = "resolved"; });
+    await repository.createSession(owner, state);
+    const session = await repository.getSession(owner, state.sessionId);
+    session.actionLog = log;
+    await repository.saveSession(session);
+    const caller = createAppRouter(repository).createCaller({ userId: owner });
+    await Promise.all(Array.from({ length: 3 }, () =>
+      caller.simulation.performAction({ sessionId: state.sessionId, actionId: "complete_shift", eventId: "shift" })
+    ));
+    const saved = await repository.getSession(owner, state.sessionId);
+    expect(saved.actionLog.filter((entry) => entry.interaction.type === "action" &&
+      entry.interaction.action.id === "complete_shift")).toHaveLength(1);
+    expect((await repository.getCohortCounts(pack.career.id, pack.career.packVersion))
+      .find(({ decisionId }) => decisionId === "suspicious_login")?.count).toBe(1);
   });
 });
