@@ -3,6 +3,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "env": ["STATIC_SITE_ORIGIN", "VITE_SERVER_URL"],
       "outputs": ["dist/**"]
     },
     "dev": {

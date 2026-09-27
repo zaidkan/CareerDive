@@ -27,5 +27,7 @@ services:
     dockerfilePath: ./Dockerfile.web
     autoDeploy: false
     envVars:
+      - key: SITE_ORIGIN
+        sync: false
       - key: VITE_SERVER_URL
         sync: false

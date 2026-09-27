@@ -99,5 +99,7 @@ pnpm vitest run --config vitest.ai.config.ts
 - Institutional deployment remains disabled.
 - Apply `apps/server/drizzle/0001_initial.sql` to Supabase before production.
 - Render blueprint lives in `render.yaml`.
+- Web container requires `SITE_ORIGIN` at runtime: public HTTPS origin only, no trailing slash (for example `https://expo.example.org`). Startup fails when unset or malformed. Render web service must set this variable. Container fills prerendered canonical/OG URLs, sitemap, robots, and JSON-LD before Nginx starts.
+- Local static builds require `STATIC_SITE_ORIGIN`, for example `STATIC_SITE_ORIGIN=http://localhost:5173 pnpm build`. Standalone public builds must use their public HTTPS origin. Docker builds use a runtime placeholder and require `SITE_ORIGIN` when started.
 
 See `docs/validation-gate.md` before any 3D or second-career work.

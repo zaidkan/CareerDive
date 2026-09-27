@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { getCareerBySlug } from "../careers/careers.js";
 import { SiteChrome } from "./SiteChrome.js";
-import { parseRoute, type SitePath, type SiteRoute } from "./routes.js";
+import { parseRoute, type SiteRoute } from "./routes.js";
 import { useRouteMeta } from "./seo.js";
 import { LandingPage } from "./pages/LandingPage.js";
 import "./site.css";
@@ -43,37 +43,7 @@ const NotFoundPage = lazy(async () => {
   return { default: mod.NotFoundPage };
 });
 
-function scheduleIdle(run: () => void, timeout = 2000): () => void {
-  const idle = window as Window & {
-    requestIdleCallback?: (
-      cb: () => void,
-      opts?: { timeout: number },
-    ) => number;
-    cancelIdleCallback?: (handle: number) => void;
-  };
-  if (typeof idle.requestIdleCallback === "function") {
-    const handle = idle.requestIdleCallback(run, { timeout });
-    return () => {
-      idle.cancelIdleCallback(handle);
-    };
-  }
-  const handle = window.setTimeout(run, 400);
-  return () => {
-    window.clearTimeout(handle);
-  };
-}
-
-/** Warm the start/film route after landing paint without blocking first content. */
-function usePrefetchStartChunk(route: SiteRoute): void {
-  useEffect(() => {
-    if (route.kind !== "home") return;
-    return scheduleIdle(() => {
-      void import("./pages/StartPage.js");
-    }, 3000);
-  }, [route.kind]);
-}
-
-export function SiteApp({ initialRoute }: { initialRoute?: SitePath }) {
+export function SiteApp({ initialRoute }: { initialRoute?: string }) {
   const previousPath = useRef<string | null>(null);
   const [route, setRoute] = useState<SiteRoute>(
     initialRoute ? parseRoute(initialRoute) :
@@ -123,7 +93,6 @@ export function SiteApp({ initialRoute }: { initialRoute?: SitePath }) {
   }, [route, initialRoute]);
 
   useRouteMeta(route);
-  usePrefetchStartChunk(route);
 
   const pageFallback = <p className="mode-note">Loading…</p>;
   const selectedCareer = route.kind === "career" ? getCareerBySlug(route.slug) : undefined;

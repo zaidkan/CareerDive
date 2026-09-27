@@ -1,9 +1,8 @@
 import { useEffect } from "react";
-import { getCareerBySlug } from "../careers/careers.js";
+import { careers, getCareerBySlug } from "../careers/careers.js";
 import type { SiteRoute } from "./routes.js";
 
 const SITE_NAME = "First Shift";
-const BASE_URL = "https://careerexpo.example.com";
 
 type RouteMeta = {
   title: string;
@@ -56,7 +55,7 @@ export const ROUTE_META: Record<Exclude<SiteRoute["kind"], "career" | "not-found
   },
 };
 
-function metaForRoute(route: SiteRoute): RouteMeta {
+export function metaForRoute(route: SiteRoute): RouteMeta {
   if (route.kind === "not-found") {
     return {
       title: "Page not found · Career Expo",
@@ -78,6 +77,38 @@ function metaForRoute(route: SiteRoute): RouteMeta {
   return ROUTE_META[route.kind];
 }
 
+export const INDEXABLE_PATHS = [
+  ...Object.values(ROUTE_META).filter((meta) => meta.index).map((meta) => meta.path),
+  ...careers.filter((career) => career.detailPublished).map((career) => `/careers/${career.slug}`),
+];
+
+export function structuredDataForRoute(route: SiteRoute, origin: string): object[] {
+  if (route.kind === "home") {
+    return [{ "@context": "https://schema.org", "@type": "WebSite", name: "Career Expo", url: `${origin}/` }];
+  }
+  if (route.kind === "career") {
+    const career = getCareerBySlug(route.slug);
+    if (!career?.detailPublished) return [];
+    const url = `${origin}/careers/${career.slug}`;
+    return [{
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Home", item: `${origin}/` },
+        { "@type": "ListItem", position: 2, name: "Careers", item: `${origin}/careers` },
+        { "@type": "ListItem", position: 3, name: career.title, item: url },
+      ],
+    }, {
+      "@context": "https://schema.org",
+      "@type": "Occupation",
+      name: career.title,
+      description: career.shortSummary,
+      url,
+    }];
+  }
+  return [];
+}
+
 function upsertMeta(selector: string, create: () => HTMLElement): HTMLElement {
   const existing = document.querySelector(selector);
   if (existing instanceof HTMLElement) return existing;
@@ -89,6 +120,7 @@ function upsertMeta(selector: string, create: () => HTMLElement): HTMLElement {
 export function useRouteMeta(route: SiteRoute): void {
   useEffect(() => {
     const meta = metaForRoute(route);
+    const origin = document.querySelector('meta[name="site-origin"]')?.getAttribute("content") || window.location.origin;
     document.title = meta.title;
 
     const description = upsertMeta('meta[name="description"]', () => {
@@ -103,7 +135,8 @@ export function useRouteMeta(route: SiteRoute): void {
       el.setAttribute("rel", "canonical");
       return el;
     });
-    canonical.setAttribute("href", `${BASE_URL}${meta.path}`);
+    if (meta.index) canonical.setAttribute("href", `${origin}${meta.path}`);
+    else canonical.remove();
 
     const robots = upsertMeta('meta[name="robots"]', () => {
       const el = document.createElement("meta");
@@ -134,7 +167,30 @@ export function useRouteMeta(route: SiteRoute): void {
       el.setAttribute("property", "og:url");
       return el;
     });
-    ogUrl.setAttribute("content", `${BASE_URL}${meta.path}`);
+    ogUrl.setAttribute("content", `${origin}${meta.path}`);
+
+    const twitterTitle = upsertMeta('meta[name="twitter:title"]', () => {
+      const el = document.createElement("meta");
+      el.setAttribute("name", "twitter:title");
+      return el;
+    });
+    twitterTitle.setAttribute("content", meta.title);
+
+    const twitterDescription = upsertMeta('meta[name="twitter:description"]', () => {
+      const el = document.createElement("meta");
+      el.setAttribute("name", "twitter:description");
+      return el;
+    });
+    twitterDescription.setAttribute("content", meta.description);
+
+    for (const script of document.querySelectorAll('script[data-site-json-ld]')) script.remove();
+    for (const data of structuredDataForRoute(route, origin)) {
+      const script = document.createElement("script");
+      script.type = "application/ld+json";
+      script.dataset.siteJsonLd = "";
+      script.textContent = JSON.stringify(data);
+      document.head.appendChild(script);
+    }
   }, [route]);
 }
 
