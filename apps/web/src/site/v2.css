@@ -1057,8 +1057,9 @@
     font-size: 0.8rem;
   }
   .theme-toggle {
-    padding: 0.5rem 0.7rem;
-    font-size: 0.72rem;
+    width: 44px;
+    height: 44px;
+    padding: 0;
   }
   .v2-hero h1 {
     font-size: clamp(2.7rem, 11vw, 4rem);
