@@ -1575,8 +1575,8 @@ section[aria-labelledby="structured-title"],
 .floor-map-copy {
   display: grid;
   align-content: start;
-  gap: 0.9rem;
-  padding: clamp(1.35rem, 2.4vw, 1.9rem) clamp(1.25rem, 2vw, 1.65rem) 1.4rem;
+  gap: 0.6rem;
+  padding: clamp(1.05rem, 1.8vw, 1.45rem) clamp(1.25rem, 2vw, 1.65rem) 1rem;
   border-right: 1px solid var(--line);
   background:
     radial-gradient(ellipse 72% 38% at 18% 8%, color-mix(in srgb, var(--status-warning-fg) 10%, transparent) 0%, transparent 58%),
@@ -1628,20 +1628,106 @@ section[aria-labelledby="structured-title"],
   letter-spacing: -0.035em;
   text-wrap: balance;
 }
-.floor-route-inline {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.42rem;
+/* Origin / destination / route / action — the four facts the learner needs,
+   labelled the way a workplace orientation sheet would label them. */
+.floor-facts {
+  display: grid;
+  gap: 0.4rem;
   margin: 0;
-  padding: 0.32rem 0.62rem;
-  border: 1px solid color-mix(in srgb, var(--action-primary) 18%, var(--line));
+  padding: 0;
+}
+.floor-fact {
+  position: relative;
+  display: grid;
+  gap: 0.06rem;
+  padding: 0.44rem 0.7rem 0.44rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-subtle) 70%, var(--panel));
+}
+.floor-fact::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 3px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--action-primary) 9%, var(--panel));
+  background: var(--text-muted);
+}
+.floor-fact dt {
+  margin: 0;
+  color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: 0.64rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  line-height: 1;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+.floor-fact dd {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 1.14rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.22;
+}
+.floor-fact-origin {
+  border-color: color-mix(in srgb, var(--status-warning-fg) 24%, var(--line));
+  background: color-mix(in srgb, var(--status-warning-bg) 62%, var(--panel));
+}
+.floor-fact-origin::before {
+  background: var(--status-warning-fg);
+}
+.floor-fact-origin dd {
+  color: var(--status-warning-fg);
+}
+:root:not([data-theme="light"]) .floor-fact-origin {
+  border-color: color-mix(in srgb, #FACC15 26%, transparent);
+  background: color-mix(in srgb, #FACC15 8%, var(--panel));
+}
+:root:not([data-theme="light"]) .floor-fact-origin::before {
+  background: #FACC15;
+}
+:root:not([data-theme="light"]) .floor-fact-origin dd {
+  color: #FACC15;
+}
+.floor-fact-destination {
+  border-color: color-mix(in srgb, var(--status-success-fg) 34%, var(--line));
+  background: color-mix(in srgb, var(--status-success-bg) 72%, var(--panel));
+}
+.floor-fact-destination::before {
+  background: var(--status-success-fg);
+}
+.floor-fact-destination dd {
+  font-size: 1.28rem;
+  color: var(--status-success-fg);
+}
+:root:not([data-theme="light"]) .floor-fact-destination {
+  border-color: color-mix(in srgb, #72D6A3 34%, transparent);
+  background: color-mix(in srgb, #72D6A3 9%, var(--panel));
+}
+:root:not([data-theme="light"]) .floor-fact-destination::before {
+  background: #72D6A3;
+}
+:root:not([data-theme="light"]) .floor-fact-destination dd {
+  color: #72D6A3;
+}
+.floor-fact-route::before {
+  background: var(--action-primary);
+}
+.floor-fact-route dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: var(--action-primary);
 }
 .floor-route-origin {
   color: var(--status-warning-fg);
@@ -1656,10 +1742,25 @@ section[aria-labelledby="structured-title"],
 .floor-route-dest {
   color: var(--action-primary);
 }
-.floor-instruction {
+
+.floor-action {
+  display: grid;
+  gap: 0.12rem;
+  padding-top: 0.15rem;
+}
+.floor-action-label {
+  margin: 0;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.floor-action-text {
   margin: 0;
   color: var(--text-primary);
-  font-size: 1.06rem;
+  font-size: 1.02rem;
   font-weight: 650;
   line-height: 1.38;
   letter-spacing: -0.015em;
@@ -1667,21 +1768,22 @@ section[aria-labelledby="structured-title"],
 .floor-legend,
 .floor-legend-compact {
   display: grid;
-  gap: 0.38rem;
-  margin: 0.35rem 0 0;
-  padding: 0.75rem 0.8rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.28rem 0.6rem;
+  margin: 0;
+  padding: 0.6rem 0.7rem;
   list-style: none;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: color-mix(in srgb, var(--surface-subtle) 72%, var(--panel));
+  background: color-mix(in srgb, var(--surface-subtle) 58%, var(--panel));
 }
 .floor-legend li,
 .floor-legend-compact li {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.45rem;
   color: var(--text-secondary);
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 600;
   line-height: 1.2;
 }
@@ -1764,7 +1866,7 @@ section[aria-labelledby="structured-title"],
 .floor-map-stage {
   display: grid;
   place-items: center;
-  padding: clamp(0.9rem, 1.8vw, 1.5rem);
+  padding: clamp(0.6rem, 1vw, 0.9rem);
   background:
     radial-gradient(ellipse 72% 44% at 50% 18%, color-mix(in srgb, var(--action-primary) 7%, transparent) 0%, transparent 58%),
     radial-gradient(ellipse 54% 36% at 88% 88%, color-mix(in srgb, var(--status-success-bg) 82%, transparent) 0%, transparent 60%),
@@ -1789,7 +1891,7 @@ section[aria-labelledby="structured-title"],
   position: relative;
   /* Keep the plan's true 4:3 proportion and let height, not width, cap it so
      the whole floor fits the first screen on a laptop. */
-  width: min(100%, calc(min(70vh, 46rem) * 4 / 3));
+  width: min(100%, calc(min(76vh, 52rem) * 4 / 3));
   margin: 0 auto;
   aspect-ratio: 4 / 3;
   border: 1px solid var(--line-bright);
@@ -2183,66 +2285,89 @@ section[aria-labelledby="structured-title"],
   gap: 0.12rem;
 }
 
-.spatial-recovery {
-  margin-top: 0.85rem;
+/* Utility row, not debug output: recovery sits on the page's quiet bottom
+   band with the same hairline language as the rest of the product. */
+.spatial-utility {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 1.25rem;
+  margin-top: clamp(1.25rem, 3vw, 2.25rem);
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
 }
-.spatial-recovery-details {
-  font-size: 0.78rem;
+.spatial-utility-label {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.spatial-utility-details {
   color: var(--text-muted);
 }
-.spatial-recovery-details > summary {
+.spatial-utility-details > summary {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
   min-height: 44px;
-  padding: 0.32rem 0.62rem;
+  padding: 0.3rem 0.6rem 0.3rem 0.35rem;
   border: 1px solid transparent;
   border-radius: 999px;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 650;
   cursor: pointer;
   list-style: none;
 }
-.spatial-recovery-details > summary::-webkit-details-marker { display: none; }
-.spatial-recovery-details > summary:hover {
-  border-color: var(--line);
-  background: color-mix(in srgb, var(--surface-subtle) 82%, transparent);
-  color: var(--text-secondary);
+.spatial-utility-details > summary::-webkit-details-marker {
+  display: none;
 }
-.spatial-recovery-details[open] > summary {
+.spatial-utility-details > summary:hover {
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--surface-subtle) 78%, transparent);
+  color: var(--text-primary);
+}
+.spatial-utility-details[open] > summary {
   border-color: var(--line);
   background: var(--panel);
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
-.spatial-recovery-details > summary::before {
+.spatial-utility-details > summary::before {
   content: "›";
   display: inline-grid;
   place-items: center;
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1.15rem;
+  height: 1.15rem;
   border-radius: 50%;
   border: 1px solid var(--line);
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   line-height: 1;
   transition: transform 180ms var(--ease-out);
 }
-.spatial-recovery-details[open] > summary::before {
+.spatial-utility-details[open] > summary::before {
   transform: rotate(90deg);
 }
-.spatial-recovery-details p {
-  margin: 0.55rem 0 0;
-  max-width: 32ch;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  line-height: 1.5;
+.spatial-utility-body {
+  display: grid;
+  justify-items: start;
+  gap: 0.6rem;
+  width: 100%;
+  max-width: 34rem;
+  margin-top: 0.7rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-subtle) 62%, var(--panel));
 }
-.spatial-recovery-details button {
-  margin-top: 0.55rem;
+.spatial-utility-body p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+.spatial-utility-body button {
+  margin-top: 0;
 }
 
 

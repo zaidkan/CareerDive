@@ -34,13 +34,25 @@ export function ExperienceShell(props: WorkstationProps) {
             onAcceptedDistance={movement.addDistance}
             onRoomExit={movement.resetDistance}
           />
-          <div className="spatial-recovery">
-            <details className="spatial-recovery-details">
+          <div className="spatial-utility">
+            <p className="spatial-utility-label">Trouble navigating the office?</p>
+            <details className="spatial-utility-details">
               <summary>Accessibility recovery</summary>
-              <p>If you cannot navigate the office, continue at your workstation.</p>
-              <button type="button" className="button-secondary" onClick={() => { setRecover(true); }}>
-                Recover workstation access
-              </button>
+              <div className="spatial-utility-body">
+                <p>
+                  Continue at your workstation instead. Your current work is
+                  preserved and the shift continues exactly where it is.
+                </p>
+                <button
+                  type="button"
+                  className="button-secondary"
+                  onClick={() => {
+                    setRecover(true);
+                  }}
+                >
+                  Recover workstation access
+                </button>
+              </div>
             </details>
           </div>
         </SpatialBoundary>

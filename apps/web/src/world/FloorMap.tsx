@@ -155,18 +155,31 @@ export function FloorMap({
           {title ?? "Head to Security Operations"}
         </h2>
 
-        <p className="floor-route-inline" aria-hidden="true">
-          <span className="floor-route-origin">Lobby</span>
-          <span className="floor-route-arrow">→</span>
-          <span className="floor-route-dest">SOC</span>
-        </p>
-        <p className="visually-hidden">Route Lobby to Security Operations</p>
+        <dl className="floor-facts">
+          <div className="floor-fact floor-fact-origin">
+            <dt>You are here</dt>
+            <dd>Lobby</dd>
+          </div>
+          <div className="floor-fact floor-fact-destination">
+            <dt>Destination</dt>
+            <dd>Security Operations</dd>
+          </div>
+          <div className="floor-fact floor-fact-route">
+            <dt>Route</dt>
+            <dd>
+              <span className="floor-route-origin">Lobby</span>
+              <span className="floor-route-arrow" aria-hidden="true">
+                →
+              </span>
+              <span className="floor-route-dest">Security Operations</span>
+            </dd>
+          </div>
+        </dl>
 
-        <p className="floor-instruction">
-          Walk the marked route.
-          <br />
-          Your desk is inside.
-        </p>
+        <div className="floor-action">
+          <p className="floor-action-label">Action</p>
+          <p className="floor-action-text">Walk the marked route and enter the SOC.</p>
+        </div>
 
         {highlightRoomId ? (
           <p className="floor-guide-callout">Go here next — gold door on the plan</p>
