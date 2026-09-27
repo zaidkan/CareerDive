@@ -32,6 +32,12 @@ describe("local CORS configuration", () => {
   it("requires WEB_ORIGIN in production", () => {
     expect(() => allowedWebOrigins(true)).toThrow(/WEB_ORIGIN/);
   });
+
+  it("rejects malformed production origins", () => {
+    for (const origin of ["career.example", "https://career.example/path", "https://career.example/"]) {
+      expect(() => allowedWebOrigins(true, origin)).toThrow(/HTTP\(S\) origin/);
+    }
+  });
 });
 
 describe("listen failure diagnostics", () => {

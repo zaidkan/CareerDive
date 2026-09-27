@@ -10,7 +10,7 @@ import {
 } from "@trpc/server/adapters/fastify";
 import Fastify from "fastify";
 import { InMemoryRepository, createAppRouter, type AppContext } from "./index.js";
-import { createPostgresRepository } from "./db/repository.js";
+import { createPostgresRepository, PostgresRepository } from "./db/repository.js";
 import {
   allowedWebOrigins,
   describeListenFailure,
@@ -21,8 +21,13 @@ const isProduction = process.env.NODE_ENV === "production";
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
-if (isProduction && (!supabaseUrl || !supabaseAnonKey)) {
-  throw new Error("SUPABASE_URL and SUPABASE_ANON_KEY are required in production");
+if (!Number.isInteger(port) || port < 1 || port > 65535) {
+  throw new Error("PORT must be an integer between 1 and 65535");
+}
+if (isProduction) {
+  for (const key of ["DATABASE_URL", "SUPABASE_URL", "SUPABASE_ANON_KEY", "WEB_ORIGIN"]) {
+    if (!process.env[key]?.trim()) throw new Error(`${key} is required in production`);
+  }
 }
 
 const supabase =
@@ -51,11 +56,20 @@ await server.register(rateLimit, {
   timeWindow: "1 minute",
 });
 
-server.get("/health", async () => ({ status: "ok" }));
-
 const repository = process.env.DATABASE_URL
   ? createPostgresRepository(process.env.DATABASE_URL)
   : new InMemoryRepository();
+server.get("/health", async (_request, reply) => {
+  if (repository instanceof PostgresRepository) {
+    try {
+      await repository.checkReadiness();
+    } catch (error) {
+      server.log.error({ err: error }, "Database readiness check failed");
+      return reply.code(503).send({ status: "unavailable" });
+    }
+  }
+  return { status: "ok" };
+});
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
 const llmProvider = anthropicApiKey
   ? new AnthropicLlmProvider(

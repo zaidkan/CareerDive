@@ -75,7 +75,7 @@ log in to Desk OS, then read and acknowledge the handoff, investigate the
 suspicious login, handle the optional routine scanner interruption, take one
 break (snack or coffee and Jules), document the ticket, escalate, and wrap up.
 
-Without `DATABASE_URL`, server uses in-memory repository for local development. Production requires Supabase URL, anon key, and Postgres connection string.
+Without `DATABASE_URL`, server uses in-memory repository for local development. Production requires Supabase URL, anon key, Postgres connection string, and the public web origin.
 
 ## Verification
 
@@ -97,7 +97,22 @@ pnpm vitest run --config vitest.ai.config.ts
 - Reflection access defaults to owner-only RLS.
 - Sharing requires explicit, expiring grant.
 - Institutional deployment remains disabled.
-- Apply `apps/server/drizzle/0001_initial.sql` to Supabase before production.
+- The API container runs `pnpm --filter @sim/server db:migrate` before it starts. Migration `0001_initial` runs once in a transaction with an advisory lock. A database where that SQL was previously applied manually is recorded only when every expected table and policy exists. Partial existing schemas stop deployment for inspection.
 - Render blueprint lives in `render.yaml`.
+
+### Production deployment
+
+Set API `DATABASE_URL` to a writable Supabase Postgres connection (direct or session pooler), `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `WEB_ORIGIN` to the exact public web origin, without a trailing slash. `ANTHROPIC_API_KEY` is optional. Set web `VITE_SERVER_URL` to the exact public API origin, without a trailing slash. Render passes that variable as a Docker build argument; web image build rejects a missing or malformed value. Do not use a local `.env` file as a Docker build input.
+
+From a clean checkout, build and start using the same Dockerfiles as Render:
+
+```bash
+docker build -f Dockerfile.server -t career-expo-api .
+docker build -f Dockerfile.web --build-arg VITE_SERVER_URL=https://api.example.com -t career-expo-web .
+docker run --rm --env-file production-api.env -p 3001:3001 career-expo-api
+docker run --rm -p 8080:80 career-expo-web
+```
+
+`production-api.env` must contain `NODE_ENV=production` and the four required API variables above. Replace example URLs with deployment URLs. API `/health` returns 200 only when Postgres is reachable and `simulation_sessions` exists; it returns 503 on DB failure. Web `/`, `/careers/cybersecurity-analyst`, and `/start` serve the SPA directly through Nginx. Render checks API `/health` and web `/`. If migration fails, API process exits before listening; inspect the error and database rather than bypassing migration.
 
 See `docs/validation-gate.md` before any 3D or second-career work.

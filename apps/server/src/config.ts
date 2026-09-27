@@ -9,6 +9,14 @@ export function allowedWebOrigins(
     if (!configuredOrigin) {
       throw new Error("WEB_ORIGIN is required in production");
     }
+    try {
+      const url = new URL(configuredOrigin);
+      if (!/^https?:$/.test(url.protocol) || url.origin !== configuredOrigin) {
+        throw new Error();
+      }
+    } catch {
+      throw new Error("WEB_ORIGIN must be an absolute HTTP(S) origin in production");
+    }
     return [configuredOrigin];
   }
   // Narrow local CORS: only the fixed Vite port. Do not widen to arbitrary
