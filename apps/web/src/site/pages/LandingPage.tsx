@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
+import { careers } from "../../careers/careers.js";
 import { CareerExplorer } from "../careers/CareerExplorer.js";
+import { CareerFields } from "../careers/CareerFields.js";
+import { AlertArtifact, DeskPreview } from "../careers/CyberArtifacts.js";
 import { SiteLink } from "../SiteLink.js";
 
 const GATE_KEY = "first-shift-start-gate";
@@ -17,104 +20,60 @@ function useHasSeenFilm(): boolean {
   return seen;
 }
 
-const day = [
-  "Read the handoff",
-  "Choose what needs attention first",
-  "Investigate A-1042",
-  "Handle scanner interruption A-1180",
-  "Give status and leave a usable handoff",
-];
+const EXPERIENCE_ARC = [
+  {
+    step: "Brief",
+    detail: "Get the context other people are relying on.",
+  },
+  {
+    step: "Investigate",
+    detail: "Look at the actual work, not a description of it.",
+  },
+  {
+    step: "Decide",
+    detail: "Make a call with the evidence you have.",
+  },
+  {
+    step: "Adapt",
+    detail: "New information changes what matters next.",
+  },
+  {
+    step: "Document",
+    detail: "Leave a record someone else can continue.",
+  },
+  {
+    step: "Hand off",
+    detail: "Pass it on cleanly when the day ends.",
+  },
+  {
+    step: "Reflect",
+    detail: "Look back on the decisions and how the day felt.",
+  },
+] as const;
 
-function WorkArtifact() {
+function HeroShelf() {
   return (
-    <div
-      className="v2-artifact v2-media-frame"
-      data-media-slot="evidence"
-      aria-label="Illustrative A-1042 alert and evidence comparison from the Cybersecurity Analyst first day"
-    >
-      <div className="v2-artifact-top">
-        <span>Verdaly Technologies · Alerts</span>
-        <span>Static product preview</span>
-      </div>
-      <div className="v2-artifact-body">
-        <div className="v2-artifact-title">
-          <span className="v2-artifact-mark" aria-hidden="true" />
-          <div>
-            <small>Open investigation</small>
-            <strong>Alert A-1042</strong>
-          </div>
-          <span className="v2-artifact-state">Needs review</span>
-        </div>
-        <p className="v2-artifact-signal">Sign-in from an unfamiliar device</p>
-        <div className="v2-evidence-grid" aria-label="Evidence to compare">
-          <div>
-            <strong>Identity</strong>
-            <span>Who signed in?</span>
-          </div>
-          <div>
-            <strong>Session</strong>
-            <span>What does the sign-in record show?</span>
-          </div>
-          <div>
-            <strong>Device</strong>
-            <span>Does inventory recognize it?</span>
-          </div>
-          <div>
-            <strong>VPN</strong>
-            <span>Does access history line up?</span>
-          </div>
-        </div>
-      </div>
-      <div className="v2-artifact-bottom">
-        Compare the records <span aria-hidden="true">→</span> Leave a traceable
-        case note
-      </div>
-    </div>
-  );
-}
-
-function DeskPreview() {
-  return (
-    <div
-      className="v2-desk v2-media-frame"
-      data-media-slot="desk"
-      aria-label="Illustrative preview of the existing Desk OS tools"
-    >
-      <div className="v2-desk-bar">
-        <span>Desk OS</span>
-        <span>Verdaly · first shift</span>
-      </div>
-      <div className="v2-desk-body">
-        <div className="v2-desk-sidebar">
-          <strong>Dashboard</strong>
-          <span>Alerts</span>
-          <span>Email</span>
-          <span>Tickets</span>
-          <span>Guides</span>
-          <span>Team</span>
-          <span>Files · Notes</span>
-        </div>
-        <div className="v2-desk-window">
-          <div className="v2-desk-window-head">
-            Alerts · A-1042 <span>Review queue</span>
-          </div>
-          <div className="v2-desk-alert">
-            <span className="v2-desk-alert-icon" aria-hidden="true" />
-            <div>
-              <strong>Sign-in from an unfamiliar device</strong>
-              <small>Check the evidence before you decide.</small>
+    <div className="v2-hero-media v2-media-frame" data-media-slot="hero">
+      <div className="v2-shelf">
+        {careers.map((career, index) => {
+          const ready = career.availability === "ready_now";
+          return (
+            <div
+              key={career.id}
+              className={`v2-shelf-doc v2-shelf-doc--${String(index)}${
+                ready ? " v2-shelf-doc--ready" : ""
+              }`}
+              aria-hidden="true"
+            >
+              <span className="v2-shelf-doc-field">{career.field}</span>
+              <strong className="v2-shelf-doc-title">{career.title}</strong>
+              <span className="v2-shelf-doc-glyph" />
+              <small className="v2-shelf-doc-status">
+                {ready ? "Ready now" : "In the workshop"}
+              </small>
             </div>
-            <span>Review</span>
-          </div>
-          <div className="v2-desk-record">
-            <span>Compare</span>
-            <strong>Identity · Session · Device · VPN</strong>
-          </div>
-          <div className="v2-desk-record">
-            <span>Document</span>
-            <strong>Known facts and open questions</strong>
-          </div>
-        </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -156,8 +115,9 @@ export function LandingPage() {
         <div className="v2-hero-copy">
           <h1 id="home-hero">Know the work before you choose the career.</h1>
           <p>
-            Step inside a first day. Read the handoff, use the tools, make a
-            decision, and find out how the job actually feels.
+            Career Expo puts you inside a first day of real work. Read the
+            handoff, use the tools, make decisions, and find out how the job
+            actually feels.
           </p>
           <div className="v2-hero-actions">
             <SiteLink className="start-shift v2-primary" to="/start">
@@ -169,34 +129,11 @@ export function LandingPage() {
             </SiteLink>
           </div>
           <p className="v2-hero-note">
-            Cybersecurity Analyst is ready now. More careers are in the
-            workshop.
+            Cybersecurity Analyst is ready now. More careers are in the workshop.
           </p>
         </div>
         <div className="v2-hero-visual" aria-hidden="true">
-          <div className="v2-hero-media v2-media-frame" data-media-slot="hero">
-            <div className="v2-hero-cards">
-              <div className="v2-role-slip v2-role-slip-back">
-                <span>Healthcare</span>
-                <strong>Registered Nurse</strong>
-                <small>In the Workshop</small>
-              </div>
-              <div className="v2-role-slip v2-role-slip-mid">
-                <span>Engineering</span>
-                <strong>Mechanical Engineer</strong>
-                <small>In the Workshop</small>
-              </div>
-              <div className="v2-role-slip v2-role-slip-front">
-                <span>Technology · Security</span>
-                <strong>Cybersecurity Analyst</strong>
-                <small>Ready now · First day at Verdaly</small>
-                <div className="v2-slip-task">
-                  Read the handoff <span>→</span> Review the alert{" "}
-                  <span>→</span> Make the call
-                </div>
-              </div>
-            </div>
-          </div>
+          <HeroShelf />
         </div>
       </section>
 
@@ -206,104 +143,61 @@ export function LandingPage() {
       >
         <div className="v2-section-intro">
           <h2 id="v2-explore-title">Explore careers.</h2>
-          <p>Cybersecurity is ready now. See what else is taking shape.</p>
+          <p>One is playable now. See what else is taking shape.</p>
         </div>
         <CareerExplorer headingLevel={3} />
       </section>
 
       <section
-        className="v2-section v2-work-section"
-        aria-labelledby="v2-work-title"
+        className="v2-section v2-proof-section"
+        aria-labelledby="v2-proof-title"
       >
-        <div className="v2-work-intro">
-          <h2 id="v2-work-title">An alert is only the beginning.</h2>
+        <div className="v2-proof-intro">
+          <p className="v2-eyebrow">A real task, not a job description.</p>
+          <h2 id="v2-proof-title">You compare evidence. Then you make the call.</h2>
           <p>
-            The useful part is the judgment: what the signals support, what they
-            don’t, and a handoff someone else can rely on.
+            In Cybersecurity Analyst, you compare evidence, make a judgment, and
+            leave a record someone else can continue.
           </p>
         </div>
-        <WorkArtifact />
-        <div className="v2-work-steps" aria-label="Your investigation">
-          <p>
-            <strong>01 · Read</strong> the previous analyst’s handoff
-          </p>
-          <p>
-            <strong>02 · Compare</strong> identity, session, device, and VPN
-            records
-          </p>
-          <p>
-            <strong>03 · Document</strong> what’s known and what’s uncertain
-          </p>
-        </div>
-        <p className="v2-reality-note">
-          From the playable Cybersecurity Analyst first day. Tasks are
-          simplified slices of real work.
+        <AlertArtifact compact />
+        <p className="v2-proof-tag">
+          <SiteLink className="v2-text-link" to="/careers/cybersecurity-analyst">
+            Cybersecurity Analyst · Ready now{" "}
+            <span aria-hidden="true">→</span>
+          </SiteLink>
         </p>
       </section>
 
+      <CareerFields />
+
       <section
-        className="v2-section v2-day-desk-section"
-        aria-labelledby="v2-day-title"
+        className="v2-section v2-arc-section"
+        aria-labelledby="v2-arc-title"
       >
-        <div className="v2-day-intro">
-          <h2 id="v2-day-title">Your first day, on a real workstation.</h2>
-          <p>A few connected decisions, one continuing shift.</p>
+        <div className="v2-section-intro">
+          <h2 id="v2-arc-title">How a Career Expo first day works</h2>
+          <p>
+            Every career follows the same shape. The work changes — the judgment
+            does not.
+          </p>
         </div>
-        <ol className="v2-day-list">
-          {day.map((step) => (
-            <li key={step}>
-              <span>{step}</span>
+        <ol className="v2-arc-list">
+          {EXPERIENCE_ARC.map((beat, index) => (
+            <li key={beat.step}>
+              <span className="v2-arc-index">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <strong>{beat.step}</strong>
+              <p>{beat.detail}</p>
             </li>
           ))}
         </ol>
         <DeskPreview />
-        <div className="v2-desk-foot">
-          <p>
-            Stand up, walk the floor, come back — your session is exactly where
-            you left it.
-          </p>
-          <SiteLink className="v2-text-link" to="/how-it-works">
-            See how the first day works <span aria-hidden="true">→</span>
-          </SiteLink>
-        </div>
-      </section>
-
-      <section
-        className="v2-section v2-how-section"
-        aria-labelledby="v2-how-title"
-      >
-        <div className="v2-section-intro">
-          <h2 id="v2-how-title">Enter. Decide. Reflect.</h2>
-          <p>
-            Your actions leave a trail you can look back on. No career quiz
-            decides for you.
-          </p>
-        </div>
-        <ol className="v2-how-grid">
-          <li>
-            <span>01</span>
-            <strong>Enter</strong>
-            <p>Read the team’s context and find what needs attention.</p>
-          </li>
-          <li>
-            <span>02</span>
-            <strong>Do the work</strong>
-            <p>Compare evidence, make a call, and leave traceable notes.</p>
-          </li>
-          <li>
-            <span>03</span>
-            <strong>Reflect</strong>
-            <p>Consider the decisions you made and how the day felt.</p>
-          </li>
-        </ol>
-        <div className="v2-skills">
-          <strong>In this shift</strong>
-          <span>Record search</span>
-          <span>Evidence comparison</span>
-          <span>Documenting uncertainty</span>
-          <span>Escalation judgment</span>
-          <span>Traceable case notes</span>
-        </div>
+        <p className="v2-reality-note">
+          Concept preview of the Desk OS tools from the playable Cybersecurity
+          Analyst first day.
+        </p>
       </section>
 
       <section
@@ -351,9 +245,9 @@ export function LandingPage() {
           <details>
             <summary>Do my requests change what you build?</summary>
             <p>
-              Not yet. Requests currently stay on this page and aren't
-              collected. When collection is enabled, they'll help guide what we
-              prioritize without guaranteeing build order.
+              Not yet. Requests currently stay on this page and aren’t collected.
+              When collection is enabled, they’ll help guide what we prioritize
+              without guaranteeing build order.
             </p>
           </details>
           <details>
@@ -381,13 +275,17 @@ export function LandingPage() {
       <section className="v2-final" aria-labelledby="v2-final-title">
         <h2 id="v2-final-title">One short day. One real first shift.</h2>
         <p>
-          Read the handoff <span aria-hidden="true">→</span> Review the alert{" "}
-          <span aria-hidden="true">→</span> Make the call
+          Try the work <span aria-hidden="true">→</span> Make decisions{" "}
+          <span aria-hidden="true">→</span> See how the shift responds
         </p>
-        <SiteLink className="start-shift v2-primary" to="/start">
-          {hasSeenFilm ? "Continue your first day" : "Start your first day"}
-          <span aria-hidden="true"> ↗</span>
-        </SiteLink>
+        <div className="v2-final-actions">
+          <SiteLink className="start-shift v2-primary" to="/careers">
+            Explore careers <span aria-hidden="true">→</span>
+          </SiteLink>
+          <SiteLink className="v2-text-link" to="/start">
+            Cybersecurity Analyst · Ready now <span aria-hidden="true">↗</span>
+          </SiteLink>
+        </div>
       </section>
     </div>
   );

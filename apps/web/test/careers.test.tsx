@@ -394,8 +394,18 @@ describe("public routes", () => {
       screen.queryByRole("button", { name: /preview cybersecurity analyst/i }),
     ).toBeNull();
     expect(
-      screen.getAllByText(careerAt(0).plannedTasks[0] ?? "missing task"),
-    ).toHaveLength(1);
+      screen.getByText(careerAt(0).realityNotes?.[0] ?? "missing reality note"),
+    ).toBeVisible();
+    expect(
+      screen.getByText(
+        careerAt(0).artifactOrMediaConcepts[0] ?? "missing artifact",
+      ),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("heading", { name: "What your first shift looks like" }),
+    ).toBeVisible();
+    expect(screen.getByText("Handle scanner interruption A-1180")).toBeVisible();
+    expect(screen.getByText("Alerts · A-1042")).toBeVisible();
   });
 
   it.each([{ ctrlKey: true }, { metaKey: true }, { button: 1 }])(

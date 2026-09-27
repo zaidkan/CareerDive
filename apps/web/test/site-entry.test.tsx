@@ -98,11 +98,13 @@ describe("site routes", () => {
       screen.getByRole("heading", { name: "Explore careers." }),
     ).toBeVisible();
     expect(
-      screen.getByRole("heading", { name: "An alert is only the beginning." }),
+      screen.getByRole("heading", {
+        name: /different careers\.?\s*different kinds of work\./i,
+      }),
     ).toBeVisible();
     expect(
       screen.getByRole("heading", {
-        name: "Your first day, on a real workstation.",
+        name: "How a Career Expo first day works",
       }),
     ).toBeVisible();
     expect(screen.getByText("Alert A-1042")).toBeVisible();
@@ -129,15 +131,30 @@ describe("site routes", () => {
 
   it("landing names verified shift moments without invented scoring or urgency", () => {
     render(<LandingPage />);
-    expect(
-      screen.getByText("Handle scanner interruption A-1180"),
-    ).toBeVisible();
     expect(screen.queryByText(/minute 25/i)).toBeNull();
     expect(screen.queryByText(/false-positive review/i)).toBeNull();
     expect(screen.queryByText(/phishing report/i)).toBeNull();
     expect(
       screen.queryByText(/leaderboard|most requested|points|streak/i),
     ).toBeNull();
+  });
+
+  it("landing gives every career visual presence and honest workshop labels", () => {
+    render(<LandingPage />);
+    for (const title of [
+      "Cybersecurity Analyst",
+      "Registered Nurse",
+      "Mechanical Engineer",
+      "Electrician",
+      "Lawyer / Attorney",
+    ]) {
+      expect(screen.getAllByText(title).length).toBeGreaterThanOrEqual(1);
+    }
+    expect(screen.getAllByText(/workshop concept/i).length).toBe(4);
+    expect(screen.getByText("Playable now")).toBeInTheDocument();
+    expect(
+      screen.getByText(/a real task, not a job description/i),
+    ).toBeInTheDocument();
   });
 
   it("landing hero routes into the start film gate", async () => {

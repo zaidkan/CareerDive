@@ -1,7 +1,11 @@
 import type { PublicCareer } from "../../careers/types.js";
+import { CyberDetail } from "../careers/CyberDetail.js";
 import { SiteLink } from "../SiteLink.js";
 
 export function CareerDetailPage({ career }: { career: PublicCareer }) {
+  if (career.slug === "cybersecurity-analyst") {
+    return <CyberDetail career={career} />;
+  }
   return (
     <article className="career-detail">
       <SiteLink to="/careers" className="career-back-link">
