@@ -14,9 +14,11 @@ COPY packages/schemas packages/schemas
 ARG VITE_SERVER_URL
 ENV VITE_SERVER_URL=$VITE_SERVER_URL
 RUN node -e 'const value = process.env.VITE_SERVER_URL; try { const url = new URL(value); if (!/^https?:$/.test(url.protocol) || url.origin !== value) throw new Error(); } catch { throw new Error("VITE_SERVER_URL must be an absolute HTTP(S) origin at build time"); }'
+ENV STATIC_SITE_ORIGIN=__SITE_ORIGIN__
 RUN pnpm --filter @sim/web build
 
 FROM nginx:1.29-alpine
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY apps/web/40-site-origin.sh /docker-entrypoint.d/40-site-origin.sh
 EXPOSE 80

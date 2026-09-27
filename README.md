@@ -99,10 +99,12 @@ pnpm vitest run --config vitest.ai.config.ts
 - Institutional deployment remains disabled.
 - The API container runs `pnpm --filter @sim/server db:migrate` before it starts. Migration `0001_initial` runs once in a transaction with an advisory lock. A database where that SQL was previously applied manually is recorded only when every expected table and policy exists. Partial existing schemas stop deployment for inspection.
 - Render blueprint lives in `render.yaml`.
+- Web container requires `SITE_ORIGIN` at runtime: public HTTPS origin only, no trailing slash (for example `https://expo.example.org`). Startup fails when unset or malformed. Render web service must set this variable. Container fills prerendered canonical/OG URLs, sitemap, robots, and JSON-LD before Nginx starts.
+- Local static builds require `STATIC_SITE_ORIGIN`, for example `STATIC_SITE_ORIGIN=http://localhost:5173 pnpm build`. Standalone public builds must use their public HTTPS origin. Docker builds use a runtime placeholder and require `SITE_ORIGIN` when started.
 
 ### Production deployment
 
-Set API `DATABASE_URL` to a writable Supabase Postgres connection (direct or session pooler), `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `WEB_ORIGIN` to the exact public web origin, without a trailing slash. `ANTHROPIC_API_KEY` is optional. Set web `VITE_SERVER_URL` to the exact public API origin, without a trailing slash. Render passes that variable as a Docker build argument; web image build rejects a missing or malformed value. Do not use a local `.env` file as a Docker build input.
+Set API `DATABASE_URL` to a writable Supabase Postgres connection (direct or session pooler), `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `WEB_ORIGIN` to the exact public web origin, without a trailing slash. `ANTHROPIC_API_KEY` is optional. Set web `VITE_SERVER_URL` to the exact public API origin, without a trailing slash, and web `SITE_ORIGIN` to the public HTTPS web origin. Render passes `VITE_SERVER_URL` as a Docker build argument; web image build rejects a missing or malformed value. Web container refuses to start without `SITE_ORIGIN`. Do not use a local `.env` file as a Docker build input.
 
 From a clean checkout, build and start using the same Dockerfiles as Render:
 
@@ -110,9 +112,9 @@ From a clean checkout, build and start using the same Dockerfiles as Render:
 docker build -f Dockerfile.server -t career-expo-api .
 docker build -f Dockerfile.web --build-arg VITE_SERVER_URL=https://api.example.com -t career-expo-web .
 docker run --rm --env-file production-api.env -p 3001:3001 career-expo-api
-docker run --rm -p 8080:80 career-expo-web
+docker run --rm -e SITE_ORIGIN=https://expo.example.org -p 8080:80 career-expo-web
 ```
 
-`production-api.env` must contain `NODE_ENV=production` and the four required API variables above. Replace example URLs with deployment URLs. API `/health` returns 200 only when Postgres is reachable and `simulation_sessions` exists; it returns 503 on DB failure. Web `/`, `/careers/cybersecurity-analyst`, and `/start` serve the SPA directly through Nginx. Render checks API `/health` and web `/`. If migration fails, API process exits before listening; inspect the error and database rather than bypassing migration.
+`production-api.env` must contain `NODE_ENV=production` and the four required API variables above. Replace example URLs with deployment URLs. API `/health` returns 200 only when Postgres is reachable and `simulation_sessions` exists; it returns 503 on DB failure. Web public routes serve prerendered HTML through Nginx, `/start` loads directly with `noindex`, and unknown routes return HTTP 404. Render checks API `/health` and web `/`. If migration fails, API process exits before listening; inspect the error and database rather than bypassing migration.
 
 See `docs/validation-gate.md` before any 3D or second-career work.

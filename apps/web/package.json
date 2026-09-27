@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && vite build",
+    "build": "tsc -p tsconfig.build.json && vite build && node scripts/prerender.mjs && node scripts/check-static-delivery.mjs",
     "dev": "vite",
     "lint": "eslint src test e2e",
     "test": "vitest run --environment jsdom",

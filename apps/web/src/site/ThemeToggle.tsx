@@ -22,16 +22,11 @@ function initialTheme(): SiteTheme {
 }
 
 export function ThemeToggle() {
-  const [theme, setTheme] = useState<SiteTheme>(initialTheme);
+  const [theme, setTheme] = useState<SiteTheme>("dark");
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, theme);
-    } catch {
-      // Storage unavailable; theme still applies for this session.
-    }
-  }, [theme]);
+    setTheme(initialTheme());
+  }, []);
 
   return (
     <button
@@ -42,7 +37,14 @@ export function ThemeToggle() {
         theme === "light" ? "Switch to dark mode" : "Switch to light mode"
       }
       onClick={() => {
-        setTheme((current) => (current === "light" ? "dark" : "light"));
+        const next = theme === "light" ? "dark" : "light";
+        setTheme(next);
+        document.documentElement.dataset.theme = next;
+        try {
+          window.localStorage.setItem(STORAGE_KEY, next);
+        } catch {
+          // Storage unavailable; theme still works in this tab.
+        }
       }}
     >
       {theme === "light" ? "Dark mode" : "Light mode"}
