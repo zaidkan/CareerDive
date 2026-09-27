@@ -98,6 +98,8 @@ pnpm vitest run --config vitest.ai.config.ts
 - Sharing requires explicit, expiring grant.
 - Institutional deployment remains disabled.
 - Apply `apps/server/drizzle/0001_initial.sql`, then `apps/server/drizzle/0002_decision_reviews.sql`, to Supabase before production.
+- `0002_decision_reviews.sql` is repeatable. When integrating `integration/platform-hardening`, add it to that branch's startup migration sequence; this branch does not change the deploy runner. Missing review storage leaves core shift completion intact and hides community comparison.
+- Debrief browser QA uses `apps/server/test/debrief-browser-server.ts` to seed prior shift work, then performs the real final completion in Chromium. Start that server with `PORT=3008 pnpm --filter @sim/server exec tsx test/debrief-browser-server.ts`, start Vite with `VITE_SERVER_URL=http://127.0.0.1:3008 pnpm --filter @sim/web exec vite --host 127.0.0.1 --port 5178 --strictPort`, then run `DEBRIEF_BROWSER_FIXTURE=1 WEB_ORIGIN=http://127.0.0.1:5178 pnpm exec playwright test apps/web/e2e/debrief.spec.ts`.
 - Render blueprint lives in `render.yaml`.
 
 See `docs/validation-gate.md` before any 3D or second-career work.

@@ -37,19 +37,32 @@ export class InMemoryRepository implements SimulationRepository {
     return session;
   }
 
-  async saveSession(session: StoredSession, completedDecisions: CompletedDecision[] = []): Promise<void> {
+  async saveSession(session: StoredSession): Promise<void> {
     this.#sessions.set(session.state.sessionId, session);
-    for (const decision of completedDecisions) {
+  }
+
+  async saveCompletedDecisions(decisions: CompletedDecision[]): Promise<void> {
+    for (const decision of decisions) {
       const key = `${decision.sessionId}:${decision.decisionId}`;
       if (!this.#decisions.has(key)) this.#decisions.set(key, decision);
     }
   }
 
+  async getRecordedDecisionIds(sessionId: string, careerId: string, careerVersion: string): Promise<string[]> {
+    return [...this.#decisions.values()]
+      .filter((decision) => decision.sessionId === sessionId &&
+        decision.careerId === careerId && decision.careerVersion === careerVersion)
+      .map((decision) => decision.decisionId);
+  }
+
   async getCohortCounts(careerId: string, careerVersion: string): Promise<CohortCount[]> {
     const counts = new Map<string, CohortCount>();
     for (const decision of this.#decisions.values()) {
+      const session = this.#sessions.get(decision.sessionId);
+      const sessionKind: string | undefined = session?.state.sessionKind;
       if (decision.careerId !== careerId || decision.careerVersion !== careerVersion ||
-        !this.#sessions.get(decision.sessionId)?.state.completedActionIds.includes("complete_shift")) continue;
+        sessionKind !== "assessed" ||
+        !session?.state.completedActionIds.includes("complete_shift")) continue;
       const key = `${decision.decisionId}:${decision.choiceId}`;
       const row = counts.get(key) ?? { decisionId: decision.decisionId, choiceId: decision.choiceId, count: 0 };
       row.count += 1;

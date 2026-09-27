@@ -222,15 +222,15 @@ export function DebriefView({ debrief }: { debrief: Debrief }) {
                   </ul>
                   <p className="decision-review-sources">
                     {item.evidenceUsedIds.length
-                      ? `Records inspected: ${item.evidenceUsedIds.join(" · ")}`
-                      : "No source opening recorded before this decision."}
+                      ? `Records inspected ${item.decisionId === "scanner_interruption" ? "before closure" : "before this decision"}: ${item.evidenceUsedIds.join(" · ")}`
+                      : `No source opening recorded ${item.decisionId === "scanner_interruption" ? "before closure" : "before this decision"}.`}
                   </p>
                   <details className="decision-review-other-path">
                     <summary>Consider another path</summary>
                     <p>{meta.reflection}</p>
                   </details>
                 </div>
-                <div className="decision-review-community">
+                {item.comparisonEligible ? <div className="decision-review-community">
                   <h4>How other completed shifts handled this</h4>
                   {item.cohort.status === "ready" ? (
                     <>
@@ -269,7 +269,7 @@ export function DebriefView({ debrief }: { debrief: Debrief }) {
                         : "Community comparison will appear as more shifts are completed."}
                     </p>
                   )}
-                </div>
+                </div> : null}
               </div>
             </article>
           );
