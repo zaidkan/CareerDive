@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { EvidenceSignal, WorldState } from "@sim/schemas";
 import { GrantNotFoundError, SessionNotFoundError } from "../domain/errors.js";
 import type { SharingGrant, StoredSession } from "../domain/session.js";
+import type { CohortCount, CompletedDecision } from "../domain/decision-review.js";
 import type { SimulationRepository } from "./types.js";
 
 export function toPublicGrant(grant: SharingGrant) {
@@ -16,6 +17,7 @@ export function toPublicGrant(grant: SharingGrant) {
 export class InMemoryRepository implements SimulationRepository {
   readonly #sessions = new Map<string, StoredSession>();
   readonly #grants = new Map<string, SharingGrant>();
+  readonly #decisions = new Map<string, CompletedDecision>();
 
   async createSession(ownerId: string, state: WorldState): Promise<void> {
     this.#sessions.set(state.sessionId, {
@@ -35,19 +37,38 @@ export class InMemoryRepository implements SimulationRepository {
     return session;
   }
 
-  async saveSession(session: StoredSession): Promise<void> {
+  async saveSession(session: StoredSession, completedDecisions: CompletedDecision[] = []): Promise<void> {
     this.#sessions.set(session.state.sessionId, session);
+    for (const decision of completedDecisions) {
+      const key = `${decision.sessionId}:${decision.decisionId}`;
+      if (!this.#decisions.has(key)) this.#decisions.set(key, decision);
+    }
+  }
+
+  async getCohortCounts(careerId: string, careerVersion: string): Promise<CohortCount[]> {
+    const counts = new Map<string, CohortCount>();
+    for (const decision of this.#decisions.values()) {
+      if (decision.careerId !== careerId || decision.careerVersion !== careerVersion ||
+        !this.#sessions.get(decision.sessionId)?.state.completedActionIds.includes("complete_shift")) continue;
+      const key = `${decision.decisionId}:${decision.choiceId}`;
+      const row = counts.get(key) ?? { decisionId: decision.decisionId, choiceId: decision.choiceId, count: 0 };
+      row.count += 1;
+      counts.set(key, row);
+    }
+    return [...counts.values()];
   }
 
   async deleteSession(ownerId: string, sessionId: string): Promise<void> {
     await this.getSession(ownerId, sessionId);
     this.#sessions.delete(sessionId);
+    for (const [key, decision] of this.#decisions) if (decision.sessionId === sessionId) this.#decisions.delete(key);
   }
 
   async deleteAccount(ownerId: string): Promise<void> {
     for (const [sessionId, session] of this.#sessions) {
       if (session.ownerId === ownerId) {
         this.#sessions.delete(sessionId);
+        for (const [key, decision] of this.#decisions) if (decision.sessionId === sessionId) this.#decisions.delete(key);
       }
     }
     for (const [grantId, grant] of this.#grants) {

@@ -60,5 +60,23 @@ export const DebriefSchema = z.object({
     nextAction: z.string(),
   }),
   evidenceIds: z.array(z.string()),
+  decisionReview: z.object({
+    careerVersion: z.string(),
+    decisions: z.array(z.object({
+      decisionId: z.string(),
+      userChoiceId: z.string().nullable(),
+      availableChoiceIds: z.array(z.string()),
+      evidenceUsedIds: z.array(z.string()),
+      rubricSignals: z.array(z.object({ id: z.string(), supported: z.boolean() })),
+      outcomeLabel: z.enum(["supported", "partially_supported", "needs_more_evidence"]),
+      explanation: z.string(),
+      cohort: z.discriminatedUnion("status", [
+        z.object({ status: z.literal("ready"), sampleSize: z.number().int(), counts: z.record(z.string(), z.number().int()), percentages: z.record(z.string(), z.number().int()) }),
+        z.object({ status: z.literal("insufficient") }),
+        z.object({ status: z.literal("unavailable") }),
+      ]),
+    })),
+    profile: z.array(z.object({ dimension: z.string(), state: z.enum(["strong", "developing", "needs_more_evidence"]), explanation: z.string() })),
+  }).optional(),
 });
 export type Debrief = z.infer<typeof DebriefSchema>;

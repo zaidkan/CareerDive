@@ -97,7 +97,7 @@ pnpm vitest run --config vitest.ai.config.ts
 - Reflection access defaults to owner-only RLS.
 - Sharing requires explicit, expiring grant.
 - Institutional deployment remains disabled.
-- Apply `apps/server/drizzle/0001_initial.sql` to Supabase before production.
+- Apply `apps/server/drizzle/0001_initial.sql`, then `apps/server/drizzle/0002_decision_reviews.sql`, to Supabase before production.
 - Render blueprint lives in `render.yaml`.
 
 See `docs/validation-gate.md` before any 3D or second-career work.

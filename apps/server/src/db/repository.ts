@@ -7,6 +7,7 @@ import {
 } from "@sim/schemas";
 import { GrantNotFoundError, SessionNotFoundError } from "../domain/errors.js";
 import type { SharingGrant, StoredSession } from "../domain/session.js";
+import type { CohortCount, CompletedDecision } from "../domain/decision-review.js";
 import type { SimulationRepository } from "../repository/types.js";
 
 type SqlClient = ReturnType<typeof postgres>;
@@ -57,7 +58,7 @@ export class PostgresRepository implements SimulationRepository {
         ORDER BY sequence
       `,
       this.#sql<{ payload: unknown }[]>`
-        SELECT jsonb_build_object(
+        SELECT jsonb_strip_nulls(jsonb_build_object(
           'id', id,
           'sessionId', session_id,
           'actionId', provenance->>'actionId',
@@ -69,12 +70,12 @@ export class PostgresRepository implements SimulationRepository {
           'observation', observation,
           'occurredAt', provenance->>'occurredAt',
           'annotation', user_annotation
-        ) AS payload
+        )) AS payload
         FROM evidence_signals
         WHERE session_id = ${sessionId}::uuid AND owner_id = ${ownerId}::uuid
       `,
       this.#sql<{ payload: unknown }[]>`
-        SELECT jsonb_build_object(
+        SELECT jsonb_strip_nulls(jsonb_build_object(
           'id', id,
           'sessionId', session_id,
           'eventId', event_id,
@@ -82,7 +83,7 @@ export class PostgresRepository implements SimulationRepository {
           'confidence', confidence,
           'note', note,
           'createdAt', created_at
-        ) AS payload
+        )) AS payload
         FROM reflections
         WHERE session_id = ${sessionId}::uuid AND owner_id = ${ownerId}::uuid
       `,
@@ -105,11 +106,13 @@ export class PostgresRepository implements SimulationRepository {
     };
   }
 
-  async saveSession(session: StoredSession): Promise<void> {
+  async saveSession(session: StoredSession, completedDecisions: CompletedDecision[] = []): Promise<void> {
     await this.#sql.begin(async (transaction) => {
       await transaction`
         UPDATE simulation_sessions
-        SET current_state = ${transaction.json(session.state)}
+        SET current_state = ${transaction.json(session.state)},
+            completed_at = CASE WHEN ${session.state.completedActionIds.includes("complete_shift")}
+              THEN COALESCE(completed_at, now()) ELSE completed_at END
         WHERE id = ${session.state.sessionId}::uuid
           AND owner_id = ${session.ownerId}::uuid
       `;
@@ -181,7 +184,26 @@ export class PostgresRepository implements SimulationRepository {
           )
         `;
       }
+      for (const decision of completedDecisions) {
+        await transaction`
+          INSERT INTO decision_reviews (session_id, career_id, career_version, decision_id, choice_id)
+          VALUES (${decision.sessionId}::uuid, ${decision.careerId}, ${decision.careerVersion}, ${decision.decisionId}, ${decision.choiceId})
+          ON CONFLICT (session_id, decision_id) DO NOTHING
+        `;
+      }
     });
+  }
+
+  async getCohortCounts(careerId: string, careerVersion: string): Promise<CohortCount[]> {
+    const rows = await this.#sql<{ decision_id: string; choice_id: string; count: string }[]>`
+      SELECT d.decision_id, d.choice_id, count(*)::text AS count
+      FROM decision_reviews d
+      JOIN simulation_sessions s ON s.id = d.session_id
+      WHERE d.career_id = ${careerId} AND d.career_version = ${careerVersion}
+        AND s.completed_at IS NOT NULL AND s.session_kind = 'assessed'
+      GROUP BY d.decision_id, d.choice_id
+    `;
+    return rows.map((row) => ({ decisionId: row.decision_id, choiceId: row.choice_id, count: Number(row.count) }));
   }
 
   async deleteSession(ownerId: string, sessionId: string): Promise<void> {

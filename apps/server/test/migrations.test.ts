@@ -39,4 +39,12 @@ describe("privacy migration", () => {
     expect(sql).toContain("sharing_grants.revoked_at IS NULL");
     expect(sql).not.toContain("school_admin");
   });
+
+  it("stores only one structured choice per completed session and hides raw cohort rows", async () => {
+    const sql = await readFile(new URL("../drizzle/0002_decision_reviews.sql", import.meta.url), "utf8");
+    expect(sql).toContain("PRIMARY KEY (session_id, decision_id)");
+    expect(sql).toContain("REFERENCES simulation_sessions(id) ON DELETE CASCADE");
+    expect(sql).toContain("ALTER TABLE decision_reviews ENABLE ROW LEVEL SECURITY");
+    expect(sql).not.toMatch(/note_text|free_text|owner_id|CREATE POLICY/i);
+  });
 });

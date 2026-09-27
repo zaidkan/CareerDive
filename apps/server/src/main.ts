@@ -24,6 +24,9 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 if (isProduction && (!supabaseUrl || !supabaseAnonKey)) {
   throw new Error("SUPABASE_URL and SUPABASE_ANON_KEY are required in production");
 }
+if (isProduction && !process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is required in production for durable assessed shifts");
+}
 
 const supabase =
   supabaseUrl && supabaseAnonKey
