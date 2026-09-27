@@ -11,7 +11,7 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "node scripts/migrate.mjs"
   },
   "dependencies": {
     "@fastify/cors": "^11.0.1",

@@ -3,12 +3,17 @@ WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json ./
 COPY apps/web/package.json apps/web/package.json
+COPY packages/career-packs/package.json packages/career-packs/package.json
+COPY packages/core/package.json packages/core/package.json
 COPY packages/schemas/package.json packages/schemas/package.json
 RUN pnpm install --frozen-lockfile
 COPY apps/web apps/web
+COPY packages/career-packs packages/career-packs
+COPY packages/core packages/core
 COPY packages/schemas packages/schemas
 ARG VITE_SERVER_URL
 ENV VITE_SERVER_URL=$VITE_SERVER_URL
+RUN node -e 'const value = process.env.VITE_SERVER_URL; try { const url = new URL(value); if (!/^https?:$/.test(url.protocol) || url.origin !== value) throw new Error(); } catch { throw new Error("VITE_SERVER_URL must be an absolute HTTP(S) origin at build time"); }'
 RUN pnpm --filter @sim/web build
 
 FROM nginx:1.29-alpine

@@ -23,6 +23,10 @@ export class PostgresRepository implements SimulationRepository {
     this.#sql = sql;
   }
 
+  async checkReadiness(): Promise<void> {
+    await this.#sql`SELECT 1 FROM simulation_sessions LIMIT 0`;
+  }
+
   async createSession(ownerId: string, state: StoredSession["state"]) {
     await this.#sql`
       INSERT INTO simulation_sessions (
@@ -266,6 +270,7 @@ export function createPostgresRepository(databaseUrl: string) {
       max: 10,
       idle_timeout: 20,
       connect_timeout: 10,
+      prepare: false,
     }),
   );
 }

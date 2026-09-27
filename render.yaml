@@ -25,6 +25,7 @@ services:
     name: career-sim-web
     runtime: docker
     dockerfilePath: ./Dockerfile.web
+    healthCheckPath: /
     autoDeploy: false
     envVars:
       - key: VITE_SERVER_URL
