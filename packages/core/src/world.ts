@@ -78,6 +78,7 @@ export function createInitialWorldState(
 
   return WorldStateSchema.parse({
     sessionId,
+    careerVersion: pack.career.packVersion,
     sessionKind: options.sessionKind ?? "assessed",
     seed,
     simClock: 0,

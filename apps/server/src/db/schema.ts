@@ -8,10 +8,12 @@ import {
   bigint,
   boolean,
   date,
+  index,
   integer,
   jsonb,
   numeric,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uuid,
@@ -49,6 +51,17 @@ export const simulationSessions = pgTable("simulation_sessions", {
   createdAt: createdAt(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
 });
+export const decisionReviews = pgTable("decision_reviews", {
+  sessionId: uuid("session_id").notNull().references(() => simulationSessions.id, { onDelete: "cascade" }),
+  careerId: text("career_id").notNull(),
+  careerVersion: text("career_version").notNull(),
+  decisionId: text("decision_id").notNull(),
+  choiceId: text("choice_id").notNull(),
+  createdAt: createdAt(),
+}, (table) => [
+  primaryKey({ columns: [table.sessionId, table.decisionId] }),
+  index("decision_reviews_cohort_idx").on(table.careerId, table.careerVersion, table.decisionId, table.choiceId),
+]);
 export const actionLog = pgTable("action_log", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),
   sessionId: uuid("session_id").notNull(),

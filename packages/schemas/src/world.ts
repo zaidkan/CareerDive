@@ -118,6 +118,7 @@ export type HiddenState = z.infer<typeof HiddenStateSchema>;
 
 export const WorldStateSchema = z.object({
   sessionId: z.string(),
+  careerVersion: z.string().optional(),
   sessionKind: SessionKindSchema,
   seed: z.number().int(),
   simClock: z.number().int().nonnegative(),
