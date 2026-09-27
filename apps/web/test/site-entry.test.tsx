@@ -211,6 +211,10 @@ describe("site routes", () => {
         name: /start your first day/i,
       }),
     );
+    // Brief is ephemeral presentation between Arrive and Connecting — canonical briefing beats
+    expect(await screen.findByRole("heading", { name: /day one as a junior/i })).toBeVisible();
+    expect(screen.getByText(/walk the floor map into security operations/i)).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /continue to floor/i }));
     await waitFor(() => {
       expect(createSession).toHaveBeenCalledTimes(1);
     });
@@ -258,17 +262,16 @@ describe("site routes", () => {
     expect(screen.getByText(/film unavailable/i)).toBeVisible();
     // Poster fallback is present and accessible.
     expect(screen.getByAltText(/arrival film unavailable/i)).toBeVisible();
-    // Can still proceed directly to sim — no intermediate briefing page.
     fireEvent.click(
       screen.getByRole("button", { name: /start your first day/i }),
     );
+    // Brief sits between Arrive and Connecting — still reaches sim after Continue
+    expect(await screen.findByRole("heading", { name: /day one as a junior/i })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /continue to floor/i }));
     await waitFor(() => {
       expect(createSession).toHaveBeenCalledTimes(1);
     });
-    // Transcript/stills remain accessible as fallback.
-    expect(
-      screen.queryByRole("button", { name: /play arrival film/i }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /play arrival film/i })).toBeNull();
   }, 15000);
 
   it("sets per-route document title", () => {

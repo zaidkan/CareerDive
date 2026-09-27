@@ -2,69 +2,113 @@ import { lazy, Suspense, useState } from "react";
 import type { SimulationClient } from "../../client.js";
 import { defaultClient } from "../../client.js";
 import { ArrivalFilm } from "../ArrivalFilm.js";
+import { ThresholdBrief } from "../ThresholdBrief.js";
+import { navigate } from "../routes.js";
 
-/** Film never needs the sim shell; pay for App only on Enter. */
 const App = lazy(async () => {
   const mod = await import("../../index.js");
   return { default: mod.App };
 });
 
-type StartStep = "film" | "sim";
-
+type Gate = "film" | "sim";
 const GATE_KEY = "first-shift-start-gate";
 
-function readGate(): StartStep | null {
+function readGate(): Gate | null {
   if (typeof window === "undefined") return null;
   try {
-    const stored = window.sessionStorage.getItem(GATE_KEY);
-    if (stored === "sim" || stored === "briefing") return "sim";
-    if (stored === "film") return stored;
+    const v = window.sessionStorage.getItem(GATE_KEY);
+    if (v === "sim" || v === "briefing") return "sim";
+    if (v === "film") return "film";
   } catch {
-    // Storage unavailable; fall through to fresh gate.
+    // ignore
   }
   return null;
 }
-
-function writeGate(step: StartStep): void {
-  if (typeof window === "undefined") return;
+function writeGate(g: Gate): void {
   try {
-    window.sessionStorage.setItem(GATE_KEY, step);
+    window.sessionStorage.setItem(GATE_KEY, g);
   } catch {
-    // Storage unavailable; gate still works in memory this session.
+    // ignore - gate still works in memory
   }
 }
 
-/**
- * /start gate: film freezes at doors → DoorHud button animates onto doors
- * and goes straight to the sim. No extra briefing page — briefing lives
- * inside the sim. Single assessed shift.
- */
-export function StartPage({
-  client = defaultClient,
-}: {
-  client?: SimulationClient;
-}) {
-  const [step, setStep] = useState<StartStep>(() => readGate() ?? "film");
+type Phase = "arrive" | "brief" | "connecting" | "sim";
 
-  function go(next: StartStep): void {
-    writeGate(next);
-    setStep(next);
+export function StartPage({ client = defaultClient }: { client?: SimulationClient }) {
+  const [phase, setPhase] = useState<Phase>(() => (readGate() === "sim" ? "sim" : "arrive"));
+
+  function handleSeen() {
+    setPhase("brief");
   }
 
-  if (step === "film") {
+  function handleContinueToSim() {
+    writeGate("sim");
+    setPhase("connecting");
+    requestAnimationFrame(() => {
+      setPhase("sim");
+    });
+  }
+
+  function handleLeave() {
+    // Before a live session exists: leave immediately (no invented data-loss claim)
+    // Brief is pre-session/ephemeral so honest leave is just navigation
+    navigate("/careers/cybersecurity-analyst");
+  }
+
+  const rail = phase === "arrive" ? 0 : phase === "brief" ? 1 : 2;
+
+  if (phase === "arrive") {
     return (
-      <ArrivalFilm
-        required
-        onSeen={() => {
-          go("sim");
-        }}
-      />
+      <ThresholdShell rail={rail}>
+        <ArrivalFilm onSeen={handleSeen} />
+      </ThresholdShell>
     );
   }
 
+  if (phase === "brief") {
+    return (
+      <ThresholdShell rail={rail}>
+        <ThresholdBrief onContinue={handleContinueToSim} onLeave={handleLeave} />
+      </ThresholdShell>
+    );
+  }
+
+  if (phase === "connecting") {
+    return (
+      <ThresholdShell rail={rail}>
+        <div className="threshold-connecting" aria-live="polite" aria-busy="true">
+          <p className="threshold-connecting-title">Connecting to Verdaly</p>
+          <p className="mode-note">Entering Floor 12…</p>
+        </div>
+      </ThresholdShell>
+    );
+  }
+
+  // ponytail: keep existing runtime ownership — no changes to createSession/auth/baseline/journey
   return (
     <Suspense fallback={<p className="mode-note">Entering the floor…</p>}>
       <App client={client} />
     </Suspense>
+  );
+}
+
+function ThresholdShell({ children, rail }: { children: React.ReactNode; rail: number }) {
+  return (
+    <div className="threshold">
+      <nav className="threshold-rail" aria-label="Threshold">
+        <ol>
+          <li aria-current={rail === 0 ? "step" : undefined} className={rail >= 0 ? "is-active" : ""}>
+            Arrive
+          </li>
+          <li aria-current={rail === 1 ? "step" : undefined} className={rail >= 1 ? "is-active" : ""}>
+            Brief
+          </li>
+          <li aria-current={rail === 2 ? "step" : undefined} className={rail >= 2 ? "is-active" : ""}>
+            Find floor
+          </li>
+        </ol>
+      </nav>
+      {children}
+    </div>
   );
 }

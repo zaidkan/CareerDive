@@ -757,17 +757,9 @@ a:focus-visible {
   border-radius: 8px;
 }
 
+/* ponytail: poster is static — no 20–24s drift, no parallax, no particles. M1/M2 only. */
 .film-hold-wrap-cinema > img {
-  animation: poster-drift 24s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes poster-drift {
-  from {
-    transform: scale(1.04);
-  }
-  to {
-    transform: scale(1);
-  }
+  animation: none;
 }
 
 .film-play-overlay {
@@ -850,14 +842,15 @@ a:focus-visible {
   color: var(--paper);
   padding: 0.95rem 1rem 1.05rem;
   box-shadow: var(--shadow-lift);
-  animation: door-hud-enter 1.15s var(--ease-out) both;
+  /* ponytail: M1 only — short enter, no loop — perf: opacity/transform only */
+  animation: door-hud-enter 220ms var(--ease-out) both;
 }
 
 .film-hold-wrap-cinema .door-hud {
   top: 50%;
   bottom: auto;
   transform: translate(-50%, -50%);
-  animation: door-hud-cinema-enter 2.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: door-hud-enter 220ms var(--ease-out) both;
 }
 
 .film-hold-wrap-cinema .door-hud.door-hud-static {
@@ -1033,46 +1026,31 @@ a:focus-visible {
 }
 
 @keyframes door-hud-enter {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(18px) scale(0.98);
-    filter: blur(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
-    filter: blur(0);
-  }
-}
-
-@keyframes door-hud-cinema-enter {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -53%) scale(0.97);
-    filter: blur(8px);
-  }
-  35% {
-    opacity: 0;
-    filter: blur(8px);
-  }
-  100% {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-    filter: blur(0);
-  }
-}
-
-@keyframes door-hud-enter-static {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: none; }
+  from { opacity: 0; transform: translate(-50%, -50%) translateY(6px); }
+  to   { opacity: 1; transform: translate(-50%, -50%) translateY(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .door-hud, .film-play-overlay { animation: none !important; transition: none !important; }
-  .hero, .hero-copy > *, .hero-mock-frame,
-  .film-hold-wrap-cinema > img { animation: none !important; }
+  .door-hud, .film-play-overlay, .threshold-media { animation: none !important; transition: none !important; }
+  .hero, .hero-copy > *, .hero-mock-frame { animation: none !important; }
   .hero-ctas .start-shift, .button-secondary { transition: none !important; }
 }
+
+/* Threshold — ponytail: M1/M2 only, static poster, no drift/pulse/particles */
+.threshold { display: grid; gap: 1rem; }
+.threshold-rail ol { display: flex; gap: 0.5rem; list-style: none; padding: 0; margin: 0; }
+.threshold-rail li { padding: 0.35rem 0.7rem; border: 1px solid var(--line); border-radius: 999px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--mute); }
+.threshold-rail li.is-active { border-color: var(--phosphor); color: var(--paper); background: color-mix(in srgb, var(--phosphor) 10%, transparent); }
+.threshold-rail li[aria-current="step"] { font-weight: 700; }
+.threshold-stage { /* arrival stage stays fixed dark #070A10 — see threshold-media */ }
+.threshold-media { background: #070A10 !important; border-color: color-mix(in srgb, #070A10 88%, var(--line-bright)) !important; }
+.threshold-media video, .threshold-media img { background: #070A10; }
+.threshold-brief { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: clamp(1.25rem, 3vw, 2rem); }
+.threshold-brief-lede { max-width: 62ch; color: var(--fog); line-height: 1.6; }
+.threshold-brief-note { color: var(--mute); font-size: 0.9rem; }
+.threshold-brief-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
+.threshold-connecting-title { color: var(--paper); font-family: var(--font-display); font-size: 1.25rem; margin: 0 0 0.35rem; }
+.stills-note { color: var(--mute); font-size: 0.85rem; }
 
 @media (max-width: 820px) {
   .site-nav-inner {

@@ -51,6 +51,7 @@ it("creates exactly one assessed session after arrival and preserves class-clien
   if (!video) throw new Error("Arrival video missing");
   fireEvent.ended(video);
   await user.click(await screen.findByRole("button", { name: /Start your first day/i }));
+  await user.click(await screen.findByRole("button", { name: /Continue to floor/i }));
   await user.click(await screen.findByRole("button", { name: /Security Operations/ }));
   expect(requests.filter(({ url }) => url.endsWith("session.create"))).toHaveLength(1);
   expect(requests[0]?.body).toMatchObject({ sessionKind: "assessed", pacingMode: "standard" });
