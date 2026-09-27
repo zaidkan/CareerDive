@@ -56,12 +56,13 @@ export function SiteChrome({
   children: ReactNode;
 }) {
   const hasSeenFilm = useGateSeen();
+  const isTheater = route.kind === "start";
   return (
     <>
       <a className="skip-link" href="#main-content">
         Skip to main content
       </a>
-      <header className="site-nav">
+      <header className={isTheater ? "site-nav site-nav--theater" : "site-nav"}>
         <div className="site-nav-inner">
           <a
             className="site-nav-brand"
@@ -94,7 +95,7 @@ export function SiteChrome({
           </a>
         </div>
       </header>
-      <main id="main-content" className={route.kind === "start" ? undefined : "site-main-public"}>{children}</main>
+      <main id="main-content" className={route.kind === "start" ? "site-main-start" : "site-main-public"}>{children}</main>
       <footer className="site-footer">
         <nav aria-label="Footer">
           <ul>

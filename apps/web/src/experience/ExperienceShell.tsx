@@ -34,13 +34,15 @@ export function ExperienceShell(props: WorkstationProps) {
             onAcceptedDistance={movement.addDistance}
             onRoomExit={movement.resetDistance}
           />
-          <details>
-            <summary>Accessibility recovery</summary>
-            <p>If you cannot navigate the office, continue at your workstation.</p>
-            <button type="button" onClick={() => { setRecover(true); }}>
-              Recover workstation access
-            </button>
-          </details>
+          <div className="spatial-recovery">
+            <details className="spatial-recovery-details">
+              <summary>Accessibility recovery</summary>
+              <p>If you cannot navigate the office, continue at your workstation.</p>
+              <button type="button" className="button-secondary" onClick={() => { setRecover(true); }}>
+                Recover workstation access
+              </button>
+            </details>
+          </div>
         </SpatialBoundary>
       )}
     </Suspense>
