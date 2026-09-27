@@ -209,7 +209,11 @@ describe("spatial presentation", () => {
     expect(screen.getByRole("button", { name: /^Fullscreen$/i })).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: /Sit at desk/i }));
-    expect(screen.getByText(/Sign in to your workstation/i)).toBeVisible();
+    expect(screen.getByTestId("login-curtain")).toBeVisible();
+    expect(screen.getByTestId("login-clock")).toBeVisible();
+    expect(
+      screen.getByText(/Press any key or click to sign in/i),
+    ).toBeVisible();
     expect(screen.queryByText(/Click to look around/i)).not.toBeInTheDocument();
     expect(screen.getByTestId("login-post-it")).toHaveTextContent(
       "day1.analyst",
@@ -270,12 +274,12 @@ describe("spatial presentation", () => {
       { timeout: 6000 },
     );
     await user.click(screen.getByRole("button", { name: /Sit at desk/i }));
+    await user.click(screen.getByTestId("login-surface"));
     expect(
       await screen.findByRole("heading", { name: /Sign in/i }),
     ).toBeVisible();
-    await user.type(screen.getByLabelText(/Username/i), "day1.analyst");
-    await user.type(screen.getByLabelText(/Password/i), "FirstDay!");
-    await user.click(screen.getByRole("button", { name: /^Login$/i }));
+    await user.type(screen.getByLabelText(/^Password$/i), "FirstDay!");
+    await user.click(screen.getByRole("button", { name: /^Sign in$/i }));
     expect(
       await screen.findByRole(
         "heading",

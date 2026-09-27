@@ -3,6 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import {
   act,
   cleanup,
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -201,10 +202,10 @@ async function enterDesk(user: ReturnType<typeof userEvent.setup>) {
     ),
   );
   await user.click(await screen.findByRole("button", { name: "Sit at desk" }));
-  await user.type(await screen.findByLabelText(/Username/i), "day1.analyst");
-  await user.type(await screen.findByLabelText(/Password/i), "FirstDay!");
+  await user.click(await screen.findByTestId("login-surface"));
+  await user.type(await screen.findByLabelText(/^Password$/i), "FirstDay!");
   await user.click(
-    await screen.findByRole("button", { name: /^Login$/i }),
+    await screen.findByRole("button", { name: /^Sign in$/i }),
   );
   await screen.findByRole("heading", { name: "Your workstation" });
 }
@@ -1205,5 +1206,100 @@ describe("Desk OS selection, task, and expansion reliability", () => {
     ).toBeNull();
     await user.click(first(controls));
     expect(onOsFullscreen).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("Desk OS W1 window shell", () => {
+  const pinned = (name: string) => within(screen.getByRole("group", { name: "Pinned apps" })).getByRole("button", { name });
+  const taskWindow = (name: string) => within(screen.getByRole("group", { name: "Open windows" })).getByRole("button", { name });
+
+  it("opens, focuses, drags once, minimizes, restores, maximizes, and closes without canonical calls", async () => {
+    const user = userEvent.setup();
+    const onAction = vi.fn();
+    const onTaskAttempt = vi.fn();
+    const onNotification = vi.fn();
+    const onWorkplaceInteraction = vi.fn();
+    const { container } = render(
+      <OsSessionProvider>
+        <DeskOs
+          {...deskProps(makeView())}
+          onAction={onAction}
+          onTaskAttempt={onTaskAttempt}
+          onNotification={onNotification}
+          onWorkplaceInteraction={onWorkplaceInteraction}
+        />
+      </OsSessionProvider>,
+    );
+    const frame = (id: string) => container.querySelector<HTMLElement>(`[data-window-id="${id}"]`);
+    expect(frame("window-1")).toHaveAttribute("data-maximized", "true");
+    await user.click(screen.getByRole("button", { name: "Restore Browser" }));
+    expect(frame("window-1")).toHaveAttribute("data-maximized", "false");
+    const bar = frame("window-1")?.querySelector<HTMLElement>(".os-window-bar");
+    expect(bar).toBeTruthy();
+    if (!bar) throw new Error("Window bar missing");
+    const pointer = (type: string, x: number, y: number) => {
+      const event = new MouseEvent(type, { bubbles: true, button: 0, clientX: x, clientY: y });
+      Object.defineProperty(event, "pointerId", { value: 1 });
+      fireEvent(bar, event);
+    };
+    pointer("pointerdown", 100, 100);
+    pointer("pointermove", 160, 140);
+    expect(frame("window-1")?.style.transform).toBe("translate(60px, 40px)");
+    expect(frame("window-1")?.style.left).toBe("24px");
+    pointer("pointerup", 160, 140);
+    expect(frame("window-1")?.style.left).toBe("84px");
+    expect(frame("window-1")?.style.top).toBe("60px");
+    await user.click(screen.getByRole("button", { name: "Maximize Browser" }));
+    expect(frame("window-1")).toHaveAttribute("data-maximized", "true");
+    await user.click(screen.getByRole("button", { name: "Restore Browser" }));
+    expect(frame("window-1")?.style.left).toBe("84px");
+
+    await user.click(pinned("Files"));
+    expect(frame("window-2")).toHaveAttribute("data-app", "files");
+    expect(Number(frame("window-2")?.style.zIndex)).toBeGreaterThan(Number(frame("window-1")?.style.zIndex));
+    await user.click(taskWindow("Browser, background"));
+    expect(frame("window-1")).toHaveAttribute("data-active", "true");
+    await user.click(taskWindow("Browser, active"));
+    expect(frame("window-1")).toBeNull();
+    expect(taskWindow("Browser, minimized")).toHaveAttribute("data-minimized", "true");
+    await user.click(taskWindow("Browser, minimized"));
+    expect(frame("window-1")).toHaveAttribute("data-active", "true");
+    await user.click(screen.getByRole("button", { name: "Close Browser" }));
+    expect(frame("window-1")).toBeNull();
+    expect(taskWindow("Files, active")).toBeVisible();
+    expect(onAction).not.toHaveBeenCalled();
+    expect(onTaskAttempt).not.toHaveBeenCalled();
+    expect(onNotification).not.toHaveBeenCalled();
+    expect(onWorkplaceInteraction).not.toHaveBeenCalled();
+  });
+
+  it("keeps singletons, opens two independent Browsers, and refuses fifth window", async () => {
+    const user = userEvent.setup();
+    const onAction = vi.fn();
+    const { container } = render(<OsSessionProvider><DeskOs {...deskProps(makeView())} onAction={onAction} /></OsSessionProvider>);
+    const frames = () => container.querySelectorAll("[data-window-id]");
+    await user.click(pinned("Files"));
+    await user.click(pinned("Files"));
+    expect(frames()).toHaveLength(2);
+    await user.click(pinned("Notes"));
+    await user.click(pinned("Notes"));
+    expect(frames()).toHaveLength(3);
+    await user.click(taskWindow("Notes, active"));
+    await user.click(taskWindow("Files, active"));
+    await user.click(taskWindow("Browser, active"));
+    await user.click(screen.getByRole("button", { name: "Open Browser" }));
+    expect(frames()).toHaveLength(1);
+    expect(frames()[0]).toHaveAttribute("data-window-id", "window-4");
+    expect(taskWindow("Browser 2, active")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Company intranet" }));
+    expect(within(frames()[0] as HTMLElement).getByRole("heading", { name: "Company intranet" })).toBeVisible();
+    await user.click(taskWindow("Browser, minimized"));
+    expect(within(container.querySelector('[data-window-id="window-1"]') as HTMLElement).getByLabelText("Address bar")).toHaveValue("verdaly://ops");
+    await user.click(screen.getByRole("button", { name: "Minimize Browser" }));
+    await user.click(taskWindow("Browser 2, active"));
+    await user.click(screen.getByRole("button", { name: "Open Browser" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Up to 4 windows can be open at once. Close one to open another.");
+    expect(within(screen.getByRole("group", { name: "Open windows" })).getAllByRole("button")).toHaveLength(4);
+    expect(onAction).not.toHaveBeenCalled();
   });
 });

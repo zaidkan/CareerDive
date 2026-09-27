@@ -95,8 +95,8 @@ describe("os-shell hardening", () => {
       expect(screen.getByRole("button", { name: "Reload page" })).toBeEnabled();
       expect(screen.queryByText("Reloading page.")).toBeNull();
 
-      // App switches render their content synchronously, no timers involved.
-      await user.click(screen.getByRole("button", { name: "Desktop" }));
+      // Closing and reopening a window renders content synchronously.
+      await user.click(screen.getByRole("button", { name: "Close Browser" }));
       expect(screen.getByRole("button", { name: "Open Browser" })).toBeVisible();
       await user.click(screen.getByRole("button", { name: "Open Browser" }));
       expect(screen.getByRole("tab", { name: "Dashboard" })).toBeVisible();
@@ -212,8 +212,7 @@ describe("os-shell hardening", () => {
         name: /shift-brief\.txt/,
       }),
     ).toHaveAttribute("aria-pressed", "true");
-    await user.click(screen.getByRole("button", { name: "Desktop" }));
-    await user.click(screen.getByRole("button", { name: "Open Browser" }));
+    await user.click(screen.getByRole("button", { name: "Browser" }));
     await user.click(screen.getByRole("button", { name: "Company intranet" }));
     await user.click(screen.getByRole("button", { name: "SOC Ops Console" }));
     expect(screen.getByLabelText("Address bar")).toHaveValue("verdaly://ops");
@@ -251,7 +250,7 @@ describe("os-shell hardening", () => {
     };
 
     // Desktop icon, taskbar buttons, bookmarks, and tabs all work by keyboard.
-    await press("Desktop");
+    await press("Close Browser");
     await press("Open Browser");
     await press("Company intranet");
     expect(screen.getByRole("article", { name: "Company intranet" })).toBeVisible();
@@ -259,7 +258,7 @@ describe("os-shell hardening", () => {
     expect(screen.getByRole("tablist", { name: "Workstation apps" })).toBeVisible();
     expect(screen.getByRole("tab", { name: "Dashboard" })).toBeVisible();
 
-    const focusable = ["Desktop", "Browser", "Files", "Notes", "Go back", "Reload page", "SOC Ops Console"];
+    const focusable = ["Browser", "Files", "Notes", "Go back", "Reload page", "SOC Ops Console"];
     for (const name of focusable) {
       const control = screen.getByRole("button", { name });
       control.focus();

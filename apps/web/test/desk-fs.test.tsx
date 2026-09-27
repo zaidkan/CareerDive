@@ -312,6 +312,7 @@ describe("Notes as scratch (not evidence)", () => {
     first.unmount();
     render(<SessionHarness onAction={onAction} />);
 
+    await user.click(screen.getByRole("button", { name: "Notes" }));
     expect(screen.getByLabelText("Scratch notes")).toHaveValue("");
     const freshExplorer = await openFiles(user);
     const foldersGroup = within(freshExplorer).getByRole("group", {

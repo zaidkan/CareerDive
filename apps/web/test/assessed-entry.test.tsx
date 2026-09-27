@@ -63,9 +63,9 @@ it("creates exactly one assessed session after arrival and preserves class-clien
     body: { sessionId: "entry", interaction: { type: "movement_exertion", distanceMeters: 5 } },
   });
   await user.click(screen.getByRole("button", { name: "Sit at desk" }));
-  await user.type(await screen.findByLabelText(/Username/), "day1.analyst");
-  await user.type(screen.getByLabelText(/Password/), "FirstDay!");
-  await user.click(screen.getByRole("button", { name: /^Login$/ }));
+  await user.click(await screen.findByTestId("login-surface"));
+  await user.type(screen.getByLabelText(/^Password$/i), "FirstDay!");
+  await user.click(screen.getByRole("button", { name: /^Sign in$/ }));
   await user.click(await screen.findByRole("tab", { name: /^Email/ }));
   await user.click(screen.getByRole("button", { name: /Read shift handoff/ }));
   await waitFor(() => { expect(requests.some(({ url }) => url.endsWith("simulation.performAction"))).toBe(true); });

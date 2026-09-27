@@ -3,6 +3,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useReducer,
   useRef,
   useState,
@@ -298,6 +299,12 @@ function SpatialShellStage({
     spatial.phase === "desk_login" ||
     spatial.phase === "seated_monitor" ||
     spatial.phase === "focus_desk";
+
+  useLayoutEffect(() => {
+    if (atDesk && typeof stageRef.current?.scrollIntoView === "function") {
+      stageRef.current.scrollIntoView({ block: "start" });
+    }
+  }, [atDesk, spatial.phase]);
 
   if (spatial.phase === "floor_map") {
     return (

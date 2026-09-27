@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Taskbar } from "../src/world/deskOs/os/Taskbar.js";
@@ -86,18 +86,42 @@ describe("WindowFrame visual system", () => {
     expect(active).toHaveAttribute("data-active", "true");
     expect(active).toHaveAttribute("data-maximized", "true");
   });
+
+  it("moves visually during drag and commits bounds once on release", () => {
+    const onMove = vi.fn();
+    const { container } = render(
+      <WindowFrame app="files" title="Files" bounds={{ x: 20, y: 30, w: 400, h: 300 }} onMove={onMove} />,
+    );
+    const frame = container.querySelector<HTMLElement>(".os-window-frame");
+    const bar = container.querySelector<HTMLElement>(".os-window-bar");
+    if (!frame || !bar) throw new Error("Window frame missing");
+    const pointer = (type: string, x: number, y: number) => {
+      const event = new MouseEvent(type, { bubbles: true, button: 0, clientX: x, clientY: y });
+      Object.defineProperty(event, "pointerId", { value: 1 });
+      fireEvent(bar, event);
+    };
+    pointer("pointerdown", 100, 100);
+    pointer("pointermove", 120, 130);
+    pointer("pointermove", 140, 150);
+    expect(frame.style.transform).toBe("translate(40px, 50px)");
+    expect(onMove).not.toHaveBeenCalled();
+    pointer("pointerup", 140, 150);
+    expect(onMove).toHaveBeenCalledExactlyOnceWith(60, 80);
+    expect(frame.style.transform).toBe("");
+  });
 });
 
 describe("taskbar window entries", () => {
-  it("keeps legacy app buttons with pressed state and glyphs", () => {
+  it("renders pinned launchers with current focus state", () => {
     render(
       <Taskbar
-        activeApp="files"
         onOsFullscreen={() => undefined}
-        onSelect={() => undefined}
+        onLaunch={() => undefined}
+        onSelectWindow={() => undefined}
         onStand={() => undefined}
         osFullscreen={false}
         simClock={42}
+        windows={[{ active: true, app: "files", key: "w1", label: "Files", minimized: false }]}
       />,
     );
     expect(screen.getByRole("button", { name: "Files" })).toHaveAttribute(
@@ -115,9 +139,8 @@ describe("taskbar window entries", () => {
     const onSelectWindow = vi.fn();
     render(
       <Taskbar
-        activeApp="browser"
         onOsFullscreen={() => undefined}
-        onSelect={() => undefined}
+        onLaunch={() => undefined}
         onSelectWindow={onSelectWindow}
         onStand={() => undefined}
         osFullscreen={false}

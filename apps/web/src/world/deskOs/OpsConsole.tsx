@@ -4,11 +4,11 @@ import { getShiftGuidance } from "../../guidance.js";
 import { CalendarPanel, DashboardHome } from "./DashboardHome.js";
 import { SystemApp } from "./SystemApp.js";
 import { APP_TABS, type DeskOsTab } from "./tabs.js";
+import { OsIcon } from "./os/Icons.js";
+import { useOsSession } from "./osSession.js";
 import { CaseRail } from "../../components/CaseRail.js";
 import { MutationStatus } from "../../components/MutationStatus.js";
-import { NotificationBanner } from "../../components/NotificationBanner.js";
 import type {
-  NotificationHandler,
   TaskAttemptHandler,
   WorkplaceInteractionHandler,
 } from "../../components/shared.js";
@@ -19,44 +19,46 @@ import {
 } from "../../useMutationCoordinator.js";
 
 /**
- * The existing tabbed ops console, unchanged. Rendered as the Browser's
- * bookmarked SOC Ops Console page. All canonical wiring passes through.
+ * Tabbed ops console within a Browser window. Its selected tab belongs to the
+ * window session; canonical actions still pass through unchanged.
  */
 export function OpsConsole({
+  windowId,
   phase,
   view,
   onAction,
   onTaskAttempt,
-  onNotification,
   onWorkplaceInteraction,
   mutationState = EMPTY_MUTATION_STATE,
   onRetryMutation,
 }: {
+  windowId: string;
   phase: "desk_login" | "seated_monitor" | "focus_desk";
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
   onTaskAttempt?: TaskAttemptHandler;
-  onNotification?: NotificationHandler;
   onWorkplaceInteraction?: WorkplaceInteractionHandler;
   mutationState?: MutationState;
   onRetryMutation?: () => void;
 }) {
+  const { state, dispatch } = useOsSession();
   const guidance = getShiftGuidance(view);
   const initialTab: DeskOsTab =
     guidance?.systemId ??
     (view.events.some(({ systemId }) => systemId === "email")
       ? "email"
       : "home");
-  const [tab, setTab] = useState<DeskOsTab>(
-    phase === "desk_login" ? "home" : initialTab,
-  );
+  const tab = state.opsTabByWindow[windowId] ?? (phase === "desk_login" ? "home" : initialTab);
+  const setTab = (nextTab: DeskOsTab) => {
+    dispatch({ type: "set_ops_tab", windowId, tab: nextTab });
+  };
+  useEffect(() => {
+    if (state.opsTabByWindow[windowId] === undefined) {
+      dispatch({ type: "set_ops_tab", windowId, tab });
+    }
+  }, [dispatch, state.opsTabByWindow, tab, windowId]);
   const [focusTarget, setFocusTarget] = useState<{
     eventId?: string;
-    requestId: number;
-  }>();
-  const [pendingNotificationTarget, setPendingNotificationTarget] = useState<{
-    eventId: string;
-    systemId: DeskOsTab;
     requestId: number;
   }>();
 
@@ -69,31 +71,22 @@ export function OpsConsole({
   };
 
   useEffect(() => {
-    if (!pendingNotificationTarget) return;
-    const notification = view.notifications.find(
-      ({ eventId }) => eventId === pendingNotificationTarget.eventId,
-    );
-    if (notification?.status === "unread") return;
-    setTab(pendingNotificationTarget.systemId);
-    setFocusTarget({
-      eventId: pendingNotificationTarget.eventId,
-      requestId: pendingNotificationTarget.requestId,
-    });
-    setPendingNotificationTarget(undefined);
-  }, [pendingNotificationTarget, view.notifications]);
-
+    const target = state.notificationTarget;
+    if (target?.phase !== "routed" || target.windowId !== windowId) return;
+    setFocusTarget((current) => ({
+      eventId: target.eventId,
+      requestId: (current?.requestId ?? 0) + 1,
+    }));
+    dispatch({ type: "clear_notification_target", requestId: target.requestId });
+  }, [dispatch, state.notificationTarget, windowId]);
 
   const locked = phase === "desk_login";
   const activeTab = APP_TABS.find((item) => item.id === tab) ?? APP_TABS[0];
 
   return (
     <div className="desk-os-console">
-      <div className="desk-os-chrome">
-        <div className="desk-os-traffic" aria-hidden="true">
-          <span className="desk-os-dot desk-os-dot-close" />
-          <span className="desk-os-dot desk-os-dot-min" />
-          <span className="desk-os-dot desk-os-dot-max" />
-        </div>
+      <div className="desk-os-app-bar">
+        <strong className="desk-os-app-name">SOC Ops Console</strong>
         <div
           className="desk-os-tabs"
           role="tablist"
@@ -124,11 +117,8 @@ export function OpsConsole({
             );
           })}
         </div>
-      </div>
-
-      <div className="desk-os-address" aria-hidden={locked}>
-        <span className="desk-os-secure">Secure</span>
-        <span className="desk-os-url">
+        <span className="desk-os-app-route" aria-hidden={locked}>
+          <OsIcon name="lock" size={11} />
           {locked ? "verdaly://lock" : activeTab.path}
         </span>
       </div>
@@ -158,23 +148,6 @@ export function OpsConsole({
       <div className="desk-os-body">
         {!locked ? (
           <>
-            <NotificationBanner
-              mutationState={mutationState}
-              notifications={view.notifications}
-              onNotification={async (notification, response) => {
-                if (response !== "handle") {
-                  await onNotification?.(notification, response);
-                  return;
-                }
-                await onNotification?.(notification, response, () => {
-                  setPendingNotificationTarget((current) => ({
-                    eventId: notification.eventId,
-                    systemId: notification.systemId,
-                    requestId: (current?.requestId ?? 0) + 1,
-                  }));
-                });
-              }}
-            />
             <CaseRail
               onResume={({ eventId, systemId }) => {
                 openTab(systemId, eventId);

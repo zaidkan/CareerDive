@@ -116,6 +116,15 @@ async function advanceArrivalFilmToDoors(page: Page): Promise<boolean> {
   });
 }
 
+async function workstationFitsViewport(page: Page): Promise<boolean> {
+  return page.locator(".desk-os-laptop").evaluate((laptop) => {
+    const frame = laptop.getBoundingClientRect();
+    const navBottom = document.querySelector(".site-nav")?.getBoundingClientRect().bottom ?? 0;
+    return frame.top >= navBottom - 1 && frame.left >= 0 &&
+      frame.right <= window.innerWidth && frame.bottom <= window.innerHeight;
+  });
+}
+
 test("entry → walk → sit → login → Desk OS continuity", async ({
   page,
 }) => {
@@ -274,19 +283,23 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
 
   await test.step("8 · sit and sign in", async () => {
     await page.getByRole("button", { name: "Sit at computer" }).click();
+    await expect(page.getByTestId("login-curtain")).toBeVisible();
+    await expect.poll(() => workstationFitsViewport(page)).toBe(true);
+    await page.getByTestId("login-surface").click();
     await expect(page.getByRole("heading", { name: "Sign in to Verdaly" })).toBeVisible();
     await page.getByRole("textbox", { name: "Username" }).fill(DESK_LOGIN.username);
     await page.getByRole("textbox", { name: "Password" }).fill(DESK_LOGIN.password);
-    await page.getByRole("button", { name: "Login" }).click();
+    await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page.getByRole("toolbar", { name: "Taskbar" })).toBeVisible();
     await expect(page.locator('[data-desk-os="true"]')).toBeVisible();
+    await expect.poll(() => workstationFitsViewport(page)).toBe(true);
     expect(sessionCreates.length, "login creates no extra session").toBe(1);
   });
 
   await test.step("9 · leave, walk away, return, and resume Desk OS state", async () => {
     await page.getByRole("button", { name: "Company intranet" }).click();
     await expect(page.getByRole("heading", { name: "Company intranet" })).toBeVisible();
-    await page.getByRole("button", { name: "Notes" }).click();
+    await page.getByRole("group", { name: "Pinned apps" }).getByRole("button", { name: "Notes", exact: true }).click();
     await page.getByRole("textbox", { name: "Scratch notes" }).fill("continuity probe");
     await page.getByRole("button", { name: "Leave desk" }).click();
     await expect(page.getByRole("button", { name: "Sit at computer" })).toBeVisible();
@@ -303,7 +316,7 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
     await expect(page.getByRole("heading", { name: "Sign in to Verdaly" })).toHaveCount(0);
     await expect(page.getByRole("toolbar", { name: "Taskbar" })).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Scratch notes" })).toHaveValue("continuity probe");
-    await page.getByRole("button", { name: "Browser" }).click();
+    await page.getByRole("group", { name: "Pinned apps" }).getByRole("button", { name: "Browser", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Company intranet" })).toBeVisible();
     expect(sessionCreates.length, "return creates no extra session").toBe(1);
   });

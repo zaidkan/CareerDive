@@ -69,30 +69,33 @@ function SessionHarness({
   );
 }
 
+const pinned = (name: string) => within(screen.getByRole("group", { name: "Pinned apps" })).getByRole("button", { name });
+const openWindowButton = (name: string) => within(screen.getByRole("group", { name: "Open windows" })).getByRole("button", { name });
+
 describe("OS session ownership", () => {
   it("initializes an empty session to current defaults", async () => {
     const user = userEvent.setup();
     render(<SessionHarness mounted onAction={vi.fn()} />);
 
-    expect(screen.getByRole("button", { name: "Browser" })).toHaveAttribute(
+    expect(pinned("Browser")).toHaveAttribute(
       "aria-pressed",
       "true",
     );
     expect(screen.getByLabelText("Address bar")).toHaveValue("verdaly://ops");
+    await user.click(pinned("Notes"));
     expect(screen.getByLabelText("Scratch notes")).toHaveValue("");
 
-    await user.click(screen.getByRole("button", { name: "Files" }));
+    await user.click(pinned("Files"));
     expect(
       within(screen.getByRole("region", { name: "File Explorer" })).getByText(
         "shift-brief.txt",
       ),
     ).toBeVisible();
 
-    await user.click(screen.getByRole("button", { name: "Desktop" }));
-    expect(screen.getByRole("button", { name: "Desktop" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+    await user.click(openWindowButton("Files, active"));
+    await user.click(openWindowButton("Notes, active"));
+    await user.click(openWindowButton("Browser, active"));
+    expect(screen.getByRole("region", { name: "Desktop" })).toBeVisible();
   });
 
   it("restores active app, open file, fake FS, browser history, and notes across DeskOs unmount/remount", async () => {
@@ -100,7 +103,7 @@ describe("OS session ownership", () => {
     const onAction = vi.fn();
     const view = render(<SessionHarness mounted onAction={onAction} />);
 
-    await user.click(screen.getByRole("button", { name: "Files" }));
+    await user.click(pinned("Files"));
     const explorer = screen.getByRole("region", { name: "File Explorer" });
     await user.click(within(explorer).getByRole("button", { name: /shift-brief\.txt/ }));
     await user.click(within(explorer).getByRole("button", { name: "Cut" }));
@@ -118,7 +121,7 @@ describe("OS session ownership", () => {
     ).toBeVisible();
     await user.type(screen.getByLabelText("Scratch notes"), "verify enrollment");
 
-    await user.click(screen.getByRole("button", { name: "Browser" }));
+    await user.click(pinned("Browser"));
     await user.click(screen.getByRole("button", { name: "Company intranet" }));
     expect(screen.getByRole("article", { name: "Company intranet" })).toBeVisible();
 
@@ -128,14 +131,14 @@ describe("OS session ownership", () => {
 
     view.rerender(<SessionHarness mounted onAction={onAction} />);
 
-    expect(screen.getByRole("button", { name: "Browser" })).toHaveAttribute(
+    expect(pinned("Browser")).toHaveAttribute(
       "aria-pressed",
       "true",
     );
     expect(screen.getByLabelText("Address bar")).toHaveValue("verdaly://intranet");
     expect(screen.getByRole("button", { name: "Go back" })).toBeEnabled();
 
-    await user.click(screen.getByRole("button", { name: "Notes" }));
+    await user.click(pinned("Notes"));
     expect(
       within(screen.getByRole("region", { name: "Notes" })).getByRole("article", {
         name: "Opened file field-notes-draft.txt",
@@ -145,7 +148,7 @@ describe("OS session ownership", () => {
       "verify enrollment",
     );
 
-    await user.click(screen.getByRole("button", { name: "Files" }));
+    await user.click(pinned("Files"));
     const explorerAgain = screen.getByRole("region", { name: "File Explorer" });
     await user.click(within(explorerAgain).getByRole("button", { name: /^Downloads/ }));
     expect(
@@ -168,18 +171,18 @@ describe("OS session ownership", () => {
     const onAction = vi.fn();
     const first = render(<SessionHarness mounted onAction={onAction} />);
 
-    await user.click(screen.getByRole("button", { name: "Desktop" }));
-    await user.click(screen.getByRole("button", { name: "Notes" }));
+    await user.click(pinned("Notes"));
     await user.type(screen.getByLabelText("Scratch notes"), "session one");
 
     first.unmount();
     render(<SessionHarness mounted onAction={onAction} />);
 
-    expect(screen.getByRole("button", { name: "Browser" })).toHaveAttribute(
+    expect(pinned("Browser")).toHaveAttribute(
       "aria-pressed",
       "true",
     );
     expect(screen.getByLabelText("Address bar")).toHaveValue("verdaly://ops");
+    await user.click(pinned("Notes"));
     expect(screen.getByLabelText("Scratch notes")).toHaveValue("");
     expect(onAction).not.toHaveBeenCalled();
   });

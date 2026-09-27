@@ -1,49 +1,66 @@
 import { formatShiftClock } from "../../../systems.js";
 import { appDefinition } from "./appCatalog.js";
-import type { OsAppId } from "./browserState.js";
+import { OsIcon } from "./Icons.js";
+import type { WindowApp } from "./windows.js";
 
 /**
- * Visual contract for one taskbar entry in the future multi-window system.
- * W1 owns the window list; the taskbar only renders state it is given.
+ * One taskbar entry per actual window record.
  */
 export type TaskbarWindow = {
   key: string;
-  app: OsAppId;
+  app: WindowApp;
   label: string;
   active: boolean;
   minimized: boolean;
 };
 
 export function Taskbar({
-  activeApp,
   simClock,
+  attention = false,
   osFullscreen,
-  onSelect,
+  onLaunch,
   onOsFullscreen,
   onStand,
   windows,
   onSelectWindow,
 }: {
-  activeApp: OsAppId;
   simClock: number;
+  attention?: boolean;
   osFullscreen: boolean;
-  onSelect: (app: OsAppId) => void;
+  onLaunch: (app: WindowApp) => void;
   onOsFullscreen: () => void;
   onStand: () => void;
-  windows?: ReadonlyArray<TaskbarWindow>;
-  onSelectWindow?: (key: string) => void;
+  windows: ReadonlyArray<TaskbarWindow>;
+  onSelectWindow: (key: string) => void;
 }) {
   return (
     <div className="os-taskbar" role="toolbar" aria-label="Taskbar">
-      <div className="os-taskbar-apps" role="group" aria-label="Open apps">
-        {windows && onSelectWindow ? (
-          windows.map((entry) => {
+      <div className="os-taskbar-apps">
+        <div className="os-taskbar-pinned" role="group" aria-label="Pinned apps">
+          {(["browser", "files", "notes"] as const).map((app) => (
+            <button
+              aria-label={app === "browser" && attention ? "Browser, new work" : undefined}
+              aria-pressed={windows.some((window) => window.app === app && window.active)}
+              className="os-taskbar-btn os-taskbar-launcher"
+              key={app}
+              onClick={() => { onLaunch(app); }}
+              type="button"
+            >
+              <OsIcon className="os-taskbar-glyph" name={appDefinition(app).icon} size={16} />
+              {appDefinition(app).label}
+              {app === "browser" && attention ? <span aria-hidden="true" className="os-taskbar-attention" /> : null}
+            </button>
+          ))}
+        </div>
+        <div className="os-taskbar-windows" role="group" aria-label="Open windows">
+          {windows.map((entry) => {
             const meta = appDefinition(entry.app);
             const stateLabel = entry.minimized
               ? `${entry.label}, minimized`
               : entry.active
                 ? `${entry.label}, active`
-                : entry.label;
+                : `${entry.label}, background`;
+            const needsAttention = attention && entry.app === "browser";
             return (
               <button
                 aria-pressed={entry.active}
@@ -51,60 +68,19 @@ export function Taskbar({
                 data-minimized={entry.minimized}
                 data-running="true"
                 key={entry.key}
-                aria-label={stateLabel}
+                aria-label={needsAttention ? `${stateLabel}, new work` : stateLabel}
                 onClick={() => {
                   onSelectWindow(entry.key);
                 }}
                 type="button"
               >
-                <span aria-hidden="true" className="os-taskbar-glyph">
-                  {meta.glyph}
-                </span>
+                <OsIcon className="os-taskbar-glyph" name={meta.icon} size={16} />
                 {entry.label}
+                {needsAttention ? <span aria-hidden="true" className="os-taskbar-attention" /> : null}
               </button>
             );
-          })
-        ) : (
-          <>
-            <button
-              aria-pressed={activeApp === "desktop"}
-              className={`os-taskbar-btn${activeApp === "desktop" ? " os-taskbar-btn-active" : ""}`}
-              data-running="true"
-              onClick={() => {
-                onSelect("desktop");
-              }}
-              type="button"
-            >
-              <span aria-hidden="true" className="os-taskbar-glyph">
-                {appDefinition("desktop").glyph}
-              </span>
-              Desktop
-            </button>
-            {(
-              [
-                { id: "browser", label: "Browser" },
-                { id: "files", label: "Files" },
-                { id: "notes", label: "Notes" },
-              ] as const
-            ).map((app) => (
-              <button
-                aria-pressed={activeApp === app.id}
-                className={`os-taskbar-btn${activeApp === app.id ? " os-taskbar-btn-active" : ""}`}
-                data-running="true"
-                key={app.id}
-                onClick={() => {
-                  onSelect(app.id);
-                }}
-                type="button"
-              >
-                <span aria-hidden="true" className="os-taskbar-glyph">
-                  {appDefinition(app.id).glyph}
-                </span>
-                {app.label}
-              </button>
-            ))}
-          </>
-        )}
+          })}
+        </div>
       </div>
       <span className="os-taskbar-clock">Shift {formatShiftClock(simClock)}</span>
       <div className="os-taskbar-actions">
@@ -114,9 +90,11 @@ export function Taskbar({
           onClick={onOsFullscreen}
           type="button"
         >
+          <OsIcon name="expand" size={14} />
           Expand workstation
         </button>
         <button className="desk-os-ghost" onClick={onStand} type="button">
+          <OsIcon name="exit" size={14} />
           Leave desk
         </button>
       </div>
