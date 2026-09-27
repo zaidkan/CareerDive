@@ -237,7 +237,18 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
 
   await test.step("4 · Begin your first day enters the simulation", async () => {
     await page.getByRole("button", { name: "Start your first day" }).click();
-    await expect(page.getByRole("heading", { name: "Day one · floor plan" })).toBeVisible({
+    // Threshold: the doors open onto the day-one brief, not straight to the
+    // floor. The brief is ephemeral presentation with no session of its own.
+    await expect(
+      page.getByRole("heading", { name: /^Day one as a .+ at Verdaly$/ }),
+    ).toBeVisible({ timeout: 30_000 });
+    expect(sessionCreates.length, "brief creates no session").toBe(0);
+    await page.getByRole("button", { name: "Continue to floor" }).click();
+    // The floor screen leads with the canonical Step 1 task, not a generic
+    // "floor plan" label, so the heading names the work itself.
+    await expect(
+      page.getByRole("heading", { name: "Head to Security Operations" }),
+    ).toBeVisible({
       timeout: 60_000,
     });
   });

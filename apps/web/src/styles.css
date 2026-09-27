@@ -1451,6 +1451,71 @@ section[aria-labelledby="structured-title"],
   width: min(1440px, calc(100% - clamp(1rem, 3vw, 2.5rem)));
   padding: 1.15rem 0 3.5rem;
 }
+/* The sim shell renders its own <main>; on the theater route it must not
+   re-cap the width or re-add page padding, and its marketing hero becomes a
+   compact operational identity strip so Floor 12 owns the viewport. */
+.site-main-start > main {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+}
+.site-main-start main > .site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.9rem;
+  padding: 0.55rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-subtle) 76%, var(--panel));
+}
+.site-main-start .site-brand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.9rem;
+  max-width: none;
+}
+.site-main-start .site-header .brand-mark {
+  margin: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+}
+.site-main-start .site-header .brand-mark::before {
+  width: 0.42rem;
+  height: 0.42rem;
+}
+.site-main-start main > .site-header h1 {
+  max-width: none;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+.site-main-start .site-header h1::before {
+  content: "· ";
+  color: var(--text-muted);
+}
+/* The rail and the map already say what to do — the marketing lede is noise here. */
+.site-main-start .site-lede {
+  display: none;
+}
+.site-main-start .site-meta {
+  margin-left: auto;
+  gap: 0.35rem;
+}
+.site-main-start .site-chip {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.66rem;
+}
+.site-main-start .privacy-note {
+  margin-top: 1.25rem;
+  padding-top: 0;
+  border-top: 0;
+}
 .site-nav--theater {
   border-bottom-color: color-mix(in srgb, var(--line) 78%, transparent);
   background: color-mix(in srgb, var(--canvas) 88%, transparent);
@@ -1472,7 +1537,7 @@ section[aria-labelledby="structured-title"],
 .floor-map--theater {
   margin-top: 0.85rem;
   display: grid;
-  grid-template-columns: minmax(16.5rem, 0.30fr) minmax(0, 1fr);
+  grid-template-columns: minmax(17rem, 0.35fr) minmax(0, 1fr);
   gap: 0;
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -1494,7 +1559,7 @@ section[aria-labelledby="structured-title"],
 .floor-map {
   margin-top: 0.85rem;
   display: grid;
-  grid-template-columns: minmax(16.5rem, 0.30fr) minmax(0, 1fr);
+  grid-template-columns: minmax(17rem, 0.35fr) minmax(0, 1fr);
   gap: 0;
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -1722,8 +1787,10 @@ section[aria-labelledby="structured-title"],
 
 .floor-map-grid {
   position: relative;
-  width: 100%;
-  max-width: 880px;
+  /* Keep the plan's true 4:3 proportion and let height, not width, cap it so
+     the whole floor fits the first screen on a laptop. */
+  width: min(100%, calc(min(70vh, 46rem) * 4 / 3));
+  margin: 0 auto;
   aspect-ratio: 4 / 3;
   border: 1px solid var(--line-bright);
   border-radius: 12px;
@@ -2129,6 +2196,7 @@ section[aria-labelledby="structured-title"],
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  min-height: 44px;
   padding: 0.32rem 0.62rem;
   border: 1px solid transparent;
   border-radius: 999px;
@@ -2257,9 +2325,33 @@ section[aria-labelledby="structured-title"],
   .floor-map-stage {
     padding: 0.85rem;
   }
+  /* Mobile: full-width plan with real height so labels stay legible. */
   .floor-map-grid {
-    max-width: none;
-    aspect-ratio: 4 / 3.2;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+  }
+  /* Drop the duplicate micro-labels so room cards never clip their text. */
+  .floor-room {
+    gap: 0.12rem;
+    padding: 0.5rem 0.55rem;
+  }
+  .floor-room-doorhint {
+    display: none;
+  }
+  .floor-room-target-chip {
+    margin-top: 0.2rem;
+    font-size: 0.6rem;
+    padding: 0.12rem 0.38rem;
+  }
+  .floor-room strong {
+    font-size: 0.82rem;
+  }
+  .site-main-start main > .site-header {
+    gap: 0.3rem 0.65rem;
+    padding: 0.5rem 0.7rem;
+  }
+  .site-main-start .site-meta {
+    margin-left: 0;
   }
 }
 

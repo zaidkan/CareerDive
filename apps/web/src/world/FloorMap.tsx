@@ -234,7 +234,7 @@ export function FloorMap({
 
           {visibleRoute.length > 1
             ? visibleRoute.slice(0, -1).map((from, i) => {
-                const to = route[i + 1];
+                const to = visibleRoute[i + 1];
                 if (!to) return null;
                 const vertical = from.x === to.x;
                 const midX = (from.x + to.x) / 2;
