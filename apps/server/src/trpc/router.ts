@@ -31,6 +31,7 @@ import { z } from "zod";
 import { generateSafeNpcReply } from "../ai/npc-dialogue.js";
 import { getDefaultCareerPack } from "../career-pack.js";
 import { EvidenceNotFoundError } from "../domain/errors.js";
+import { buildDecisionReview, cohortForDecision, completedDecisions } from "../domain/decision-review.js";
 import { toPublicGrant } from "../repository/in-memory.js";
 import type { SimulationRepository } from "../repository/types.js";
 import { authenticatedProcedure, t } from "./core.js";
@@ -124,6 +125,9 @@ export function createAppRouter(
             ctx.userId,
             input.sessionId,
           );
+          if (input.actionId === "complete_shift" && session.state.completedActionIds.includes("complete_shift")) {
+            return { view: toClientView(session.state), sequence: session.actionLog.length, effects: [] };
+          }
           const action = {
             id: input.actionId,
             eventId: input.eventId,
@@ -190,7 +194,8 @@ export function createAppRouter(
               eventId: input.eventId,
             }),
           );
-          await repository.saveSession(session);
+          await repository.saveSession(session, input.actionId === "complete_shift"
+            ? completedDecisions(session.state, session.actionLog, careerPack.career.id) : []);
           return {
             view: toClientView(session.state),
             sequence,
@@ -403,7 +408,7 @@ export function createAppRouter(
             ctx.userId,
             input.sessionId,
           );
-          return buildDebrief({
+          const personal = buildDebrief({
             sessionId: session.state.sessionId,
             careerTitle: careerPack.career.title,
             signals: session.evidence,
@@ -412,6 +417,15 @@ export function createAppRouter(
               .filter(({ applied }) => applied)
               .map(({ description }) => description),
           });
+          if (!session.state.completedActionIds.includes("complete_shift")) return personal;
+          const review = buildDecisionReview(session.state, session.actionLog);
+          try {
+            const counts = await repository.getCohortCounts(careerPack.career.id, review.careerVersion);
+            for (const item of review.decisions) item.cohort = cohortForDecision(item.decisionId, counts);
+          } catch {
+            // Cohort service is optional; personal review still renders.
+          }
+          return DebriefSchema.parse({ ...personal, decisionReview: review });
         }),
     }),
     profile: t.router({

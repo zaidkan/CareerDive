@@ -1303,6 +1303,432 @@ section[aria-labelledby="structured-title"],
   text-transform: uppercase;
 }
 
+.decision-review {
+  --review-paper: color-mix(in srgb, var(--panel) 88%, var(--ink));
+  --review-rule: var(--line-bright);
+  padding: clamp(1.25rem, 4vw, 3.5rem);
+  color: var(--paper);
+}
+
+.decision-review-intro {
+  max-width: 74rem;
+  padding: clamp(1.5rem, 5vw, 4rem) 0 clamp(2rem, 5vw, 4rem);
+  border-bottom: 1px solid var(--review-rule);
+}
+
+.decision-review-stamp,
+.decision-review-artifact,
+.decision-review-label,
+.decision-review-outcome,
+.decision-review-sources {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+}
+
+.decision-review-stamp {
+  display: inline-block;
+  padding: 0.4rem 0.65rem;
+  background: var(--signal);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.decision-review .decision-review-intro h2 {
+  max-width: 12ch;
+  margin: 1.4rem 0 1rem;
+  font-size: clamp(2.8rem, 7vw, 5.4rem);
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+}
+
+.decision-review-intro > p {
+  max-width: 66ch;
+  color: var(--fog);
+  font-size: clamp(1rem, 1.8vw, 1.2rem);
+}
+
+.decision-review-intro nav {
+  margin-top: 2rem;
+}
+
+.decision-review-intro ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.decision-review-intro a {
+  display: block;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line-bright);
+  border-radius: var(--radius-sm);
+  color: var(--paper);
+  font-size: 0.84rem;
+  text-decoration: none;
+}
+
+.decision-review-intro a:hover,
+.decision-review-intro a:focus-visible {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+.decision-review-sequence {
+  display: grid;
+  gap: clamp(2.5rem, 6vw, 5rem);
+  margin: clamp(2.5rem, 6vw, 5rem) 0;
+}
+
+.decision-review-item {
+  overflow: hidden;
+  background: var(--review-paper);
+  border: 1px solid var(--review-rule);
+  border-radius: var(--radius-md);
+  scroll-margin-top: 1.5rem;
+}
+
+.decision-review-artifact {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem clamp(1.2rem, 3vw, 2.5rem);
+  border-bottom: 1px solid var(--review-rule);
+  color: var(--signal);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.decision-review-artifact span:last-child {
+  color: var(--mute);
+}
+
+.decision-review-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(15rem, 0.8fr);
+  gap: 0 clamp(1.5rem, 4vw, 4rem);
+  padding: clamp(1.3rem, 3.5vw, 3rem);
+}
+
+.decision-review-heading,
+.decision-review-choice {
+  padding-bottom: 1.7rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.decision-review-heading h3 {
+  max-width: 17ch;
+  margin-bottom: 0.65rem;
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3.2vw, 2.8rem);
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+}
+
+.decision-review-heading p,
+.decision-review-reasoning > p,
+.decision-review-community > p {
+  max-width: 65ch;
+  color: var(--fog);
+}
+
+.decision-review-heading .decision-review-recordline {
+  max-width: 50ch;
+  margin-top: 1.2rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--line-bright);
+  color: var(--signal);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.decision-review-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.decision-review-label {
+  color: var(--mute);
+  text-transform: uppercase;
+}
+
+.decision-review-choice strong {
+  margin: 0.45rem 0 0.7rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.15rem, 2vw, 1.5rem);
+  line-height: 1.25;
+}
+
+.decision-review-outcome {
+  padding: 0.28rem 0.5rem;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  color: var(--signal);
+}
+
+.decision-review-outcome-partially_supported {
+  color: var(--phosphor);
+}
+
+.decision-review-outcome-needs_more_evidence {
+  color: var(--signal-hot);
+}
+
+.decision-review-reasoning,
+.decision-review-community {
+  padding-top: 1.7rem;
+}
+
+.decision-review-body h4 {
+  margin: 0 0 0.7rem;
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+}
+
+.decision-review-reasoning ul,
+.decision-review-community ul {
+  padding: 0;
+  list-style: none;
+}
+
+.decision-review-reasoning li {
+  display: flex;
+  gap: 0.65rem;
+  margin: 0.45rem 0;
+  color: var(--fog);
+}
+
+.decision-review-reasoning li span {
+  color: var(--signal);
+}
+
+.decision-review-reasoning li.is-open span {
+  color: var(--mute);
+}
+
+.decision-review-sources {
+  margin-top: 1.3rem;
+  color: var(--mute);
+  overflow-wrap: anywhere;
+}
+
+.decision-review-other-path {
+  margin-top: 1.1rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed var(--line-bright);
+}
+
+.decision-review-other-path summary {
+  width: fit-content;
+  color: var(--phosphor);
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+
+.decision-review-other-path summary:focus-visible {
+  outline: 2px solid var(--phosphor);
+  outline-offset: 3px;
+}
+
+.decision-review-other-path p {
+  max-width: 55ch;
+  margin: 0.65rem 0 0;
+  color: var(--fog);
+  font-size: 0.9rem;
+}
+
+.decision-review-community {
+  border-top: 1px solid var(--line);
+}
+
+.decision-review-community li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.25rem 0.7rem;
+  margin: 0.85rem 0;
+  font-size: 0.9rem;
+}
+
+.decision-review-community li strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.decision-review-bar,
+.decision-review-bar span {
+  display: block;
+  height: 0.3rem;
+  border-radius: 1rem;
+}
+
+.decision-review-bar {
+  grid-column: 1 / -1;
+  background: var(--line-bright);
+}
+
+.decision-review-bar span {
+  background: var(--signal);
+}
+
+.decision-review-community > p,
+.decision-review-cohort-state {
+  font-size: 0.82rem;
+}
+
+.decision-review-item:nth-child(even) .decision-review-heading,
+.decision-review-item:nth-child(even) .decision-review-reasoning {
+  grid-column: 2;
+}
+
+.decision-review-item:nth-child(even) .decision-review-choice,
+.decision-review-item:nth-child(even) .decision-review-community {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.decision-review-item:nth-child(even) .decision-review-community {
+  grid-row: 2;
+}
+
+.decision-review-item:nth-child(even) .decision-review-reasoning {
+  grid-row: 2;
+}
+
+.decision-review-item:nth-child(2),
+.decision-review-item:nth-child(4) {
+  width: min(92%, 68rem);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.decision-review-item:nth-child(2) {
+  margin-left: auto;
+}
+
+.decision-review-item:nth-child(2) .decision-review-artifact,
+.decision-review-item:nth-child(4) .decision-review-artifact {
+  border-top: 1px solid var(--signal);
+  border-bottom: 1px solid var(--line);
+}
+
+.decision-review-item:nth-child(3) {
+  width: min(90%, 64rem);
+  margin-left: auto;
+  background: color-mix(in srgb, var(--panel) 76%, var(--ink));
+}
+
+.decision-review-item:nth-child(5) {
+  border-color: var(--signal);
+  background: var(--desk);
+}
+
+.decision-review-profile,
+.decision-review-reflect {
+  padding: clamp(1.5rem, 4vw, 3.5rem) 0;
+  border-top: 1px solid var(--review-rule);
+}
+
+.decision-review-profile h3,
+.decision-review-reflect h3 {
+  margin-bottom: 0.6rem;
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 4vw, 3rem);
+}
+
+.decision-review-profile > p,
+.decision-review-reflect > span {
+  color: var(--mute);
+}
+
+.decision-review-profile dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 2rem;
+  margin-top: 1.8rem;
+}
+
+.decision-review-profile dl > div,
+.decision-review-record dl > div {
+  padding: 0.8rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.decision-review-profile dt,
+.decision-review-record dt {
+  color: var(--paper);
+  font-weight: 700;
+}
+
+.decision-review-profile dd {
+  display: flex;
+  gap: 0.7rem;
+  margin: 0.3rem 0 0;
+  color: var(--fog);
+}
+
+.decision-review-profile dd strong {
+  flex: 0 0 9.5rem;
+  color: var(--signal);
+}
+
+.decision-review-reflect p {
+  max-width: 22ch;
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3vw, 2.5rem);
+  line-height: 1.2;
+}
+
+.decision-review-record summary {
+  cursor: pointer;
+  color: var(--phosphor);
+}
+
+.decision-review-record dl {
+  max-width: 65ch;
+}
+
+.decision-review-record dd {
+  margin: 0.3rem 0 0;
+}
+
+@media (max-width: 750px) {
+  .decision-review-item:nth-child(n) {
+    width: 100%;
+  }
+  .decision-review-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .decision-review-item:nth-child(even) .decision-review-body > * {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .decision-review-choice {
+    padding-top: 1.4rem;
+  }
+  .decision-review-community {
+    margin-top: 1.4rem;
+  }
+  .decision-review-profile dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .decision-review-profile dd {
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+  .decision-review-profile dd strong {
+    flex-basis: auto;
+  }
+}
+
 .privacy-note {
   margin-top: 2rem;
   padding-top: 1rem;
