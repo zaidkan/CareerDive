@@ -338,12 +338,14 @@ describe("public routes", () => {
     window.history.replaceState(null, "", "/");
     render(<SiteApp />);
     const primary = screen.getByRole("navigation", { name: "Primary" });
+    expect(document.querySelector("main")).not.toHaveAttribute("tabindex");
     await user.click(within(primary).getByRole("link", { name: "Careers" }));
     expect(
       await screen.findByRole("heading", {
         name: "Explore careers through the work",
       }),
     ).toHaveFocus();
+    expect(document.querySelector("main")).toHaveAttribute("tabindex", "-1");
     expect(
       within(primary).getByRole("link", { name: "Careers" }),
     ).toHaveAttribute("aria-current", "page");
@@ -396,6 +398,58 @@ describe("public routes", () => {
     expect(
       screen.getAllByText(careerAt(0).plannedTasks[0] ?? "missing task"),
     ).toHaveLength(1);
+  });
+
+  it("publishes approved Cyber context and provenance without excluded pathway figures", async () => {
+    const career = careerAt(0);
+    render(<SiteApp initialRoute="/careers/cybersecurity-analyst" />);
+    await screen.findByRole("heading", { name: career.title, level: 1 });
+    expect(document.querySelector("main")).toHaveAttribute("tabindex", "-1");
+    for (const text of [
+      ...(career.pathway ?? []),
+      ...(career.realityNotes ?? []),
+    ]) {
+      expect(screen.getByText(text)).toBeVisible();
+    }
+    for (const entry of career.misconceptions ?? []) {
+      expect(screen.getByText(entry.claim)).toBeVisible();
+      expect(screen.getByText(entry.correction)).toBeVisible();
+    }
+    for (const artifact of career.artifactOrMediaConcepts) {
+      expect(
+        screen.getByText(artifact, { exact: artifact !== "Alert record" }),
+      ).toBeVisible();
+    }
+    const workflow = screen.getByRole("region", {
+      name: "From signal to handoff",
+    });
+    expect(
+      within(workflow)
+        .getAllByRole("heading", { level: 3 })
+        .map((heading) => heading.textContent),
+    ).toEqual([
+      "Alert",
+      "Evidence",
+      "Judgment",
+      "Documentation",
+      "Communication",
+    ]);
+    expect(document.querySelectorAll('main a[href="/start"]')).toHaveLength(1);
+    const user = userEvent.setup();
+    await user.click(screen.getByText("Sources & provenance"));
+    for (const source of career.sources)
+      expect(screen.getByText(source)).toBeVisible();
+    expect(
+      screen.getByRole("link", {
+        name: "BLS OOH Information Security Analysts",
+      }),
+    ).toHaveAttribute(
+      "href",
+      "https://www.bls.gov/ooh/computer-and-information-technology/information-security-analysts.htm",
+    );
+    expect(document.querySelector("main")?.textContent).not.toMatch(
+      /\[VERIFY\]|\$129,180|21%|2025–35|15-1212|median|projected growth/i,
+    );
   });
 
   it.each([{ ctrlKey: true }, { metaKey: true }, { button: 1 }])(

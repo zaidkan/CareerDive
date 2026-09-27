@@ -1,0 +1,712 @@
+/* Career exploration only. Shared homepage cards and simulation stay untouched. */
+.careers-page,
+.career-dossier {
+  --explorer-space: clamp(2.5rem, 5vw, 5rem);
+  padding-top: clamp(1.5rem, 4vw, 3.5rem);
+  color: var(--text-secondary);
+}
+:is(.careers-page, .career-dossier) h1,
+:is(.careers-page, .career-dossier) h2,
+:is(.careers-page, .career-dossier) h3 {
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  text-wrap: balance;
+}
+:is(.careers-page, .career-dossier) h2 {
+  margin-bottom: 0.8rem;
+  font-size: clamp(1.5rem, 2.5vw, 2.15rem);
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+:is(.careers-page, .career-dossier) p {
+  max-width: 70ch;
+}
+:is(.careers-page, .career-dossier) a {
+  text-underline-offset: 0.25em;
+}
+:is(.careers-page, .career-dossier) :focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 5px;
+}
+.explorer-intro {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  align-items: end;
+  gap: 3rem;
+  padding-bottom: var(--explorer-space);
+}
+.explorer-intro h1 {
+  max-width: 16ch;
+  margin: 0;
+  font-size: clamp(2.5rem, 4.7vw, 4.3rem);
+  line-height: 1.07;
+}
+.explorer-intro .lede {
+  margin-bottom: 1.3rem;
+}
+.explorer-jump-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+.explorer-jump-links a,
+.explorer-detail-link,
+.dossier-back {
+  color: var(--action-primary);
+  font-weight: 650;
+}
+.explorer-jump-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.explorer-ready,
+.explorer-workshop {
+  scroll-margin-top: 8rem;
+}
+.explorer-section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.explorer-section-heading h2,
+.explorer-section-heading p {
+  margin: 0;
+}
+.explorer-feature {
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: center;
+}
+.explorer-feature-copy {
+  padding-block: 1rem;
+}
+.explorer-feature h3 {
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  margin: 0 0 1rem;
+}
+.explorer-summary,
+.dossier-summary {
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  line-height: 1.5;
+}
+.explorer-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  list-style: none;
+  margin: 1.3rem 0;
+  padding: 0;
+}
+.explorer-skills li {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.explorer-skills li:not(:last-child)::after {
+  content: "/";
+  color: var(--text-muted);
+  padding-left: 1rem;
+}
+.explorer-actions {
+  display: flex;
+  align-items: start;
+  flex-direction: column;
+  gap: 1.1rem;
+  margin: 1.8rem 0;
+}
+:is(.careers-page, .career-dossier) .explorer-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.8rem 1.3rem;
+  border-radius: 8px;
+  background: var(--action-primary);
+  color: var(--action-on-primary);
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 160ms var(--ease-out);
+}
+:is(.careers-page, .career-dossier) .explorer-primary:hover {
+  background: color-mix(
+    in srgb,
+    var(--action-primary) 88%,
+    var(--text-primary)
+  );
+}
+.explorer-detail-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.explorer-limit,
+.explorer-request-note {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+}
+.explorer-feature-work {
+  min-width: 0;
+}
+.shift-desk-preview {
+  margin: 0;
+  min-width: 0;
+}
+.shift-desk-preview picture {
+  display: block;
+}
+.shift-desk-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  background: var(--surface-base);
+}
+.shift-desk-preview .shift-desk-light {
+  display: none;
+}
+:root[data-theme="light"] .shift-desk-preview .shift-desk-dark {
+  display: none;
+}
+:root[data-theme="light"] .shift-desk-preview .shift-desk-light {
+  display: block;
+}
+.shift-desk-preview figcaption {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.3rem 1rem;
+  padding: 0.85rem 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.shift-desk-preview figcaption strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.explorer-first-task {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+.explorer-first-task span {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+.explorer-first-task strong {
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+.explorer-workshop {
+  margin-top: var(--explorer-space);
+}
+.explorer-request-note {
+  margin-bottom: 2rem;
+}
+.explorer-workshop-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.explorer-workshop-list > li {
+  border-top: 1px solid var(--border-subtle);
+}
+.explorer-workshop-row {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: clamp(2rem, 6vw, 6rem);
+  padding-block: clamp(1.75rem, 4vw, 3rem);
+  align-items: center;
+}
+.explorer-role-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.8rem;
+}
+.explorer-coming-soon {
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  background: var(--status-warning-bg);
+  color: var(--status-warning-fg);
+  font-weight: 650;
+}
+.explorer-workshop-row h3 {
+  font-size: clamp(1.6rem, 2.8vw, 2.25rem);
+  letter-spacing: -0.025em;
+  margin-bottom: 0.8rem;
+  line-height: 1.15;
+}
+.explorer-workplace {
+  font-size: 0.9rem;
+}
+.explorer-workplace strong {
+  color: var(--text-primary);
+  margin-right: 0.5rem;
+}
+.careers-page .career-preview {
+  margin-top: 1.3rem;
+}
+.careers-page .career-request {
+  margin-top: 0;
+}
+.careers-page .career-request .button-secondary {
+  box-shadow: none;
+}
+.careers-page .career-preview-panel {
+  margin-top: 1rem;
+  background: var(--surface-subtle);
+}
+.careers-page .career-preview-panel[hidden] {
+  display: none;
+}
+.explorer-planned-artifacts {
+  margin: 0;
+  padding: 1.5rem;
+  background: var(--surface-base);
+  border: 1px solid var(--border-subtle);
+}
+.explorer-planned-artifacts figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding-bottom: 1rem;
+}
+.explorer-planned-artifacts figcaption span {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+.explorer-planned-artifacts ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.explorer-planned-artifacts li {
+  display: flex;
+  gap: 1rem;
+  padding: 0.8rem 0;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.explorer-planned-artifacts p {
+  margin: 1rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.explorer-workshop-row:is(
+  [data-career="mechanical-engineer"],
+  [data-career="lawyer-attorney"]
+) {
+  grid-template-columns: 0.85fr 1.15fr;
+}
+.explorer-workshop-row:is(
+    [data-career="mechanical-engineer"],
+    [data-career="lawyer-attorney"]
+  )
+  .explorer-role-copy {
+  grid-column: 2;
+  grid-row: 1;
+}
+.explorer-workshop-row:is(
+    [data-career="mechanical-engineer"],
+    [data-career="lawyer-attorney"]
+  )
+  .explorer-planned-artifacts {
+  grid-column: 1;
+  grid-row: 1;
+}
+.explorer-planned-artifacts li:first-child {
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding-block: 1.1rem;
+}
+[data-career="mechanical-engineer"] .explorer-planned-artifacts {
+  background: var(--surface-subtle);
+}
+[data-career="electrician"] .explorer-planned-artifacts ul {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 1.5rem;
+}
+[data-career="lawyer-attorney"] .explorer-planned-artifacts {
+  border-top-color: var(--border-strong);
+}
+.dossier-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: 1.5rem;
+}
+.dossier-intro {
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: center;
+}
+.dossier-intro h1 {
+  max-width: 18ch;
+  font-size: clamp(2.5rem, 4.7vw, 4.3rem);
+  line-height: 1.07;
+  margin-bottom: 1.25rem;
+}
+.dossier-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  align-items: center;
+  margin: 0 0 1.5rem;
+  font-size: 0.85rem;
+}
+.dossier-ready {
+  color: var(--status-success-fg);
+  background: var(--status-success-bg);
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-weight: 650;
+}
+.dossier-intro .explorer-primary {
+  margin-top: 0.7rem;
+}
+.shift-handoff,
+.shift-investigation {
+  margin: 0;
+  background: var(--surface-base);
+  padding: clamp(1.25rem, 2.5vw, 2rem);
+}
+.shift-handoff {
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+.shift-handoff figcaption,
+.shift-investigation figcaption {
+  display: grid;
+  gap: 0.3rem;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 1rem;
+  color: var(--text-primary);
+}
+.shift-handoff figcaption span,
+.shift-investigation figcaption span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.shift-handoff blockquote {
+  margin: 1.5rem 0 1rem;
+  color: var(--text-primary);
+  font-size: clamp(1.15rem, 1.6vw, 1.5rem);
+  line-height: 1.45;
+  letter-spacing: -0.015em;
+}
+.shift-handoff p {
+  font-size: 0.9rem;
+}
+.shift-handoff small,
+.shift-investigation small {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+.dossier-workflow {
+  margin-top: var(--explorer-space);
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-subtle);
+}
+.dossier-workflow ol {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 1.8rem 0 0;
+}
+.dossier-workflow li {
+  position: relative;
+}
+.workflow-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--surface-subtle);
+  color: var(--action-primary);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  border-radius: 50%;
+  margin-bottom: 0.8rem;
+}
+.dossier-workflow li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 1rem;
+  left: 3rem;
+  right: 0;
+  border-top: 1px solid var(--border-strong);
+}
+.dossier-workflow h3 {
+  font-size: 1rem;
+  margin-bottom: 0.4rem;
+}
+.dossier-workflow p {
+  font-size: 0.87rem;
+  margin-bottom: 0;
+}
+.dossier-work {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(2rem, 6vw, 6rem);
+  margin-block: var(--explorer-space);
+}
+.dossier-tasks {
+  list-style: none;
+  counter-reset: task;
+  padding: 0;
+  margin: 1.5rem 0 0;
+}
+.dossier-tasks li {
+  display: flex;
+  gap: 1rem;
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+.dossier-tasks li::before {
+  counter-increment: task;
+  content: counter(task, decimal-leading-zero);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.dossier-skills {
+  padding: 1.8rem 2rem;
+  background: var(--surface-subtle);
+  border-radius: 12px;
+}
+.dossier-skills .explorer-skills {
+  margin-top: 0;
+}
+.dossier-skills p {
+  font-size: 0.95rem;
+}
+.dossier-skills p:last-child {
+  margin-bottom: 0;
+}
+.dossier-artifact-layout {
+  display: grid;
+  grid-template-columns: 1.4fr 0.85fr;
+  gap: 2rem;
+  align-items: start;
+}
+.shift-investigation dl {
+  margin: 0;
+}
+.shift-investigation dl > div {
+  padding-block: 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.shift-investigation dt {
+  color: var(--text-primary);
+  font-weight: 650;
+  font-size: 0.9rem;
+  margin-bottom: 0.35rem;
+}
+.shift-investigation dd {
+  margin: 0;
+  font-size: 0.85rem;
+}
+.shift-investigation small {
+  display: block;
+  margin-top: 1rem;
+}
+.dossier-misconceptions,
+.dossier-pathway,
+.dossier-scope {
+  margin-top: var(--explorer-space);
+  padding-top: 2rem;
+  border-top: 1px solid var(--border-subtle);
+}
+.dossier-misconceptions,
+.dossier-pathway {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: clamp(2rem, 6vw, 6rem);
+}
+.dossier-comparison + .dossier-comparison {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-subtle);
+}
+.dossier-comparison h3 {
+  margin: 0 0 0.6rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.dossier-comparison p {
+  margin-bottom: 0;
+}
+.dossier-pathway p + p {
+  margin-top: 1.5rem;
+}
+.dossier-scope {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  font-size: 0.9rem;
+}
+.dossier-scope ul {
+  padding-left: 1.2rem;
+}
+.dossier-scope li + li {
+  margin-top: 0.6rem;
+}
+.dossier-sources summary {
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--text-primary);
+  font-weight: 650;
+  padding: 0.6rem 0;
+}
+.dossier-sources summary:hover {
+  color: var(--action-primary);
+}
+.dossier-sources a {
+  color: var(--action-primary);
+  overflow-wrap: anywhere;
+}
+.dossier-sources p {
+  margin-top: 1rem;
+}
+@media (max-width: 1000px) {
+  .explorer-intro {
+    grid-template-columns: 1.2fr 1fr;
+    gap: 2rem;
+  }
+  .explorer-feature {
+    grid-template-columns: 1fr 1fr;
+  }
+  .dossier-intro {
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 2rem;
+  }
+  .dossier-artifact-layout {
+    grid-template-columns: 1.2fr 1fr;
+    gap: 1.5rem;
+  }
+  .dossier-workflow ol {
+    gap: 1rem;
+  }
+}
+@media (max-width: 760px) {
+  .explorer-intro,
+  .explorer-feature,
+  .explorer-workshop-row,
+  .dossier-intro,
+  .dossier-work,
+  .dossier-artifact-layout,
+  .dossier-misconceptions,
+  .dossier-pathway,
+  .dossier-scope {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  .explorer-intro h1 {
+    max-width: 16ch;
+  }
+  .explorer-feature-copy {
+    padding-block: 0;
+  }
+  .explorer-actions {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+  }
+  .explorer-actions .explorer-detail-link {
+    max-width: 22ch;
+  }
+  .explorer-section-heading {
+    gap: 0.8rem;
+  }
+  .explorer-workshop-row,
+  .explorer-workshop-row:is(
+    [data-career="mechanical-engineer"],
+    [data-career="lawyer-attorney"]
+  ) {
+    grid-template-columns: 1fr;
+    padding-block: 2rem;
+  }
+  .explorer-workshop-row:is(
+      [data-career="mechanical-engineer"],
+      [data-career="lawyer-attorney"]
+    )
+    :is(.explorer-role-copy, .explorer-planned-artifacts) {
+    grid-column: auto;
+    grid-row: auto;
+  }
+  .explorer-planned-artifacts {
+    padding: 1.15rem;
+  }
+  .dossier-workflow ol {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .dossier-workflow li {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    gap: 0.3rem 1rem;
+    padding-bottom: 1.5rem;
+  }
+  .dossier-workflow h3 {
+    align-self: center;
+    margin: 0;
+  }
+  .dossier-workflow p {
+    grid-column: 2;
+  }
+  .workflow-step {
+    margin: 0;
+  }
+  .dossier-workflow li:not(:last-child)::after {
+    top: 2.4rem;
+    bottom: 0.5rem;
+    left: 1rem;
+    right: auto;
+    border-top: 0;
+    border-left: 1px solid var(--border-strong);
+  }
+  .dossier-workflow li:last-child {
+    padding-bottom: 0;
+  }
+  .dossier-skills {
+    padding: 1.5rem;
+  }
+  .dossier-misconceptions br {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.careers-page, .career-dossier) *,
+  :is(.careers-page, .career-dossier) *::before,
+  :is(.careers-page, .career-dossier) *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}

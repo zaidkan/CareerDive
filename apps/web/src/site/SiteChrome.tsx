@@ -94,7 +94,7 @@ export function SiteChrome({
           </a>
         </div>
       </header>
-      <main id="main-content" className={route.kind === "start" ? undefined : "site-main-public"}>{children}</main>
+      <main id="main-content" tabIndex={route.kind === "careers" || route.kind === "career" ? -1 : undefined} className={route.kind === "start" ? undefined : "site-main-public"}>{children}</main>
       <footer className="site-footer">
         <nav aria-label="Footer">
           <ul>
