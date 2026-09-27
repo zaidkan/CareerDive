@@ -106,7 +106,7 @@ export class PostgresRepository implements SimulationRepository {
     };
   }
 
-  async saveSession(session: StoredSession, completedDecisions: CompletedDecision[] = []): Promise<void> {
+  async saveSession(session: StoredSession): Promise<void> {
     await this.#sql.begin(async (transaction) => {
       await transaction`
         UPDATE simulation_sessions
@@ -184,7 +184,13 @@ export class PostgresRepository implements SimulationRepository {
           )
         `;
       }
-      for (const decision of completedDecisions) {
+    });
+  }
+
+  async saveCompletedDecisions(decisions: CompletedDecision[]): Promise<void> {
+    if (decisions.length === 0) return;
+    await this.#sql.begin(async (transaction) => {
+      for (const decision of decisions) {
         await transaction`
           INSERT INTO decision_reviews (session_id, career_id, career_version, decision_id, choice_id)
           VALUES (${decision.sessionId}::uuid, ${decision.careerId}, ${decision.careerVersion}, ${decision.decisionId}, ${decision.choiceId})
@@ -192,6 +198,15 @@ export class PostgresRepository implements SimulationRepository {
         `;
       }
     });
+  }
+
+  async getRecordedDecisionIds(sessionId: string, careerId: string, careerVersion: string): Promise<string[]> {
+    const rows = await this.#sql<{ decision_id: string }[]>`
+      SELECT decision_id FROM decision_reviews
+      WHERE session_id = ${sessionId}::uuid
+        AND career_id = ${careerId} AND career_version = ${careerVersion}
+    `;
+    return rows.map(({ decision_id }) => decision_id);
   }
 
   async getCohortCounts(careerId: string, careerVersion: string): Promise<CohortCount[]> {

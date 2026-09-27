@@ -106,18 +106,6 @@ function evidenceBefore(
         if (artifact) opened.add(artifact.id);
       }
     }
-    if (interaction.type === "action" && interaction.action.eventId) {
-      const event = state.events.find(
-        ({ id }) => id === interaction.action.eventId,
-      );
-      const effect =
-        event &&
-        state.rules.eventTemplates[event.templateId]?.actionEffects[
-          interaction.action.id
-        ];
-      for (const artifactId of effect?.observeArtifactIds ?? [])
-        opened.add(artifactId);
-    }
   }
   return allowed.filter((id) => opened.has(id));
 }
@@ -130,10 +118,13 @@ function decision(input: {
   explanation: string;
   outcome: Decision["outcomeLabel"];
 }): Decision {
+  const availableChoiceIds = [...(REVIEW_CHOICES[input.id] ?? [])];
+  const comparisonEligible = availableChoiceIds.length >= 2;
   return {
     decisionId: input.id,
     userChoiceId: input.choice,
-    availableChoiceIds: [...(REVIEW_CHOICES[input.id] ?? [])],
+    availableChoiceIds,
+    comparisonEligible,
     evidenceUsedIds: input.evidence,
     rubricSignals: input.signals.map(([id, supported]) => ({ id, supported })),
     outcomeLabel: input.outcome,
@@ -192,6 +183,7 @@ export function buildDecisionReview(
     caseEvidence.includes("device-inventory-1") &&
     routeCompared &&
     caseDocumented;
+  const caseHasEvidence = caseEvidence.length > 0;
 
   const scannerResponse = log.find(
     ({ interaction }) =>
@@ -224,6 +216,8 @@ export function buildDecisionReview(
         ticket.linkedWorkItemIds.includes(SCANNER) &&
         Boolean(ticket.disposition),
     );
+  const scannerChecked = scannerEvidence.includes("scanner-run-log") &&
+    scannerEvidence.includes("scanner-window");
 
   const accessDecision = actionDecision(
     state,
@@ -245,6 +239,8 @@ export function buildDecisionReview(
       "identify-approval-boundary",
       "route-to-owner",
     ) || accessEvidence.includes("access-approval-guide");
+  const accessSupported = accessChoice !== null && accessBoundary &&
+    accessEvidence.includes("access-approval-guide");
 
   const loginDecision = actionDecision(
     state,
@@ -272,9 +268,18 @@ export function buildDecisionReview(
       state,
       LOGIN,
       "employee-login-troubleshooting",
+      "login-help-evidence",
+      "laptop-success",
+    ) &&
+    hasStep(
+      state,
+      LOGIN,
+      "employee-login-troubleshooting",
       "login-help-next-step",
       "update-saved-password",
     );
+  const loginSupported = loginChoice !== null && loginReasoned &&
+    loginEvidence.includes("rivera-auth-summary");
 
   const handoffDecision = actionDecision(
     state,
@@ -295,7 +300,7 @@ export function buildDecisionReview(
     "end-shift-continuity",
     "handoff-checked",
     "login-records-checked",
-  );
+  ) && hasStep(state, HANDOFF, "end-shift-continuity", "handoff-checked", "scanner-checked");
   const handoffUncertainty = hasStep(
     state,
     HANDOFF,
@@ -310,6 +315,8 @@ export function buildDecisionReview(
     "handoff-next-owner",
     "next-analyst-review",
   );
+  const handoffSupported = handoffChoice !== null && handoffFact &&
+    handoffUncertainty && handoffOwner && caseHasEvidence && scannerChecked;
 
   const decisions = [
     decision({
@@ -324,17 +331,21 @@ export function buildDecisionReview(
       ],
       outcome: caseSupported
         ? "supported"
-        : caseChoice
+        : caseChoice && caseHasEvidence
           ? "partially_supported"
           : "needs_more_evidence",
       explanation:
         caseChoice === "dismiss_alert"
-          ? "You closed the alert while the session owner and route explanation remained unverified. Any completed checks still help a later review."
+          ? caseHasEvidence
+            ? "You closed the alert while the session owner and route explanation remained unverified. The recorded checks can support later review."
+            : "You closed the alert without a recorded source inspection to explain the unfamiliar session."
           : caseSupported
             ? "Your escalation carried traceable records and a clear collection limit into senior review. It did not claim identity or access was proven."
-            : caseChoice
+            : caseChoice && caseHasEvidence
               ? "You requested review, but the saved record does not show every comparison or uncertainty note needed for a traceable handoff."
-              : "No final A-1042 decision was recorded in this shift.",
+              : caseChoice
+                ? "You requested review without a recorded source inspection before that decision."
+                : "No final A-1042 decision was recorded in this shift.",
     }),
     decision({
       id: "scanner_interruption",
@@ -347,13 +358,13 @@ export function buildDecisionReview(
         ["documented_closure", scannerClosed && scannerDocumented],
       ],
       outcome:
-        scannerChoice && scannerClosed && scannerDocumented
+        scannerChoice && scannerClosed && scannerDocumented && scannerChecked
           ? "supported"
-          : scannerChoice
+          : scannerChoice && (scannerEvidence.length > 0 || scannerDocumented)
             ? "partially_supported"
             : "needs_more_evidence",
       explanation: scannerChoice
-        ? `You chose to ${scannerChoice === "handle" ? "switch to the scanner alert" : scannerChoice === "snooze" ? "snooze the interruption" : "continue the current case"}. That timing choice can be defensible; what matters is whether you later checked the run and documented the bounded closure.`
+        ? `You chose to ${scannerChoice === "handle" ? "switch to the scanner alert" : scannerChoice === "snooze" ? "snooze the interruption" : "continue the current case"}. That timing choice can be defensible. ${scannerChecked && scannerClosed && scannerDocumented ? "Your later run and window checks support the documented closure." : "The saved record does not show every run, window, and closure check needed to support it."}`
         : "No scanner interruption response was recorded. The alert work itself can still be reviewed.",
     }),
     decision({
@@ -369,13 +380,15 @@ export function buildDecisionReview(
         ["explained_boundary", accessBoundary],
       ],
       outcome:
-        accessChoice && accessBoundary
+        accessSupported
           ? "supported"
-          : accessChoice
+          : accessChoice && accessBoundary
             ? "partially_supported"
             : "needs_more_evidence",
       explanation: accessChoice
-        ? "You routed the request to the finance data owner and kept access pending. Urgency did not become approval authority."
+        ? accessSupported
+          ? "You checked the approval guide, routed the request to the finance data owner, and kept access pending."
+          : "You routed the request, but the saved record does not show both an approval-guide check and a clear authority boundary."
         : "No approval-routing action was recorded. Project urgency alone cannot authorize access.",
     }),
     decision({
@@ -388,13 +401,15 @@ export function buildDecisionReview(
         ["kept_reassessment_open", loginReasoned],
       ],
       outcome:
-        loginChoice && loginReasoned
+        loginSupported
           ? "supported"
-          : loginChoice
+          : loginChoice && (loginEvidence.length > 0 || loginReasoned)
             ? "partially_supported"
             : "needs_more_evidence",
       explanation: loginChoice
-        ? "You treated the phone retries as a device-specific support problem and kept monitoring as the check on that explanation."
+        ? loginSupported
+          ? "You compared the phone retries with a working laptop, chose a bounded saved-password check, and kept monitoring open."
+          : "You completed login support, but the saved record does not show every device comparison and bounded next step behind that conclusion."
         : "No bounded login-support resolution was recorded.",
     }),
     decision({
@@ -407,13 +422,15 @@ export function buildDecisionReview(
         ["named_next_owner", handoffOwner],
       ],
       outcome:
-        handoffChoice && handoffFact && handoffUncertainty && handoffOwner
+        handoffSupported
           ? "supported"
-          : handoffChoice
+          : handoffChoice && (handoffFact || handoffUncertainty || handoffOwner)
             ? "partially_supported"
             : "needs_more_evidence",
       explanation: handoffChoice
-        ? "Your handoff pointed the next analyst to checked work, an unresolved reviewer question, and a next owner."
+        ? handoffSupported
+          ? "Your handoff named checked work, an unresolved reviewer question, and the next owner with supporting records."
+          : "You sent a handoff, but the saved record does not support every checked fact, open question, and next owner it needs."
         : "No end-of-shift handoff was recorded; the next analyst has no confirmed continuation point from this shift.",
     }),
   ];
@@ -421,39 +438,39 @@ export function buildDecisionReview(
     [
       "Evidence review",
       caseEvidence.includes("device-inventory-1") &&
-        scannerEvidence.includes("scanner-run-log"),
+        routeCompared && scannerChecked,
       caseEvidence.length > 0 || scannerEvidence.length > 0,
-      "Records opened and compared during this shift.",
+      "Tracks case and scanner records inspected before decisions.",
     ],
     [
       "Handling uncertainty",
       caseDocumented && handoffUncertainty,
       caseDocumented || handoffUncertainty,
-      "Unresolved identity and coverage limits kept visible.",
+      "Tracks whether unresolved identity and coverage limits stayed visible.",
     ],
     [
       "Prioritization",
-      scannerChoice !== null && scannerClosed,
+      scannerChoice !== null && scannerClosed && scannerChecked && scannerDocumented,
       scannerChoice !== null,
-      "Interruption choice followed by later scanner work.",
+      "Tracks interruption choice and later scanner work.",
     ],
     [
       "Documentation",
       caseDocumented && scannerDocumented,
       caseDocumented || scannerDocumented,
-      "Case and routine closure left traceable notes.",
+      "Tracks case and routine closure notes.",
     ],
     [
       "Role boundaries",
-      accessChoice !== null && accessBoundary,
+      accessSupported,
       accessChoice !== null,
-      "Access approval stayed with its owner.",
+      "Tracks approval-guide use and the finance owner's authority.",
     ],
     [
       "Handoff clarity",
-      handoffFact && handoffUncertainty && handoffOwner,
+      handoffSupported,
       handoffChoice !== null,
-      "Next analyst received facts, open question, and owner.",
+      "Tracks checked facts, an open question, and the next owner.",
     ],
   ].map(([dimension, strong, developing, explanation]) => ({
     dimension: String(dimension),
@@ -477,7 +494,9 @@ export function completedDecisions(
   careerId: string,
 ): CompletedDecision[] {
   const careerVersion = state.careerVersion;
-  if (!careerVersion || !state.completedActionIds.includes("complete_shift"))
+  const sessionKind: string = state.sessionKind;
+  if (!careerVersion || sessionKind !== "assessed" ||
+    !state.completedActionIds.includes("complete_shift"))
     return [];
   return buildDecisionReview(state, log).decisions.flatMap(
     ({ decisionId, userChoiceId }) =>
@@ -500,6 +519,7 @@ export function cohortForDecision(
   rows: CohortCount[],
 ): Decision["cohort"] {
   const choices = REVIEW_CHOICES[id] ?? [];
+  if (choices.length < 2) return { status: "unavailable" };
   const counts = Object.fromEntries(
     choices.map((choice) => [
       choice,

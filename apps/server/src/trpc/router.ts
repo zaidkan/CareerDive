@@ -32,6 +32,7 @@ import { generateSafeNpcReply } from "../ai/npc-dialogue.js";
 import { getDefaultCareerPack } from "../career-pack.js";
 import { EvidenceNotFoundError } from "../domain/errors.js";
 import { buildDecisionReview, cohortForDecision, completedDecisions } from "../domain/decision-review.js";
+import type { StoredSession } from "../domain/session.js";
 import { toPublicGrant } from "../repository/in-memory.js";
 import type { SimulationRepository } from "../repository/types.js";
 import { authenticatedProcedure, t } from "./core.js";
@@ -52,6 +53,15 @@ export function createAppRouter(
   } = {},
 ) {
   const careerPack = options.careerPack ?? getDefaultCareerPack();
+  async function persistReview(session: StoredSession): Promise<void> {
+    try {
+      await repository.saveCompletedDecisions(
+        completedDecisions(session.state, session.actionLog, careerPack.career.id),
+      );
+    } catch {
+      // Review storage must not block authoritative shift completion.
+    }
+  }
 
   return t.router({
     session: t.router({
@@ -121,11 +131,13 @@ export function createAppRouter(
           }),
         )
         .mutation(async ({ ctx, input }) => {
-          const session = await repository.getSession(
+          const stored = await repository.getSession(
             ctx.userId,
             input.sessionId,
           );
+          const session = input.actionId === "complete_shift" ? structuredClone(stored) : stored;
           if (input.actionId === "complete_shift" && session.state.completedActionIds.includes("complete_shift")) {
+            await persistReview(session);
             return { view: toClientView(session.state), sequence: session.actionLog.length, effects: [] };
           }
           const action = {
@@ -194,8 +206,8 @@ export function createAppRouter(
               eventId: input.eventId,
             }),
           );
-          await repository.saveSession(session, input.actionId === "complete_shift"
-            ? completedDecisions(session.state, session.actionLog, careerPack.career.id) : []);
+          await repository.saveSession(session);
+          if (input.actionId === "complete_shift") await persistReview(session);
           return {
             view: toClientView(session.state),
             sequence,
@@ -419,11 +431,25 @@ export function createAppRouter(
           });
           if (!session.state.completedActionIds.includes("complete_shift")) return personal;
           const review = buildDecisionReview(session.state, session.actionLog);
-          try {
-            const counts = await repository.getCohortCounts(careerPack.career.id, review.careerVersion);
-            for (const item of review.decisions) item.cohort = cohortForDecision(item.decisionId, counts);
-          } catch {
-            // Cohort service is optional; personal review still renders.
+          const sessionKind: string = session.state.sessionKind;
+          if (review.decisions.some(({ comparisonEligible, userChoiceId }) => comparisonEligible && userChoiceId) &&
+            sessionKind === "assessed" &&
+            session.state.careerVersion === careerPack.career.packVersion) {
+            try {
+              const recorded = new Set(await repository.getRecordedDecisionIds(
+                session.state.sessionId, careerPack.career.id, review.careerVersion,
+              ));
+              if (recorded.size > 0) {
+                const counts = await repository.getCohortCounts(careerPack.career.id, review.careerVersion);
+                for (const item of review.decisions) {
+                  if (item.comparisonEligible && item.userChoiceId && recorded.has(item.decisionId)) {
+                    item.cohort = cohortForDecision(item.decisionId, counts);
+                  }
+                }
+              }
+            } catch {
+              // Cohort service is optional; personal review still renders.
+            }
           }
           return DebriefSchema.parse({ ...personal, decisionReview: review });
         }),

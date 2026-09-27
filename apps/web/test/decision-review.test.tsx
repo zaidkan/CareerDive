@@ -30,6 +30,7 @@ const debrief: Debrief = {
         decisionId: "suspicious_login",
         userChoiceId: "escalate_alert",
         availableChoiceIds: ["escalate_alert", "dismiss_alert"],
+        comparisonEligible: true,
         evidenceUsedIds: ["device-inventory-1"],
         rubricSignals: [
           { id: "checked_device", supported: true },
@@ -100,4 +101,19 @@ it("shows server-derived percentages only for a ready cohort and handles service
     screen.getByText("Community comparison unavailable right now."),
   ).toBeVisible();
   expect(screen.getByText("Requested senior review")).toBeVisible();
+});
+
+it("suppresses community comparison for a single completion route", () => {
+  const single: Debrief = structuredClone(debrief);
+  const decision = single.decisionReview?.decisions[0];
+  if (!decision) throw new Error("Missing decision fixture");
+  decision.decisionId = "finance_access";
+  decision.userChoiceId = "route_access_request";
+  decision.availableChoiceIds = ["route_access_request"];
+  decision.comparisonEligible = false;
+  decision.cohort = { status: "ready", sampleSize: 30,
+    counts: { route_access_request: 30 }, percentages: { route_access_request: 100 } };
+  render(<DebriefView debrief={single} />);
+  expect(screen.queryByRole("heading", { name: "How other completed shifts handled this" })).toBeNull();
+  expect(screen.queryByText("100%")).toBeNull();
 });
