@@ -1518,8 +1518,8 @@ section[aria-labelledby="structured-title"],
     radial-gradient(ellipse 64% 42% at 92% 92%, color-mix(in srgb, var(--action-primary) 7%, transparent) 0%, transparent 62%),
     var(--panel);
 }
-:root[data-theme="dark"] .floor-map--theater .floor-map-copy,
-:root[data-theme="dark"] .floor-map-copy {
+:root:not([data-theme="light"]) .floor-map--theater .floor-map-copy,
+:root:not([data-theme="light"]) .floor-map-copy {
   background:
     radial-gradient(ellipse 68% 40% at 14% 6%, color-mix(in srgb, #FACC15 9%, transparent) 0%, transparent 60%),
     radial-gradient(ellipse 58% 38% at 92% 94%, color-mix(in srgb, #8B7CF8 8%, transparent) 0%, transparent 62%),
@@ -1581,7 +1581,7 @@ section[aria-labelledby="structured-title"],
 .floor-route-origin {
   color: var(--status-warning-fg);
 }
-:root[data-theme="dark"] .floor-route-origin {
+:root:not([data-theme="light"]) .floor-route-origin {
   color: #FACC15;
 }
 .floor-route-arrow {
@@ -1635,7 +1635,7 @@ section[aria-labelledby="structured-title"],
   border-color: color-mix(in srgb, var(--status-success-fg) 38%, transparent);
   box-shadow: none;
 }
-:root[data-theme="dark"] .legend-open {
+:root:not([data-theme="light"]) .legend-open {
   background: color-mix(in srgb, var(--status-success-fg) 18%, var(--surface-subtle));
   border-color: var(--status-success-fg);
 }
@@ -1671,7 +1671,7 @@ section[aria-labelledby="structured-title"],
   text-transform: uppercase;
   line-height: 1.35;
 }
-:root[data-theme="dark"] .floor-guide-callout {
+:root:not([data-theme="light"]) .floor-guide-callout {
   background: color-mix(in srgb, #FACC15 10%, var(--panel));
   border-color: color-mix(in srgb, #FACC15 24%, transparent);
   color: #FDE68A;
@@ -1706,7 +1706,7 @@ section[aria-labelledby="structured-title"],
     radial-gradient(ellipse 48% 32% at 14% 94%, color-mix(in srgb, var(--status-warning-bg) 76%, transparent) 0%, transparent 62%),
     var(--surface-subtle);
 }
-:root[data-theme="dark"] .floor-map-stage {
+:root:not([data-theme="light"]) .floor-map-stage {
   background:
     radial-gradient(ellipse 68% 42% at 50% 16%, color-mix(in srgb, #8B7CF8 7%, transparent) 0%, transparent 58%),
     radial-gradient(ellipse 52% 34% at 86% 88%, color-mix(in srgb, #72D6A3 6%, transparent) 0%, transparent 62%),
@@ -1738,7 +1738,7 @@ section[aria-labelledby="structured-title"],
     0 12px 32px rgb(0 0 0 / 12%);
   overflow: hidden;
 }
-:root[data-theme="dark"] .floor-map-grid {
+:root:not([data-theme="light"]) .floor-map-grid {
   background:
     radial-gradient(circle at 50% 85%, color-mix(in srgb, var(--action-primary) 8%, transparent) 0%, transparent 36%),
     repeating-linear-gradient(0deg, transparent, transparent 22px, rgb(255 255 255 / 2.8%) 23px),
@@ -1802,7 +1802,7 @@ section[aria-labelledby="structured-title"],
     0 0 0 1px color-mix(in srgb, var(--status-success-fg) 14%, transparent),
     var(--shadow-soft);
 }
-:root[data-theme="dark"] .floor-room[data-unlocked="true"] {
+:root:not([data-theme="light"]) .floor-room[data-unlocked="true"] {
   border-color: color-mix(in srgb, #72D6A3 52%, transparent);
   background: linear-gradient(165deg, color-mix(in srgb, #72D6A3 10%, #1E2A24), #141E1A);
   box-shadow:
@@ -1818,7 +1818,7 @@ section[aria-labelledby="structured-title"],
   cursor: not-allowed;
   filter: saturate(0.78);
 }
-:root[data-theme="dark"] .floor-room:disabled {
+:root:not([data-theme="light"]) .floor-room:disabled {
   opacity: 0.44;
   filter: saturate(0.55);
 }
@@ -1843,6 +1843,34 @@ section[aria-labelledby="structured-title"],
   height: auto;
   background: linear-gradient(180deg, var(--action-primary), color-mix(in srgb, var(--action-primary) 78%, transparent));
 }
+/* Planned route: same geometry, softer and dashed so it reads as intent.
+   M2 only — one reveal on entry, no looping. */
+.floor-route-planned {
+  height: 4px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--action-primary) 0 10px,
+      color-mix(in srgb, var(--action-primary) 18%, transparent) 10px 17px
+    );
+  box-shadow: none;
+  opacity: 0.72;
+  animation: floor-route-reveal 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.floor-route-planned.floor-route-v {
+  width: 4px;
+  height: auto;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      var(--action-primary) 0 10px,
+      color-mix(in srgb, var(--action-primary) 18%, transparent) 10px 17px
+    );
+}
+@keyframes floor-route-reveal {
+  from { opacity: 0; }
+  to { opacity: 0.72; }
+}
 
 /* —— Floor map v2: physical halls + doors —— */
 .floor-map-v2 {
@@ -1853,7 +1881,7 @@ section[aria-labelledby="structured-title"],
     repeating-linear-gradient(90deg, transparent, transparent 18px, color-mix(in srgb, var(--border-subtle) 16%, transparent) 19px),
     linear-gradient(180deg, color-mix(in srgb, var(--surface-base) 98%, white), color-mix(in srgb, var(--surface-subtle) 96%, white));
 }
-:root[data-theme="dark"] .floor-map-v2 {
+:root:not([data-theme="light"]) .floor-map-v2 {
   background:
     radial-gradient(ellipse at 50% 92%, color-mix(in srgb, #8CB7FF 10%, transparent) 0%, transparent 30%),
     radial-gradient(ellipse at 78% 28%, color-mix(in srgb, #72D6A3 6%, transparent) 0%, transparent 34%),
@@ -1870,7 +1898,7 @@ section[aria-labelledby="structured-title"],
     repeating-linear-gradient(90deg, transparent, transparent 10px, rgb(0 0 0 / 3%) 11px);
   box-shadow: inset 0 0 18px rgb(0 0 0 / 8%);
 }
-:root[data-theme="dark"] .hall-body {
+:root:not([data-theme="light"]) .hall-body {
   border-color: color-mix(in srgb, #8CB7FF 16%, transparent);
   background:
     linear-gradient(90deg, rgb(58 48 38 / 42%), rgb(74 60 48 / 58%), rgb(58 48 38 / 42%)),
@@ -1886,7 +1914,7 @@ section[aria-labelledby="structured-title"],
     linear-gradient(180deg, color-mix(in srgb, var(--surface-strong) 90%, transparent), color-mix(in srgb, var(--surface-raised) 94%, transparent)),
     repeating-linear-gradient(0deg, transparent, transparent 10px, rgb(0 0 0 / 3%) 11px);
 }
-:root[data-theme="dark"] .hall-spine {
+:root:not([data-theme="light"]) .hall-spine {
   background:
     linear-gradient(180deg, rgb(58 48 38 / 42%), rgb(74 60 48 / 58%), rgb(58 48 38 / 42%)),
     repeating-linear-gradient(0deg, transparent, transparent 10px, rgb(0 0 0 / 8%) 11px);
@@ -1906,7 +1934,7 @@ section[aria-labelledby="structured-title"],
   background: color-mix(in srgb, var(--surface-strong) 92%, var(--action-primary) 6%);
   z-index: 2;
 }
-:root[data-theme="dark"] .hall-node {
+:root:not([data-theme="light"]) .hall-node {
   border-color: color-mix(in srgb, #8CB7FF 28%, transparent);
   background: rgb(90 72 52 / 78%);
 }
@@ -1932,7 +1960,7 @@ section[aria-labelledby="structured-title"],
   z-index: 3;
   box-shadow: var(--shadow-soft);
 }
-:root[data-theme="dark"] .floor-vestibule {
+:root:not([data-theme="light"]) .floor-vestibule {
   border-color: color-mix(in srgb, #FACC15 26%, transparent);
   background:
     radial-gradient(ellipse 68% 46% at 50% 18%, color-mix(in srgb, #FACC15 13%, transparent) 0%, transparent 62%),
@@ -1946,12 +1974,28 @@ section[aria-labelledby="structured-title"],
   letter-spacing: 0.07em;
   text-transform: uppercase;
 }
+.floor-vestibule-tag {
+  position: absolute;
+  top: -0.78rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.14rem 0.44rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--action-primary) 34%, var(--line));
+  background: var(--action-primary);
+  color: var(--action-on-primary) !important;
+  font-family: var(--font-mono);
+  font-size: 0.56rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  white-space: nowrap;
+}
 .floor-vestibule small {
   color: var(--text-muted);
   font-size: 0.64rem;
   font-weight: 600;
 }
-:root[data-theme="dark"] .floor-vestibule small {
+:root:not([data-theme="light"]) .floor-vestibule small {
   color: #C9BDA6;
 }
 
@@ -1972,7 +2016,7 @@ section[aria-labelledby="structured-title"],
   border-color: color-mix(in srgb, var(--status-success-fg) 42%, var(--line));
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--status-success-fg) 12%, transparent), var(--shadow-soft);
 }
-:root[data-theme="dark"] .floor-doorframe-open {
+:root:not([data-theme="light"]) .floor-doorframe-open {
   border-color: color-mix(in srgb, #72D6A3 58%, transparent);
   box-shadow: 0 0 12px color-mix(in srgb, #72D6A3 18%, transparent);
 }
@@ -2175,11 +2219,13 @@ section[aria-labelledby="structured-title"],
 /* reduced-motion: immediate/static */
 @media (prefers-reduced-motion: reduce) {
   .floor-route,
+  .floor-route-planned,
   .floor-room-target,
   .floor-you-v2 {
     animation: none !important;
     transition: none !important;
   }
+  .floor-route-planned { opacity: 0.72; }
 }
 
 @media (max-width: 980px) {

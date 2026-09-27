@@ -135,6 +135,11 @@ export function FloorMap({
   }
 
   const kicker = stepLabel ? `DAY ONE · ${stepLabel.toUpperCase()}` : "DAY ONE · STEP 1 OF 7";
+  const showingActiveRoute = route.length > 1;
+  const plannedRoom = highlightRoomId ? ROOMS.find((room) => room.id === highlightRoomId) : undefined;
+  // Presentation only: the destination route stays legible before the walk starts.
+  const plannedRoute = !showingActiveRoute && plannedRoom ? expandAxisPath(plannedRoom.path) : [];
+  const visibleRoute = showingActiveRoute ? route : plannedRoute;
 
   return (
     <section className="floor-map floor-map--theater" aria-labelledby="floor-map-title">
@@ -206,6 +211,7 @@ export function FloorMap({
 
           {/* Lobby vestibule — path starts here */}
           <div className="floor-vestibule">
+            <span className="floor-vestibule-tag" aria-hidden="true">You are here</span>
             <span>Lobby</span>
             <small>Entrance</small>
           </div>
@@ -226,17 +232,18 @@ export function FloorMap({
             </div>
           ))}
 
-          {route.length > 1
-            ? route.slice(0, -1).map((from, i) => {
+          {visibleRoute.length > 1
+            ? visibleRoute.slice(0, -1).map((from, i) => {
                 const to = route[i + 1];
                 if (!to) return null;
                 const vertical = from.x === to.x;
                 const midX = (from.x + to.x) / 2;
                 const midY = (from.y + to.y) / 2;
                 const len = vertical ? Math.abs(to.y - from.y) : Math.abs(to.x - from.x);
+                const isPlanned = !showingActiveRoute;
                 return (
                   <span
-                    className={`floor-route${vertical ? " floor-route-v" : ""}`}
+                    className={`floor-route${vertical ? " floor-route-v" : ""}${isPlanned ? " floor-route-planned" : ""}`}
                     key={`seg-${String(i)}`}
                     style={
                       vertical
