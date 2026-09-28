@@ -1,0 +1,8 @@
+.fixture { padding-bottom: 0; }
+.fixture-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; padding: 2rem 0; }
+.fixture-controls h1 { flex-basis: 100%; max-width: none; font-size: 1.5rem; }
+.fixture-controls button { min-height: 44px; padding: 0.5rem 0.8rem; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--surface-base); color: var(--text-primary); cursor: pointer; }
+.fixture-outline { display: grid; place-items: center; min-height: 280px; padding: 1rem; border: 1px solid var(--border-strong); color: var(--text-primary); text-align: center; }
+.fixture-paper { min-height: 170px; display: grid; place-items: center; padding: 1rem; border: 1px solid var(--border-strong); background: var(--surface-base); color: var(--text-primary); text-align: center; }
+.ui-artifact-stage__primary .fixture-paper { min-height: 310px; }
+@media (max-width: 480px) { .fixture-outline { min-height: 180px; } .ui-artifact-stage__primary .fixture-paper { min-height: 180px; } }

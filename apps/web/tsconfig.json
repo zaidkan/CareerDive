@@ -10,6 +10,7 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
+    "fixtures/**/*.tsx",
     "test/**/*.ts",
     "test/**/*.tsx",
     "e2e/**/*.ts",
