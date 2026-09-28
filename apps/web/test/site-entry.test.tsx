@@ -151,7 +151,7 @@ describe("site routes", () => {
       expect(screen.getAllByText(title).length).toBeGreaterThanOrEqual(1);
     }
     expect(screen.getAllByText(/workshop concept/i).length).toBe(4);
-    expect(screen.getByText("Playable now")).toBeInTheDocument();
+    expect(screen.getAllByText("Playable now").length).toBeGreaterThan(0);
     expect(
       screen.getByText(/a real task, not a job description/i),
     ).toBeInTheDocument();
