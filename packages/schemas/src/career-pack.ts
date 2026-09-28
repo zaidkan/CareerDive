@@ -103,7 +103,32 @@ export const CareerPackSchema = z
     }),
   })
   .superRefine((pack, ctx) => {
+    if (pack.career.packVersion === "2.0.0") {
+      for (const action of pack.scenario.actions) {
+        if (action.defaultEffect?.consequence?.escalateOnApply === undefined) {
+          if (action.defaultEffect?.consequence) ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Action "${action.id}" must declare escalateOnApply`,
+            path: ["scenario", "actions"],
+          });
+        }
+      }
+      for (const [templateId, template] of Object.entries(pack.scenario.eventTemplates)) {
+        for (const [actionId, effect] of Object.entries(template.actionEffects)) {
+          if (effect.consequence && effect.consequence.escalateOnApply === undefined) ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Event "${templateId}" effect "${actionId}" must declare escalateOnApply`,
+            path: ["scenario", "eventTemplates", templateId, "actionEffects", actionId],
+          });
+        }
+      }
+    }
     const templateIds = Object.keys(pack.scenario.eventTemplates);
+    const emitted = new Set(Object.values(pack.scenario.eventTemplates).flatMap((template) =>
+      Object.values(template.actionEffects).flatMap((effect) =>
+        effect.callbacks.flatMap((callback) => callback.emitEvent ? [callback.emitEvent] : []),
+      ),
+    ));
     for (const eventId of pack.career.events) {
       if (!templateIds.includes(eventId)) {
         ctx.addIssue({
@@ -114,13 +139,16 @@ export const CareerPackSchema = z
       }
     }
     for (const templateId of templateIds) {
-      if (!pack.career.events.includes(templateId)) {
+      if (!pack.career.events.includes(templateId) && !emitted.has(templateId)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: `scenario.eventTemplates.${templateId} is not listed in career.events`,
           path: ["scenario", "eventTemplates", templateId],
         });
       }
+    }
+    for (const templateId of emitted) if (!templateIds.includes(templateId)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Callback emits unknown event "${templateId}"`, path: ["scenario", "eventTemplates"] });
     }
     const actionIds = new Set(pack.scenario.actions.map(({ id }) => id));
     for (const [templateId, template] of Object.entries(

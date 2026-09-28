@@ -12,12 +12,18 @@ export type CompletedDecision = {
   careerVersion: string;
   decisionId: string;
   choiceId: string;
+  optionSetKey?: string;
 };
 export type CohortCount = {
   decisionId: string;
   choiceId: string;
   count: number;
+  optionSetKey?: string;
 };
+
+export function optionSetKey(choices: readonly string[]): string {
+  return JSON.stringify([...choices].sort());
+}
 
 const CASE = "suspicious-login-1";
 const SCANNER = "routine-alert-1";
@@ -32,6 +38,35 @@ export const REVIEW_CHOICES: Record<string, readonly string[]> = {
   routine_login: ["resolve_login_help"],
   shift_handoff: ["submit_shift_handoff"],
 };
+const V2_CHOICES: Record<string, readonly string[]> = {
+  ...REVIEW_CHOICES,
+  suspicious_login: ["escalate-with-comparisons", "escalate-identifiers-only", "close-location-explained", "close-familiar-account"],
+  finance_access: ["route-to-owner", "route-with-interim", "self-approve", "reject-as-attack"],
+  shift_handoff: ["complete", "corrected", "thin"],
+};
+
+function authoredChoice(state: WorldState, eventId: string, choices: readonly string[]) {
+  const progress = Object.entries(state.taskProgress)
+    .filter(([key]) => key.startsWith(`${eventId}:`))
+    .map(([, value]) => value);
+  const choice = progress.flatMap(({ outcomeIdsByStep, selectedOptionIdsByStep }) => [
+    ...Object.values(outcomeIdsByStep),
+    ...Object.values(selectedOptionIdsByStep).flat(),
+  ]).find((id) => choices.includes(id)) ??
+    Object.values(state.flags).find((value) => choices.includes(value));
+  return choice ?? null;
+}
+
+function authoredSequence(log: ActionLogEntry[], eventId: string, choice: string | null) {
+  if (!choice) return Infinity;
+  const direct = log.find(({ interaction }) => interaction.type === "action" &&
+    interaction.action.eventId === eventId && interaction.action.decisionOptionId === choice);
+  if (direct) return direct.sequence;
+  return log.findLast(({ interaction }) => interaction.type === "task_attempt" &&
+    interaction.attempt.eventId === eventId)?.sequence ??
+    log.find(({ interaction }) => interaction.type === "action" &&
+      interaction.action.eventId === eventId && interaction.action.id === "document_ticket")?.sequence ?? Infinity;
+}
 
 function firstAction(
   log: ActionLogEntry[],
@@ -114,11 +149,15 @@ function decision(input: {
   id: string;
   choice: string | null;
   evidence: string[];
+  reasoningEvidence?: string[];
   signals: Array<[string, boolean]>;
   explanation: string;
   outcome: Decision["outcomeLabel"];
+  choices?: readonly string[];
+  callbackText?: string[];
+  correctionHistory?: Array<{ stepId: string; initialOptionIds: string[]; correctedOptionIds?: string[] | undefined }>;
 }): Decision {
-  const availableChoiceIds = [...(REVIEW_CHOICES[input.id] ?? [])];
+  const availableChoiceIds = [...(input.choices ?? REVIEW_CHOICES[input.id] ?? [])];
   const comparisonEligible = availableChoiceIds.length >= 2;
   return {
     decisionId: input.id,
@@ -129,6 +168,16 @@ function decision(input: {
     rubricSignals: input.signals.map(([id, supported]) => ({ id, supported })),
     outcomeLabel: input.outcome,
     explanation: input.explanation,
+    reasoningAnalysis: {
+      decisionId: input.id,
+      choice: input.choice,
+      availableChoices: availableChoiceIds,
+      evidenceUsedBeforeDecision: input.reasoningEvidence ?? input.evidence,
+      whatSupportedIt: input.signals.filter(([, supported]) => supported).map(([id]) => id),
+      whatWeakenedIt: input.signals.filter(([, supported]) => !supported).map(([id]) => id),
+      callbackText: input.callbackText ?? [],
+      correctionHistory: input.correctionHistory ?? [],
+    },
     cohort: { status: "unavailable" },
   };
 }
@@ -137,19 +186,24 @@ export function buildDecisionReview(
   state: WorldState,
   log: ActionLogEntry[],
 ): NonNullable<Debrief["decisionReview"]> {
+  const v2 = state.careerVersion === "2.0.0";
+  const choicesFor = (id: string) => v2 ? V2_CHOICES[id] ?? [] : REVIEW_CHOICES[id] ?? [];
+  const callbacksFor = (eventId: string) => state.pendingCallbacks
+    .filter((callback) => callback.eventId === eventId && callback.applied)
+    .map(({ body }) => body);
   const caseAction = firstAction(
     log,
     CASE,
     REVIEW_CHOICES.suspicious_login ?? [],
   );
-  const caseChoice =
+  const caseChoice = v2 ? authoredChoice(state, CASE, choicesFor("suspicious_login")) :
     caseAction?.interaction.type === "action"
       ? caseAction.interaction.action.id
       : null;
   const caseEvidence = evidenceBefore(
     state,
     log,
-    caseAction?.sequence ?? Infinity,
+    v2 ? authoredSequence(log, CASE, caseChoice) : caseAction?.sequence ?? Infinity,
     [
       "suspicious-login-alert",
       "login-context-1",
@@ -179,7 +233,7 @@ export function buildDecisionReview(
     caseEvidence.includes("login-session-timeline") &&
     caseEvidence.includes("vpn-context-1");
   const caseSupported =
-    caseChoice === "escalate_alert" &&
+    (caseChoice === "escalate_alert" || caseChoice === "escalate-with-comparisons") &&
     caseEvidence.includes("device-inventory-1") &&
     routeCompared &&
     caseDocumented;
@@ -226,19 +280,19 @@ export function buildDecisionReview(
     "route_access_request",
     "access-authority-check",
   );
-  const accessChoice = accessDecision.choice;
-  const accessEvidence = evidenceBefore(state, log, accessDecision.sequence, [
+  const accessChoice = v2 ? authoredChoice(state, ACCESS, choicesFor("finance_access")) : accessDecision.choice;
+  const accessEvidence = evidenceBefore(state, log, v2 ? authoredSequence(log, ACCESS, accessChoice) : accessDecision.sequence, [
     "access-request-email",
     "access-approval-guide",
   ]);
   const accessBoundary =
-    hasStep(
+    (v2 ? ["route-to-owner", "route-with-interim"].includes(accessChoice ?? "") : hasStep(
       state,
       ACCESS,
       "access-authority-check",
       "identify-approval-boundary",
       "route-to-owner",
-    ) || accessEvidence.includes("access-approval-guide");
+    )) || (!v2 && accessEvidence.includes("access-approval-guide"));
   const accessSupported = accessChoice !== null && accessBoundary &&
     accessEvidence.includes("access-approval-guide");
 
@@ -288,8 +342,8 @@ export function buildDecisionReview(
     "submit_shift_handoff",
     "end-shift-continuity",
   );
-  const handoffChoice = handoffDecision.choice;
-  const handoffEvidence = evidenceBefore(state, log, handoffDecision.sequence, [
+  const handoffChoice = v2 ? authoredChoice(state, HANDOFF, choicesFor("shift_handoff")) : handoffDecision.choice;
+  const handoffEvidence = evidenceBefore(state, log, v2 ? authoredSequence(log, HANDOFF, handoffChoice) : handoffDecision.sequence, [
     "ticket-suspicious-login",
     "scanner-run-log",
     "shift-handoff-prompt",
@@ -322,19 +376,28 @@ export function buildDecisionReview(
     decision({
       id: "suspicious_login",
       choice: caseChoice,
+      choices: choicesFor("suspicious_login"),
+      callbackText: callbacksFor(CASE),
       evidence: caseEvidence,
       signals: [
         ["compared_records", routeCompared],
         ["checked_device", caseEvidence.includes("device-inventory-1")],
         ["documented_uncertainty", caseDocumented],
-        ["kept_review_boundary", caseChoice === "escalate_alert"],
+        ["kept_review_boundary", caseChoice === "escalate_alert" || caseChoice?.startsWith("escalate-") === true],
       ],
       outcome: caseSupported
         ? "supported"
         : caseChoice && caseHasEvidence
           ? "partially_supported"
           : "needs_more_evidence",
-      explanation:
+      explanation: v2 && caseChoice
+        ? ({
+            "escalate-with-comparisons": "You sent the identifiers, route and device comparisons, and remaining uncertainty for senior review.",
+            "escalate-identifiers-only": "You sent the identifiers for senior review. The reviewer must reconstruct the comparisons from saved records.",
+            "close-location-explained": "You closed using the location explanation. The saved route mismatch and session-owner question remain available for later review.",
+            "close-familiar-account": "You closed using familiar account history. The flagged session's owner remains unverified in the record.",
+          }[caseChoice] ?? "The final disposition was recorded.")
+        :
         caseChoice === "dismiss_alert"
           ? caseHasEvidence
             ? "You closed the alert while the session owner and route explanation remained unverified. The recorded checks can support later review."
@@ -351,6 +414,7 @@ export function buildDecisionReview(
       id: "scanner_interruption",
       choice: scannerChoice,
       evidence: scannerEvidence,
+      reasoningEvidence: evidenceBefore(state, log, scannerResponse?.sequence ?? Infinity, ["scanner-alert", "scanner-run-log", "scanner-window"]),
       signals: [
         ["made_priority_choice", scannerChoice !== null],
         ["checked_run", scannerEvidence.includes("scanner-run-log")],
@@ -370,13 +434,15 @@ export function buildDecisionReview(
     decision({
       id: "finance_access",
       choice: accessChoice,
+      choices: choicesFor("finance_access"),
+      callbackText: callbacksFor(ACCESS),
       evidence: accessEvidence,
       signals: [
         [
           "reviewed_approval_owner",
           accessEvidence.includes("access-approval-guide"),
         ],
-        ["stayed_in_role", accessChoice !== null],
+        ["stayed_in_role", accessChoice === "route_access_request" || accessChoice === "route-to-owner" || accessChoice === "route-with-interim"],
         ["explained_boundary", accessBoundary],
       ],
       outcome:
@@ -385,7 +451,14 @@ export function buildDecisionReview(
           : accessChoice && accessBoundary
             ? "partially_supported"
             : "needs_more_evidence",
-      explanation: accessChoice
+      explanation: v2 && accessChoice
+        ? ({
+            "route-to-owner": "You routed the request to the finance data owner and kept access pending.",
+            "route-with-interim": "You routed the request to the owner and offered an interim report without granting the requested role.",
+            "self-approve": "You approved the role directly. The record shows the finance data owner's authorization was not obtained.",
+            "reject-as-attack": "You rejected the request as an attack. The urgency alone does not establish malicious intent, and the business request remains unresolved.",
+          }[accessChoice] ?? "The access decision was recorded.")
+        : accessChoice
         ? accessSupported
           ? "You checked the approval guide, routed the request to the finance data owner, and kept access pending."
           : "You routed the request, but the saved record does not show both an approval-guide check and a clear authority boundary."
@@ -415,6 +488,9 @@ export function buildDecisionReview(
     decision({
       id: "shift_handoff",
       choice: handoffChoice,
+      choices: choicesFor("shift_handoff"),
+      callbackText: callbacksFor(HANDOFF),
+      correctionHistory: state.taskProgress[`${HANDOFF}:end-shift-continuity`]?.correctionHistory ?? [],
       evidence: handoffEvidence,
       signals: [
         ["named_confirmed_work", handoffFact],
@@ -427,7 +503,9 @@ export function buildDecisionReview(
           : handoffChoice && (handoffFact || handoffUncertainty || handoffOwner)
             ? "partially_supported"
             : "needs_more_evidence",
-      explanation: handoffChoice
+      explanation: v2 && handoffChoice
+        ? `You sent a ${handoffChoice} handoff. The saved record keeps initial omissions and later corrections in order.`
+        : handoffChoice
         ? handoffSupported
           ? "Your handoff named checked work, an unresolved reviewer question, and the next owner with supporting records."
           : "You sent a handoff, but the saved record does not support every checked fact, open question, and next owner it needs."
@@ -499,7 +577,7 @@ export function completedDecisions(
     !state.completedActionIds.includes("complete_shift"))
     return [];
   return buildDecisionReview(state, log).decisions.flatMap(
-    ({ decisionId, userChoiceId }) =>
+    ({ decisionId, userChoiceId, availableChoiceIds }) =>
       userChoiceId
         ? [
             {
@@ -508,6 +586,7 @@ export function completedDecisions(
               careerVersion,
               decisionId,
               choiceId: userChoiceId,
+              ...(careerVersion === "2.0.0" ? { optionSetKey: optionSetKey(availableChoiceIds) } : {}),
             },
           ]
         : [],
@@ -517,13 +596,16 @@ export function completedDecisions(
 export function cohortForDecision(
   id: string,
   rows: CohortCount[],
+  choices: readonly string[] = REVIEW_CHOICES[id] ?? [],
 ): Decision["cohort"] {
-  const choices = REVIEW_CHOICES[id] ?? [];
   if (choices.length < 2) return { status: "unavailable" };
+  const key = optionSetKey(choices);
+  const legacyKey = optionSetKey(REVIEW_CHOICES[id] ?? []);
   const counts = Object.fromEntries(
     choices.map((choice) => [
       choice,
-      rows.find((row) => row.decisionId === id && row.choiceId === choice)
+      rows.find((row) => row.decisionId === id && row.choiceId === choice &&
+        (row.optionSetKey === key || (!row.optionSetKey && key === legacyKey)))
         ?.count ?? 0,
     ]),
   );
@@ -531,6 +613,8 @@ export function cohortForDecision(
     (total, count) => total + count,
     0,
   );
+  if (!Number.isSafeInteger(sampleSize) || Object.values(counts).some((count) => !Number.isSafeInteger(count) || count < 0))
+    return { status: "unavailable" };
   if (sampleSize < 30) return { status: "insufficient" };
   const fractions = choices.map((choice) => ({
     choice,

@@ -44,6 +44,7 @@ export const SimulationActionSchema = z.object({
    */
   queryPayload: QueryRecordsPayloadSchema.optional(),
   ticketPayload: TicketUpdatePayloadSchema.optional(),
+  decisionOptionId: z.string().min(1).optional(),
   sourceRecordId: z.string().min(1).optional(),
   sourceArtifactId: z.string().min(1).optional(),
 });
@@ -60,6 +61,8 @@ export const AvailableActionSchema = z.object({
   sourceRecordId: z.string().min(1).optional(),
   sourceArtifactId: z.string().min(1).optional(),
   ticketPayload: TicketUpdatePayloadSchema.optional(),
+  decisionOptions: z.array(z.object({ id: z.string(), label: z.string() })).optional(),
+  decisionOptionId: z.string().min(1).optional(),
 });
 export type AvailableAction = z.infer<typeof AvailableActionSchema>;
 
@@ -71,11 +74,33 @@ export const HiddenDeltaSchema = z.object({
 });
 export type HiddenDelta = z.infer<typeof HiddenDeltaSchema>;
 
+/** Small, server-only pack predicate. Multiple conditions are an AND. */
+export const ConditionSchema = z.object({
+  flag: z.string().min(1),
+  equals: z.string().min(1),
+});
+export type Condition = z.infer<typeof ConditionSchema>;
+
+export const PackCallbackSchema = z.object({
+  id: z.string().min(1),
+  decisionId: z.string().min(1).optional(),
+  delayMinutes: z.number().int().positive(),
+  when: z.array(ConditionSchema).default([]),
+  author: z.enum(["morgan", "reviewer", "employee"]),
+  body: z.string().min(1),
+  emitEvent: z.string().min(1).optional(),
+  activationMessages: z.array(z.string().min(1)).default([]),
+  acknowledgement: z.string().min(1).optional(),
+  requiredAtCompletion: z.boolean().default(false),
+});
+export type PackCallback = z.infer<typeof PackCallbackSchema>;
+
 export const ActionConsequenceSchema = z.object({
   description: z.string(),
   delayMinutes: z.number().int().nonnegative().optional(),
-  escalateOnApply: z.boolean().default(false),
+  escalateOnApply: z.boolean().optional(),
   escalateResolution: z.string().optional(),
+  requiredAtCompletion: z.boolean().default(false),
 });
 export type ActionConsequence = z.infer<typeof ActionConsequenceSchema>;
 
@@ -85,6 +110,7 @@ export const ActionEffectSchema = z.object({
   resolve: z.boolean().default(false),
   resolution: z.string().optional(),
   consequence: ActionConsequenceSchema.optional(),
+  callbacks: z.array(PackCallbackSchema).default([]),
   emitEventResolved: z.boolean().default(false),
   setTicketNotesFromFreeText: z.boolean().default(false),
   setKbQueryFromFreeText: z.boolean().default(false),

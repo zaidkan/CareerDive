@@ -173,7 +173,8 @@ describe("expanded Cybersecurity Analyst first shift", () => {
       ({ actionId }) => actionId === "route_access_request",
     );
     expect(callback?.applied).toBe(true);
-    expect(callback?.description).toContain("data owner received the request");
+    expect(callback?.description).toContain("authority boundary");
+    expect(state.pendingCallbacks.some(({ author, requiredAtCompletion }) => author === "reviewer" && requiredAtCompletion)).toBe(true);
   });
 
   it("completes and replays the full authored shift exactly", () => {
@@ -200,7 +201,7 @@ describe("expanded Cybersecurity Analyst first shift", () => {
       direct.ledger.find(
         ({ actionId }) => actionId === "submit_shift_handoff",
       )?.description,
-    ).toContain("next analyst acknowledged");
+    ).toContain("next analyst received the handoff");
 
     const replayed = foldActionLog(
       initial,

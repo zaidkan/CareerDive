@@ -63,8 +63,8 @@ export class InMemoryRepository implements SimulationRepository {
       if (decision.careerId !== careerId || decision.careerVersion !== careerVersion ||
         sessionKind !== "assessed" ||
         !session?.state.completedActionIds.includes("complete_shift")) continue;
-      const key = `${decision.decisionId}:${decision.choiceId}`;
-      const row = counts.get(key) ?? { decisionId: decision.decisionId, choiceId: decision.choiceId, count: 0 };
+      const key = `${decision.decisionId}:${decision.choiceId}:${decision.optionSetKey ?? ""}`;
+      const row = counts.get(key) ?? { decisionId: decision.decisionId, choiceId: decision.choiceId, optionSetKey: decision.optionSetKey ?? "", count: 0 };
       row.count += 1;
       counts.set(key, row);
     }

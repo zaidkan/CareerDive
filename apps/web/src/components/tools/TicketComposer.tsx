@@ -28,6 +28,7 @@ export function TicketComposer({
   const [sourceArtifactIds, setSourceArtifactIds] = useState<string[]>(
     ticket?.sourceArtifactIds ?? [],
   );
+  const [decisionOptionId, setDecisionOptionId] = useState("");
   const sources = view.artifacts.filter(
     ({ observed, eventIds }) => observed && eventIds.includes(action.eventId),
   );
@@ -42,7 +43,8 @@ export function TicketComposer({
     verifiedEvidence.trim() &&
     uncertainty.trim() &&
     followUp.trim() &&
-    sourceArtifactIds.length;
+    sourceArtifactIds.length &&
+    (!action.decisionOptions?.length || decisionOptionId);
   return (
     <form
       aria-label={`Ticket for ${view.events.find(({ id }) => id === action.eventId)?.title ?? action.eventId}`}
@@ -108,6 +110,23 @@ export function TicketComposer({
           <p>No case sources opened yet.</p>
         )}
       </fieldset>
+      {action.decisionOptions?.length ? (
+        <fieldset>
+          <legend>Ticket decision</legend>
+          {action.decisionOptions.map(({ id, label }) => (
+            <label key={id}>
+              <input
+                type="radio"
+                name={`disposition-${action.eventId}`}
+                value={id}
+                checked={decisionOptionId === id}
+                onChange={() => { setDecisionOptionId(id); }}
+              />
+              {label}
+            </label>
+          ))}
+        </fieldset>
+      ) : null}
       {draftAction ? (
         <button
           type="button"
@@ -129,7 +148,7 @@ export function TicketComposer({
         data-event-id={action.eventId}
         disabled={Boolean(mutationState.pendingKey) || !canSubmit}
         onClick={() => {
-          onAction({ ...action, ticketPayload: payload });
+          onAction({ ...action, ticketPayload: payload, ...(decisionOptionId ? { decisionOptionId } : {}) });
         }}
       >
         Submit ticket

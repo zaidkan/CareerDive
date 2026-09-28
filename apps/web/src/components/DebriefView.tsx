@@ -35,6 +35,10 @@ const DECISIONS: Record<
     choices: {
       escalate_alert: "Requested senior review",
       dismiss_alert: "Dismissed the alert",
+      "escalate-with-comparisons": "Escalated with comparisons",
+      "escalate-identifiers-only": "Escalated with identifiers only",
+      "close-location-explained": "Closed using location explanation",
+      "close-familiar-account": "Closed using familiar account history",
     },
     signals: {
       compared_records: "Compared session and VPN context",
@@ -69,7 +73,13 @@ const DECISIONS: Record<
     recordLine: "finance-reporting-prod · access pending owner decision",
     reflection:
       "What would happen if a project deadline were treated as access approval, and whose authority would that bypass?",
-    choices: { route_access_request: "Routed to the finance data owner" },
+    choices: {
+      route_access_request: "Routed to the finance data owner",
+      "route-to-owner": "Routed to the finance data owner",
+      "route-with-interim": "Routed with an interim report",
+      "self-approve": "Approved access directly",
+      "reject-as-attack": "Rejected as an attack",
+    },
     signals: {
       reviewed_approval_owner: "Opened the approval guide",
       stayed_in_role: "Kept access pending owner approval",
@@ -100,7 +110,12 @@ const DECISIONS: Record<
     recordLine: "completed checks / open question / next owner",
     reflection:
       "What would the next analyst have to repeat if the open question or reviewer owner were missing?",
-    choices: { submit_shift_handoff: "Sent a continuity handoff" },
+    choices: {
+      submit_shift_handoff: "Sent a continuity handoff",
+      complete: "Complete handoff",
+      corrected: "Corrected handoff",
+      thin: "Thin handoff",
+    },
     signals: {
       named_confirmed_work: "Named the checked work",
       kept_open_question: "Preserved the open question",
@@ -225,14 +240,22 @@ export function DebriefView({ debrief }: { debrief: Debrief }) {
                       ? `Records inspected ${item.decisionId === "scanner_interruption" ? "before closure" : "before this decision"}: ${item.evidenceUsedIds.join(" · ")}`
                       : `No source opening recorded ${item.decisionId === "scanner_interruption" ? "before closure" : "before this decision"}.`}
                   </p>
+                  {item.reasoningAnalysis?.callbackText.map((body, callbackIndex) => (
+                    <p key={callbackIndex}>Later response: {body}</p>
+                  ))}
+                  {item.reasoningAnalysis?.correctionHistory.map((entry, correctionIndex) => (
+                    <p key={correctionIndex}>
+                      Initial handoff: {entry.initialOptionIds.join(", ")}.
+                      {entry.correctedOptionIds ? ` Later correction: ${entry.correctedOptionIds.join(", ")}.` : " Still open."}
+                    </p>
+                  ))}
                   <details className="decision-review-other-path">
                     <summary>Consider another path</summary>
                     <p>{meta.reflection}</p>
                   </details>
                 </div>
-                {item.comparisonEligible ? <div className="decision-review-community">
+                {item.comparisonEligible && item.cohort.status === "ready" ? <div className="decision-review-community">
                   <h4>How other completed shifts handled this</h4>
-                  {item.cohort.status === "ready" ? (
                     <>
                       <ul>
                         {item.availableChoiceIds.map((choiceId) => {
@@ -262,13 +285,6 @@ export function DebriefView({ debrief }: { debrief: Debrief }) {
                         Popularity does not decide quality.
                       </p>
                     </>
-                  ) : (
-                    <p className="decision-review-cohort-state">
-                      {item.cohort.status === "unavailable"
-                        ? "Community comparison unavailable right now."
-                        : "Community comparison will appear as more shifts are completed."}
-                    </p>
-                  )}
                 </div> : null}
               </div>
             </article>

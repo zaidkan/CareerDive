@@ -130,6 +130,8 @@ describe("P1-T03 per-action gate release", () => {
           attempts: 2,
           completed: true,
           selectedOptionIdsByStep: {},
+          outcomeIdsByStep: {},
+          correctionHistory: [],
         },
       },
     };

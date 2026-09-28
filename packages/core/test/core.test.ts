@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadDefaultCybersecurityPack } from "@sim/career-packs";
+import { legacyCyberPack } from "./legacy-cyber.js";
 import {
   ActionUnavailableError,
   applyAction,
@@ -12,7 +12,7 @@ import {
 } from "../src/index.js";
 import type { DomainEffect, LoggedInteraction, WorldState } from "@sim/schemas";
 
-const pack = loadDefaultCybersecurityPack();
+const pack = legacyCyberPack();
 const world = (sessionId: string, seed: number) =>
   createInitialWorldState(sessionId, seed, {}, pack);
 

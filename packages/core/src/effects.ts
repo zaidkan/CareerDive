@@ -7,6 +7,7 @@ import type {
   SimulationActionId,
   WorldState,
 } from "@sim/schemas";
+import { conditionsMet } from "./conditions.js";
 
 export function resolveActionEffect(
   state: WorldState,
@@ -28,6 +29,7 @@ export function resolveActionEffect(
     resolve: override?.resolve ?? defaults?.resolve ?? false,
     resolution: override?.resolution ?? defaults?.resolution,
     consequence: override?.consequence ?? defaults?.consequence,
+    callbacks: override?.callbacks ?? defaults?.callbacks ?? [],
     emitEventResolved:
       override?.emitEventResolved ?? defaults?.emitEventResolved ?? false,
     setTicketNotesFromFreeText:
@@ -219,6 +221,27 @@ export function applyResolvedEffect(input: {
     );
     state.ledger.push(entry);
     effects.push({ type: "consequence_recorded", consequenceId: entry.id });
+  }
+
+  for (const callback of effect.callbacks) {
+    if (!conditionsMet(state, callback.when)) continue;
+    if (state.pendingCallbacks.some(({ id, eventId }) => id === callback.id && eventId === event.id)) continue;
+    state.pendingCallbacks.push({
+      ...callback,
+      eventId: event.id,
+      actionId: action.id,
+      dueAt: state.simClock + callback.delayMinutes,
+      applied: false,
+    });
+    if (callback.acknowledgement && state.acknowledgements.length < 3 &&
+      !state.acknowledgements.some(({ decisionId }) => decisionId === (callback.decisionId ?? callback.id))) {
+      state.acknowledgements.push({
+        id: callback.id,
+        decisionId: callback.decisionId ?? callback.id,
+        text: callback.acknowledgement,
+        simMinutes: state.simClock,
+      });
+    }
   }
 
   if (effect.resolve) {

@@ -30,6 +30,8 @@ function readyForReview(state: WorldState): WorldState {
     attempts: 2,
     completed: true,
     selectedOptionIdsByStep: {},
+    outcomeIdsByStep: {},
+    correctionHistory: [],
   };
   return ready;
 }

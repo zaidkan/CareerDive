@@ -89,7 +89,7 @@ export function TeamChatTool({
           {view.teamMessages?.map((message) => (
             <li key={message.id}>
               <strong>
-                {message.author === "morgan" ? "Morgan" : "You"} ·{" "}
+                {({ player: "You", morgan: "Morgan", reviewer: "Reviewer", employee: "Employee" } as const)[message.author]} ·{" "}
                 {view.events.find(({ id }) => id === message.eventId)?.title ??
                   message.eventId}
                 :

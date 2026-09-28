@@ -57,10 +57,11 @@ export const decisionReviews = pgTable("decision_reviews", {
   careerVersion: text("career_version").notNull(),
   decisionId: text("decision_id").notNull(),
   choiceId: text("choice_id").notNull(),
+  optionSetKey: text("option_set_key").notNull().default(""),
   createdAt: createdAt(),
 }, (table) => [
   primaryKey({ columns: [table.sessionId, table.decisionId] }),
-  index("decision_reviews_cohort_idx").on(table.careerId, table.careerVersion, table.decisionId, table.choiceId),
+  index("decision_reviews_cohort_idx").on(table.careerId, table.careerVersion, table.decisionId, table.optionSetKey, table.choiceId),
 ]);
 export const actionLog = pgTable("action_log", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),

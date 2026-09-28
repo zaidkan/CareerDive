@@ -5,6 +5,7 @@ import type {
   SimulationActionId,
   WorldState,
 } from "@sim/schemas";
+import { conditionsMet } from "./conditions.js";
 
 function hasCompleted(
   event: EventInstance,
@@ -26,9 +27,9 @@ function target(
     ({ eventTemplateId, actionId }) =>
       eventTemplateId === event.templateId && actionId === definition.id,
   );
-  // P1-T03: a released binding offers the plain canonical action. The
-  // legacy quiz UI has nothing to bind to; the gate is gone with it.
+  // Released bindings retain their existing canonical controls.
   const gated = task && !task.releasesActionGate;
+  const finalStep = task?.steps.at(-1);
   return {
     id: definition.id,
     eventId: event.id,
@@ -37,6 +38,11 @@ function target(
     description: definition.description,
     simulatedMinutes: definition.simulatedMinutes,
     ...(gated ? { taskId: task.id } : {}),
+    ...(definition.id === "document_ticket" && finalStep?.outcomes.length
+      ? { decisionOptions: finalStep.options
+          .filter(({ id }) => finalStep.outcomes.some((outcome) => outcome.selectedOptionIds.includes(id)))
+          .map(({ id, label }) => ({ id, label })) }
+      : {}),
   };
 }
 
@@ -69,9 +75,10 @@ function nextLinearAction(
 }
 
 function actionsForEvent(
-  rules: ScenarioRules,
+  state: WorldState,
   event: EventInstance,
 ): AvailableAction[] {
+  const rules = state.rules;
   const template = rules.eventTemplates[event.templateId];
   if (!template) {
     return [];
@@ -84,7 +91,7 @@ function actionsForEvent(
       nextLinearAction(rules, event, progression.sequence),
       progression.allowManager,
       progression.utilityActions,
-    );
+    ).filter(({ id }) => conditionsMet(state, template.actionConditions[id] ?? []));
   }
 
   for (const stage of progression.stages) {
@@ -116,7 +123,7 @@ function actionsForEvent(
       [...offered, ...also],
       progression.allowManager,
       progression.utilityActions,
-    );
+    ).filter(({ id }) => conditionsMet(state, template.actionConditions[id] ?? []));
   }
 
   return withManagerAndUtility(
@@ -125,15 +132,17 @@ function actionsForEvent(
     [],
     progression.allowManager,
     progression.utilityActions,
-  );
+  ).filter(({ id }) => conditionsMet(state, template.actionConditions[id] ?? []));
 }
 
 export function availableActions(state: WorldState): AvailableAction[] {
   const activeEvents = state.events.filter(({ status }) => status === "active");
   if (
     state.events.length > 0 &&
-    state.events.every(({ status }) =>
-      ["resolved", "escalated", "expired"].includes(status),
+    state.events.every((event) =>
+      ["resolved", "escalated", "expired"].includes(event.status) ||
+      (state.rules.eventTemplates[event.templateId]?.nonBlockingFollowUp &&
+        ["pending", "waiting", "active"].includes(event.status)),
     )
   ) {
     const complete = state.rules.actions.complete_shift;
@@ -152,7 +161,7 @@ export function availableActions(state: WorldState): AvailableAction[] {
     ];
   }
   const eventActions = activeEvents.flatMap((event) =>
-    actionsForEvent(state.rules, event),
+    actionsForEvent(state, event),
   );
   const notebook = state.rules.actions.update_notebook;
   if (notebook && activeEvents[0]) {

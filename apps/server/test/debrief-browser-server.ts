@@ -12,11 +12,14 @@ class BrowserReviewRepository extends InMemoryRepository {
     state.events.forEach((event) => { event.status = "resolved"; });
     await super.createSession(ownerId, state);
     const session = await super.getSession(ownerId, state.sessionId);
+    session.state.flags.b1_choice = "escalate-with-comparisons";
+    session.state.flags.b2_choice = "route-to-owner";
+    session.state.flags.b3_choice = "complete";
     const actions: ActionLogEntry["interaction"][] = [
       { type: "workplace_interaction", interaction: { type: "open_artifact", artifactId: "device-inventory-1" } },
       { type: "workplace_interaction", interaction: { type: "open_artifact", artifactId: "vpn-context-1" } },
       { type: "workplace_interaction", interaction: { type: "open_artifact", artifactId: "login-session-timeline" } },
-      { type: "action", action: { id: "escalate_alert", eventId: "suspicious-login-1", actorId: "user" } },
+      { type: "action", action: { id: "document_ticket", eventId: "suspicious-login-1", actorId: "user", decisionOptionId: "escalate-with-comparisons" } },
       { type: "notification_response", response: { notificationId: "routine-scanner-arrived", response: "snooze" } },
       { type: "workplace_interaction", interaction: { type: "open_artifact", artifactId: "scanner-run-log" } },
       { type: "workplace_interaction", interaction: { type: "open_artifact", artifactId: "scanner-window" } },

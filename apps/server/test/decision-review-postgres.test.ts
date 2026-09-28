@@ -4,7 +4,7 @@ import { expect, it } from "vitest";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import { createInitialWorldState } from "@sim/core";
 import { PostgresRepository } from "../src/db/repository.js";
-import type { CompletedDecision } from "../src/domain/decision-review.js";
+import { optionSetKey, type CompletedDecision } from "../src/domain/decision-review.js";
 import { createAppRouter } from "../src/trpc/router.js";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
@@ -28,7 +28,7 @@ it.skipIf(!databaseUrl)("uses migrated Postgres schema for isolated, unique comp
     await sql`INSERT INTO auth.users (id) VALUES (${owner}::uuid)`;
     for (const [sessionId, version, completed] of [
       [current, pack.career.packVersion, true],
-      [otherVersion, "2.0.0", true],
+      [otherVersion, "1.0.0", true],
       [incomplete, pack.career.packVersion, false],
     ] as const) {
       const state = createInitialWorldState(sessionId, 24, {}, pack);
@@ -50,13 +50,13 @@ it.skipIf(!databaseUrl)("uses migrated Postgres schema for isolated, unique comp
     await repository.saveCompletedDecisions([row(tutorial, pack.career.packVersion)]);
 
     expect(await repository.getCohortCounts(pack.career.id, pack.career.packVersion))
-      .toContainEqual({ decisionId: "scanner_interruption", choiceId: "snooze", count: 1 });
-    expect(await repository.getCohortCounts(pack.career.id, "2.0.0"))
-      .toContainEqual({ decisionId: "scanner_interruption", choiceId: "snooze", count: 1 });
+      .toContainEqual({ decisionId: "scanner_interruption", choiceId: "snooze", optionSetKey: "", count: 1 });
+    expect(await repository.getCohortCounts(pack.career.id, "1.0.0"))
+      .toContainEqual({ decisionId: "scanner_interruption", choiceId: "snooze", optionSetKey: "", count: 1 });
     expect(await repository.getCohortCounts("other-career", pack.career.packVersion)).toEqual([]);
     expect(await repository.getRecordedDecisionIds(current, pack.career.id, pack.career.packVersion))
       .toEqual(["scanner_interruption"]);
-    expect(await repository.getRecordedDecisionIds(current, pack.career.id, "2.0.0"))
+    expect(await repository.getRecordedDecisionIds(current, pack.career.id, "1.0.0"))
       .toEqual([]);
 
     const columns = await sql<{ column_name: string }[]>`
@@ -64,7 +64,7 @@ it.skipIf(!databaseUrl)("uses migrated Postgres schema for isolated, unique comp
       WHERE table_schema = 'public' AND table_name = 'decision_reviews'
     `;
     expect(columns.map(({ column_name }) => column_name).sort()).toEqual([
-      "career_id", "career_version", "choice_id", "created_at", "decision_id", "session_id",
+      "career_id", "career_version", "choice_id", "created_at", "decision_id", "option_set_key", "session_id",
     ]);
     const security = await sql<{ relrowsecurity: boolean }[]>`
       SELECT relrowsecurity FROM pg_class WHERE relname = 'decision_reviews'
@@ -92,10 +92,12 @@ it.skipIf(!databaseUrl)("uses migrated Postgres schema for isolated, unique comp
 
     const concurrentState = createInitialWorldState(concurrent, 24, {}, pack);
     concurrentState.events.forEach((event) => { event.status = "resolved"; });
+    concurrentState.flags.b1_choice = "escalate-with-comparisons";
     await repository.createSession(owner, concurrentState);
     await repository.saveSession({ ownerId: owner, state: concurrentState, evidence: [], reflections: [],
       actionLog: [{ sequence: 1, interaction: { type: "action", action: {
-        id: "escalate_alert", eventId: "suspicious-login-1", actorId: "user",
+        id: "document_ticket", eventId: "suspicious-login-1", actorId: "user",
+        decisionOptionId: "escalate-with-comparisons",
       } } }],
     });
     const caller = createAppRouter(repository).createCaller({ userId: owner });
@@ -110,7 +112,9 @@ it.skipIf(!databaseUrl)("uses migrated Postgres schema for isolated, unique comp
     expect(await repository.getRecordedDecisionIds(concurrent, pack.career.id, pack.career.packVersion))
       .toEqual(["suspicious_login"]);
     expect(await repository.getCohortCounts(pack.career.id, pack.career.packVersion))
-      .toContainEqual({ decisionId: "suspicious_login", choiceId: "escalate_alert", count: 1 });
+      .toContainEqual({ decisionId: "suspicious_login", choiceId: "escalate-with-comparisons",
+        optionSetKey: optionSetKey(["escalate-with-comparisons", "escalate-identifiers-only",
+          "close-location-explained", "close-familiar-account"]), count: 1 });
   } finally {
     await sql`DELETE FROM auth.users WHERE id = ${owner}::uuid`;
     await sql.end();

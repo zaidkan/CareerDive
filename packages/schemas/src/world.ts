@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ActionDefinitionSchema, SimulationActionIdSchema } from "./actions.js";
+import { ActionDefinitionSchema, PackCallbackSchema, SimulationActionIdSchema } from "./actions.js";
 import { EventInstanceSchema, PackEventTemplateSchema } from "./events.js";
 import { QueryHistoryEntrySchema } from "./query.js";
 import { DatasetIdSchema, RuntimeDatasetSchema } from "./records.js";
@@ -128,6 +128,19 @@ export const WorldStateSchema = z.object({
   npcs: z.record(z.string(), NpcStateSchema),
   events: z.array(EventInstanceSchema),
   ledger: z.array(ConsequenceEntrySchema),
+  flags: z.record(z.string(), z.string()).default({}),
+  pendingCallbacks: z.array(PackCallbackSchema.extend({
+    eventId: z.string(),
+    actionId: SimulationActionIdSchema,
+    dueAt: z.number().int().nonnegative(),
+    applied: z.boolean(),
+  })).default([]),
+  acknowledgements: z.array(z.object({
+    id: z.string(),
+    decisionId: z.string(),
+    text: z.string(),
+    simMinutes: z.number().int().nonnegative(),
+  })).max(3).default([]),
   completedActionIds: z.array(SimulationActionIdSchema),
   pacingMode: PacingModeSchema,
   rules: ScenarioRulesSchema,
@@ -140,7 +153,7 @@ export const WorldStateSchema = z.object({
       z.object({
         id: z.string(),
         eventId: z.string(),
-        author: z.enum(["player", "morgan"]),
+        author: z.enum(["player", "morgan", "reviewer", "employee"]),
         body: z.string(),
         actionId: SimulationActionIdSchema,
         simMinutes: z.number().int().nonnegative(),
