@@ -133,10 +133,7 @@ export function SiteChrome({
           </ul>
         </nav>
         <p className="privacy-note">
-          Beta. First Shift is the first playable workday from Career Expo.
-          Trust page is an honest engineering summary and will change
-          before public launch. Reflections stay private unless you explicitly
-          share them.
+          Beta. Career Expo&apos;s first shift is a playable workday. See the trust page for current data handling and limits.
         </p>
       </footer>
     </>
