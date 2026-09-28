@@ -1238,6 +1238,11 @@
   border-radius: 12px;
   background: var(--surface-base);
   box-shadow: 0 14px 34px rgb(0 0 0 / 20%);
+  transition:
+    transform 900ms var(--ease-out),
+    opacity 700ms var(--ease-out),
+    box-shadow 700ms var(--ease-out),
+    border-color 700ms var(--ease-out);
 }
 .v2-shelf-doc-field {
   margin-bottom: 0.45rem;
@@ -1259,6 +1264,9 @@
   margin-top: 0.9rem;
   border-radius: 2px;
   background: var(--border-strong);
+  transition:
+    width 700ms var(--ease-out),
+    background 700ms var(--ease-out);
 }
 .v2-shelf-doc-status {
   margin-top: auto;
@@ -1299,6 +1307,28 @@
   animation: v2-stage 700ms var(--ease-out) 140ms both;
 }
 .v2-shelf-doc--4 .v2-shelf-doc-status {
+  color: var(--status-success-fg);
+}
+.v2-shelf-doc--active {
+  z-index: 5;
+  top: 50%;
+  left: 50%;
+  width: min(88%, 360px);
+  min-height: 190px;
+  transform: translate(-50%, -50%) rotate(0deg);
+  opacity: 1;
+  border-color: var(--action-primary);
+  background: var(--surface-strong);
+  box-shadow: 0 24px 54px rgb(0 0 0 / 28%);
+}
+.v2-shelf-doc--active .v2-shelf-doc-glyph {
+  width: 64px;
+  background: var(--action-primary);
+}
+.v2-shelf-doc--active .v2-shelf-doc-status {
+  color: var(--text-secondary);
+}
+.v2-shelf-doc--active.v2-shelf-doc--ready .v2-shelf-doc-status {
   color: var(--status-success-fg);
 }
 
@@ -1365,7 +1395,7 @@
 }
 
 .v2-fields-section .v2-section-intro {
-  max-width: 62ch;
+  max-width: none;
 }
 .field-grid {
   display: grid;
@@ -1384,28 +1414,27 @@
   background: var(--surface-base);
 }
 .field-card--cyber {
-  grid-column: span 6;
+  grid-column: span 5;
 }
 .field-card--nurse {
-  grid-column: span 5;
+  grid-column: span 7;
   margin-top: 2.2rem;
 }
 .field-card--mechanical {
   grid-column: span 4;
-  margin-top: 4.4rem;
 }
 .field-card--electrician {
   grid-column: span 4;
 }
 .field-card--lawyer {
-  grid-column: span 5;
+  grid-column: span 4;
   margin-top: 2.2rem;
 }
 .field-card-glyph {
   display: grid;
   place-items: center;
-  height: 64px;
-  margin-bottom: 1.1rem;
+  height: 56px;
+  margin-bottom: 1rem;
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   background: var(--surface-subtle);
@@ -1424,7 +1453,7 @@
   text-transform: uppercase;
 }
 .field-card-title {
-  margin: 0 0 0.8rem;
+  margin: 0 0 0.7rem;
   color: var(--text-primary);
   font-size: clamp(1.2rem, 1.8vw, 1.5rem);
   letter-spacing: -0.025em;
@@ -1433,7 +1462,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem 0.4rem;
-  margin: 0 0 1.1rem;
+  margin: 0 0 1rem;
   color: var(--text-secondary);
   font-size: 0.85rem;
   line-height: 1.5;
@@ -1516,6 +1545,15 @@
 }
 .v2-arc-section .v2-desk {
   max-width: 860px;
+}
+.v2-arc-example {
+  max-width: 860px;
+  margin: 0 0 0.9rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .v2-final-actions {
@@ -1631,11 +1669,12 @@
 }
 
 @media (max-width: 1100px) {
-  .field-card--cyber {
-    grid-column: span 12;
-  }
+  .field-card--cyber,
   .field-card--nurse,
-  .field-card--mechanical,
+  .field-card--mechanical {
+    grid-column: span 4;
+    margin-top: 0;
+  }
   .field-card--electrician,
   .field-card--lawyer {
     grid-column: span 6;
@@ -1663,10 +1702,17 @@
     top: 190px;
     min-height: 140px;
   }
+  .v2-shelf-doc--active {
+    width: min(92%, 320px);
+    min-height: 150px;
+  }
   .field-card--nurse,
   .field-card--mechanical,
   .field-card--electrician,
   .field-card--lawyer {
+    grid-column: span 12;
+  }
+  .field-card--cyber {
     grid-column: span 12;
   }
   .cyber-detail .cyber-chapter-head {
@@ -1700,6 +1746,14 @@
     left: 10%;
     min-height: 128px;
   }
+  .v2-shelf-doc--active {
+    width: min(94%, 300px);
+    min-height: 132px;
+    padding: 0.8rem 0.95rem;
+  }
+  .v2-shelf-doc--active .v2-shelf-doc-glyph {
+    width: 48px;
+  }
   .v2-arc-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1717,6 +1771,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .v2-shelf-doc,
+  .v2-shelf-doc-glyph {
+    transition: none;
+  }
   .v2-shelf-doc--4 {
     animation: none;
   }

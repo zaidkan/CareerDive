@@ -51,18 +51,66 @@ const EXPERIENCE_ARC = [
   },
 ] as const;
 
+const SHELF_INTERVAL_MS = 4600;
+
+function useReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => {
+      setReduced(query.matches);
+    };
+    update();
+    query.addEventListener("change", update);
+    return () => {
+      query.removeEventListener("change", update);
+    };
+  }, []);
+  return reduced;
+}
+
 function HeroShelf() {
+  const reducedMotion = useReducedMotion();
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (reducedMotion || paused) return;
+    const timer = window.setInterval(() => {
+      setActiveIndex((current) => (current + 1) % careers.length);
+    }, SHELF_INTERVAL_MS);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [reducedMotion, paused]);
+
   return (
     <div className="v2-hero-media v2-media-frame" data-media-slot="hero">
-      <div className="v2-shelf">
+      <div
+        className="v2-shelf"
+        onMouseEnter={() => {
+          setPaused(true);
+        }}
+        onMouseLeave={() => {
+          setPaused(false);
+        }}
+        onFocus={() => {
+          setPaused(true);
+        }}
+        onBlur={() => {
+          setPaused(false);
+        }}
+      >
         {careers.map((career, index) => {
           const ready = career.availability === "ready_now";
+          const isActive = index === activeIndex;
           return (
             <div
               key={career.id}
               className={`v2-shelf-doc v2-shelf-doc--${String(index)}${
                 ready ? " v2-shelf-doc--ready" : ""
-              }`}
+              }${isActive ? " v2-shelf-doc--active" : ""}`}
               aria-hidden="true"
             >
               <span className="v2-shelf-doc-field">{career.field}</span>
@@ -129,7 +177,8 @@ export function LandingPage() {
             </SiteLink>
           </div>
           <p className="v2-hero-note">
-            Cybersecurity Analyst is ready now. More careers are in the workshop.
+            Cybersecurity Analyst is ready now. More careers are in the
+            workshop.
           </p>
         </div>
         <div className="v2-hero-visual" aria-hidden="true">
@@ -154,7 +203,9 @@ export function LandingPage() {
       >
         <div className="v2-proof-intro">
           <p className="v2-eyebrow">A real task, not a job description.</p>
-          <h2 id="v2-proof-title">You compare evidence. Then you make the call.</h2>
+          <h2 id="v2-proof-title">
+            You compare evidence. Then you make the call.
+          </h2>
           <p>
             In Cybersecurity Analyst, you compare evidence, make a judgment, and
             leave a record someone else can continue.
@@ -162,9 +213,11 @@ export function LandingPage() {
         </div>
         <AlertArtifact compact />
         <p className="v2-proof-tag">
-          <SiteLink className="v2-text-link" to="/careers/cybersecurity-analyst">
-            Cybersecurity Analyst · Ready now{" "}
-            <span aria-hidden="true">→</span>
+          <SiteLink
+            className="v2-text-link"
+            to="/careers/cybersecurity-analyst"
+          >
+            Cybersecurity Analyst · Ready now <span aria-hidden="true">→</span>
           </SiteLink>
         </p>
       </section>
@@ -193,10 +246,14 @@ export function LandingPage() {
             </li>
           ))}
         </ol>
+        <p className="v2-arc-example" id="v2-arc-example">
+          Example · Cybersecurity Analyst
+        </p>
         <DeskPreview />
         <p className="v2-reality-note">
-          Concept preview of the Desk OS tools from the playable Cybersecurity
-          Analyst first day.
+          Every career follows these seven steps. The example beside it is from
+          the currently playable Cybersecurity Analyst first day — its tools are
+          its own, not every career’s.
         </p>
       </section>
 
@@ -245,9 +302,9 @@ export function LandingPage() {
           <details>
             <summary>Do my requests change what you build?</summary>
             <p>
-              Not yet. Requests currently stay on this page and aren’t collected.
-              When collection is enabled, they’ll help guide what we prioritize
-              without guaranteeing build order.
+              Not yet. Requests currently stay on this page and aren’t
+              collected. When collection is enabled, they’ll help guide what we
+              prioritize without guaranteeing build order.
             </p>
           </details>
           <details>
