@@ -1,0 +1,398 @@
+export const ALLOW_CONSOLE = [
+  "Failed to load resource",
+  "MEDIA_ERR",
+  "NotSupportedError",
+  "The play() request was interrupted",
+  "Uncaught (in promise) DOMException: The play()",
+  "WebGL",
+  "fonts.googleapis",
+  "fonts.gstatic",
+  "net::ERR_ABORTED",
+];
+
+export const LEAK_PATTERNS = [
+  { name: "object-leak", pattern: /\[object Object\]/ },
+  { name: "dev-host", pattern: /localhost:\d+/ },
+  { name: "env-prefix", pattern: /VITE_[A-Z_]+/ },
+  { name: "node-path", pattern: /node_modules\// },
+  { name: "todo-marker", pattern: /\b(TODO|FIXME|XXX)\b/ },
+  { name: "stack-frame", pattern: /\bat \w+ \(/ },
+  { name: "source-line", pattern: /\.tsx?:\d+/ },
+];
+
+export const WORKSHOP_CAREERS = [
+  "Registered Nurse",
+  "Mechanical Engineer",
+  "Electrician",
+  "Lawyer",
+];
+
+export function collectMetrics({ leakPatterns = [] } = {}) {
+  const viewportWidth = window.innerWidth;
+  const isShown = (element) => {
+    const rect = element.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2) return false;
+    const style = getComputedStyle(element);
+    if (style.display === "none" || style.visibility === "hidden") return false;
+    if (Number(style.opacity) === 0) return false;
+    if (style.clipPath === "inset(50%)") return false;
+    return true;
+  };
+  const inClippedAncestor = (element) => {
+    let node = element.parentElement;
+    while (node && node !== document.body && node !== document.documentElement) {
+      const style = getComputedStyle(node);
+      const clipped =
+        ["hidden", "auto", "scroll", "clip"].includes(style.overflowX) ||
+        ["hidden", "auto", "scroll", "clip"].includes(style.overflowY);
+      if (clipped) return true;
+      node = node.parentElement;
+    }
+    return false;
+  };
+  const describe = (element) => ({
+    tag: element.tagName.toLowerCase(),
+    cls:
+      typeof element.className === "string"
+        ? element.className.slice(0, 70)
+        : "",
+    id: element.id || "",
+  });
+
+  const documentWidth = Math.max(
+    document.documentElement.scrollWidth,
+    document.body ? document.body.scrollWidth : 0,
+  );
+
+  const outsideText = [];
+  const outsideDecoration = [];
+  for (const element of document.querySelectorAll("body *")) {
+    if (outsideText.length >= 8 && outsideDecoration.length >= 8) break;
+    if (!isShown(element)) continue;
+    if (inClippedAncestor(element)) continue;
+    const style = getComputedStyle(element);
+    if (style.position === "fixed") continue;
+    const rect = element.getBoundingClientRect();
+    if (rect.right <= viewportWidth + 1 && rect.left >= -1) continue;
+    const entry = {
+      ...describe(element),
+      left: Math.round(rect.left),
+      right: Math.round(rect.right),
+      text: (element.innerText || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 60),
+    };
+    if (entry.text) outsideText.push(entry);
+    else outsideDecoration.push(entry);
+  }
+
+  const headings = Array.from(document.querySelectorAll("h1")).filter(isShown);
+
+  const images = Array.from(document.images);
+  const brokenImages = images
+    .filter((image) => image.currentSrc || image.src)
+    .filter((image) => image.complete && image.naturalWidth === 0)
+    .map((image) => ({
+      src: (image.currentSrc || image.src || "").slice(0, 120),
+    }));
+  const pendingImages = images
+    .filter((image) => !image.complete && isShown(image))
+    .map((image) => (image.currentSrc || image.src || "").slice(0, 120));
+
+  const mediaIssues = [];
+  for (const video of document.querySelectorAll("video")) {
+    if (video.error) mediaIssues.push(`video error ${String(video.error.code)}`);
+    if (video.networkState === 3) mediaIssues.push("video has no media source");
+    if (!video.currentSrc && !video.querySelector("source[src]")) {
+      mediaIssues.push("video without src or source");
+    }
+  }
+  for (const source of document.querySelectorAll("source")) {
+    const inPicture = source.parentElement?.tagName === "PICTURE";
+    const declared = inPicture
+      ? source.getAttribute("srcset")
+      : source.getAttribute("src");
+    if (!declared) mediaIssues.push(`${inPicture ? "picture" : "media"} source element without ${inPicture ? "srcset" : "src"}`);
+  }
+
+  const seenIds = new Map();
+  for (const element of document.querySelectorAll("[id]")) {
+    if (!isShown(element)) continue;
+    const list = seenIds.get(element.id) ?? [];
+    list.push(element);
+    seenIds.set(element.id, list);
+  }
+  const duplicateIds = [];
+  for (const [id, nodes] of seenIds) {
+    if (nodes.length > 1) duplicateIds.push(`${id} x${String(nodes.length)}`);
+  }
+
+  const emptySlots = [];
+  for (const slot of document.querySelectorAll("[data-media-slot]")) {
+    const rect = slot.getBoundingClientRect();
+    const hasText = Boolean(slot.textContent.trim());
+    if (
+      rect.width < 40 ||
+      rect.height < 40 ||
+      (!hasText && slot.children.length === 0)
+    ) {
+      emptySlots.push({
+        slot: slot.getAttribute("data-media-slot"),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      });
+    }
+  }
+
+  const bodyText = (document.body.innerText || "").replace(/\s+/g, " ");
+  const leaks = [];
+  for (const { name, pattern } of leakPatterns) {
+    const match = bodyText.match(pattern);
+    if (match) leaks.push(`${name}: ${match[0].slice(0, 60)}`);
+  }
+
+  const navReport = [];
+  for (const nav of document.querySelectorAll("header.site-nav nav")) {
+    const navStyle = getComputedStyle(nav);
+    const scrollable =
+      ["auto", "scroll"].includes(navStyle.overflowX) &&
+      nav.scrollWidth > nav.clientWidth + 1;
+    const clippedLinks = Array.from(nav.querySelectorAll("a, button"))
+      .filter(isShown)
+      .map((link) => ({ link, rect: link.getBoundingClientRect() }))
+      .filter(({ rect }) => rect.left < -1 || rect.right > viewportWidth + 1)
+      .map(({ link, rect }) => ({
+        text: (link.innerText || "")
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 30),
+        left: Math.round(rect.left),
+        right: Math.round(rect.right),
+      }));
+    navReport.push({
+      scrollable,
+      scrollWidth: nav.scrollWidth,
+      clientWidth: nav.clientWidth,
+      clippedLinks,
+    });
+  }
+
+  const shelfDocs = Array.from(document.querySelectorAll(".v2-shelf-doc"));
+  const heroActiveIndex = shelfDocs.findIndex((doc) =>
+    doc.classList.contains("v2-shelf-doc--active"),
+  );
+
+  const workshopArtifactCount = document.querySelectorAll(
+    "[data-workshop-artifact]",
+  ).length;
+  const workshopLabels = Array.from(document.querySelectorAll(".ui-provenance"))
+    .filter(isShown)
+    .map((label) =>
+      (label.textContent || "").replace(/\s+/g, " ").trim().slice(0, 80),
+    );
+
+  return {
+    viewportWidth,
+    documentWidth,
+    scrollHeight: document.documentElement.scrollHeight,
+    themeApplied: document.documentElement.dataset.theme ?? "",
+    reducedMotionApplied: window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches,
+    textLength: bodyText.trim().length,
+    bodyText: bodyText.slice(0, 200000),
+    h1Count: headings.length,
+    h1Text: headings.map((heading) =>
+      (heading.innerText || "").replace(/\s+/g, " ").trim().slice(0, 80),
+    ),
+    outsideText,
+    outsideDecoration: outsideDecoration.slice(0, 8),
+    brokenImages,
+    pendingImages,
+    mediaIssues,
+    duplicateIds,
+    emptySlots,
+    leaks,
+    navReport,
+    heroActiveIndex,
+    heroShelfDocs: shelfDocs.length,
+    workshopArtifactCount,
+    workshopLabels,
+    cls: window.__qaCls ?? 0,
+  };
+}
+
+export function snapshotFocusStyles() {
+  const selector = [
+    "a[href]",
+    "button:not([disabled])",
+    "input:not([disabled])",
+    "select:not([disabled])",
+    "textarea:not([disabled])",
+    "summary",
+    '[tabindex]:not([tabindex="-1"])',
+  ].join(",");
+  const read = (element) => {
+    const style = getComputedStyle(element);
+    return {
+      outline: `${style.outlineStyle} ${style.outlineWidth} ${style.outlineColor}`,
+      boxShadow: style.boxShadow,
+      backgroundColor: style.backgroundColor,
+      color: style.color,
+      borderColor: `${style.borderTopColor} ${style.borderRightColor}`,
+      textDecoration: `${style.textDecorationLine} ${style.textDecorationColor}`,
+      transform: style.transform,
+    };
+  };
+  const candidates = Array.from(document.querySelectorAll(selector)).filter(
+    (element) => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      if (rect.width < 2 || rect.height < 2) return false;
+      if (style.display === "none" || style.visibility === "hidden") return false;
+      if (element.closest(".visually-hidden")) return false;
+      if (element.getAttribute("type") === "hidden") return false;
+      return true;
+    },
+  );
+  window.__qaFocus = candidates.slice(0, 20);
+  return window.__qaFocus.map((element) => ({
+    tag: element.tagName.toLowerCase(),
+    label: (
+      element.getAttribute("aria-label") ||
+      element.innerText ||
+      element.getAttribute("placeholder") ||
+      ""
+    )
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 40),
+    rest: read(element),
+  }));
+}
+
+export function readFocusedStyles() {
+  const candidates = window.__qaFocus ?? [];
+  const active = document.activeElement;
+  const position = candidates.indexOf(active);
+  if (position < 0) return { position: -1 };
+  const style = getComputedStyle(active);
+  return {
+    position,
+    outline: `${style.outlineStyle} ${style.outlineWidth} ${style.outlineColor}`,
+    boxShadow: style.boxShadow,
+    backgroundColor: style.backgroundColor,
+    color: style.color,
+    borderColor: `${style.borderTopColor} ${style.borderRightColor}`,
+    textDecoration: `${style.textDecorationLine} ${style.textDecorationColor}`,
+    transform: style.transform,
+  };
+}
+
+export function evaluateChecks({ route, theme, motion, metrics }) {
+  const checks = {};
+  const push = (name, ok, detail) => {
+    checks[name] = { ok, ...(detail === undefined ? {} : { detail }) };
+  };
+
+  push(
+    "theme-applied",
+    metrics.themeApplied === theme,
+    `expected ${theme}, got ${metrics.themeApplied || "none"}`,
+  );
+  push(
+    "reduced-motion-applied",
+    metrics.reducedMotionApplied === (motion === "reduce"),
+    `expected ${motion === "reduce"}, got ${metrics.reducedMotionApplied}`,
+  );
+  push("one-h1", metrics.h1Count === 1, `count=${String(metrics.h1Count)}`);
+  push(
+    "no-horizontal-overflow",
+    metrics.documentWidth <= metrics.viewportWidth + 1,
+    `document=${String(metrics.documentWidth)} viewport=${String(metrics.viewportWidth)}`,
+  );
+  push(
+    "no-content-outside-viewport",
+    metrics.outsideText.length === 0,
+    metrics.outsideText,
+  );
+  push(
+    "no-clipped-nav",
+    metrics.navReport.every(
+      (nav) => !nav.scrollable && nav.clippedLinks.length === 0,
+    ),
+    metrics.navReport,
+  );
+  push(
+    "no-broken-images",
+    metrics.brokenImages.length === 0 && metrics.pendingImages.length === 0,
+    { broken: metrics.brokenImages, pending: metrics.pendingImages },
+  );
+  push("no-missing-media-source", metrics.mediaIssues.length === 0, metrics.mediaIssues);
+  push("no-duplicate-visible-ids", metrics.duplicateIds.length === 0, metrics.duplicateIds);
+  push("no-empty-media-slots", metrics.emptySlots.length === 0, metrics.emptySlots);
+  push("no-internal-content-leak", metrics.leaks.length === 0, metrics.leaks);
+
+  const workshopRoute = route.key === "home" || route.key === "careers";
+  const provenanceLabels = Array.isArray(metrics.workshopLabels)
+    ? metrics.workshopLabels
+    : [];
+  const falseRealClaims = provenanceLabels.filter(
+    (label) =>
+      /ready now/i.test(label) &&
+      WORKSHOP_CAREERS.some((career) =>
+        label.toLowerCase().includes(career.toLowerCase()),
+      ),
+  );
+  const malformedLabels = provenanceLabels.filter(
+    (label) => !/(ready now|workshop concept|in the workshop)/i.test(label),
+  );
+  const workshopIssues = [];
+  if (workshopRoute && !/workshop/i.test(metrics.bodyText)) {
+    workshopIssues.push("no workshop wording in visible text");
+  }
+  if (workshopRoute && metrics.workshopArtifactCount > 0 && provenanceLabels.length === 0) {
+    workshopIssues.push("workshop artefacts carry no provenance label");
+  }
+  if (falseRealClaims.length) {
+    workshopIssues.push(...falseRealClaims.map((label) => `real claim on workshop career: ${label}`));
+  }
+  if (malformedLabels.length) {
+    workshopIssues.push(...malformedLabels.map((label) => `unexpected provenance claim: ${label}`));
+  }
+  push(
+    "workshop-provenance-visible",
+    !workshopRoute || workshopIssues.length === 0,
+    workshopRoute
+      ? workshopIssues.length > 0
+        ? workshopIssues
+        : { labels: provenanceLabels, artefacts: metrics.workshopArtifactCount }
+      : "not applicable",
+  );
+
+  const cyberRoute = route.key === "cyber";
+  const cyberIssues = [];
+  if (cyberRoute) {
+    if (/workshop concept/i.test(metrics.bodyText)) {
+      cyberIssues.push("workshop provenance label present on cyber page");
+    }
+    if (!/simplified/i.test(metrics.bodyText)) {
+      cyberIssues.push("missing real-media honesty marker (simplified)");
+    }
+    const escapes = new RegExp(
+      `(?:${WORKSHOP_CAREERS.join("|")}).{0,160}(?:playable|play the|simulation)`,
+      "i",
+    );
+    if (escapes.test(metrics.bodyText)) {
+      cyberIssues.push("workshop career presented as playable simulation");
+    }
+  }
+  push(
+    "cyber-real-media-labels",
+    !cyberRoute || cyberIssues.length === 0,
+    cyberRoute ? cyberIssues : "not applicable",
+  );
+
+  return checks;
+}
