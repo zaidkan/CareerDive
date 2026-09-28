@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "turbo build",
+    "capture:product-media": "tsx scripts/capture-product-media.mts",
     "check:product-contract": "node scripts/check-product-contract.mjs",
     "check:dev": "node scripts/check-dev.mjs",
     "dev": "node scripts/dev-banner.mjs && turbo dev",

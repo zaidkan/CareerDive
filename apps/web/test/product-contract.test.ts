@@ -7,7 +7,9 @@ import { expect, test } from "vitest";
 
 test("product contract scanner reports runtime violations with file and line", () => {
   const root = mkdtempSync(path.join(tmpdir(), "career-contract-"));
-  const script = fileURLToPath(new URL("../../../scripts/check-product-contract.mjs", import.meta.url));
+  // Base in a variable: vite rewrites inline new URL(literal, import.meta.url) to a dev-server URL.
+  const moduleBase = import.meta.url;
+  const script = fileURLToPath(new URL("../../../scripts/check-product-contract.mjs", moduleBase));
   try {
     const src = path.join(root, "apps/web/src");
     mkdirSync(src, { recursive: true });
