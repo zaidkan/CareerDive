@@ -12,7 +12,10 @@ type RouteMeta = {
   index: boolean;
 };
 
-export const ROUTE_META: Record<Exclude<SiteRoute["kind"], "career" | "not-found">, RouteMeta> = {
+export const ROUTE_META: Record<
+  Exclude<SiteRoute["kind"], "career" | "not-found">,
+  RouteMeta
+> = {
   home: {
     title: "Experience the work before choosing a career · Career Expo",
     description:
@@ -28,9 +31,9 @@ export const ROUTE_META: Record<Exclude<SiteRoute["kind"], "career" | "not-found
     index: true,
   },
   trust: {
-    title: "Privacy and safety, honest beta summary · First Shift",
+    title: "Privacy and safety · Career Expo",
     description:
-      "Owner-only reflections, explicit expiring sharing grants, bounded AI dialogue only, no fit scores or rankings. Beta summary, not legal advice.",
+      "What Career Expo stores during a first shift, how access checks work, current AI limits, and why the debrief has no career-fit score.",
     path: "/trust",
     index: true,
   },
@@ -50,7 +53,8 @@ export const ROUTE_META: Record<Exclude<SiteRoute["kind"], "career" | "not-found
   },
   careers: {
     title: "Explore careers · Career Expo",
-    description: "Explore playable career simulations and previews of careers in the workshop.",
+    description:
+      "Explore playable career simulations and previews of careers in the workshop.",
     path: "/careers",
     index: true,
   },
@@ -67,7 +71,11 @@ function metaForRoute(route: SiteRoute): RouteMeta {
   }
   if (route.kind === "career") {
     const career = getCareerBySlug(route.slug);
-    if (!career?.detailPublished) return metaForRoute({ kind: "not-found", pathname: `/careers/${route.slug}` });
+    if (!career?.detailPublished)
+      return metaForRoute({
+        kind: "not-found",
+        pathname: `/careers/${route.slug}`,
+      });
     return {
       title: `${career.title} · Career Expo`,
       description: career.shortSummary,
