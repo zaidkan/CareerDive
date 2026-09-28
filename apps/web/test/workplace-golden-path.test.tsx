@@ -89,6 +89,7 @@ describe("rendered workplace golden path", () => {
                     sourceRecordId: action.sourceRecordId,
                     sourceArtifactId: action.sourceArtifactId,
                     ticketPayload: action.ticketPayload,
+                    decisionOptionId: action.decisionOptionId,
                 });
                 await caller.simulation.performAction({
                     sessionId: "golden",
@@ -103,6 +104,9 @@ describe("rendered workplace golden path", () => {
                         : {}),
                     ...(action.ticketPayload
                         ? { ticketPayload: action.ticketPayload }
+                        : {}),
+                    ...(action.decisionOptionId
+                        ? { decisionOptionId: action.decisionOptionId }
                         : {}),
                 });
                 return { result: undefined, view: await update() };
@@ -303,6 +307,8 @@ describe("rendered workplace golden path", () => {
                     expect(sources.length).toBeGreaterThan(0);
                     for (const source of sources)
                         await user.click(source);
+                    const firstDecision = within(form).queryAllByRole("radio")[0];
+                    if (firstDecision) await user.click(firstDecision);
                     const saveDraft = required(within(form).queryByRole("button", { name: "Save draft" }), "ticket draft button");
                     await activate(saveDraft);
                     expect(state.structuredTickets[`ticket-${eventId}`]?.status).toBe("in_progress");

@@ -59,12 +59,9 @@ it("keeps small cohorts private and offers a keyboard-readable personal review",
     screen.getByRole("heading", { name: "Your shift in review" }),
   ).toBeVisible();
   expect(screen.getByText("Requested senior review")).toBeVisible();
-  expect(
-    screen.getByText(
-      "Community comparison will appear as more shifts are completed.",
-    ),
-  ).toBeVisible();
+  expect(screen.queryByRole("heading", { name: "How other completed shifts handled this" })).toBeNull();
   expect(container.textContent).not.toMatch(/29%|56%/);
+  expect(container.textContent).not.toMatch(/career.fit score|pass\/fail|ranking|performance grade|\bscore\b/i);
   await user.tab();
   expect(
     screen.getByRole("link", { name: /The unfamiliar sign-in/ }),
@@ -97,9 +94,7 @@ it("shows server-derived percentages only for a ready cohort and handles service
   ).toBeVisible();
   decision.cohort = { status: "unavailable" };
   rerender(<DebriefView debrief={ready} />);
-  expect(
-    screen.getByText("Community comparison unavailable right now."),
-  ).toBeVisible();
+  expect(screen.queryByRole("heading", { name: "How other completed shifts handled this" })).toBeNull();
   expect(screen.getByText("Requested senior review")).toBeVisible();
 });
 

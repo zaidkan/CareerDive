@@ -113,6 +113,7 @@ export function createAppRouter(
             sourceRecordId: z.string().min(1).optional(),
             sourceArtifactId: z.string().min(1).optional(),
             ticketPayload: z.unknown().optional(),
+            decisionOptionId: z.string().optional(),
             /**
              * P2-T06: structured payload for `query_records`, carried
              * opaquely through transport (`z.unknown`) so the canonical
@@ -159,6 +160,7 @@ export function createAppRouter(
                   ticketPayload:
                     input.ticketPayload as SimulationAction["ticketPayload"],
                 }),
+            ...(input.decisionOptionId ? { decisionOptionId: input.decisionOptionId } : {}),
             ...(input.queryPayload === undefined
               ? {}
               : {
@@ -443,7 +445,7 @@ export function createAppRouter(
                 const counts = await repository.getCohortCounts(careerPack.career.id, review.careerVersion);
                 for (const item of review.decisions) {
                   if (item.comparisonEligible && item.userChoiceId && recorded.has(item.decisionId)) {
-                    item.cohort = cohortForDecision(item.decisionId, counts);
+                    item.cohort = cohortForDecision(item.decisionId, counts, item.availableChoiceIds);
                   }
                 }
               }

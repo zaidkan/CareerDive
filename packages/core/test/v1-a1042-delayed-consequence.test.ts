@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadDefaultCybersecurityPack } from "@sim/career-packs";
+import { legacyCyberPack } from "./legacy-cyber.js";
 import type { SimulationActionId, WorldState } from "@sim/schemas";
 import {
   applyAction,
@@ -21,11 +21,11 @@ const newRecords = [
   "travel-status-1",
   "login-follow-up-guide",
 ];
-function world(pack = loadDefaultCybersecurityPack()) {
+function world(pack = legacyCyberPack()) {
   return createInitialWorldState("case-depth", 42, {}, pack);
 }
 function legacyInspectionPack() {
-  const pack = structuredClone(loadDefaultCybersecurityPack());
+  const pack = structuredClone(legacyCyberPack());
   for (const id of [
     "account-pattern-compare",
     "device-owner-match",

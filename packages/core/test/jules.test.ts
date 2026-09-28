@@ -1,4 +1,4 @@
-import { loadDefaultCybersecurityPack } from "@sim/career-packs";
+import { legacyCyberPack } from "./legacy-cyber.js";
 import type { SimulationActionId, WorldState } from "@sim/schemas";
 import { describe, expect, it } from "vitest";
 import {
@@ -9,7 +9,7 @@ import {
   toClientView,
 } from "../src/index.js";
 
-const pack = loadDefaultCybersecurityPack();
+const pack = legacyCyberPack();
 
 function world(): WorldState {
   return createInitialWorldState("jules-session", 42, {}, pack);

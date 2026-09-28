@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { SimulationActionIdSchema } from "./actions.js";
+import { ConditionSchema, SimulationActionIdSchema } from "./actions.js";
 import { WorkSystemIdSchema } from "./session.js";
 
 export const WorkTaskKindSchema = z.enum([
@@ -24,6 +24,19 @@ export const PackTaskOptionSchema = z.object({
 });
 export type PackTaskOption = z.infer<typeof PackTaskOptionSchema>;
 
+export const PackTaskOutcomeSchema = z.object({
+  id: z.string().min(1),
+  selectedOptionIds: z.array(z.string().min(1)).min(1),
+  when: z.array(ConditionSchema).default([]),
+  feedback: z.string().min(1),
+  setFlags: z.record(z.string(), z.string()).default({}),
+  resolution: z.string().min(1).optional(),
+  completeTask: z.boolean().default(false),
+  recordOmission: z.boolean().default(false),
+  correctsOmission: z.boolean().default(false),
+});
+export type PackTaskOutcome = z.infer<typeof PackTaskOutcomeSchema>;
+
 export const PackTaskStepSchema = z
   .object({
     id: z.string().min(1),
@@ -35,6 +48,11 @@ export const PackTaskStepSchema = z
     maxSelections: z.number().int().positive(),
     options: z.array(PackTaskOptionSchema).min(2),
     requiredOptionIds: z.array(z.string()).min(1),
+    conditionalRequiredOptionIds: z.array(z.object({
+      when: z.array(ConditionSchema).min(1),
+      optionIds: z.array(z.string().min(1)).min(1),
+    })).default([]),
+    outcomes: z.array(PackTaskOutcomeSchema).default([]),
     coachOnFailure: z.string().min(1),
     successText: z.string().min(1),
   })
@@ -62,6 +80,16 @@ export const PackTaskStepSchema = z
           message: `Task step references unknown required option "${requiredId}"`,
           path: ["requiredOptionIds"],
         });
+      }
+    }
+    for (const conditional of step.conditionalRequiredOptionIds) {
+      for (const id of conditional.optionIds) if (!uniqueOptionIds.has(id)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Unknown conditional option "${id}"`, path: ["conditionalRequiredOptionIds"] });
+      }
+    }
+    for (const outcome of step.outcomes) {
+      for (const id of outcome.selectedOptionIds) if (!uniqueOptionIds.has(id)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Unknown outcome option "${id}"`, path: ["outcomes"] });
       }
     }
     if (
@@ -103,6 +131,12 @@ export const TaskProgressSchema = z.object({
   selectedOptionIdsByStep: z
     .record(z.string(), z.array(z.string()))
     .default({}),
+  outcomeIdsByStep: z.record(z.string(), z.string()).default({}),
+  correctionHistory: z.array(z.object({
+    stepId: z.string(),
+    initialOptionIds: z.array(z.string()),
+    correctedOptionIds: z.array(z.string()).optional(),
+  })).default([]),
 });
 export type TaskProgress = z.infer<typeof TaskProgressSchema>;
 

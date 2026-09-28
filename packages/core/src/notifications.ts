@@ -85,5 +85,8 @@ export function respondToNotification(
     notification.status = "acknowledged";
     delete notification.snoozedUntil;
   }
+  if (event.templateId === "routine_alert_review") {
+    state.flags.d5_interruption = response.response;
+  }
   return state;
 }

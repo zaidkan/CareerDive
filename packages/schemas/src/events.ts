@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ActionEffectSchema, SimulationActionIdSchema } from "./actions.js";
+import { ActionEffectSchema, ConditionSchema, SimulationActionIdSchema } from "./actions.js";
 import { WorkSystemIdSchema } from "./session.js";
 
 export const EventStatusSchema = z.enum([
@@ -81,6 +81,9 @@ export const PackEventTemplateSchema = z.object({
   triggerAt: z.number().int().nonnegative(),
   deadlineMinutes: z.number().int().positive(),
   initialStatus: z.enum(["pending", "active"]).default("pending"),
+  nonBlockingFollowUp: z.boolean().default(false),
+  activationMessages: z.array(z.string().min(1)).default([]),
+  actionConditions: z.record(SimulationActionIdSchema, z.array(ConditionSchema)).default({}),
   prohibitedOutcomes: z.array(z.string()).default([]),
   progression: EventProgressionSchema,
   managerGuidance: z.string(),

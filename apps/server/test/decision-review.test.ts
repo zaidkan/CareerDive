@@ -6,6 +6,7 @@ import {
   buildDecisionReview,
   cohortForDecision,
   completedDecisions,
+  optionSetKey,
 } from "../src/domain/decision-review.js";
 import { InMemoryRepository } from "../src/repository/in-memory.js";
 import { createAppRouter } from "../src/trpc/router.js";
@@ -15,6 +16,7 @@ const owner = "user-1";
 
 function fixture(sessionId = "decision-test") {
   const state = createInitialWorldState(sessionId, 24, {}, pack);
+  state.careerVersion = "1.0.0";
   const log: ActionLogEntry[] = [
     {
       sequence: 1,
@@ -186,12 +188,14 @@ function fixture(sessionId = "decision-test") {
     selectedOptionIdsByStep: {
       "summary-collection-limits": ["collection-coverage-limit"],
     },
+    outcomeIdsByStep: {}, correctionHistory: [],
   };
   state.taskProgress["routine-alert-1:scanner-ticket-summary"] = {
     currentStep: 3,
     attempts: 4,
     completed: true,
     selectedOptionIdsByStep: { "scanner-decision": ["expected-close"] },
+    outcomeIdsByStep: {}, correctionHistory: [],
   };
   state.taskProgress["access-request-1:access-authority-check"] = {
     currentStep: 0,
@@ -200,6 +204,7 @@ function fixture(sessionId = "decision-test") {
     selectedOptionIdsByStep: {
       "identify-approval-boundary": ["route-to-owner"],
     },
+    outcomeIdsByStep: {}, correctionHistory: [],
   };
   state.taskProgress["login-help-1:employee-login-troubleshooting"] = {
     currentStep: 1,
@@ -209,6 +214,7 @@ function fixture(sessionId = "decision-test") {
       "login-help-evidence": ["phone-retries", "laptop-success"],
       "login-help-next-step": ["update-saved-password"],
     },
+    outcomeIdsByStep: {}, correctionHistory: [],
   };
   state.taskProgress["shift-handoff-1:end-shift-continuity"] = {
     currentStep: 2,
@@ -219,6 +225,7 @@ function fixture(sessionId = "decision-test") {
       "handoff-open-question": ["reviewer-question"],
       "handoff-next-owner": ["next-analyst-review"],
     },
+    outcomeIdsByStep: {}, correctionHistory: [],
   };
   for (const [eventId, actionId] of [
     ["access-request-1", "route_access_request"],
@@ -255,6 +262,8 @@ describe("end-of-shift decision review", () => {
     ]);
     expect(review.decisions[0]?.outcomeLabel).toBe("supported");
     expect(review.decisions[1]?.outcomeLabel).toBe("supported");
+    expect(review.decisions[1]?.reasoningAnalysis?.evidenceUsedBeforeDecision).toEqual([]);
+    expect(review.decisions[1]?.evidenceUsedIds).toContain("scanner-run-log");
     expect(review.decisions[2]?.rubricSignals).toContainEqual({
       id: "stayed_in_role",
       supported: true,
@@ -371,6 +380,64 @@ describe("end-of-shift decision review", () => {
     }
   });
 
+  it("isolates cohorts by exact option set", () => {
+    const choices = ["route-to-owner", "route-with-interim", "self-approve", "reject-as-attack"];
+    const key = optionSetKey(choices);
+    const rows = [
+      { decisionId: "finance_access", choiceId: "route-to-owner", optionSetKey: key, count: 29 },
+      { decisionId: "finance_access", choiceId: "route-to-owner", optionSetKey: optionSetKey(["route-to-owner", "self-approve"]), count: 100 },
+    ];
+    expect(cohortForDecision("finance_access", rows, choices)).toEqual({ status: "insufficient" });
+    const firstRow = rows[0];
+    if (!firstRow) throw new Error("Missing cohort fixture");
+    firstRow.count = 30;
+    expect(cohortForDecision("finance_access", rows, choices)).toEqual({
+      status: "ready", sampleSize: 30,
+      counts: Object.fromEntries(choices.map((choice) => [choice, choice === "route-to-owner" ? 30 : 0])),
+      percentages: Object.fromEntries(choices.map((choice) => [choice, choice === "route-to-owner" ? 100 : 0])),
+    });
+    expect(cohortForDecision("finance_access", [{ ...firstRow, count: Number.NaN }], choices))
+      .toEqual({ status: "unavailable" });
+  });
+
+  it("keeps authored V2 reasoning and correction history", () => {
+    const { state, log } = fixture();
+    state.careerVersion = "2.0.0";
+    state.taskProgress["suspicious-login-1:final-disposition"] = {
+      currentStep: 0, attempts: 1, completed: true, selectedOptionIdsByStep: {},
+      outcomeIdsByStep: { disposition: "close-familiar-account" }, correctionHistory: [],
+    };
+    const handoffProgress = state.taskProgress["shift-handoff-1:end-shift-continuity"];
+    if (!handoffProgress) throw new Error("Missing handoff fixture");
+    handoffProgress.outcomeIdsByStep = { final: "corrected" };
+    handoffProgress.correctionHistory = [
+      { stepId: "handoff-checked", initialOptionIds: ["scanner-checked"], correctedOptionIds: ["scanner-checked", "login-records-checked"] },
+    ];
+    state.pendingCallbacks.push({
+      id: "reviewer-follow-up", eventId: "suspicious-login-1", actionId: "dismiss_alert",
+      delayMinutes: 1, dueAt: 1, applied: true, when: [], author: "reviewer",
+      body: "Reviewer requested route verification.", activationMessages: [], requiredAtCompletion: true,
+    });
+    const review = buildDecisionReview(state, log);
+    expect(review.decisions[0]?.userChoiceId).toBe("close-familiar-account");
+    expect(review.decisions[0]?.reasoningAnalysis?.callbackText).toEqual(["Reviewer requested route verification."]);
+    expect(review.decisions[4]?.userChoiceId).toBe("corrected");
+    expect(review.decisions[4]?.reasoningAnalysis?.correctionHistory[0]?.initialOptionIds).toEqual(["scanner-checked"]);
+  });
+
+  it("cuts direct-ticket evidence off at the committed V2 decision", () => {
+    const { state } = fixture();
+    state.careerVersion = "2.0.0";
+    state.flags.b1_choice = "close-location-explained";
+    const log: ActionLogEntry[] = [
+      { sequence: 1, interaction: { type: "workplace_interaction", interaction: { type: "open_artifact", artifactId: "device-inventory-1" } } },
+      { sequence: 2, interaction: { type: "action", action: { id: "document_ticket", eventId: "suspicious-login-1", actorId: "user", decisionOptionId: "close-location-explained" } } },
+      { sequence: 3, interaction: { type: "workplace_interaction", interaction: { type: "open_artifact", artifactId: "vpn-context-1" } } },
+    ];
+    expect(buildDecisionReview(state, log).decisions[0]?.reasoningAnalysis?.evidenceUsedBeforeDecision)
+      .toEqual(["device-inventory-1"]);
+  });
+
   it("keeps free-form notes out of comparison records", () => {
     const { state, log } = fixture();
     state.notebook = "PRIVATE LEARNER NOTE";
@@ -427,7 +494,7 @@ describe("end-of-shift decision review", () => {
     }
     const counts = await repository.getCohortCounts(
       pack.career.id,
-      pack.career.packVersion,
+      "1.0.0",
     );
     expect(
       counts.find(
@@ -443,6 +510,7 @@ describe("end-of-shift decision review", () => {
     ).toContainEqual({
       decisionId: "scanner_interruption",
       choiceId: "snooze",
+      optionSetKey: optionSetKey(["handle", "snooze", "continue"]),
       count: 1,
     });
     expect(JSON.stringify(counts)).not.toMatch(
@@ -485,7 +553,7 @@ describe("end-of-shift decision review", () => {
       (
         await repository.getCohortCounts(
           pack.career.id,
-          pack.career.packVersion,
+          "1.0.0",
         )
       ).find(({ decisionId }) => decisionId === "suspicious_login")?.count,
     ).toBe(1);
@@ -520,7 +588,7 @@ describe("end-of-shift decision review", () => {
     await caller.simulation.performAction({ sessionId: state.sessionId, actionId: "complete_shift", eventId: "shift" });
     expect((await repository.getSession(owner, state.sessionId)).actionLog).toHaveLength(saved.actionLog.length);
     expect((await caller.debrief.get({ sessionId: state.sessionId }))
-      .decisionReview?.decisions[0]?.cohort).toEqual({ status: "insufficient" });
+      .decisionReview?.decisions[0]?.cohort).toEqual({ status: "unavailable" });
   });
 
   it("deduplicates concurrent completion and retry", async () => {
@@ -538,7 +606,7 @@ describe("end-of-shift decision review", () => {
     const saved = await repository.getSession(owner, state.sessionId);
     expect(saved.actionLog.filter((entry) => entry.interaction.type === "action" &&
       entry.interaction.action.id === "complete_shift")).toHaveLength(1);
-    expect((await repository.getCohortCounts(pack.career.id, pack.career.packVersion))
+    expect((await repository.getCohortCounts(pack.career.id, "1.0.0"))
       .find(({ decisionId }) => decisionId === "suspicious_login")?.count).toBe(1);
   });
 });

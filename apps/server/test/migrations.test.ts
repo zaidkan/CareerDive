@@ -47,4 +47,10 @@ describe("privacy migration", () => {
     expect(sql).toContain("ALTER TABLE decision_reviews ENABLE ROW LEVEL SECURITY");
     expect(sql).not.toMatch(/note_text|free_text|owner_id|CREATE POLICY/i);
   });
+
+  it("stores an exact option-set key for cohort isolation", async () => {
+    const sql = await readFile(new URL("../drizzle/0003_decision_option_set.sql", import.meta.url), "utf8");
+    expect(sql).toContain("option_set_key text NOT NULL DEFAULT ''");
+    expect(sql).toContain("decision_id, option_set_key, choice_id");
+  });
 });

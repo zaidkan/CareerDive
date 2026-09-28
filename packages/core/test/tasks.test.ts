@@ -78,6 +78,8 @@ function packWithHandoffTask(): CareerPack {
             { id: "coffee", label: "Coffee order" },
           ],
           requiredOptionIds: ["device-check"],
+          conditionalRequiredOptionIds: [],
+          outcomes: [],
           coachOnFailure: "Look for wording that says work was not finished.",
           successText: "You found the unfinished device check.",
         },
@@ -94,6 +96,8 @@ function packWithHandoffTask(): CareerPack {
             { id: "lunch-menu", label: "Lunch menu" },
           ],
           requiredOptionIds: ["scanner-window"],
+          conditionalRequiredOptionIds: [],
+          outcomes: [],
           coachOnFailure:
             "The routine alert needs an approved schedule reference.",
           successText: "You identified the missing schedule reference.",
@@ -225,7 +229,7 @@ describe("deterministic work tasks", () => {
       "identity misuse is suspected, not yet proven",
     );
     expect(state.ticketNotes["suspicious-login-1"]).toContain(
-      "Escalate for account containment review",
+      "Escalate with the route, device, and coverage comparisons attached.",
     );
   });
 });

@@ -192,8 +192,8 @@ export class PostgresRepository implements SimulationRepository {
     await this.#sql.begin(async (transaction) => {
       for (const decision of decisions) {
         await transaction`
-          INSERT INTO decision_reviews (session_id, career_id, career_version, decision_id, choice_id)
-          VALUES (${decision.sessionId}::uuid, ${decision.careerId}, ${decision.careerVersion}, ${decision.decisionId}, ${decision.choiceId})
+          INSERT INTO decision_reviews (session_id, career_id, career_version, decision_id, choice_id, option_set_key)
+          VALUES (${decision.sessionId}::uuid, ${decision.careerId}, ${decision.careerVersion}, ${decision.decisionId}, ${decision.choiceId}, ${decision.optionSetKey ?? ""})
           ON CONFLICT (session_id, decision_id) DO NOTHING
         `;
       }
@@ -210,15 +210,15 @@ export class PostgresRepository implements SimulationRepository {
   }
 
   async getCohortCounts(careerId: string, careerVersion: string): Promise<CohortCount[]> {
-    const rows = await this.#sql<{ decision_id: string; choice_id: string; count: string }[]>`
-      SELECT d.decision_id, d.choice_id, count(*)::text AS count
+    const rows = await this.#sql<{ decision_id: string; choice_id: string; option_set_key: string; count: string }[]>`
+      SELECT d.decision_id, d.choice_id, d.option_set_key, count(*)::text AS count
       FROM decision_reviews d
       JOIN simulation_sessions s ON s.id = d.session_id
       WHERE d.career_id = ${careerId} AND d.career_version = ${careerVersion}
         AND s.completed_at IS NOT NULL AND s.session_kind = 'assessed'
-      GROUP BY d.decision_id, d.choice_id
+      GROUP BY d.decision_id, d.choice_id, d.option_set_key
     `;
-    return rows.map((row) => ({ decisionId: row.decision_id, choiceId: row.choice_id, count: Number(row.count) }));
+    return rows.map((row) => ({ decisionId: row.decision_id, choiceId: row.choice_id, optionSetKey: row.option_set_key, count: Number(row.count) }));
   }
 
   async deleteSession(ownerId: string, sessionId: string): Promise<void> {
