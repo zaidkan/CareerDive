@@ -1,4 +1,4 @@
-import { loadDefaultCybersecurityPack } from "@sim/career-packs";
+import { legacyCyberPack } from "./legacy-cyber.js";
 import type { SimulationAction, WorldState } from "@sim/schemas";
 import { describe, expect, it } from "vitest";
 import {
@@ -10,7 +10,7 @@ import {
   toClientView,
 } from "../src/index.js";
 
-const pack = loadDefaultCybersecurityPack();
+const pack = legacyCyberPack();
 const eventId = "suspicious-login-1";
 const payload = {
   ticketId: `ticket-${eventId}`,

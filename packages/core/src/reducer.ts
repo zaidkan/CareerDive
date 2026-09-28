@@ -13,6 +13,7 @@ import { alertRecordSource } from "./workplace.js";
 import {
   activatePendingEvents,
   applyDueConsequences,
+  applyDueCallbacks,
   expireOverdueEvents,
   wakeSnoozedNotifications,
 } from "./scheduler.js";
@@ -180,6 +181,35 @@ export function applyAction(
   const effects: DomainEffect[] = [
     { type: "action_applied", actionId: action.id },
   ];
+  if (action.id === "document_ticket" && action.decisionOptionId) {
+    const eventTemplateId = state.events.find(({ id }) => id === targetEventId)?.templateId;
+    const task = Object.values(state.rules.tasks).find(({ eventTemplateId: templateId, actionId }) =>
+      templateId === eventTemplateId && actionId === "document_ticket");
+    const outcome = task?.steps.at(-1)?.outcomes.find(({ selectedOptionIds }) =>
+      selectedOptionIds.length === 1 && selectedOptionIds[0] === action.decisionOptionId);
+    if (!outcome) throw new ActionUnavailableError("Unknown ticket decision");
+    Object.assign(state.flags, outcome.setFlags);
+  }
+  if (action.id === "document_ticket" && targetEventId === "suspicious-login-1" && state.careerVersion === "2.0.0" && !state.flags.b1_choice) {
+    throw new ActionUnavailableError("Choose a final case disposition");
+  }
+  if (state.careerVersion === "2.0.0") {
+    if (action.id === "acknowledge_handoff" && targetEventId === "handoff-1" && !state.flags.d1_triage) {
+      state.flags.d1_triage = state.events.find(({ id }) => id === "routine-alert-1")?.completedActionIds.includes("review_alert")
+        ? "routine-first" : "login-first";
+    }
+    if (action.id === "review_alert" && targetEventId === "suspicious-login-1" && !state.flags.d2_first_read) {
+      state.flags.d2_first_read = state.observedArtifactIds.includes("login-session-timeline") ? "location-limit" : "priority-first";
+    }
+    if (action.id === "inspect_account_history" && targetEventId === "suspicious-login-1" && !state.flags.d3_vpn) {
+      state.flags.d3_vpn = ["prior-session-1", "vpn-context-1", "login-session-timeline"].every((id) => state.observedArtifactIds.includes(id))
+        ? "route-compared" : "city-led";
+    }
+  }
+  if (action.id === "complete_shift") {
+    applyDueConsequences(state, effects, true);
+    applyDueCallbacks(state, effects, true);
+  }
   state.workplace.energy.current -= definition.energyCost;
   state.simClock += definition.simulatedMinutes;
   state.completedActionIds.push(action.id);
@@ -202,6 +232,7 @@ export function applyAction(
   wakeSnoozedNotifications(state);
   expireOverdueEvents(state);
   applyDueConsequences(state, effects);
+  applyDueCallbacks(state, effects);
 
   return { state: WorldStateSchema.parse(state), effects };
 }

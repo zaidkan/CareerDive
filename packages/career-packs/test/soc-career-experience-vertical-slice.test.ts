@@ -670,8 +670,9 @@ describe("section 10 · context continuity after switching work", () => {
       (a) => a.eventId === LOGIN,
     );
     expect(loginActions.map((a) => a.id)).toEqual(
-      expect.arrayContaining(["document_ticket", "dismiss_alert"]),
+      expect.arrayContaining(["document_ticket"]),
     );
+    expect(loginActions.map((a) => a.id)).not.toContain("dismiss_alert");
     expect(routineBefore).toBe("active");
   });
 });

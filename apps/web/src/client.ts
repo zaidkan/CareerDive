@@ -32,6 +32,7 @@ export interface SimulationClient {
     freeText?: string,
     source?: { sourceRecordId: string; sourceArtifactId: string },
     ticketPayload?: TicketUpdatePayload,
+    decisionOptionId?: string,
   ): Promise<ClientView>;
   performWorkplaceInteraction(
     sessionId: string,
@@ -107,6 +108,7 @@ export class HttpSimulationClient implements SimulationClient {
     freeText?: string,
     source?: { sourceRecordId: string; sourceArtifactId: string },
     ticketPayload?: TicketUpdatePayload,
+    decisionOptionId?: string,
   ): Promise<ClientView> {
     return TurnResultSchema.parse(
       await this.#client.mutation("simulation.performAction", {
@@ -116,6 +118,7 @@ export class HttpSimulationClient implements SimulationClient {
         ...(freeText === undefined ? {} : { freeText }),
         ...source,
         ...(ticketPayload ? { ticketPayload } : {}),
+        ...(decisionOptionId ? { decisionOptionId } : {}),
       }),
     ).view;
   }

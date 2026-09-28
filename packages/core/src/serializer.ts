@@ -146,6 +146,7 @@ export function toClientView(state: WorldState): ClientView {
       ),
     availableActions: actions,
     operationalMessages,
+    acknowledgements: state.acknowledgements,
     pacingMode: state.pacingMode,
     alertRecords: (state.rules.datasets.alerts?.records ?? []).flatMap(
       (record) => {

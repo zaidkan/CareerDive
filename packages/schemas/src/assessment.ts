@@ -71,6 +71,20 @@ export const DebriefSchema = z.object({
       rubricSignals: z.array(z.object({ id: z.string(), supported: z.boolean() })),
       outcomeLabel: z.enum(["supported", "partially_supported", "needs_more_evidence"]),
       explanation: z.string(),
+      reasoningAnalysis: z.object({
+        decisionId: z.string(),
+        choice: z.string().nullable(),
+        availableChoices: z.array(z.string()),
+        evidenceUsedBeforeDecision: z.array(z.string()),
+        whatSupportedIt: z.array(z.string()),
+        whatWeakenedIt: z.array(z.string()),
+        callbackText: z.array(z.string()),
+        correctionHistory: z.array(z.object({
+          stepId: z.string(),
+          initialOptionIds: z.array(z.string()),
+          correctedOptionIds: z.array(z.string()).optional(),
+        })),
+      }).optional(),
       cohort: z.discriminatedUnion("status", [
         z.object({ status: z.literal("ready"), sampleSize: z.number().int(), counts: z.record(z.string(), z.number().int()), percentages: z.record(z.string(), z.number().int()) }),
         z.object({ status: z.literal("insufficient") }),

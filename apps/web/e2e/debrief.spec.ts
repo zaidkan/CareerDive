@@ -69,7 +69,7 @@ test("completion opens five-decision debrief across themes and viewports", async
   await expect(page.getByRole("heading", { name: "Your shift in review" })).toBeVisible();
   await expect(page.locator(".decision-review-item")).toHaveCount(5);
   await expect(page.locator(".decision-review-profile dt")).toHaveCount(6);
-  await expect(page.getByText("Community comparison will appear as more shifts are completed.").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "How other completed shifts handled this" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "The urgent access request" })).toBeVisible();
   expect(await page.locator(".decision-review-item").nth(2).getByText("100%").count()).toBe(0);
 

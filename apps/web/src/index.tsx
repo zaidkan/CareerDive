@@ -10,6 +10,7 @@ import type {
 } from "@sim/schemas";
 import { defaultClient, type SimulationClient } from "./client.js";
 import { DebriefView } from "./components/DebriefView.js";
+import { DecisionAcknowledgement } from "./components/DecisionAcknowledgement.js";
 import { ExperienceShell } from "./experience/ExperienceShell.js";
 import { COMPANY } from "./world/company.js";
 import {
@@ -145,6 +146,7 @@ export function App({
                 }
               : undefined,
             action.ticketPayload,
+            action.decisionOptionId,
           );
         } catch (cause) {
           throw new Error("That action could not be completed.", { cause });
@@ -354,6 +356,8 @@ export function App({
           )}
         </section>
       ) : (
+        <>
+        <DecisionAcknowledgement sessionId={view.sessionId} items={view.acknowledgements ?? []} />
         <ExperienceShell
           onAction={(action, freeText) => void perform(action, freeText)}
           onNotification={respondToWorkNotification}
@@ -367,6 +371,7 @@ export function App({
           }}
           view={view}
         />
+        </>
       )}
 
       <aside className="privacy-note">

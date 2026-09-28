@@ -1,7 +1,7 @@
 career:
   id: cybersecurity_analyst
   title: Junior Cybersecurity Analyst
-  packVersion: 1.0.0
+  packVersion: 2.0.0
   reviewStatus: approved
   lastReviewed: 2026-06-01
   nextReview: 2027-06-01
@@ -153,11 +153,22 @@ scenario:
           options:
             - id: login-first-watch-routine
               label: I will investigate the unfamiliar login first and watch for the routine scanner alert.
+            - id: routine-first-watch-login
+              label: I will check the scanner reference first and keep the unfamiliar login open for immediate follow-up.
             - id: close-everything
               label: I will close both alerts now because the last analyst mentioned them.
             - id: manager-does-it
               label: Please take both items while I wait for more instructions.
           requiredOptionIds: [login-first-watch-routine]
+          outcomes:
+            - id: login-first-watch-routine
+              selectedOptionIds: [login-first-watch-routine]
+              setFlags: { d1_triage: login-first }
+              feedback: Morgan has your starting order.
+            - id: routine-first-watch-login
+              selectedOptionIds: [routine-first-watch-login]
+              setFlags: { d1_triage: routine-first }
+              feedback: Morgan has your starting order; the login still needs prompt follow-up.
           coachOnFailure: Keep ownership, start with higher risk, and leave routine work open until checked.
           successText: Morgan knows your priority and what you are watching next.
 
@@ -203,6 +214,15 @@ scenario:
             - id: priority-label
               label: The dashboard says high priority
           requiredOptionIds: [geo-hint]
+          outcomes:
+            - id: geo-hint
+              selectedOptionIds: [geo-hint]
+              setFlags: { d2_first_read: location-limit }
+              feedback: You marked the location estimate as uncertain.
+            - id: priority-label
+              selectedOptionIds: [priority-label]
+              setFlags: { d2_first_read: priority-first }
+              feedback: You started with priority; the location estimate still needs another source.
           coachOnFailure: Find the clue that is useful but not reliable enough by itself.
           successText: You kept the location as a clue instead of treating it as proof.
 
@@ -335,6 +355,15 @@ scenario:
                 }
           requiredOptionIds:
             [baseline-vpn-route, approved-vpn-exit, flagged-direct-route]
+          outcomes:
+            - id: route-compared
+              selectedOptionIds: [baseline-vpn-route, approved-vpn-exit, flagged-direct-route]
+              setFlags: { d3_vpn: route-compared }
+              feedback: Route comparison saved with the flagged source.
+            - id: city-led
+              selectedOptionIds: [baseline-vpn-route, approved-vpn-exit, vpn-display-city]
+              setFlags: { d3_vpn: city-led }
+              feedback: City-led comparison saved; the flagged session source still needs a direct match.
           coachOnFailure: Compare the route identifiers and addresses across all three records. A shared city estimate does not link two sessions to the same private connection.
           successText: You preserved the route comparison. The shared city estimate does not explain the different source; missing route data still limits certainty.
 
@@ -515,15 +544,34 @@ scenario:
           minSelections: 1
           maxSelections: 1
           options:
-            - id: escalate-evidence
-              label: Escalate for account containment review with the evidence attached
-            - id: delete-account
-              label: Request account removal before a containment review
-            - id: close-no-reason
-              label: Close the alert using the location estimate as the explanation
-          requiredOptionIds: [escalate-evidence]
-          coachOnFailure: The proposed next step needs review. Compare it with the approved procedure and preserve unresolved questions; this attempt has not changed the alert outcome.
-          successText: Ticket is ready for evidence-based escalation.
+            - id: escalate-with-comparisons
+              label: Escalate with the route, device, and coverage comparisons attached.
+            - id: escalate-identifiers-only
+              label: Escalate with the session identifiers and remaining questions.
+            - id: close-location-explained
+              label: Close using the location explanation and preserve the comparisons.
+            - id: close-familiar-account
+              label: Close based on the familiar account while preserving the unresolved session owner.
+          requiredOptionIds: [escalate-with-comparisons]
+          outcomes:
+            - id: escalate-with-comparisons
+              selectedOptionIds: [escalate-with-comparisons]
+              setFlags: { b1_choice: escalate-with-comparisons, b1_terminal: escalate }
+              feedback: Disposition recorded. Senior review can use the saved comparisons.
+            - id: escalate-identifiers-only
+              selectedOptionIds: [escalate-identifiers-only]
+              setFlags: { b1_choice: escalate-identifiers-only, b1_terminal: escalate }
+              feedback: Disposition recorded. Senior review will need to reconstruct the comparisons.
+            - id: close-location-explained
+              selectedOptionIds: [close-location-explained]
+              setFlags: { b1_choice: close-location-explained, b1_terminal: dismiss }
+              feedback: Disposition recorded. The location explanation remains reviewable.
+            - id: close-familiar-account
+              selectedOptionIds: [close-familiar-account]
+              setFlags: { b1_choice: close-familiar-account, b1_terminal: dismiss }
+              feedback: Disposition recorded. The session owner remains unverified.
+          coachOnFailure: Choose one documented disposition.
+          successText: Disposition recorded.
 
     - id: scanner-alert-compare
       eventTemplateId: routine_alert_review
@@ -672,11 +720,22 @@ scenario:
           options:
             - id: expected-close
               label: Activity matches the approved scan; close as expected and return to the login case.
+            - id: expected-close-with-monitoring
+              label: Close this expected connection alert and keep later scanner activity under routine monitoring.
             - id: attack-close
               label: Record suspected misuse and close without a review handoff.
             - id: unexplained-close
               label: Record the cause as unknown and close based on low priority.
           requiredOptionIds: [expected-close]
+          outcomes:
+            - id: expected-close
+              selectedOptionIds: [expected-close]
+              setFlags: { d6_scanner: direct-close }
+              feedback: Expected activity documented.
+            - id: expected-close-with-monitoring
+              selectedOptionIds: [expected-close-with-monitoring]
+              setFlags: { d6_scanner: close-and-monitor }
+              feedback: Expected activity documented; routine monitoring remains in place.
           coachOnFailure: Closure should say what matched and avoid unsupported claims.
           successText: Routine alert is documented and ready to close.
 
@@ -701,6 +760,11 @@ scenario:
               source:
                 artifactId: access-approval-guide
                 quote: "Only the finance data owner can approve this role."
+            - id: route-with-interim
+              label: Route to the owner and offer an interim report without granting the requested role.
+              source:
+                artifactId: access-approval-guide
+                quote: "Only the finance data owner can approve this role."
             - id: self-approve
               label: Approve it yourself because the project deadline is urgent.
               source:
@@ -712,8 +776,27 @@ scenario:
                 artifactId: access-approval-guide
                 quote: "Urgency does not change the approval owner."
           requiredOptionIds: [route-to-owner]
-          coachOnFailure: Urgency can be real without changing your authority. The project approval is not the same as access approval.
-          successText: You kept the request moving and left the authorization decision with its owner.
+          outcomes:
+            - id: route-to-owner
+              selectedOptionIds: [route-to-owner]
+              setFlags: { b2_choice: route-to-owner }
+              feedback: Request routed to the data owner.
+            - id: route-with-interim
+              selectedOptionIds: [route-with-interim]
+              setFlags: { b2_choice: route-with-interim }
+              feedback: Owner review is pending; an interim report can keep work moving.
+            - id: self-approve
+              selectedOptionIds: [self-approve]
+              setFlags: { b2_choice: self-approve }
+              resolution: Access was approved without the data owner's authorization; the decision remains recorded for review.
+              feedback: Your approval was committed. The authorization boundary will be reviewed.
+            - id: reject-as-attack
+              selectedOptionIds: [reject-as-attack]
+              setFlags: { b2_choice: reject-as-attack }
+              resolution: The request was rejected as suspicious; the business request remains unresolved.
+              feedback: Rejection recorded. The coworker still needs a route for the request.
+          coachOnFailure: Choose one response.
+          successText: Access decision recorded.
 
     - id: employee-login-troubleshooting
       eventTemplateId: employee_login_help
@@ -741,12 +824,26 @@ scenario:
               source:
                 artifactId: rivera-auth-summary
                 quote: "08:42: corp-macbook-rivera completed a successful sign-in with the updated password."
+            - id: employee-device-report
+              label: The employee reports that the managed laptop still works.
+              source:
+                artifactId: rivera-login-email
+                quote: "I can still sign in on my work laptop."
             - id: attack-confirmed
               label: Five failures confirm that another person has the password.
               source:
                 artifactId: rivera-login-email
                 quote: "I can still sign in on my work laptop."
           requiredOptionIds: [phone-retries, laptop-success]
+          outcomes:
+            - id: record-comparison
+              selectedOptionIds: [phone-retries, laptop-success]
+              setFlags: { d8_login_help: compared-records }
+              feedback: Device records compared.
+            - id: report-comparison
+              selectedOptionIds: [phone-retries, employee-device-report]
+              setFlags: { d8_login_help: employee-report }
+              feedback: Employee report recorded; the laptop sign-in record remains available to verify.
           coachOnFailure: Compare which known device failed and which known device succeeded. Attempt counts alone do not identify a person.
           successText: You found a device-specific pattern instead of treating every failure as an attack.
         - id: login-help-next-step
@@ -797,12 +894,26 @@ scenario:
               source:
                 artifactId: suspicious-login-alert
                 quote: "07:38–07:40: Source IP 203.0.113.44 reported 6 failed MFA challenges."
+            - id: confirmed-source
+              label: A-1042 records a flagged source address, while the person behind it remains unknown.
+              source:
+                artifactId: suspicious-login-alert
+                quote: "07:38–07:40: Source IP 203.0.113.44 reported 6 failed MFA challenges."
             - id: confirmed-person
               label: A-1042 confirms who controlled the session.
               source:
                 artifactId: suspicious-login-alert
                 quote: "Location is an estimate associated with a network address, not verified travel or a person's identity."
           requiredOptionIds: [confirmed-sequence]
+          outcomes:
+            - id: confirmed-sequence
+              selectedOptionIds: [confirmed-sequence]
+              setFlags: { d9_status: sequence }
+              feedback: Recorded sequence included in the status.
+            - id: confirmed-source
+              selectedOptionIds: [confirmed-source]
+              setFlags: { d9_status: source-only }
+              feedback: Source address included; sequence detail remains available in A-1042.
           coachOnFailure: Report the recorded sequence. The alert does not identify a person.
           successText: Your update starts with a fact another analyst can verify.
         - id: status-uncertain
@@ -879,7 +990,22 @@ scenario:
               source:
                 artifactId: scanner-run-log
                 quote: "Coverage: this log records discovery connections only; it does not establish vulnerability findings or prove every finance system is secure."
+            - id: checks-omitted
+              label: Leave the completed checks out of the first handoff draft.
+              source:
+                artifactId: scanner-run-log
+                quote: "A-1180 refers to connection activity at 10:18 within this run."
           requiredOptionIds: [login-records-checked, scanner-checked]
+          outcomes:
+            - id: complete-checks
+              selectedOptionIds: [login-records-checked, scanner-checked]
+              setFlags: { handoff_omission: no }
+              feedback: Completed checks are preserved.
+            - id: omitted-checks
+              selectedOptionIds: [checks-omitted]
+              setFlags: { handoff_omission: yes }
+              recordOmission: true
+              feedback: Initial handoff omitted the completed checks. You can correct the record later.
           coachOnFailure: Preserve the checks and their references. Do not broaden a routine closure into a security guarantee.
           successText: The next analyst can see what was already checked.
         - id: handoff-open-question
@@ -888,7 +1014,7 @@ scenario:
           instruction: Choose the uncertainty that still needs reviewer work.
           relatedArtifactIds: [login-session-timeline, shift-handoff-prompt]
           minSelections: 1
-          maxSelections: 1
+          maxSelections: 2
           options:
             - id: reviewer-question
               label: Senior review still needs to determine who controlled S-0741 and whether containment is warranted.
@@ -900,7 +1026,15 @@ scenario:
               source:
                 artifactId: login-session-timeline
                 quote: "The summary groups attempts by account and source; it does not identify a person."
+            - id: closure-review-question
+              label: If A-1042 was closed, preserve why the session owner still merits later review.
+              source:
+                artifactId: shift-handoff-prompt
+                quote: "An escalation can end your junior-analyst step while the underlying question remains open."
           requiredOptionIds: [reviewer-question]
+          conditionalRequiredOptionIds:
+            - when: [{ flag: b1_terminal, equals: dismiss }]
+              optionIds: [closure-review-question]
           coachOnFailure: Escalation transfers review; it does not turn suspicion into proof.
           successText: Your handoff keeps the unresolved question visible.
         - id: handoff-next-owner
@@ -921,9 +1055,37 @@ scenario:
               source:
                 artifactId: shift-handoff-prompt
                 quote: "Good continuity avoids making the next person reconstruct completed work."
+            - id: correct-omission
+              label: Correct the first draft and add the omitted check references for the next analyst.
+              source:
+                artifactId: shift-handoff-prompt
+                quote: "Point the next analyst to saved sources and the pending reviewer question."
+            - id: send-thin
+              label: Send the handoff with the initial omission still visible.
+              source:
+                artifactId: shift-handoff-prompt
+                quote: "Point the next analyst to saved sources and the pending reviewer question."
           requiredOptionIds: [next-analyst-review]
-          coachOnFailure: A good handoff preserves useful completed work and names the pending owner.
-          successText: The next analyst has a clear continuation point.
+          outcomes:
+            - id: complete
+              selectedOptionIds: [next-analyst-review]
+              when: [{ flag: handoff_omission, equals: no }]
+              setFlags: { b3_choice: complete }
+              feedback: Complete handoff sent.
+            - id: corrected
+              selectedOptionIds: [correct-omission]
+              when: [{ flag: handoff_omission, equals: yes }]
+              setFlags: { b3_choice: corrected }
+              correctsOmission: true
+              feedback: Correction sent. The initial omission remains in the record.
+            - id: thin
+              selectedOptionIds: [send-thin]
+              when: [{ flag: handoff_omission, equals: yes }]
+              setFlags: { b3_choice: thin }
+              resolution: A thin handoff was sent; the next analyst still needs the omitted references.
+              feedback: Thin handoff sent. The omitted references remain open.
+          coachOnFailure: Choose a continuity step supported by this draft.
+          successText: Handoff sent.
 
   notifications:
     - id: access-request-arrived
@@ -1007,6 +1169,12 @@ scenario:
         resolution: >
           You confirmed the open work and stated your initial priority to Morgan.
         emitEventResolved: true
+        callbacks:
+          - id: d1-routine-first-note
+            delayMinutes: 15
+            when: [{ flag: d1_triage, equals: routine-first }]
+            author: morgan
+            body: I saw your scanner-first plan. Keep the unfamiliar login visible as you return to it.
         hidden:
           taskBacklog: -1
     - id: review_alert
@@ -1080,6 +1248,7 @@ scenario:
         resolution: Escalated with reviewed context; the evidence and remaining uncertainty are ready for senior review. The session owner is still unverified.
         emitEventResolved: true
         consequence:
+          escalateOnApply: false
           description: >
             A senior analyst received the alert with the reviewed records, employee report,
             and documented uncertainty. They can review containment without reconstructing
@@ -1095,6 +1264,7 @@ scenario:
       defaultEffect:
         setTicketNotesFromFreeText: true
         consequence:
+          escalateOnApply: false
           description: >
             The {{eventTitle}} ticket now records the evidence, reasoning, and next step. Documentation preserves the review trail; it does not close the alert or verify an identity.
     - id: update_ticket_notes
@@ -1180,6 +1350,9 @@ scenario:
         I have not looked into this login yet. Show me what you checked and what still
         does not line up; I can help with process, but I cannot decide what happened from
         the alert alone.
+      actionConditions:
+        escalate_alert: [{ flag: b1_terminal, equals: escalate }]
+        dismiss_alert: [{ flag: b1_terminal, equals: dismiss }]
       progression:
         kind: stages
         allowManager: true
@@ -1189,18 +1362,15 @@ scenario:
             offer: [review_alert]
           - after: [review_alert]
             offer: [inspect_login_context]
-            alsoOffer: [dismiss_alert]
           - after: [review_alert, inspect_login_context]
             offer: [inspect_account_history, check_device_inventory]
             mode: all_remaining
-            alsoOffer: [dismiss_alert]
           - after:
               - review_alert
               - inspect_login_context
               - inspect_account_history
               - check_device_inventory
             offer: [document_ticket]
-            alsoOffer: [dismiss_alert]
           - after:
               - review_alert
               - inspect_login_context
@@ -1214,6 +1384,7 @@ scenario:
           setKbQueryFromFreeText: true
           observeArtifactIds: [login-follow-up-guide]
           consequence:
+            escalateOnApply: false
             description: >
               You chose to review the procedure because more evidence may be needed.
               The login case remains open: no dismissal, containment, or identity finding
@@ -1224,26 +1395,57 @@ scenario:
           resolve: true
           emitEventResolved: true
           resolution: >
-            Escalated with reviewed context and session identifiers. The route comparison,
-            device lookup, employee report, and HR coverage limit are available for senior
-            review; identity misuse remains suspected, not proven.
+            Escalated with saved session identifiers and the documented investigation record.
+            Senior review will check the route, device, and coverage comparisons as available;
+            identity misuse remains suspected, not proven.
           consequence:
+            escalateOnApply: false
             description: >
-              A senior analyst received the ticket with session identifiers and the comparison
-              between the earlier VPN route and the flagged source. The device lookup and
-              the limits of the employee and HR records make the remaining question clear:
-              who controlled the flagged session, and whether containment is warranted.
-              The reviewer can start with that question instead of rebuilding the comparison.
+              A senior analyst received the ticket with saved session identifiers and the
+              documented investigation record. The remaining question is who controlled the
+              flagged session, and whether containment is warranted. The reviewer will check
+              any missing comparisons before deciding next steps.
               The 07:45 export has no file-access or mailbox activity, and the alert and
               context summarize one source; the reviewer must obtain fuller records to
               establish access. No containment or confirmed identity finding has been recorded by this escalation.
+          callbacks:
+            - id: b1-comparison-review
+              decisionId: suspicious_login
+              delayMinutes: 20
+              when: [{ flag: b1_choice, equals: escalate-with-comparisons }]
+              author: reviewer
+              body: The route and device comparisons are attached. I can start with the unresolved session owner and containment question.
+              acknowledgement: Senior review will follow this case.
+              requiredAtCompletion: true
+            - id: b1-identifier-review
+              decisionId: suspicious_login
+              delayMinutes: 20
+              when: [{ flag: b1_choice, equals: escalate-identifiers-only }]
+              author: reviewer
+              body: I have the session identifiers. I still need to reconstruct the route and device comparisons before deciding next steps.
+              acknowledgement: Senior review will follow this case.
+              requiredAtCompletion: true
         review_alert:
           observeArtifactIds: [suspicious-login-alert]
+          callbacks:
+            - id: d2-priority-followup
+              delayMinutes: 15
+              when: [{ flag: d2_first_read, equals: priority-first }]
+              author: morgan
+              body: The queue label helped you triage; compare the location estimate with session records before using it as an explanation.
           hidden:
             cognitiveLoad: 1
+        inspect_account_history:
+          callbacks:
+            - id: d3-city-route-followup
+              delayMinutes: 15
+              when: [{ flag: d3_vpn, equals: city-led }]
+              author: reviewer
+              body: The shared city is still an estimate. I need the flagged source and route identifier alongside the earlier VPN session.
         check_device_inventory:
           observeArtifactIds: [device-inventory-1, employee-login-reply]
           consequence:
+            escalateOnApply: false
             description: J. Patel replied that they were not traveling and did not use a Windows laptop.
         dismiss_alert:
           resolve: true
@@ -1262,6 +1464,26 @@ scenario:
             delayMinutes: 40
             escalateOnApply: true
             escalateResolution: Related activity appeared after dismissal; reopen the review and reconstruct any missing checks from the records.
+            requiredAtCompletion: true
+          callbacks:
+            - id: b1-location-followup
+              decisionId: suspicious_login
+              delayMinutes: 20
+              when: [{ flag: b1_choice, equals: close-location-explained }]
+              author: reviewer
+              body: The city estimate is not a verified route. I will recheck the saved session comparison before accepting this closure.
+              acknowledgement: Later review will follow this case.
+              requiredAtCompletion: true
+              emitEvent: login_clarification
+            - id: b1-familiar-followup
+              decisionId: suspicious_login
+              delayMinutes: 20
+              when: [{ flag: b1_choice, equals: close-familiar-account }]
+              author: employee
+              body: That account is mine, but I cannot confirm who controlled the unfamiliar session. Please keep the session question open.
+              acknowledgement: Later review will follow this case.
+              requiredAtCompletion: true
+              emitEvent: login_clarification
           hidden:
             riskExposure: 1
 
@@ -1304,10 +1526,44 @@ scenario:
       actionEffects:
         route_access_request:
           resolve: true
-          resolution: The request was verified and routed to the finance data owner; access remains pending their decision.
+          resolution: The access decision was recorded; any owner review remains traceable.
           emitEventResolved: true
           consequence:
-            description: The data owner received the request with its resource, duration, and business context. The coworker can track the pending decision without the junior analyst approving access.
+            escalateOnApply: false
+            description: The selected access response and its authority boundary remain in the shift record for follow-up.
+          callbacks:
+            - id: b2-owner-response
+              decisionId: finance_access
+              delayMinutes: 15
+              when: [{ flag: b2_choice, equals: route-to-owner }]
+              author: reviewer
+              body: I received the request and will verify the finance role approval. Access remains pending.
+              acknowledgement: An owner response will follow.
+              requiredAtCompletion: true
+            - id: b2-interim-response
+              decisionId: finance_access
+              delayMinutes: 15
+              when: [{ flag: b2_choice, equals: route-with-interim }]
+              author: reviewer
+              body: The interim report can help the project while I review the requested role. No new access has been granted.
+              acknowledgement: An owner response will follow.
+              requiredAtCompletion: true
+            - id: b2-self-response
+              decisionId: finance_access
+              delayMinutes: 15
+              when: [{ flag: b2_choice, equals: self-approve }]
+              author: reviewer
+              body: I found access granted before owner authorization. I am reviewing the grant and the business request separately.
+              acknowledgement: An owner response will follow.
+              requiredAtCompletion: true
+            - id: b2-reject-response
+              decisionId: finance_access
+              delayMinutes: 15
+              when: [{ flag: b2_choice, equals: reject-as-attack }]
+              author: employee
+              body: This is a real project request. Who can review the access need now that it was rejected?
+              acknowledgement: A request response will follow.
+              requiredAtCompletion: true
           hidden:
             taskBacklog: -1
 
@@ -1337,6 +1593,14 @@ scenario:
           - document_ticket
           - dismiss_alert
       actionEffects:
+        document_ticket:
+          setTicketNotesFromFreeText: true
+          callbacks:
+            - id: d6-monitoring-note
+              delayMinutes: 12
+              when: [{ flag: d6_scanner, equals: close-and-monitor }]
+              author: morgan
+              body: The expected connection alert can close on its matched run; routine monitoring remains separate.
         search_knowledge_base:
           setKbQueryFromFreeText: true
           observeArtifactIds: [scanner-window]
@@ -1348,6 +1612,7 @@ scenario:
           resolve: true
           resolution: A-1180 matched RUN-FIN-031 and SCAN-FIN-MON; documented and closed as expected discovery connections, not a finding that every system is secure.
           consequence:
+            escalateOnApply: false
             description: >
               The reviewed routine alert was documented and closed as expected activity.
               Alert A-1180 is linked to RUN-FIN-031 and approved reference SCAN-FIN-MON.
@@ -1381,7 +1646,14 @@ scenario:
           resolution: The phone app's saved password was updated; the employee confirmed sign-in works and monitoring shows no further retries in this bounded check.
           emitEventResolved: true
           consequence:
+            escalateOnApply: false
             description: A. Rivera confirmed the phone mail app had kept the old saved password. Updating it stopped the retries; the ticket preserves the device-specific evidence and the condition for reopening.
+          callbacks:
+            - id: d8-report-followup
+              delayMinutes: 12
+              when: [{ flag: d8_login_help, equals: employee-report }]
+              author: employee
+              body: My laptop sign-in still works. The phone retry stopped after I updated its saved password.
           hidden:
             accuracy: 1
             taskBacklog: -1
@@ -1408,7 +1680,14 @@ scenario:
           resolution: Morgan received a bounded update separating facts, uncertainty, and next work.
           emitEventResolved: true
           consequence:
+            escalateOnApply: false
             description: Morgan confirmed the update is actionable and asked you to finish the ticket before requesting senior review.
+          callbacks:
+            - id: d9-source-status-note
+              delayMinutes: 12
+              when: [{ flag: d9_status, equals: source-only }]
+              author: morgan
+              body: Source noted. Add the failed-then-successful sequence when you prepare the reviewer handoff.
           hidden:
             taskBacklog: -1
 
@@ -1431,12 +1710,56 @@ scenario:
       actionEffects:
         submit_shift_handoff:
           resolve: true
-          resolution: The next analyst has completed checks, open uncertainty, and a clear continuation point.
+          resolution: The handoff was sent with its recorded checks, uncertainty, and next-owner detail.
           emitEventResolved: true
           consequence:
-            description: The next analyst acknowledged the handoff and can continue from the saved ticket sources while senior review remains pending.
+            escalateOnApply: false
+            description: The next analyst received the handoff; any omitted references or corrections remain visible in its history.
+          callbacks:
+            - id: b3-complete-receipt
+              decisionId: shift_handoff
+              delayMinutes: 10
+              when: [{ flag: b3_choice, equals: complete }]
+              author: reviewer
+              body: The check references and next owner are clear. I can continue from the saved work.
+              acknowledgement: Handoff response will follow.
+              requiredAtCompletion: true
+            - id: b3-corrected-receipt
+              decisionId: shift_handoff
+              delayMinutes: 10
+              when: [{ flag: b3_choice, equals: corrected }]
+              author: reviewer
+              body: I can see the corrected references and the earlier omission. I will use the corrected handoff.
+              acknowledgement: Handoff response will follow.
+              requiredAtCompletion: true
+            - id: b3-thin-receipt
+              decisionId: shift_handoff
+              delayMinutes: 10
+              when: [{ flag: b3_choice, equals: thin }]
+              author: reviewer
+              body: I have the handoff, but I need to recover the omitted check references before continuing.
+              acknowledgement: Handoff response will follow.
+              requiredAtCompletion: true
           hidden:
             taskBacklog: -1
+
+    login_clarification:
+      instanceId: login-clarification-1
+      title: Login closure follow-up
+      summary: A reviewer has a bounded question about the closed login alert.
+      priority: normal
+      systemId: team_chat
+      triggerAt: 0
+      deadlineMinutes: 240
+      initialStatus: pending
+      nonBlockingFollowUp: true
+      managerGuidance: The reviewer will carry this question into the next shift.
+      progression:
+        kind: linear
+        allowManager: false
+        sequence: [ask_manager]
+      activationMessages:
+        - "This follow-up remains open for the next analyst; it does not undo the completed shift."
 
   artifacts:
     - id: login-session-timeline

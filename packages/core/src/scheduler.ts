@@ -1,5 +1,6 @@
 import type { DomainEffect, SimulationActionId, WorldState } from "@sim/schemas";
 import { consequence } from "./effects.js";
+import { resolveActionEffect } from "./effects.js";
 import {
   ensureNotificationsForEvent,
   wakeSnoozedNotifications,
@@ -17,6 +18,11 @@ export function activatePendingEvents(
     ) {
       pendingEvent.status = "active";
       ensureNotificationsForEvent(state, pendingEvent.id);
+      for (const message of state.rules.eventTemplates[pendingEvent.templateId]?.activationMessages ?? []) {
+        const note = consequence(state, pendingEvent.id, actionId, message);
+        state.ledger.push(note);
+        effects.push({ type: "consequence_recorded", consequenceId: note.id });
+      }
       const entry = consequence(
         state,
         pendingEvent.id,
@@ -49,37 +55,80 @@ export function expireOverdueEvents(state: WorldState): void {
 export function applyDueConsequences(
   state: WorldState,
   effects: DomainEffect[],
+  settleRequired = false,
 ): void {
   for (const entry of state.ledger) {
+    const affectedEvent = state.events.find(({ id }) => id === entry.eventId);
+    const effectSpec = affectedEvent
+      ? resolveActionEffect(state, affectedEvent, entry.actionId).consequence
+      : undefined;
     if (
       !entry.applied &&
       entry.dueAt !== undefined &&
-      state.simClock >= entry.dueAt
+      (state.simClock >= entry.dueAt || (settleRequired && effectSpec?.requiredAtCompletion))
     ) {
       entry.applied = true;
-      const template = state.events.find(({ id }) => id === entry.eventId);
-      const effectSpec =
-        template === undefined
-          ? undefined
-          : state.rules.eventTemplates[template.templateId]?.actionEffects[
-              entry.actionId
-            ]?.consequence;
-      const affectedEvent = state.events.find(({ id }) => id === entry.eventId);
-      if (
-        affectedEvent &&
-        affectedEvent.status !== "escalated" &&
-        (effectSpec?.escalateOnApply ?? true)
-      ) {
+      if (affectedEvent?.status === "resolved" && effectSpec?.escalateOnApply === true) {
         affectedEvent.status = "escalated";
-        affectedEvent.resolution =
-          effectSpec?.escalateResolution ??
-          "Related activity appeared after the alert was dismissed.";
+        if (effectSpec.escalateResolution &&
+          !affectedEvent.resolution?.includes(effectSpec.escalateResolution)) {
+          affectedEvent.resolution = [affectedEvent.resolution, effectSpec.escalateResolution]
+            .filter(Boolean).join("\n");
+        }
         effects.push({
           type: "event_escalated",
           eventId: affectedEvent.id,
         });
       }
     }
+  }
+}
+
+/** Runs only authored callbacks. Settlement forces required callbacks, not time. */
+export function applyDueCallbacks(state: WorldState, effects: DomainEffect[], settleRequired = false): void {
+  for (const callback of [...state.pendingCallbacks].sort((a, b) => a.dueAt - b.dueAt)) {
+    if (callback.applied || (state.simClock < callback.dueAt && !(settleRequired && callback.requiredAtCompletion))) continue;
+    callback.applied = true;
+    const source = state.events.find(({ id }) => id === callback.eventId);
+    if (!source || source.status === "expired") continue;
+    state.teamMessages ??= [];
+    state.teamMessages.push({
+      id: `${state.sessionId}-chat-${String(state.teamMessages.length + 1)}`,
+      eventId: source.id,
+      author: callback.author,
+      body: callback.body,
+      actionId: callback.actionId,
+      simMinutes: state.simClock,
+    });
+    const note = consequence(state, source.id, callback.actionId, callback.body);
+    state.ledger.push(note);
+    effects.push({ type: "consequence_recorded", consequenceId: note.id });
+    if (!callback.emitEvent) continue;
+    const template = state.rules.eventTemplates[callback.emitEvent];
+    if (!template || state.events.some(({ templateId }) => templateId === callback.emitEvent)) continue;
+    const spawned = {
+      id: template.instanceId,
+      templateId: callback.emitEvent,
+      title: template.title,
+      summary: template.summary,
+      priority: template.priority,
+      systemId: template.systemId,
+      status: template.nonBlockingFollowUp ? "waiting" as const : "active" as const,
+      triggeredAt: state.simClock,
+      deadlineAt: state.simClock + template.deadlineMinutes,
+      managerConsulted: false,
+      completedActionIds: [],
+      observedArtifactIds: [],
+      followUpRefs: [source.id],
+    };
+    state.events.push(spawned);
+    source.followUpRefs.push(spawned.id);
+    for (const message of [...template.activationMessages, ...callback.activationMessages]) {
+      const activation = consequence(state, spawned.id, callback.actionId, message);
+      state.ledger.push(activation);
+      effects.push({ type: "consequence_recorded", consequenceId: activation.id });
+    }
+    if (!template.nonBlockingFollowUp) ensureNotificationsForEvent(state, spawned.id);
   }
 }
 

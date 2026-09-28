@@ -9,6 +9,7 @@ import type {
 import { TaskAttemptTurnSchema } from "@sim/schemas";
 import { availableActions } from "./availability.js";
 import { ActionUnavailableError, applyAction } from "./reducer.js";
+import { conditionsMet } from "./conditions.js";
 
 export function taskProgressKey(eventId: string, taskId: string): string {
   return `${eventId}:${taskId}`;
@@ -25,6 +26,8 @@ function currentProgress(
       attempts: 0,
       completed: false,
       selectedOptionIdsByStep: {},
+      outcomeIdsByStep: {},
+      correctionHistory: [],
     }
   );
 }
@@ -48,19 +51,26 @@ function findAvailableTask(
 }
 
 function exactRequiredSelection(
+  state: WorldState,
   step: PackTaskStep,
   selectedOptionIds: string[],
 ): boolean {
   const selected = new Set(selectedOptionIds);
+  const required = [
+    ...step.requiredOptionIds,
+    ...step.conditionalRequiredOptionIds
+      .filter(({ when }) => conditionsMet(state, when))
+      .flatMap(({ optionIds }) => optionIds),
+  ];
   if (selected.size !== selectedOptionIds.length) return false;
   if (
     selected.size < step.minSelections ||
     selected.size > step.maxSelections ||
-    selected.size !== step.requiredOptionIds.length
+    selected.size !== required.length
   ) {
     return false;
   }
-  return step.requiredOptionIds.every((id) => selected.has(id));
+  return required.every((id) => selected.has(id));
 }
 
 export function applyTaskAttempt(
@@ -82,7 +92,15 @@ export function applyTaskAttempt(
   progress.attempts += 1;
   state.taskProgress[key] = progress;
 
-  if (!exactRequiredSelection(step, attempt.selectedOptionIds)) {
+  const chosen = new Set(attempt.selectedOptionIds);
+  const outcome = step.outcomes.find(({ selectedOptionIds, when }) =>
+    selectedOptionIds.length === chosen.size &&
+    selectedOptionIds.every((id) => chosen.has(id)) &&
+    conditionsMet(state, when),
+  );
+
+  if (chosen.size !== attempt.selectedOptionIds.length ||
+    (!outcome && !exactRequiredSelection(state, step, attempt.selectedOptionIds))) {
     return TaskAttemptTurnSchema.parse({
       state,
       effects: [],
@@ -93,8 +111,19 @@ export function applyTaskAttempt(
   }
 
   progress.selectedOptionIdsByStep[step.id] = [...attempt.selectedOptionIds];
+  if (outcome) {
+    progress.outcomeIdsByStep[step.id] = outcome.id;
+    Object.assign(state.flags, outcome.setFlags);
+    if (outcome.recordOmission) {
+      progress.correctionHistory.push({ stepId: step.id, initialOptionIds: [...attempt.selectedOptionIds] });
+    }
+    if (outcome.correctsOmission) {
+      const omitted = progress.correctionHistory.find((entry) => !entry.correctedOptionIds);
+      if (omitted) omitted.correctedOptionIds = [...attempt.selectedOptionIds];
+    }
+  }
 
-  const finalStep = progress.currentStep === task.steps.length - 1;
+  const finalStep = outcome?.completeTask || progress.currentStep === task.steps.length - 1;
   if (!finalStep) {
     progress.currentStep += 1;
     return TaskAttemptTurnSchema.parse({
@@ -102,7 +131,7 @@ export function applyTaskAttempt(
       effects: [],
       accepted: true,
       completed: false,
-      feedback: step.successText,
+      feedback: outcome?.feedback ?? step.successText,
     });
   }
 
@@ -127,11 +156,15 @@ export function applyTaskAttempt(
     actorId: "user",
     ...(summary ? { freeText: summary } : {}),
   });
+  if (outcome?.resolution) {
+    const event = actionTurn.state.events.find(({ id }) => id === attempt.eventId);
+    if (event) event.resolution = outcome.resolution;
+  }
   return TaskAttemptTurnSchema.parse({
     state: actionTurn.state,
     effects: actionTurn.effects,
     accepted: true,
     completed: true,
-    feedback: step.successText,
+    feedback: outcome?.feedback ?? step.successText,
   });
 }
