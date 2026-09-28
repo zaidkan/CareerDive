@@ -8,20 +8,16 @@ type Faq = {
 
 const FAQS: Faq[] = [
   {
-    q: "How long does it take?",
-    a: "About 10–15 minutes. It's one shift: read the handoff, check a login, handle what pops up, write a quick ticket, wrap up.",
+    q: "What does the first day actually involve?",
+    a: "About 10–15 minutes: read the handoff, deal with what comes up, write the ticket, then write how it went. It’s practice, not an application — there’s no score and nothing goes to an employer.",
   },
   {
     q: "Do I need to be good at games?",
-    a: "Not at all. Clicking fast or steering the camera well doesn't count — there's no score. What matters is how the work feels to you.",
+    a: "Not at all. Clicking fast or steering the camera well doesn’t count — there’s no score. What matters is how the work feels to you.",
   },
   {
-    q: "What if the office doesn't load?",
-    a: "A recovery workstation opens automatically and your session and work stay intact.",
-  },
-  {
-    q: "How accessible is it, and how do I report a problem?",
-    a: "The workplace supports keyboard navigation. If office navigation doesn't work for you, open Accessibility recovery to continue at the workstation with your progress kept. A full accessibility audit is still to come.",
+    q: "What if something doesn’t load, or I get stuck?",
+    a: "If the office won’t render, a recovery workstation opens automatically and keeps your work. Keyboard navigation is supported, and Accessibility recovery gets you to the workstation if you get stuck. A full accessibility audit hasn’t happened yet — found a problem?",
     link: {
       label: "Report it on GitHub",
       href: "https://github.com/zaidkan/Career-Expo/issues/new",
@@ -33,19 +29,19 @@ const FAQS: Faq[] = [
   },
   {
     q: "What does the AI actually do?",
-    a: "It helps phrase what your manager, Morgan, says — after we've already decided what Morgan is allowed to know. It can't make up facts or change what happens.",
+    a: "It helps phrase what your manager, Morgan, says — after we’ve already decided what Morgan is allowed to know. It can’t make up facts or change what happens.",
   },
   {
-    q: "What do Workshop careers mean?",
-    a: "They're previews: you can read what the day is like, but they aren't playable yet. Only Cybersecurity Analyst has a playable shift right now.",
+    q: "What does “In the workshop” mean?",
+    a: "One career is live — Cybersecurity Analyst. Four more are taking shape: you can read what the day is like, but they aren’t playable yet.",
   },
   {
-    q: "Do career requests influence what gets built?",
-    a: "Not yet. Requests stay where you click them — nothing is collected or stored. When collection is enabled, they'll help guide what we build next without guaranteeing build order.",
+    q: "How do career requests work?",
+    a: "Click Request on a career to mark your interest — it stays on that page. Nothing is collected or stored yet. When collection turns on, requests will help choose what we build next, without promising an order.",
   },
   {
     q: "Is there more after this first day?",
-    a: "Not yet. This first shift is day one as a junior cybersecurity analyst. We'll add more careers only if this one actually helps people understand the work — liking it isn't enough to green-light the next one.",
+    a: "Not yet. This first shift is day one as a junior cybersecurity analyst. We’ll add more careers only if this one actually helps people understand the work — liking it isn’t enough to green-light the next one.",
   },
 ];
 
@@ -55,28 +51,21 @@ export function FaqPage() {
       <section className="page-section page-hero" aria-labelledby="faq-title">
         <p className="eyebrow">The plain version</p>
         <h1 id="faq-title">Quick answers, honestly</h1>
-        <p className="lede">Before you start a shift, here's what people want to know.</p>
+        <p className="lede">Before you start a shift, here’s what people want to know.</p>
       </section>
 
-      <section aria-label="Questions and answers" style={{marginTop:"1.25rem", display:"grid", gap:"0.85rem"}}>
+      <section className="faq-list" aria-label="Questions and answers">
         {FAQS.map(({ q, a, link }) => (
-          <details key={q} className="faq-item" style={{marginTop:0}}>
-            <summary style={{listStyle:"none", cursor:"pointer", display:"flex", gap:"0.75rem", alignItems:"flex-start"}}>
-              <span style={{flex:"none", marginTop:"0.2rem", width:22, height:22, borderRadius:"50%", border:"1px solid var(--line-bright)", display:"grid", placeItems:"center", fontFamily:"var(--font-mono)", fontSize:"0.7rem", color:"var(--phosphor)"}}>?</span>
-              <span style={{flex:1, color:"var(--paper)", fontWeight:650, fontSize:"1.02rem", lineHeight:1.35}}>{q}</span>
-              <span aria-hidden="true" className="faq-toggle" style={{color:"var(--mute)", fontWeight:700, width:22, height:22, borderRadius:"50%", border:"1px solid var(--line-bright)", display:"grid", placeItems:"center", lineHeight:1}}>+</span>
+          <details key={q} className="faq-item">
+            <summary>
+              <span className="faq-q">{q}</span>
             </summary>
-            <p style={{margin:"0.65rem 0 0 2.125rem", color:"var(--fog)", lineHeight:1.65, maxWidth:"65ch"}}>
+            <p>
               {a}
               {link ? (
                 <>
                   {" "}
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{color:"var(--phosphor)", fontWeight:600}}
-                  >
+                  <a href={link.href} target="_blank" rel="noreferrer">
                     {link.label}
                     <span aria-hidden="true"> ↗</span>
                   </a>
@@ -87,7 +76,7 @@ export function FaqPage() {
         ))}
       </section>
 
-      <p className="mode-note" style={{marginTop:"1.5rem", maxWidth:"70ch"}}>
+      <p className="mode-note" style={{marginTop:"1.75rem", maxWidth:"70ch"}}>
         Still wondering? The full version is on{" "}
         <SiteLink
           to="/trust"
