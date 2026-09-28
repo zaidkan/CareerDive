@@ -394,18 +394,56 @@ describe("public routes", () => {
       screen.queryByRole("button", { name: /preview cybersecurity analyst/i }),
     ).toBeNull();
     expect(
-      screen.getByText(careerAt(0).realityNotes?.[0] ?? "missing reality note"),
+      screen.getByRole("heading", { name: "An alert is only the beginning." }),
     ).toBeVisible();
     expect(
-      screen.getByText(
-        careerAt(0).artifactOrMediaConcepts[0] ?? "missing artifact",
-      ),
+      screen.getByRole("heading", { name: "One case. Four separate records." }),
     ).toBeVisible();
     expect(
-      screen.getByRole("heading", { name: "What your first shift looks like" }),
+      screen.getByRole("heading", {
+        name: "The work isn’t done until someone else can continue it.",
+      }),
     ).toBeVisible();
-    expect(screen.getByText("Handle scanner interruption A-1180")).toBeVisible();
-    expect(screen.getByText("Alerts · A-1042")).toBeVisible();
+    expect(screen.getAllByText("Representative product state")).toHaveLength(2);
+    const detail = document.querySelector(".cyber-detail");
+    expect(detail).not.toBeNull();
+    for (const id of [
+      "a-01",
+      "a-02",
+      "a-03",
+      "a-04",
+      "a-05",
+      "a-06",
+      "a-07",
+      "a-08",
+      "a-09",
+      "a-10",
+      "a-11",
+      "a-12",
+    ]) {
+      expect(
+        detail?.querySelector(`[data-media-id="${id}"] img`),
+      ).not.toBeNull();
+    }
+    expect(
+      detail
+        ?.querySelector('[data-media-id="a-01"]')
+        ?.getAttribute("data-authenticity"),
+    ).toBe("real");
+    expect(
+      detail
+        ?.querySelector('[data-media-id="a-06"]')
+        ?.getAttribute("data-authenticity"),
+    ).toBe("representative");
+    expect(
+      detail
+        ?.querySelector('[data-media-id="a-10"]')
+        ?.getAttribute("data-authenticity"),
+    ).toBe("representative");
+    expect(detail?.querySelector('[data-media-id="a-12"] source')).toBeNull();
+    expect(detail?.textContent).not.toMatch(
+      /content\/packs\/|pack\.yaml|docs\/content\//,
+    );
   });
 
   it.each([{ ctrlKey: true }, { metaKey: true }, { button: 1 }])(
