@@ -1042,6 +1042,15 @@
     grid-row: 1 / span 3;
   }
 }
+/* 320px: the nowrap link strip needs 314px in a 296px column — tighten spacing so FAQ fits without scroll. */
+@media (max-width: 360px) {
+  .site-nav-links {
+    gap: 0.5rem;
+  }
+  .site-nav-links a {
+    padding-inline: 0.3rem;
+  }
+}
 @media (max-width: 640px) {
   .site-nav-inner {
     padding: 0.6rem 0 0.1rem;
