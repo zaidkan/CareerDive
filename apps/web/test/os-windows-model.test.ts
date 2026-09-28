@@ -96,7 +96,9 @@ describe("pure Desk OS window model", () => {
   });
 
   it("imports no canonical runtime or mutation API", () => {
-    const source = readFileSync(new URL("../src/world/deskOs/os/windows.ts", import.meta.url), "utf8");
+    // Base in a variable: vite rewrites inline new URL(literal, import.meta.url) to a dev-server URL.
+    const moduleBase = import.meta.url;
+    const source = readFileSync(new URL("../src/world/deskOs/os/windows.ts", moduleBase), "utf8");
     expect(source).toMatch(/^import type \{ OsAppId \} from "\.\/browserState\.js";/);
     expect(source).not.toMatch(/@sim\/|useMutationCoordinator|performAction|performWorkplaceInteraction/);
   });

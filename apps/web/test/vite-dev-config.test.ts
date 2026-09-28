@@ -1,3 +1,5 @@
+// @vitest-environment node — loading vite.config pulls esbuild, which trips
+// jsdom's realm-broken TextEncoder/Uint8Array invariant.
 import { describe, expect, it } from "vitest";
 import { DEV_WEB_PORT, devServer } from "../vite.config";
 

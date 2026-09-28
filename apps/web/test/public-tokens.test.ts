@@ -2,7 +2,9 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const css = readFileSync(fileURLToPath(new URL("../src/foundation.css", import.meta.url)), "utf8");
+// Base in a variable: vite rewrites inline new URL(literal, import.meta.url) to a dev-server URL.
+const moduleBase = import.meta.url;
+const css = readFileSync(fileURLToPath(new URL("../src/foundation.css", moduleBase)), "utf8");
 
 function hexTokens(selector: string): Record<string, string> {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

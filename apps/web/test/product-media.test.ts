@@ -3,15 +3,17 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { productMedia, selectProductMedia } from "../src/site/productMedia.js";
 
-const publicRoot = new URL("../public/", import.meta.url);
-const provenance = JSON.parse(readFileSync(new URL("../public/careers/media/provenance.json", import.meta.url), "utf8")) as Array<{
+// Base in a variable: vite rewrites inline new URL(literal, import.meta.url) to a dev-server URL.
+const moduleBase = import.meta.url;
+const publicRoot = new URL("../public/", moduleBase);
+const provenance = JSON.parse(readFileSync(new URL("../public/careers/media/provenance.json", moduleBase), "utf8")) as Array<{
   id: string; file: string; pack: string; packSha256: string; seed: number; route: string; actions: string[]; theme: string; viewport: { width: number; height: number }; crop: string;
 }>;
 
 describe("public product media", () => {
   it("has twelve typed scenes backed by real files and matching provenance", () => {
     expect(Object.keys(productMedia)).toEqual(Array.from({ length: 12 }, (_, index) => `a-${String(index + 1).padStart(2, "0")}`));
-    const packSha256 = createHash("sha256").update(readFileSync(new URL("../../../content/packs/cybersecurity-analyst/pack.yaml", import.meta.url))).digest("hex");
+    const packSha256 = createHash("sha256").update(readFileSync(new URL("../../../content/packs/cybersecurity-analyst/pack.yaml", moduleBase))).digest("hex");
     let count = 0;
     for (const media of Object.values(productMedia)) {
       expect(media.provenance).toBe("/careers/media/provenance.json");

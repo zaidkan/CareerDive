@@ -95,7 +95,9 @@ describe("site routes", () => {
       screen.queryByRole("button", { name: /play arrival film/i }),
     ).toBeNull();
     expect(
-      screen.getByRole("heading", { name: "Explore careers." }),
+      screen.getByRole("heading", {
+        name: /real work, not a job description/i,
+      }),
     ).toBeVisible();
     expect(
       screen.getByRole("heading", {
@@ -104,18 +106,36 @@ describe("site routes", () => {
     ).toBeVisible();
     expect(
       screen.getByRole("heading", {
-        name: "How a Career Expo first day works",
+        name: "How a shift works",
       }),
     ).toBeVisible();
     expect(screen.getByText("Alert A-1042")).toBeVisible();
-    expect(screen.getByText("Alerts · A-1042")).toBeVisible();
-    expect(document.querySelectorAll("[data-media-slot]")).toHaveLength(3);
     expect(
-      screen.getByRole("heading", { name: "Which career do you want to try?" }),
-    ).toBeVisible();
+      screen.getAllByText(/actual product capture/i).length,
+    ).toBeGreaterThanOrEqual(1);
+    // Deterministic media slots stay stable for the real-media pipeline.
+    for (const slot of [
+      "home-hero-workplace",
+      "home-case-a1042",
+      "home-evidence-auth",
+      "home-evidence-device",
+      "home-evidence-account",
+      "home-evidence-vpn",
+      "home-handoff-pass",
+      "home-debrief-reflection",
+    ]) {
+      expect(
+        document.querySelector(`[data-media-slot="${slot}"]`),
+      ).not.toBeNull();
+    }
     expect(
-      screen.getByText(/requests stay on this page and aren't collected yet/i),
-    ).toBeVisible();
+      document.querySelectorAll('[data-media-slot^="career-artifact-"]'),
+    ).toHaveLength(5);
+    // The old third career presentation is gone from home.
+    expect(
+      screen.queryByRole("heading", { name: "Which career do you want to try?" }),
+    ).toBeNull();
+    expect(screen.queryByText(/requests stay on this page/i)).toBeNull();
     expect(
       screen.getByRole("heading", {
         name: "One short day. One real first shift.",
@@ -127,6 +147,10 @@ describe("site routes", () => {
     expect(
       screen.getAllByRole("link", { name: /start your first day/i }).length,
     ).toBeGreaterThanOrEqual(1);
+    // CTA hierarchy: start is primary; explore stays secondary.
+    expect(
+      screen.getAllByRole("link", { name: /explore careers/i }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("landing names verified shift moments without invented scoring or urgency", () => {
@@ -150,10 +174,21 @@ describe("site routes", () => {
     ]) {
       expect(screen.getAllByText(title).length).toBeGreaterThanOrEqual(1);
     }
-    expect(screen.getAllByText(/workshop concept/i).length).toBe(4);
-    expect(screen.getAllByText("Playable now").length).toBeGreaterThan(0);
+    // Tile-level provenance is the visible contract; artifact footers repeat it
+    // inside aria-hidden crop plates and are excluded here.
+    const tileProvenance = Array.from(
+      document.querySelectorAll(".home-breadth-tile > .ui-provenance"),
+    );
     expect(
-      screen.getByText(/a real task, not a job description/i),
+      tileProvenance.filter((el) => /workshop concept/i.test(el.textContent))
+        .length,
+    ).toBe(4);
+    expect(
+      tileProvenance.filter((el) => /ready now/i.test(el.textContent)).length,
+    ).toBe(1);
+    expect(screen.getByText("Playable now")).toBeInTheDocument();
+    expect(
+      screen.getByText(/real work, not a job description/i),
     ).toBeInTheDocument();
   });
 

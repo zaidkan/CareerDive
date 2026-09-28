@@ -7,6 +7,7 @@ import { LandingPage } from "./pages/LandingPage.js";
 import "./site.css";
 import "./v2.css";
 import "./art-direction.css";
+import "./home.css";
 
 /** Start path owns the sim shell — keep it off the landing critical path. */
 const StartPage = lazy(async () => {

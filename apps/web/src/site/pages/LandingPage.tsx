@@ -1,8 +1,24 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { careers } from "../../careers/careers.js";
-import { CareerExplorer } from "../careers/CareerExplorer.js";
-import { CareerFields } from "../careers/CareerFields.js";
-import { AlertArtifact, DeskPreview } from "../careers/CyberArtifacts.js";
+import {
+  ArtifactStage,
+  ChapterSeparator,
+  PublicChapter,
+  ProvenanceLabel,
+  useChapterReveal,
+  type MediaProvenance,
+} from "../ArtDirection.js";
+import {
+  HandoffExcerpt,
+  InvestigationExcerpt,
+} from "../careers/CareerWorkSamples.js";
+import {
+  ElectricianWiringSchematic,
+  LawyerRedline,
+  MechanicalAnnotatedDrawing,
+  NurseHandoffSheet,
+} from "../workshop/index.js";
+import { productMedia, type ProductMediaId } from "../productMedia.js";
 import { SiteLink } from "../SiteLink.js";
 
 const GATE_KEY = "first-shift-start-gate";
@@ -20,329 +36,547 @@ function useHasSeenFilm(): boolean {
   return seen;
 }
 
-const EXPERIENCE_ARC = [
-  {
-    step: "Brief",
-    detail: "Get the context other people are relying on.",
-  },
-  {
-    step: "Investigate",
-    detail: "Look at the actual work, not a description of it.",
-  },
-  {
-    step: "Decide",
-    detail: "Make a call with the evidence you have.",
-  },
-  {
-    step: "Adapt",
-    detail: "New information changes what matters next.",
-  },
-  {
-    step: "Document",
-    detail: "Leave a record someone else can continue.",
-  },
-  {
-    step: "Hand off",
-    detail: "Pass it on cleanly when the day ends.",
-  },
-  {
-    step: "Reflect",
-    detail: "Look back on the decisions and how the day felt.",
-  },
-] as const;
-
-const SHELF_INTERVAL_MS = 4600;
-
-function useReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    if (typeof window.matchMedia !== "function") return;
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => {
-      setReduced(query.matches);
-    };
-    update();
-    query.addEventListener("change", update);
-    return () => {
-      query.removeEventListener("change", update);
-    };
-  }, []);
-  return reduced;
+function ratioSize(ratio: string): { width: number; height: number } {
+  const [w = 1366, h = 900] = ratio
+    .split("/")
+    .map((part) => Number(part.trim()));
+  return { width: w, height: h };
 }
 
-function HeroShelf() {
-  const reducedMotion = useReducedMotion();
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
-
-  useEffect(() => {
-    if (reducedMotion || paused) return;
-    const timer = window.setInterval(() => {
-      setActiveIndex((current) => (current + 1) % careers.length);
-    }, SHELF_INTERVAL_MS);
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [reducedMotion, paused]);
-
+/**
+ * Real product capture from the audited media set. Theme variants are swapped
+ * by CSS; deterministic data-media-slot names are stable media-integration
+ * targets. Never render fabricated product UI here.
+ */
+function ProductCapture({
+  id,
+  alt,
+  slot,
+  eager = false,
+}: {
+  id: ProductMediaId;
+  alt: string;
+  slot: string;
+  eager?: boolean;
+}) {
+  const media = productMedia[id];
+  const variantMap = media.variants as unknown as Record<
+    string,
+    Record<string, { src: string; aspectRatio: string }> | undefined
+  >;
   return (
-    <div className="v2-hero-media v2-media-frame" data-media-slot="hero">
-      <div
-        className="v2-shelf"
-        onMouseEnter={() => {
-          setPaused(true);
-        }}
-        onMouseLeave={() => {
-          setPaused(false);
-        }}
-        onFocus={() => {
-          setPaused(true);
-        }}
-        onBlur={() => {
-          setPaused(false);
-        }}
-      >
-        {careers.map((career, index) => {
-          const ready = career.availability === "ready_now";
-          const isActive = index === activeIndex;
-          return (
-            <div
-              key={career.id}
-              className={`v2-shelf-doc v2-shelf-doc--${String(index)}${
-                ready ? " v2-shelf-doc--ready" : ""
-              }${isActive ? " v2-shelf-doc--active" : ""}`}
-              aria-hidden="true"
-            >
-              <span className="v2-shelf-doc-field">{career.field}</span>
-              <strong className="v2-shelf-doc-title">{career.title}</strong>
-              <span className="v2-shelf-doc-glyph" />
-              <small className="v2-shelf-doc-status">
-                {ready ? "Ready now" : "In the workshop"}
-              </small>
-            </div>
-          );
-        })}
-      </div>
+    <div className="home-capture" data-media-slot={slot}>
+      {(["dark", "light"] as const).map((theme) => {
+        const variants = variantMap[theme];
+        const desktop = variants?.["desktop"];
+        if (!desktop) return null;
+        const mobile = variants["mobile"];
+        const size = ratioSize(desktop.aspectRatio);
+        return (
+          <picture
+            key={theme}
+            className={`home-capture-theme home-capture-theme--${theme}`}
+          >
+            {mobile ? (
+              <source
+                media="(max-width: 600px)"
+                srcSet={mobile.src}
+                width={ratioSize(mobile.aspectRatio).width}
+                height={ratioSize(mobile.aspectRatio).height}
+              />
+            ) : null}
+            <img
+              src={desktop.src}
+              alt={alt}
+              width={size.width}
+              height={size.height}
+              loading={eager ? "eager" : "lazy"}
+              decoding="async"
+            />
+          </picture>
+        );
+      })}
     </div>
   );
 }
 
+const CYBER_PROVENANCE: MediaProvenance = {
+  career: "Cybersecurity Analyst",
+  kind: "real",
+};
+
+const SHIFT_ACTS = [
+  {
+    act: "Prepare",
+    claim: "Context first. Then the actual work.",
+    beats: [
+      ["01", "Brief", "Get the context other people are relying on."],
+      ["02", "Investigate", "Look at the actual work, not a description of it."],
+    ],
+  },
+  {
+    act: "Decide",
+    claim: "You decide before the picture is complete.",
+    beats: [
+      ["03", "Decide", "Make a call with the evidence you have."],
+      ["04", "Adapt", "New information changes what matters next."],
+    ],
+  },
+  {
+    act: "Pass it on",
+    claim: "The work isn't done until someone else can continue it.",
+    beats: [
+      ["05", "Document", "Write down what's known and what's still open."],
+      ["06", "Hand off", "Pass it on cleanly when the day ends."],
+      ["07", "Reflect", "Look back on the decisions and how the day felt."],
+    ],
+  },
+] as const;
+
+const EVIDENCE_RECORDS = [
+  {
+    label: "Sign-in record",
+    detail: "Who signed in, and from where?",
+    id: "a-02",
+    slot: "home-evidence-auth",
+    alt: "Product capture: the sign-in record for session S-0741, from the Cybersecurity Analyst first day.",
+  },
+  {
+    label: "Device inventory",
+    detail: "Does inventory recognize it?",
+    id: "a-03",
+    slot: "home-evidence-device",
+    alt: "Product capture: the device inventory record for the unfamiliar laptop, from the Cybersecurity Analyst first day.",
+  },
+  {
+    label: "Account history",
+    detail: "What does the account history show?",
+    id: "a-04",
+    slot: "home-evidence-account",
+    alt: "Product capture: the account history opened during the A-1042 review, from the Cybersecurity Analyst first day.",
+  },
+  {
+    label: "VPN record",
+    detail: "Does access history line up?",
+    id: "a-05",
+    slot: "home-evidence-vpn",
+    alt: "Product capture: the VPN access record V-218, from the Cybersecurity Analyst first day.",
+  },
+] as const;
+
+type BreadthEntry = {
+  careerId: string;
+  workObject: string;
+  judgment: string;
+  artifact: ReactNode;
+  provenance: MediaProvenance;
+};
+
+const BREADTH: readonly BreadthEntry[] = [
+  {
+    careerId: "cybersecurity-analyst",
+    workObject: "Alert record · A-1042",
+    judgment: "Compare the records. Say what the evidence supports.",
+    artifact: (
+      <ProductCapture
+        id="a-01"
+        slot="home-career-artifact-cybersecurity-analyst"
+        alt=""
+      />
+    ),
+    provenance: CYBER_PROVENANCE,
+  },
+  {
+    careerId: "registered-nurse",
+    workObject: "Handoff sheet · 07:00 report",
+    judgment: "Notice the change. Communicate it clearly.",
+    artifact: <NurseHandoffSheet />,
+    provenance: { career: "Registered Nurse", kind: "workshop" },
+  },
+  {
+    careerId: "mechanical-engineer",
+    workObject: "Annotated drawing · MB-204 bracket",
+    judgment: "Read imperfect results. Recommend what to revise.",
+    artifact: <MechanicalAnnotatedDrawing />,
+    provenance: { career: "Mechanical Engineer", kind: "workshop" },
+  },
+  {
+    careerId: "electrician",
+    workObject: "Wiring schematic · Panel L2",
+    judgment: "Spot the hazard. Decide how the work proceeds.",
+    artifact: <ElectricianWiringSchematic />,
+    provenance: { career: "Electrician", kind: "workshop" },
+  },
+  {
+    careerId: "lawyer-attorney",
+    workObject: "Contract redline · Clause 7.2",
+    judgment: "Separate settled facts from open questions.",
+    artifact: <LawyerRedline />,
+    provenance: { career: "Lawyer", kind: "workshop" },
+  },
+];
+
+const HOME_FAQ = [
+  {
+    q: "How long does it take?",
+    a: "About 10–15 minutes. It's one shift: read the handoff, check an alert, write it up, hand it off.",
+  },
+  {
+    q: "Is this a career test?",
+    a: "No. You try selected tasks and reflect on the experience. Career Expo never tells you which career to choose.",
+  },
+  {
+    q: "Are all these careers playable?",
+    a: "One is. Cybersecurity Analyst has a playable first shift; the other four are Workshop previews for now.",
+  },
+] as const;
+
 export function LandingPage() {
   const hasSeenFilm = useHasSeenFilm();
-  useEffect(() => {
-    if (
-      typeof IntersectionObserver === "undefined" ||
-      (typeof window.matchMedia === "function" &&
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches)
-    )
-      return;
-    const targets = document.querySelectorAll<HTMLElement>(
-      ".v2-explorer-section .career-card-featured, .v2-desk",
-    );
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          entry.target.classList.add("v2-revealed");
-          observer.unobserve(entry.target);
-        }
-      },
-      { threshold: 0.2 },
-    );
-    targets.forEach((target) => {
-      observer.observe(target);
-    });
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
+  const heroRef = useChapterReveal<HTMLDivElement>();
+  const realWorkRef = useChapterReveal<HTMLDivElement>();
+  const gatherRef = useChapterReveal<HTMLDivElement>();
+  const linkRef = useChapterReveal<HTMLDivElement>();
+  const shiftRef = useChapterReveal<HTMLDivElement>();
+  const handoffRef = useChapterReveal<HTMLDivElement>();
+  const breadthRef = useChapterReveal<HTMLDivElement>();
+  const reflectRef = useChapterReveal<HTMLDivElement>();
+  const faqRef = useChapterReveal<HTMLDivElement>();
+  const finalRef = useChapterReveal<HTMLDivElement>();
+
+  const startLabel = hasSeenFilm
+    ? "Continue your first day"
+    : "Start your first day";
 
   return (
     <div className="v2-home">
-      <section className="v2-hero" aria-labelledby="home-hero">
-        <div className="v2-hero-copy">
-          <h1 id="home-hero">Know the work before you choose the career.</h1>
+      <section className="home-hero" aria-labelledby="home-hero-title">
+        <PublicChapter
+          as="div"
+          surface="base"
+          rhythm="expansive"
+          className="home-hero-chapter"
+        >
+          <div
+            ref={heroRef}
+            data-motion="chapter-reveal"
+            className="home-hero-grid ui-editorial-split"
+          >
+            <div className="home-hero-copy">
+              <h1 id="home-hero-title" data-motion-role="argument">
+                Know the work before you choose the career.
+              </h1>
+              <p className="ui-type-proof">
+                You can read about a career — or step into its first shift.
+              </p>
+              <div className="home-hero-actions">
+                <SiteLink className="start-shift v2-primary" to="/start">
+                  {startLabel}
+                  <span aria-hidden="true"> ↗</span>
+                </SiteLink>
+                <SiteLink className="v2-text-link" to="/careers">
+                  Explore careers <span aria-hidden="true">→</span>
+                </SiteLink>
+              </div>
+              <p className="home-hero-meta">
+                <strong>Playable now</strong> · ~10–15 min
+              </p>
+            </div>
+            <div data-motion-role="artifact" className="home-hero-stage">
+              <ArtifactStage
+                dominant={
+                  <ProductCapture
+                    id="a-11"
+                    slot="home-hero-workplace"
+                    eager
+                    alt="Product capture: the Verdaly security operations floor at the start of the first shift."
+                  />
+                }
+                caption="Actual product capture · synthetic records"
+                provenance={CYBER_PROVENANCE}
+              />
+            </div>
+          </div>
+          <ul className="home-rail" aria-label="Career areas">
+            {careers.map((career) => (
+              <li key={career.id}>
+                <span className="home-rail-field">{career.field}</span>
+                <strong>{career.title}</strong>
+              </li>
+            ))}
+          </ul>
+        </PublicChapter>
+      </section>
+
+      <section className="home-realwork" aria-labelledby="home-realwork-title">
+        <PublicChapter
+          as="div"
+          surface="chapter"
+          rhythm="stage"
+          className="home-realwork-chapter"
+        >
+          <div
+            ref={realWorkRef}
+            data-motion="chapter-reveal"
+            className="home-realwork-intro"
+          >
+            <h2 id="home-realwork-title" data-motion-role="argument">
+              Real work, not a job description.
+            </h2>
+            <p className="ui-type-proof">
+              One alert. Four records to compare. A call you have to justify.
+            </p>
+          </div>
+          <ArtifactStage
+            className="home-realwork-stage"
+            dominant={
+              <ProductCapture
+                id="a-01"
+                slot="home-case-a1042"
+                alt="Product capture: alert record A-1042, a sign-in from an unfamiliar device, open for review."
+              />
+            }
+            caption="Alert record · A-1042 — actual product capture, synthetic records"
+            provenance={CYBER_PROVENANCE}
+          />
+          <div
+            ref={gatherRef}
+            data-motion="artifact-gather"
+            className="home-evidence"
+          >
+            <div
+              ref={linkRef}
+              data-motion="evidence-link"
+              className="home-evidence-connector"
+            >
+              <span className="ui-type-technical">Alert A-1042</span>
+              <span className="home-evidence-rule" data-motion-role="link" />
+              <span className="ui-type-meta">Four records to compare</span>
+            </div>
+            <ul className="home-evidence-row">
+              {EVIDENCE_RECORDS.map((record) => (
+                <li
+                  key={record.slot}
+                  className="home-evidence-item"
+                  data-motion-role="secondary"
+                >
+                  <ProductCapture
+                    id={record.id}
+                    slot={record.slot}
+                    alt={record.alt}
+                  />
+                  <p className="home-evidence-label">
+                    <strong>{record.label}</strong>
+                    <span>{record.detail}</span>
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <div className="home-detail">
+              <InvestigationExcerpt />
+            </div>
+          </div>
+        </PublicChapter>
+      </section>
+
+      <section className="home-shift" aria-labelledby="home-shift-title">
+        <PublicChapter
+          as="div"
+          surface="base"
+          rhythm="standard"
+          className="home-shift-chapter"
+        >
+          <div ref={shiftRef} data-motion="chapter-reveal">
+            <h2 id="home-shift-title" data-motion-role="argument">
+              How a shift works
+            </h2>
+            <p className="ui-type-proof">
+              Every Career Expo first day follows the same shape. The work
+              changes — the judgment does not.
+            </p>
+            <ol className="home-acts">
+              {SHIFT_ACTS.map((entry) => (
+                <li key={entry.act}>
+                  <h3>{entry.act}</h3>
+                  <p className="home-act-claim">{entry.claim}</p>
+                  <ol className="home-beats">
+                    {entry.beats.map(([num, name, detail]) => (
+                      <li key={num}>
+                        <span className="home-beat-num">{num}</span>
+                        <div>
+                          <strong>{name}</strong>
+                          <p>{detail}</p>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div className="home-handoff">
+            <div ref={handoffRef} data-motion="handoff-pass">
+              <div data-motion-role="document">
+                <ProductCapture
+                  id="a-08"
+                  slot="home-handoff-pass"
+                  alt="Product capture: the night analyst's handoff email, read at the start of the shift."
+                />
+                <p className="home-media-note">
+                  Handoff · actual product capture, synthetic records
+                </p>
+              </div>
+            </div>
+            <div className="home-handoff-words">
+              <p className="home-pullquote">
+                Your shift ends. The work does not.
+              </p>
+              <HandoffExcerpt />
+            </div>
+          </div>
+        </PublicChapter>
+      </section>
+
+      <section className="home-breadth" aria-labelledby="home-breadth-title">
+        <PublicChapter
+          as="div"
+          surface="stage"
+          rhythm="standard"
+          className="home-breadth-chapter"
+        >
+          <div ref={breadthRef} data-motion="chapter-reveal">
+            <h2 id="home-breadth-title" data-motion-role="argument">
+              Different careers. Different kinds of work.
+            </h2>
+            <p className="ui-type-proof">
+              One career is playable. Four more are taking shape.
+            </p>
+          </div>
+          <ul className="home-breadth-grid">
+            {BREADTH.map((entry) => {
+              const career = careers.find((item) => item.id === entry.careerId);
+              if (!career) return null;
+              return (
+                <li
+                  key={entry.careerId}
+                  className="home-breadth-tile"
+                  data-media-slot={`career-artifact-${career.slug}`}
+                >
+                  <div className="home-breadth-plate" aria-hidden="true">
+                    {entry.artifact}
+                  </div>
+                  <p className="home-breadth-field">{career.field}</p>
+                  <h3>{career.title}</h3>
+                  <p className="ui-type-technical">{entry.workObject}</p>
+                  <p className="home-breadth-judgment">{entry.judgment}</p>
+                  <ProvenanceLabel provenance={entry.provenance} />
+                </li>
+              );
+            })}
+          </ul>
           <p>
-            Career Expo puts you inside a first day of real work. Read the
-            handoff, use the tools, make decisions, and find out how the job
-            actually feels.
-          </p>
-          <div className="v2-hero-actions">
-            <SiteLink className="start-shift v2-primary" to="/start">
-              {hasSeenFilm ? "Continue your first day" : "Start your first day"}
-              <span aria-hidden="true"> ↗</span>
-            </SiteLink>
             <SiteLink className="v2-text-link" to="/careers">
               Explore careers <span aria-hidden="true">→</span>
             </SiteLink>
+          </p>
+        </PublicChapter>
+      </section>
+
+      <section className="home-reflect" aria-labelledby="home-reflect-title">
+        <PublicChapter
+          as="div"
+          surface="chapter"
+          rhythm="standard"
+          width="reading"
+          className="home-reflect-chapter"
+        >
+          <div ref={reflectRef} data-motion="chapter-reveal">
+            <h2 id="home-reflect-title" data-motion-role="argument">
+              See how you worked — not a score of who you are.
+            </h2>
+            <p className="ui-type-proof">
+              The end of the shift is a debrief: what happened, what you
+              decided, and what stayed uncertain. No grade, no ranking, no
+              “you should be ___”.
+            </p>
+            <ProductCapture
+              id="a-10"
+              slot="home-debrief-reflection"
+              alt="Product capture: the shift debrief, reviewing what happened and what stayed uncertain."
+            />
+            <p className="home-media-note">
+              Shift debrief · actual product capture, synthetic records
+            </p>
+            <p>
+              <SiteLink className="v2-text-link" to="/trust">
+                Privacy and safety <span aria-hidden="true">→</span>
+              </SiteLink>
+            </p>
           </div>
-          <p className="v2-hero-note">
-            Cybersecurity Analyst is ready now. More careers are in the
-            workshop.
-          </p>
-        </div>
-        <div className="v2-hero-visual" aria-hidden="true">
-          <HeroShelf />
-        </div>
+        </PublicChapter>
       </section>
 
-      <section
-        className="v2-section v2-explorer-section"
-        aria-labelledby="v2-explore-title"
-      >
-        <div className="v2-section-intro">
-          <h2 id="v2-explore-title">Explore careers.</h2>
-          <p>One is playable now. See what else is taking shape.</p>
-        </div>
-        <CareerExplorer headingLevel={3} />
+      <ChapterSeparator />
+
+      <section className="home-faq" aria-labelledby="home-faq-title">
+        <PublicChapter
+          as="div"
+          surface="base"
+          rhythm="compact"
+          className="home-faq-chapter"
+        >
+          <div ref={faqRef} data-motion="chapter-reveal">
+            <h2 id="home-faq-title" data-motion-role="argument">
+              Questions, answered plainly.
+            </h2>
+            <div className="v2-faq-list">
+              {HOME_FAQ.map(({ q, a }) => (
+                <details key={q}>
+                  <summary>{q}</summary>
+                  <p>{a}</p>
+                </details>
+              ))}
+            </div>
+            <p>
+              <SiteLink className="v2-text-link" to="/faq">
+                More questions <span aria-hidden="true">→</span>
+              </SiteLink>
+            </p>
+          </div>
+        </PublicChapter>
       </section>
 
-      <section
-        className="v2-section v2-proof-section"
-        aria-labelledby="v2-proof-title"
-      >
-        <div className="v2-proof-intro">
-          <p className="v2-eyebrow">A real task, not a job description.</p>
-          <h2 id="v2-proof-title">
-            You compare evidence. Then you make the call.
-          </h2>
-          <p>
-            In Cybersecurity Analyst, you compare evidence, make a judgment, and
-            leave a record someone else can continue.
-          </p>
-        </div>
-        <AlertArtifact compact />
-        <p className="v2-proof-tag">
-          <SiteLink
-            className="v2-text-link"
-            to="/careers/cybersecurity-analyst"
+      <section className="home-final" aria-labelledby="home-final-title">
+        <PublicChapter
+          as="div"
+          surface="finale"
+          rhythm="final"
+          width="wide"
+          className="home-final-chapter"
+        >
+          <div
+            ref={finalRef}
+            data-motion="chapter-reveal"
+            className="home-final-inner"
           >
-            Cybersecurity Analyst · Ready now <span aria-hidden="true">→</span>
-          </SiteLink>
-        </p>
-      </section>
-
-      <CareerFields />
-
-      <section
-        className="v2-section v2-arc-section"
-        aria-labelledby="v2-arc-title"
-      >
-        <div className="v2-section-intro">
-          <h2 id="v2-arc-title">How a Career Expo first day works</h2>
-          <p>
-            Every career follows the same shape. The work changes — the judgment
-            does not.
-          </p>
-        </div>
-        <ol className="v2-arc-list">
-          {EXPERIENCE_ARC.map((beat, index) => (
-            <li key={beat.step}>
-              <span className="v2-arc-index">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <strong>{beat.step}</strong>
-              <p>{beat.detail}</p>
-            </li>
-          ))}
-        </ol>
-        <p className="v2-arc-example" id="v2-arc-example">
-          Example · Cybersecurity Analyst
-        </p>
-        <DeskPreview />
-        <p className="v2-reality-note">
-          Every career follows these seven steps. The example beside it is from
-          the currently playable Cybersecurity Analyst first day — its tools are
-          its own, not every career’s.
-        </p>
-      </section>
-
-      <section
-        className="v2-section v2-trust-section"
-        aria-labelledby="v2-trust-title"
-      >
-        <h2 id="v2-trust-title">Honest about the limits.</h2>
-        <p>
-          A short simulation can’t show a whole career — so we always say what’s
-          simplified.
-        </p>
-        <ul>
-          <li>Realistic tasks</li>
-          <li>Clear simplifications</li>
-          <li>No career-fit score</li>
-        </ul>
-        <SiteLink className="v2-text-link" to="/trust">
-          Privacy and safety <span aria-hidden="true">→</span>
-        </SiteLink>
-      </section>
-
-      <section
-        className="v2-section v2-faq-section"
-        aria-labelledby="v2-faq-title"
-      >
-        <div className="v2-section-intro">
-          <h2 id="v2-faq-title">Questions, answered plainly.</h2>
-          <p>Know what the first shift is before you begin.</p>
-        </div>
-        <div className="v2-faq-list">
-          <details>
-            <summary>Is this a career test?</summary>
+            <h2 id="home-final-title" data-motion-role="argument">
+              One short day. One real first shift.
+            </h2>
             <p>
-              No. You try selected tasks and reflect on the experience. Career
-              Expo does not tell you which career to choose.
+              Try the work <span aria-hidden="true">→</span> Make the calls{" "}
+              <span aria-hidden="true">→</span> See how you worked
             </p>
-          </details>
-          <details>
-            <summary>Are all these careers playable?</summary>
-            <p>
-              Cybersecurity Analyst is playable now. Workshop careers have
-              previews only; their simulations are still being planned.
-            </p>
-          </details>
-          <details>
-            <summary>Do my requests change what you build?</summary>
-            <p>
-              Not yet. Requests currently stay on this page and aren’t
-              collected. When collection is enabled, they’ll help guide what we
-              prioritize without guaranteeing build order.
-            </p>
-          </details>
-          <details>
-            <summary>What if the workplace does not load?</summary>
-            <p>
-              The accessibility recovery path opens the workstation and keeps
-              your current session and progress.
-            </p>
-          </details>
-        </div>
-        <div className="v2-feedback">
-          <SiteLink className="v2-text-link" to="/faq">
-            More questions <span aria-hidden="true">→</span>
-          </SiteLink>
-          <a
-            href="https://github.com/zaidkan/Career-Expo/issues/new"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Report feedback on GitHub <span aria-hidden="true">↗</span>
-          </a>
-        </div>
-      </section>
-
-      <section className="v2-final" aria-labelledby="v2-final-title">
-        <h2 id="v2-final-title">One short day. One real first shift.</h2>
-        <p>
-          Try the work <span aria-hidden="true">→</span> Make decisions{" "}
-          <span aria-hidden="true">→</span> See how the shift responds
-        </p>
-        <div className="v2-final-actions">
-          <SiteLink className="start-shift v2-primary" to="/careers">
-            Explore careers <span aria-hidden="true">→</span>
-          </SiteLink>
-          <SiteLink className="v2-text-link" to="/start">
-            Cybersecurity Analyst · Ready now <span aria-hidden="true">↗</span>
-          </SiteLink>
-        </div>
+            <div className="home-final-actions">
+              <SiteLink className="start-shift v2-primary" to="/start">
+                {startLabel}
+                <span aria-hidden="true"> ↗</span>
+              </SiteLink>
+              <SiteLink className="v2-text-link" to="/careers">
+                Explore careers <span aria-hidden="true">→</span>
+              </SiteLink>
+            </div>
+          </div>
+        </PublicChapter>
       </section>
     </div>
   );

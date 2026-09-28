@@ -1,0 +1,457 @@
+/* UI-2 homepage composition. Real product media in stable slots; no fabricated
+   product UI. Motion is owned by art-direction.css data-motion contracts. */
+
+/* —— Product capture frames (audited media set) —— */
+.home-capture {
+  min-width: 0;
+}
+.home-capture-theme--light {
+  display: none;
+}
+:root[data-theme="light"] .home-capture:has(.home-capture-theme--light) .home-capture-theme--dark {
+  display: none;
+}
+:root[data-theme="light"] .home-capture:has(.home-capture-theme--light) .home-capture-theme--light {
+  display: block;
+}
+.home-capture img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-base);
+}
+.home-media-note {
+  margin: 0.55rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+/* —— Hero —— */
+.home-hero-grid {
+  align-items: center;
+}
+.home-hero-copy h1 {
+  max-width: 12ch;
+  margin: 0 0 1.35rem;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: clamp(2.85rem, 5vw, 5.4rem);
+  line-height: 1.03;
+  letter-spacing: -0.039em;
+  text-wrap: balance;
+}
+.home-hero-copy .ui-type-proof {
+  max-width: 40ch;
+}
+.home-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.65rem;
+  margin-top: 1.9rem;
+}
+.home-hero-meta {
+  margin: 1.15rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.home-hero-meta strong {
+  color: var(--text-primary);
+}
+.home-hero-stage {
+  min-width: 0;
+}
+.home-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem 2.2rem;
+  margin: clamp(2.2rem, 4vw, 3.2rem) 0 0;
+  padding: 1.15rem 0 0;
+  border-top: 1px solid var(--border-subtle);
+  list-style: none;
+}
+.home-rail li {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.home-rail-field {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.home-rail strong {
+  color: var(--text-primary);
+  font-size: 0.94rem;
+  letter-spacing: -0.015em;
+}
+
+/* —— Real work —— */
+.home-realwork-intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1.2rem 3rem;
+  margin-bottom: 2.2rem;
+}
+.home-realwork-intro h2 {
+  margin-bottom: 0;
+}
+.home-realwork-intro .ui-type-proof {
+  max-width: 34ch;
+  margin-bottom: 0.45rem;
+}
+.home-evidence {
+  margin-top: clamp(1.8rem, 3.5vw, 2.8rem);
+}
+.home-evidence-connector {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.15rem;
+}
+.home-evidence-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--border-strong);
+  transform-origin: left center;
+}
+.home-evidence-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.home-evidence-item {
+  min-width: 0;
+}
+.home-evidence-label {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0.65rem 0 0;
+}
+.home-evidence-label strong {
+  color: var(--text-primary);
+  font-size: 0.86rem;
+}
+.home-evidence-label span {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+.home-detail {
+  max-width: 74ch;
+  margin-top: clamp(1.8rem, 3.5vw, 2.6rem);
+}
+
+/* —— How a shift works —— */
+.home-acts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  margin: 2.2rem 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--border-strong);
+}
+.home-acts > li {
+  min-width: 0;
+  padding: 1.35rem 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.home-acts > li:first-child {
+  border-top: 0;
+}
+.home-acts h3 {
+  margin: 0 0 0.35rem;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.home-act-claim {
+  max-width: 28ch;
+  margin: 0 0 1.15rem;
+  color: var(--text-primary);
+  font-weight: 700;
+  line-height: 1.45;
+}
+.home-beats {
+  display: grid;
+  gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.home-beats li {
+  display: flex;
+  gap: 0.7rem;
+  min-width: 0;
+}
+.home-beat-num {
+  flex: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.75;
+}
+.home-beats strong {
+  color: var(--text-primary);
+  font-size: 0.92rem;
+}
+.home-beats p {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.home-handoff {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1.6rem, 4vw, 3.2rem);
+  align-items: start;
+  margin-top: clamp(2.2rem, 5vw, 3.4rem);
+}
+.home-pullquote {
+  margin: 0 0 1.15rem;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: clamp(1.55rem, 2.4vw, 2.15rem);
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+/* —— Breadth —— */
+.home-breadth-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.1rem;
+  margin: 2.1rem 0 1.7rem;
+  padding: 0;
+  list-style: none;
+}
+.home-breadth-tile {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 1.15rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--surface-base);
+}
+/* Artifact-led tiles: one representative work object per career, cropped as
+   a document plate. Named media slots stay stable for future real captures. */
+.home-breadth-plate {
+  height: clamp(180px, 20vw, 232px);
+  margin-bottom: 0.9rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  background: var(--surface-subtle);
+  overflow: clip;
+}
+.home-breadth-plate .wa-sheet {
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+.home-breadth-plate .home-capture,
+.home-breadth-plate .home-capture img {
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  object-fit: cover;
+  object-position: top left;
+}
+.home-breadth-field {
+  margin: 0 0 0.3rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.home-breadth-tile h3 {
+  margin: 0 0 0.55rem;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: 1.12rem;
+  letter-spacing: -0.02em;
+}
+.home-breadth-judgment {
+  margin: 0.35rem 0 0.85rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+.home-breadth-tile .ui-provenance {
+  margin-top: auto;
+}
+
+/* —— Reflection —— */
+.home-reflect-chapter h2 {
+  max-width: 22ch;
+}
+.home-reflect-chapter .home-capture {
+  margin-top: 1.9rem;
+}
+
+/* —— Final —— */
+.home-final-inner {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  text-align: center;
+}
+.home-final-inner h2 {
+  max-width: 20ch;
+}
+.home-final-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem 1.65rem;
+  margin-top: 1.6rem;
+}
+
+/* —— Restored career work-sample excerpts (verbatim approved pack quotes) —— */
+.shift-handoff,
+.shift-investigation {
+  margin: 0;
+  padding: clamp(1.15rem, 2.5vw, 1.8rem);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--surface-base);
+}
+.shift-handoff figcaption,
+.shift-investigation figcaption {
+  display: grid;
+  gap: 0.25rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+.shift-handoff figcaption span,
+.shift-investigation figcaption span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+.shift-handoff blockquote {
+  margin: 1.15rem 0 0.85rem;
+  color: var(--text-primary);
+  font-size: clamp(1.02rem, 1.5vw, 1.28rem);
+  line-height: 1.5;
+  letter-spacing: -0.012em;
+}
+.shift-handoff p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.shift-handoff small,
+.shift-investigation small {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+.shift-investigation dl {
+  display: grid;
+  gap: 0.8rem;
+  margin: 1rem 0 0;
+}
+.shift-investigation dt {
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.shift-investigation dd {
+  margin: 0.18rem 0 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+.shift-desk-preview {
+  margin: 0;
+  min-width: 0;
+}
+.shift-desk-preview picture {
+  display: block;
+}
+.shift-desk-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-base);
+}
+.shift-desk-preview .shift-desk-light {
+  display: none;
+}
+:root[data-theme="light"] .shift-desk-preview .shift-desk-dark {
+  display: none;
+}
+:root[data-theme="light"] .shift-desk-preview .shift-desk-light {
+  display: block;
+}
+.shift-desk-preview figcaption {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.3rem 1rem;
+  padding: 0.85rem 0;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.shift-desk-preview figcaption strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* —— Responsive —— */
+@media (min-width: 560px) {
+  .home-breadth-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 834px) {
+  .home-acts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .home-acts > li {
+    padding: 1.5rem 1.6rem 1.6rem 0;
+    border-top: 0;
+  }
+  .home-acts > li + li {
+    padding-left: 1.6rem;
+    border-left: 1px solid var(--border-subtle);
+  }
+  .home-handoff {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  }
+}
+@media (min-width: 960px) {
+  .home-evidence-row {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .home-breadth-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1220px) {
+  .home-breadth-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .home-hero-copy h1 {
+    font-size: clamp(2.55rem, 11vw, 3.4rem);
+  }
+}
