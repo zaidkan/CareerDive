@@ -1788,3 +1788,107 @@
     animation: none;
   }
 }
+
+
+/* ==========================================================================
+   UI-4 Careers Final
+   ========================================================================== */
+
+.careers-page-v4 .cp-hero {
+  padding-top: var(--space-4xl);
+  padding-bottom: var(--space-4xl);
+  text-align: center;
+}
+
+.careers-page-v4 .cp-hero h1 {
+  margin-bottom: var(--space-md);
+}
+
+.careers-page-v4 .cp-hero .lede {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3xl);
+}
+
+.careers-page-v4 .cp-hero .ui-artifact-stage {
+  margin-top: var(--space-2xl);
+}
+
+.careers-page-v4 .cp-playable-now {
+  padding-top: var(--space-4xl);
+  padding-bottom: var(--space-4xl);
+}
+
+.careers-page-v4 .cp-chapter-head {
+  text-align: center;
+  margin-bottom: var(--space-3xl);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.careers-page-v4 .cp-chapter-head .ui-type-eyebrow {
+  color: var(--text-brand);
+  margin-bottom: var(--space-xs);
+}
+
+.careers-page-v4 .cp-chapter-head h2 {
+  margin-bottom: var(--space-md);
+}
+
+.careers-page-v4 .cp-actions {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: center;
+  margin-top: var(--space-lg);
+}
+
+.careers-page-v4 .cp-taking-shape {
+  padding-top: var(--space-4xl);
+  padding-bottom: var(--space-4xl);
+}
+
+.careers-page-v4 .cp-honesty-note {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  max-width: 60ch;
+  margin: 0 auto;
+}
+
+.careers-page-v4 .cp-workshop-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4xl);
+  margin-top: var(--space-4xl);
+}
+
+.careers-page-v4 .cp-workshop-career {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2xl);
+  align-items: center;
+}
+
+@media (min-width: 834px) {
+  .careers-page-v4 .cp-workshop-career {
+    grid-template-columns: 320px 1fr;
+  }
+
+  /* Alternate layout rhythm */
+  .careers-page-v4 .cp-workshop-career:nth-child(even) {
+    grid-template-columns: 1fr 320px;
+  }
+  .careers-page-v4 .cp-workshop-career:nth-child(even) .cp-workshop-info {
+    order: 2;
+  }
+  .careers-page-v4 .cp-workshop-career:nth-child(even) .ui-artifact-stage {
+    order: 1;
+  }
+}
+
+.careers-page-v4 .cp-workshop-info h3 {
+  margin-bottom: var(--space-sm);
+}
+
+.careers-page-v4 .cp-workshop-info p {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-lg);
+}
