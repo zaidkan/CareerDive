@@ -1,0 +1,19 @@
+html, body, #root { margin: 0; min-height: 100%; }
+body { background: var(--ink); }
+.capture { box-sizing: border-box; width: 100%; min-height: 100vh; padding: 32px; background: var(--ink); color: var(--fog); }
+.capture-heading, .capture-footer { display: flex; justify-content: space-between; gap: 16px; font-family: var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }
+.capture-heading { align-items: center; border-bottom: 1px solid var(--line-bright); padding-bottom: 16px; margin-bottom: 24px; font-size: 12px; }
+.capture-heading strong { color: var(--paper); font-size: 15px; }
+.capture-content { min-height: 440px; }
+.capture-content > :not(.capture-desk) { max-width: 1120px; margin-inline: auto; }
+.capture-footer { border-top: 1px solid var(--line-bright); padding-top: 14px; margin-top: 24px; font-size: 10px; }
+.capture-desk { height: 680px; }
+.capture-desk .desk-os { height: 100%; }
+.capture-room { height: 680px; }
+.capture-room .room-canvas { height: 100%; }
+@media (max-width: 600px) {
+  .capture { padding: 16px; }
+  .capture-heading { align-items: flex-start; flex-direction: column; }
+  .capture-content { min-height: 500px; }
+  .capture-desk { height: 600px; }
+}
