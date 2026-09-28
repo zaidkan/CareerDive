@@ -35,7 +35,6 @@ function useGateSeen(): boolean {
 const NAV: Array<{ route: SitePath; label: string }> = [
   { route: "/", label: "Home" },
   { route: "/careers", label: "Careers" },
-  { route: "/how-it-works", label: "How it works" },
   { route: "/trust", label: "Privacy and safety" },
   { route: "/faq", label: "FAQ" },
 ];
@@ -106,11 +105,6 @@ export function SiteChrome({
             </li>
             <li>
               <a href="/careers" onClick={go("/careers")}>Careers</a>
-            </li>
-            <li>
-              <a href="/how-it-works" onClick={go("/how-it-works")}>
-                How the shift works
-              </a>
             </li>
             <li>
               <a href="/trust" onClick={go("/trust")}>

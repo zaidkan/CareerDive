@@ -13,11 +13,6 @@ const StartPage = lazy(async () => {
   return { default: mod.StartPage };
 });
 
-const HowItWorksPage = lazy(async () => {
-  const mod = await import("./pages/HowItWorksPage.js");
-  return { default: mod.HowItWorksPage };
-});
-
 const TrustPage = lazy(async () => {
   const mod = await import("./pages/TrustPage.js");
   return { default: mod.TrustPage };
@@ -73,13 +68,29 @@ function usePrefetchStartChunk(route: SiteRoute): void {
   }, [route.kind]);
 }
 
+/** Removed route: map to home first, then rewrite the history entry (no push, no popstate dispatch). */
+function resolveInitialRoute(pathname: string): SiteRoute {
+  const parsed = parseRoute(pathname);
+  if (parsed.kind !== "how-it-works") return parsed;
+  if (
+    typeof window !== "undefined" &&
+    parseRoute(window.location.pathname).kind === "how-it-works"
+  ) {
+    window.history.replaceState(null, "", "/");
+  }
+  return { kind: "home" };
+}
+
 export function SiteApp({ initialRoute }: { initialRoute?: SitePath }) {
   const previousPath = useRef<string | null>(null);
   const [route, setRoute] = useState<SiteRoute>(
-    initialRoute ? parseRoute(initialRoute) :
-      (typeof window === "undefined"
-        ? { kind: "home" }
-        : parseRoute(window.location.pathname)),
+    resolveInitialRoute(
+      initialRoute
+        ? initialRoute
+        : typeof window === "undefined"
+          ? "/"
+          : window.location.pathname,
+    ),
   );
 
   useEffect(() => {
@@ -92,6 +103,12 @@ export function SiteApp({ initialRoute }: { initialRoute?: SitePath }) {
       window.removeEventListener("popstate", onPop);
     };
   }, [initialRoute]);
+
+  useEffect(() => {
+    if (route.kind !== "how-it-works") return;
+    window.history.replaceState(null, "", "/");
+    setRoute({ kind: "home" });
+  }, [route]);
 
   useEffect(() => {
     if (initialRoute) return;
@@ -141,11 +158,6 @@ export function SiteApp({ initialRoute }: { initialRoute?: SitePath }) {
       ) : null}
       {route.kind === "not-found" || (route.kind === "career" && !selectedCareer) ? (
         <Suspense fallback={pageFallback}><NotFoundPage /></Suspense>
-      ) : null}
-      {route.kind === "how-it-works" ? (
-        <Suspense fallback={pageFallback}>
-          <HowItWorksPage />
-        </Suspense>
       ) : null}
       {route.kind === "trust" ? (
         <Suspense fallback={pageFallback}>
