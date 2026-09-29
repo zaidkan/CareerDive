@@ -27,6 +27,8 @@ export const WORKSHOP_CAREERS = [
   "Lawyer",
 ];
 
+export const MAX_CLS = 0.1;
+
 export function collectMetrics({ leakPatterns = [] } = {}) {
   const viewportWidth = window.innerWidth;
   const isShown = (element) => {
@@ -85,6 +87,38 @@ export function collectMetrics({ leakPatterns = [] } = {}) {
     };
     if (entry.text) outsideText.push(entry);
     else outsideDecoration.push(entry);
+  }
+
+  // Inspect text fragments, not element boxes: a clipped ancestor can make a
+  // heading unreadable while the page itself still has no horizontal overflow.
+  const clippedText = [];
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  while (walker.nextNode() && clippedText.length < 8) {
+    const node = walker.currentNode;
+    const text = (node.textContent || "").replace(/\s+/g, " ").trim();
+    const parent = node.parentElement;
+    if (text.length < 3 || !parent || !isShown(parent) || parent.closest(".visually-hidden, [aria-hidden='true']")) continue;
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const fragments = Array.from(range.getClientRects()).filter((rect) => rect.width > 2 && rect.height > 2);
+    if (!fragments.length) continue;
+    let ancestor = parent;
+    while (ancestor && ancestor !== document.documentElement) {
+      const style = getComputedStyle(ancestor);
+      const clipX = ["hidden", "clip"].includes(style.overflowX);
+      const clipY = ["hidden", "clip"].includes(style.overflowY);
+      if (clipX || clipY) {
+        const box = ancestor.getBoundingClientRect();
+        if (fragments.some((rect) =>
+          (clipX && (rect.left < box.left - 3 || rect.right > box.right + 3)) ||
+          (clipY && (rect.top < box.top - 3 || rect.bottom > box.bottom + 3))
+        )) {
+          clippedText.push({ text: text.slice(0, 80), element: describe(parent), ancestor: describe(ancestor) });
+          break;
+        }
+      }
+      ancestor = ancestor.parentElement;
+    }
   }
 
   const headings = Array.from(document.querySelectorAll("h1")).filter(isShown);
@@ -178,11 +212,6 @@ export function collectMetrics({ leakPatterns = [] } = {}) {
     });
   }
 
-  const shelfDocs = Array.from(document.querySelectorAll(".v2-shelf-doc"));
-  const heroActiveIndex = shelfDocs.findIndex((doc) =>
-    doc.classList.contains("v2-shelf-doc--active"),
-  );
-
   const workshopArtifactCount = document.querySelectorAll(
     "[data-workshop-artifact]",
   ).length;
@@ -207,6 +236,7 @@ export function collectMetrics({ leakPatterns = [] } = {}) {
       (heading.innerText || "").replace(/\s+/g, " ").trim().slice(0, 80),
     ),
     outsideText,
+    clippedText,
     outsideDecoration: outsideDecoration.slice(0, 8),
     brokenImages,
     pendingImages,
@@ -215,8 +245,6 @@ export function collectMetrics({ leakPatterns = [] } = {}) {
     emptySlots,
     leaks,
     navReport,
-    heroActiveIndex,
-    heroShelfDocs: shelfDocs.length,
     workshopArtifactCount,
     workshopLabels,
     cls: window.__qaCls ?? 0,
@@ -317,6 +345,8 @@ export function evaluateChecks({ route, theme, motion, metrics }) {
     metrics.outsideText.length === 0,
     metrics.outsideText,
   );
+  push("no-clipped-text", metrics.clippedText.length === 0, metrics.clippedText);
+  push("cls", metrics.cls <= MAX_CLS, `CLS=${metrics.cls.toFixed(4)} (limit ${MAX_CLS})`);
   push(
     "no-clipped-nav",
     metrics.navReport.every(

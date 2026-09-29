@@ -21,11 +21,12 @@ Out of scope: simulation, Desk OS, `/brag`, server, database, analytics, consequ
 ## Run
 
 ```bash
+pnpm build
 node scripts/qa-visual-freeze.mjs
 node scripts/qa-visual-freeze-sheet.mjs
 ```
 
-Outputs land in `/tmp/career-expo-ui-freeze` (override with `FREEZE_OUT`). The harness reuses a healthy `http://localhost:5173` via `WEB_ORIGIN`, otherwise it boots Vite itself and tears it down on exit. It needs no API server.
+Outputs land in `/tmp/career-expo-ui-freeze` (override with `FREEZE_OUT`). The harness serves the production build with Vite preview at `http://localhost:4179` (override with `WEB_ORIGIN`) and tears it down on exit. An occupied origin fails unless `FREEZE_REUSE_PREVIEW=1` explicitly opts into a known production preview. It needs no API server.
 
 The harness exits non-zero when any automated check fails. Exit code `2` is the 25-minute watchdog.
 
@@ -47,7 +48,9 @@ Objective, no human judgement required:
 | `one-h1` | exactly one visible `h1` |
 | `no-horizontal-overflow` | document width ≤ viewport width + 1 |
 | `no-content-outside-viewport` | visible text outside the horizontal viewport (clip ancestors excluded, `body`/`html` skipped) |
+| `no-clipped-text` | meaningful text fragments stay inside hidden/clip ancestors |
 | `no-clipped-nav` | header nav neither scrollable nor clipping links |
+| `text-control-contrast` | axe-core color-contrast rule passes for rendered text and controls |
 | `no-broken-images` | no loaded image with `naturalWidth === 0`, none pending |
 | `no-missing-media-source` | videos have a source, no `MEDIA_ERR` |
 | `no-duplicate-visible-ids` | no repeated visible `id` |
@@ -58,7 +61,7 @@ Objective, no human judgement required:
 | `focus-visible` | first 12 tabbable controls change rendered style on focus |
 | `no-console-errors` / `no-page-errors` / `no-asset-errors` | allowlisted noise (fonts, CDN, media aborts) excluded |
 | `reduced-motion-keeps-information` | reduced text length ≥ 95% of normal at 1366 light |
-| `cls` | cumulative layout shift recorded as a note above 0.1 |
+| `cls` | cumulative layout shift ≤ 0.1; higher values fail the capture |
 
 ## Manual review model
 

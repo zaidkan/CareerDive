@@ -2,6 +2,8 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
+    // Keep DOM-heavy integration tests within their real-time assertions.
+    maxWorkers: 2,
     include: [
       "packages/**/*.test.ts",
       "apps/**/*.test.ts",
