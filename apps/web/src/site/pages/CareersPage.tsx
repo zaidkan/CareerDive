@@ -67,7 +67,7 @@ export function CareersPage() {
       <ChapterSeparator />
 
       {/* 2. PLAYABLE NOW */}
-      <PublicChapter surface="stage" rhythm="stage" width="wide" className="cp-playable-now">
+      <PublicChapter surface="base" rhythm="stage" width="wide" className="cp-playable-now">
         <div className="cp-chapter-head">
           <h2 className="ui-type-h1" id="playable-now-heading">Playable now</h2>
           <h3 className="ui-type-h2">{cyber?.title || "Cybersecurity Analyst"}</h3>
@@ -87,7 +87,7 @@ export function CareersPage() {
       <ChapterSeparator />
 
       {/* 3. TAKING SHAPE */}
-      <PublicChapter surface="chapter" rhythm="expansive" width="wide" className="cp-taking-shape">
+      <PublicChapter surface="base" rhythm="expansive" width="wide" className="cp-taking-shape">
         <div className="cp-chapter-head">
           <h2 className="ui-type-h1">Taking shape</h2>
           <p className="ui-type-body-large cp-honesty-note">
