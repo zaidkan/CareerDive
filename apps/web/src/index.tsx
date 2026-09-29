@@ -334,7 +334,7 @@ export function App({
       ) : debrief ? (
         <DebriefView debrief={debrief} />
       ) : debriefStatus ? (
-        <section aria-label="Shift completion" aria-live="polite">
+        <section aria-label="Shift completion" aria-live="polite" className="shift-completion">
           <h2>Shift complete</h2>
           {debriefStatus === "failed" ? (
             <>
@@ -352,7 +352,7 @@ export function App({
               </button>
             </>
           ) : (
-            <p>Loading your debrief…</p>
+            <p>Gathering your decisions and evidence into a review…</p>
           )}
         </section>
       ) : (

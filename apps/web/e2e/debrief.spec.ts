@@ -64,7 +64,18 @@ test("completion opens five-decision debrief across themes and viewports", async
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("toolbar", { name: "Taskbar" })).toBeVisible();
   await page.getByRole("tab", { name: /^Team/ }).click();
+  let releaseDebrief: () => void = () => {};
+  const debriefGate = new Promise<void>((resolve) => { releaseDebrief = resolve; });
+  await page.route(/\/trpc\/debrief\.get(?:\?|$)/, async (route) => {
+    await debriefGate;
+    await route.continue();
+  });
   await page.locator('button[data-action-id="complete_shift"]').click();
+
+  try {
+    await expect(page.getByRole("heading", { name: "Shift complete" })).toBeVisible();
+    await expect(page.getByText("Gathering your decisions and evidence into a review…")).toBeVisible();
+  } finally { releaseDebrief(); }
 
   await expect(page.getByRole("heading", { name: "Your shift in review" })).toBeVisible();
   await expect(page.locator(".decision-review-item")).toHaveCount(5);

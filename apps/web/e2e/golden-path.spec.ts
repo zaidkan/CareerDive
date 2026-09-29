@@ -302,6 +302,7 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
     await page.getByRole("textbox", { name: "Password" }).fill(DESK_LOGIN.password);
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page.getByRole("toolbar", { name: "Taskbar" })).toBeVisible();
+    await expect(page.getByRole("group", { name: "Verdaly workstation ready" })).toBeFocused();
     await expect(page.locator('[data-desk-os="true"]')).toBeVisible();
     await expect.poll(() => workstationFitsViewport(page)).toBe(true);
     expect(sessionCreates.length, "login creates no extra session").toBe(1);

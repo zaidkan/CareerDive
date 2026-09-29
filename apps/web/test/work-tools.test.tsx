@@ -152,6 +152,25 @@ describe("work tools", () => {
             artifactId: "handoff-email",
         });
         expect(await screen.findByText(/Did not finish device inventory check/i)).toBeVisible();
+        expect(screen.getByRole("heading", { name: "Incomplete shift handoff" })).toHaveFocus();
+    });
+    it("moves focus with the selected email record without opening it", async () => {
+        const user = userEvent.setup();
+        const view = emailView();
+        const source = view.artifacts[0];
+        if (!source) throw new Error("Expected an email fixture");
+        view.artifacts.push({
+            ...source,
+            id: "follow-up-email",
+            title: "Follow-up question",
+            summary: "From Morgan · inbox",
+        });
+        render(<SystemToolPanel actions={[]} onAction={() => undefined} selectedEventId="handoff-1" systemId="email" view={view}/>);
+        const nextMessage = screen.getByRole("button", { name: /Follow-up question/i });
+        await user.click(nextMessage);
+        expect(nextMessage).toHaveAttribute("aria-pressed", "true");
+        expect(screen.getByRole("heading", { name: "Follow-up question" })).toHaveFocus();
+        expect(screen.getByRole("button", { name: "Open message" })).toBeVisible();
     });
     it("submits selected alert rows using their canonical option IDs", async () => {
         const user = userEvent.setup();
