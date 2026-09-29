@@ -88,15 +88,15 @@
 .ui-artifact-stage__secondary {
   position: absolute;
   z-index: 1;
-  top: calc(9% + var(--ui-layer) * 17%);
-  right: calc(-3% + var(--ui-layer) * 6%);
-  width: min(35%, 350px);
-  opacity: 0.72;
-  transform: rotate(calc(-5deg + var(--ui-layer) * 8deg));
+  top: calc(12% + var(--ui-layer) * 12%);
+  right: calc(2% + var(--ui-layer) * 3%);
+  width: min(32%, 320px);
+  opacity: 0.85;
+  transform: rotate(calc(-1.5deg + var(--ui-layer) * 2deg));
   pointer-events: none;
 }
-.ui-artifact-stage--right .ui-artifact-stage__secondary { right: auto; left: calc(-3% + var(--ui-layer) * 6%); }
-.ui-artifact-stage--center .ui-artifact-stage__secondary { right: calc(-3% + var(--ui-layer) * 3%); }
+.ui-artifact-stage--right .ui-artifact-stage__secondary { right: auto; left: calc(2% + var(--ui-layer) * 3%); }
+.ui-artifact-stage--center .ui-artifact-stage__secondary { right: calc(2% + var(--ui-layer) * 2%); }
 .ui-artifact-stage__caption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.4rem 2rem; padding-top: 0.85rem; }
 .ui-provenance { color: var(--text-muted); font: 600 0.76rem/1.5 var(--font-body); letter-spacing: 0.01em; }
 .ui-provenance [aria-hidden] { padding-inline: 0.25em; }
@@ -145,21 +145,20 @@
   .ui-artifact-stage__secondary,
   .ui-artifact-stage--right .ui-artifact-stage__secondary,
   .ui-artifact-stage--center .ui-artifact-stage__secondary {
-    top: 1rem;
-    left: 3%;
+    top: 1.5rem;
+    left: 4%;
     right: auto;
-    width: 43%;
-    max-height: 170px;
-    overflow: clip;
-    opacity: 0.75;
-    transform: rotate(-3deg);
+    width: 48%;
+    max-height: none;
+    opacity: 0.85;
+    transform: rotate(-1.5deg);
   }
   .ui-artifact-stage__secondary:nth-child(3),
   .ui-artifact-stage--right .ui-artifact-stage__secondary:nth-child(3),
   .ui-artifact-stage--center .ui-artifact-stage__secondary:nth-child(3) {
     left: auto;
-    right: 3%;
-    transform: rotate(3deg);
+    right: 4%;
+    transform: rotate(1.5deg);
   }
   .ui-artifact-stage__caption { display: block; }
   .ui-artifact-stage__caption > * { display: block; }
