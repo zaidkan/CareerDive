@@ -23,13 +23,23 @@ afterEach(() => {
 });
 
 describe("homepage media slots", () => {
-  it("every slot resolves real fallback media — no empty placeholders", () => {
-    for (const id of SLOT_IDS) {
-      const source = resolveHomeMediaSource(homeMedia[id]);
-      expect(source).toBeTruthy();
-      if (source.kind === "product") {
-        expect(source.id).toMatch(/^a-\d\d$/);
-      }
+  it("arrival resolves the audited fallback; dormant slots stay empty", () => {
+    const arrival = resolveHomeMediaSource(homeMedia["home-media-arrival"]);
+    expect(arrival?.kind).toBe("product");
+    if (arrival?.kind === "product") {
+      expect(arrival.id).toMatch(/^a-\d\d$/);
+    }
+    // Dormant future media points must not fabricate a default image.
+    for (const id of ["home-media-workplace", "home-media-story"] as const) {
+      expect(resolveHomeMediaSource(homeMedia[id])).toBeUndefined();
+    }
+  });
+
+  it("dormant slots render nothing until a custom source is configured", () => {
+    for (const id of ["home-media-workplace", "home-media-story"] as const) {
+      const { container } = render(<HomeMediaSlot slotId={id} />);
+      expect(container.querySelector(`[data-media-slot="${id}"]`)).toBeNull();
+      expect(container.querySelector("img")).toBeNull();
     }
   });
 
