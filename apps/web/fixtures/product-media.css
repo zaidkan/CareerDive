@@ -11,6 +11,7 @@ body { background: var(--ink); }
 .capture-desk .desk-os { height: 100%; }
 .capture-room { height: 680px; }
 .capture-room .room-canvas { height: 100%; }
+.capture-a-06, .capture-a-06 .capture-content { min-height: 0; }
 @media (max-width: 600px) {
   .capture { padding: 16px; }
   .capture-heading { align-items: flex-start; flex-direction: column; }

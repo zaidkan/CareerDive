@@ -38,7 +38,7 @@ test("completion opens five-decision debrief across themes and viewports", async
     localStorage.setItem("career-expo-theme", "dark");
   });
   await page.goto("/start", { waitUntil: "domcontentloaded" });
-  await expect(page.getByRole("heading", { name: "Day one · floor plan" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Head to Security Operations" })).toBeVisible();
   await page.getByRole("button", { name: /Security Operations/ }).click({ force: true });
   await expect(page.getByRole("region", { name: "Workplace space" })).toBeVisible();
   await expect(page.locator("body")).toContainText("press E to sit");
@@ -90,12 +90,12 @@ test("completion opens five-decision debrief across themes and viewports", async
   expect(await fits()).toBe(true);
   expect(await contrastViolations()).toEqual([]);
   await page.screenshot({ path: "test-results/debrief-desktop-dark.png", fullPage: true });
-  await page.getByRole("button", { name: "Switch to light mode" }).click();
+  await page.getByRole("button", { name: "Switch to light theme" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   expect(await fits()).toBe(true);
   expect(await contrastViolations()).toEqual([]);
   await page.screenshot({ path: "test-results/debrief-desktop-light.png", fullPage: true });
-  await page.getByRole("button", { name: "Switch to dark mode" }).click();
+  await page.getByRole("button", { name: "Switch to dark theme" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await fits()).toBe(true);
