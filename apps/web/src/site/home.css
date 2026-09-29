@@ -65,31 +65,85 @@
 .home-hero-stage {
   min-width: 0;
 }
-.home-rail {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.85rem 2.2rem;
-  margin: clamp(2.2rem, 4vw, 3.2rem) 0 0;
-  padding: 1.15rem 0 0;
-  border-top: 1px solid var(--border-subtle);
-  list-style: none;
-}
-.home-rail li {
+/* —— Hero career cards: compact; emphasis travels once, then settles —— */
+.home-hero-cards {
   display: grid;
-  gap: 0.15rem;
-  min-width: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
 }
-.home-rail-field {
+.home-hero-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "cue name"
+    "cue field"
+    "cue status";
+  gap: 0.15rem 0.75rem;
+  align-items: start;
+  min-width: 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-base);
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform var(--ui-motion-medium) var(--ui-motion-ease),
+    opacity var(--ui-motion-medium) var(--ui-motion-ease),
+    border-color var(--ui-motion-medium) var(--ui-motion-ease),
+    box-shadow var(--ui-motion-medium) var(--ui-motion-ease);
+}
+.home-hero-card:last-child {
+  grid-column: 1 / -1;
+}
+.home-hero-card[data-emphasis="false"] {
+  opacity: 0.72;
+  transform: scale(0.98);
+}
+.home-hero-card[data-emphasis="true"] {
+  z-index: 1;
+  opacity: 1;
+  border-color: var(--border-strong);
+  box-shadow: 0 18px 36px -22px rgb(0 0 0 / 55%);
+  transform: translateY(-4px) scale(1.015);
+}
+.home-hero-card-cue {
+  grid-area: cue;
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font: 700 0.72rem/1 var(--font-mono);
+  letter-spacing: 0.06em;
+}
+.home-hero-card-name {
+  grid-area: name;
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.012em;
+}
+.home-hero-card-field {
+  grid-area: field;
+  color: var(--text-muted);
+  font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-.home-rail strong {
+.home-hero-card-status {
+  grid-area: status;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+.home-hero-card[data-emphasis="true"] .home-hero-card-status {
   color: var(--text-primary);
-  font-size: 0.94rem;
-  letter-spacing: -0.015em;
 }
 
 /* —— Real work —— */
@@ -123,24 +177,25 @@
 .home-evidence-swap {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.35rem 0.7rem;
+  gap: 0.35rem;
+  padding: 0.32rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-base);
 }
 .home-evidence-swap button {
-  padding: 0.35rem 0.15rem;
+  padding: 0.45rem 0.95rem;
   border: 0;
+  border-radius: 7px;
   background: none;
   color: var(--text-secondary);
-  font: 500 0.82rem/1.5 var(--font-mono);
+  font: 600 0.82rem/1.5 var(--font-mono);
   font-variant-numeric: tabular-nums;
   cursor: pointer;
 }
-.home-evidence-swap button + button::before {
-  content: "·";
-  margin-right: 0.7rem;
-  color: var(--text-muted);
-}
 .home-evidence-swap button[aria-pressed="true"] {
+  background: var(--surface-subtle);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
   color: var(--text-primary);
   font-weight: 700;
 }
@@ -188,30 +243,12 @@
   font-weight: 700;
   line-height: 1.45;
 }
-/* —— Desk moment: one clean product frame —— */
-.home-desk {
-  margin-top: clamp(2.2rem, 5vw, 3.2rem);
-}
-.home-desk-note {
-  margin: 0 0 0.85rem;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  line-height: 1.5;
-}
-.home-handoff {
+/* —— Handoff: one email card beside the closing statement —— */
+.home-handoff-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: clamp(1.6rem, 4vw, 3.2rem);
   align-items: start;
-  margin-top: clamp(2.2rem, 5vw, 3.4rem);
-}
-.home-pullquote {
-  margin: 0 0 1.15rem;
-  color: var(--text-primary);
-  font-family: var(--font-display);
-  font-size: clamp(1.55rem, 2.4vw, 2.15rem);
-  line-height: 1.2;
-  letter-spacing: -0.025em;
 }
 
 /* —— Careers: one controlled artifact switcher (one cycle, then Cyber) —— */
@@ -250,7 +287,7 @@
 /* One representative work object per career, cropped as a document plate.
    Named media slots stay stable for future real captures. */
 .home-career-plate {
-  height: clamp(230px, 28vw, 380px);
+  height: clamp(250px, 30vw, 400px);
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
   background: var(--surface-base);
@@ -269,14 +306,6 @@
   object-fit: cover;
   object-position: top left;
 }
-.home-career-field {
-  margin: 0 0 0.35rem;
-  color: var(--text-muted);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
 .home-career-panel h3 {
   margin: 0 0 0.65rem;
   color: var(--text-primary);
@@ -292,10 +321,6 @@
   font-weight: 600;
   line-height: 1.5;
 }
-.home-career-object {
-  margin: 0 0 0.85rem;
-}
-
 /* —— Story band: a restrained wide media breath —— */
 .home-story {
   overflow: clip;
@@ -306,7 +331,7 @@
   max-width: 22ch;
 }
 .home-debrief-crop {
-  height: clamp(300px, 34vw, 480px);
+  height: clamp(200px, 21vw, 280px);
   margin-top: 1.9rem;
   overflow: clip;
   border: 1px solid var(--border-strong);
@@ -471,21 +496,57 @@
   object-position: center;
 }
 
+/* —— Large workplace proof: one cinematic capture below the hero —— */
+.home-place-crop .home-media-frame {
+  height: clamp(260px, 42vw, 560px);
+  overflow: clip;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-base);
+}
+.home-place-crop .home-capture-theme {
+  height: 100%;
+}
+.home-place-crop .home-capture img {
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* —— Homepage spacing: keep labels off the surface edges —— */
+.v2-home .ui-artifact-stage__field {
+  padding: clamp(1.35rem, 3vw, 2.75rem);
+}
+.v2-home .home-realwork-stage .ui-artifact-stage__primary {
+  width: min(100%, 1040px);
+}
+.v2-home .shift-handoff {
+  padding: clamp(1.35rem, 2.8vw, 2.4rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero-card {
+    transition: none;
+  }
+}
+
 /* —— Responsive —— */
 @media (min-width: 834px) {
   .home-acts {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .home-acts > li {
-    padding: 1.5rem 1.6rem 1.6rem 0;
+    padding: 1.5rem 2rem 1.75rem 0;
     border-top: 0;
   }
   .home-acts > li + li {
-    padding-left: 1.6rem;
+    padding-left: 2rem;
     border-left: 1px solid var(--border-subtle);
   }
-  .home-handoff {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  .home-handoff-grid {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
   }
   .home-career-panel {
     grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
@@ -516,8 +577,8 @@
   .home-hero-copy h1 {
     font-size: clamp(2.55rem, 11vw, 3.4rem);
   }
-  .home-handoff {
-    --ui-pass-to: 0px;
+  .home-hero-card {
+    padding: 0.75rem 0.85rem;
   }
   .home-career-tabs {
     gap: 0.35rem 1.15rem;

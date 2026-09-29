@@ -1,12 +1,14 @@
 /**
  * Homepage media-slot registry — the ONE place to replace homepage media.
  *
- * Each slot ships with audited real product media as its fallback, so the page
- * is complete with no custom asset. To upgrade a slot later, set `source` on
- * that slot only (image or video, with poster / caption / provenance) — no JSX
- * changes needed. Sources accept light/dark variants and mobile sources; slots
- * keep their responsive aspect ratio, and `crop: "wide"` opts into a deliberate
- * editorial crop on narrow screens instead of a tiny full capture.
+ * Each slot may ship with audited real product media as its fallback, so the
+ * page is complete with no custom asset. Slots without a fallback are dormant
+ * future media points: they render NOTHING until an explicit `source` is set.
+ * To upgrade a slot later, set `source` on that slot only (image or video, with
+ * poster / caption / provenance) — no JSX changes needed. Sources accept
+ * light/dark variants and mobile sources; slots keep their responsive aspect
+ * ratio, and `crop: "wide"` opts into a deliberate editorial crop on narrow
+ * screens instead of a tiny full capture.
  */
 import type { ReactNode } from "react";
 import type { ProductMediaId } from "./productMedia.js";
@@ -40,7 +42,8 @@ export type HomeMediaSlotConfig = {
   id: HomeMediaSlotId;
   /** Custom replacement media (image or video). Leave undefined → fallback. */
   source?: HomeMediaSource;
-  fallback: HomeMediaSource;
+  /** Audited default media. Omit to keep the slot dormant (renders nothing). */
+  fallback?: HomeMediaSource;
   alt: string;
   caption: string;
   provenance: string;
@@ -65,7 +68,6 @@ export const homeMedia: Record<HomeMediaSlotId, HomeMediaSlotConfig> = {
   },
   "home-media-workplace": {
     id: "home-media-workplace",
-    fallback: { kind: "product", id: "a-12" },
     alt: "Product capture: Desk OS open at the workstation at the start of the shift.",
     caption: "Desk OS · actual product capture, synthetic records",
     provenance: "Cybersecurity Analyst · Playable now",
@@ -74,7 +76,6 @@ export const homeMedia: Record<HomeMediaSlotId, HomeMediaSlotConfig> = {
   },
   "home-media-story": {
     id: "home-media-story",
-    fallback: { kind: "product", id: "a-11" },
     alt: "Product capture: a wide view of the Verdaly security operations floor between shifts of work.",
     caption: "Verdaly security operations floor · actual product capture, synthetic records",
     provenance: "Cybersecurity Analyst · Playable now",
@@ -85,8 +86,13 @@ export const homeMedia: Record<HomeMediaSlotId, HomeMediaSlotConfig> = {
 
 export function resolveHomeMediaSource(
   config: HomeMediaSlotConfig,
-): HomeMediaSource {
+): HomeMediaSource | undefined {
   return config.source ?? config.fallback;
+}
+
+/** Dormant slots have no media at all and must render nothing by default. */
+export function hasHomeMedia(slotId: HomeMediaSlotId): boolean {
+  return resolveHomeMediaSource(homeMedia[slotId]) !== undefined;
 }
 
 function ratioSize(ratio: string): { width: number; height: number } {
@@ -114,6 +120,7 @@ export function HomeMediaSlot({
 }) {
   const config = homeMedia[slotId];
   const source = resolveHomeMediaSource(config);
+  if (!source) return null;
   const slot = config.legacySlot ?? config.id;
   const frameClass =
     config.crop === "wide"

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { careers } from "../../careers/careers.js";
 import {
   ArtifactStage,
@@ -15,7 +15,7 @@ import {
   MechanicalAnnotatedDrawing,
   NurseHandoffSheet,
 } from "../workshop/index.js";
-import { HomeMediaSlot } from "../homeMedia.js";
+import { hasHomeMedia, HomeMediaSlot } from "../homeMedia.js";
 import { productMedia, type ProductMediaId } from "../productMedia.js";
 import { SiteLink } from "../SiteLink.js";
 
@@ -168,38 +168,24 @@ const EVIDENCE_VIEWS = [
 
 type EvidenceKey = (typeof EVIDENCE_VIEWS)[number]["key"];
 
+/**
+ * Compact hero cards: career name, field, availability, and one restrained
+ * visual cue. No detailed artifacts here — the hero states what exists.
+ */
+const HERO_CARDS = [
+  { careerId: "cybersecurity-analyst", cue: "CY" },
+  { careerId: "registered-nurse", cue: "RN" },
+  { careerId: "mechanical-engineer", cue: "ME" },
+  { careerId: "electrician", cue: "EL" },
+  { careerId: "lawyer-attorney", cue: "LA" },
+] as const;
+
+/** Emphasis travels once through the hero cards (~12s), then settles on Cyber. */
+const HERO_CARD_STEP_MS = 2000;
+
 const CAREER_SHOWCASE = [
   {
-    careerId: "registered-nurse",
-    workObject: "Handoff sheet · 07:00 report",
-    statement: "Notice the change. Communicate it clearly.",
-    artifact: <NurseHandoffSheet />,
-    provenance: { career: "Registered Nurse", kind: "workshop" },
-  },
-  {
-    careerId: "mechanical-engineer",
-    workObject: "Annotated drawing · MB-204 bracket",
-    statement: "Read the result. Decide what needs revision.",
-    artifact: <MechanicalAnnotatedDrawing />,
-    provenance: { career: "Mechanical Engineer", kind: "workshop" },
-  },
-  {
-    careerId: "electrician",
-    workObject: "Wiring schematic · Panel L2",
-    statement: "Spot the hazard. Decide how the work proceeds.",
-    artifact: <ElectricianWiringSchematic />,
-    provenance: { career: "Electrician", kind: "workshop" },
-  },
-  {
-    careerId: "lawyer-attorney",
-    workObject: "Contract redline · Clause 7.2",
-    statement: "Separate settled facts from open questions.",
-    artifact: <LawyerRedline />,
-    provenance: { career: "Lawyer", kind: "workshop" },
-  },
-  {
     careerId: "cybersecurity-analyst",
-    workObject: "Alert record · A-1042",
     statement: "Compare the records. Say what the evidence supports.",
     artifact: (
       <ProductCapture
@@ -210,9 +196,33 @@ const CAREER_SHOWCASE = [
     ),
     provenance: CYBER_PROVENANCE,
   },
+  {
+    careerId: "registered-nurse",
+    statement: "Notice the change. Communicate it clearly.",
+    artifact: <NurseHandoffSheet />,
+    provenance: { career: "Registered Nurse", kind: "workshop" },
+  },
+  {
+    careerId: "mechanical-engineer",
+    statement: "Read the result. Decide what needs revision.",
+    artifact: <MechanicalAnnotatedDrawing />,
+    provenance: { career: "Mechanical Engineer", kind: "workshop" },
+  },
+  {
+    careerId: "electrician",
+    statement: "Spot the hazard. Decide how the work proceeds.",
+    artifact: <ElectricianWiringSchematic />,
+    provenance: { career: "Electrician", kind: "workshop" },
+  },
+  {
+    careerId: "lawyer-attorney",
+    statement: "Separate settled facts from open questions.",
+    artifact: <LawyerRedline />,
+    provenance: { career: "Lawyer", kind: "workshop" },
+  },
 ] as const;
 
-/** One full pass through the careers, then it settles on Cyber for good. */
+/** One cycle through the detailed switcher (~4s each), then Cyber for good. */
 const CAREER_SWITCH_MS = 4000;
 
 const HOME_FAQ = [
@@ -242,28 +252,74 @@ export function LandingPage() {
   const finalRef = useChapterReveal<HTMLDivElement>();
 
   const [evidence, setEvidence] = useState<EvidenceKey>("alert");
+  // Hero cards: emphasis travels once through the cards, settling on Cyber.
+  const [heroCards, setHeroCards] = useState(() => ({ active: 0, step: 0 }));
+  const [heroAuto, setHeroAuto] = useState(() => !prefersReducedMotion());
+  // Detailed switcher: one cycle starting on viewport entry, settling on Cyber.
   const [careerPanels, setCareerPanels] = useState(() => ({
-    active: prefersReducedMotion() ? CAREER_SHOWCASE.length - 1 : 0,
+    active: 0,
     departing: null as number | null,
   }));
-  const [autoCycling, setAutoCycling] = useState(!prefersReducedMotion());
+  const [careerStep, setCareerStep] = useState(0);
+  const [careerAuto, setCareerAuto] = useState(false);
+  const careerAutoStarted = useRef(false);
 
   useEffect(() => {
-    if (!autoCycling) return;
-    if (careerPanels.active >= CAREER_SHOWCASE.length - 1) {
-      setAutoCycling(false);
+    if (!heroAuto) return;
+    const nextStep = heroCards.step + 1;
+    if (nextStep > HERO_CARDS.length) {
+      setHeroAuto(false);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setHeroCards((current) => ({
+        step: current.step + 1,
+        active: (current.step + 1) % HERO_CARDS.length,
+      }));
+    }, HERO_CARD_STEP_MS);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [heroAuto, heroCards.step]);
+
+  useEffect(() => {
+    const node = careerRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    if (prefersReducedMotion()) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) return;
+        observer.disconnect();
+        if (careerAutoStarted.current) return;
+        careerAutoStarted.current = true;
+        setCareerAuto(true);
+      },
+      { threshold: 0.35 },
+    );
+    observer.observe(node);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!careerAuto) return;
+    const nextStep = careerStep + 1;
+    if (nextStep > CAREER_SHOWCASE.length) {
+      setCareerAuto(false);
       return;
     }
     const timer = window.setTimeout(() => {
       setCareerPanels((current) => ({
-        active: Math.min(current.active + 1, CAREER_SHOWCASE.length - 1),
+        active: nextStep % CAREER_SHOWCASE.length,
         departing: current.active,
       }));
+      setCareerStep(nextStep);
     }, CAREER_SWITCH_MS);
     return () => {
       window.clearTimeout(timer);
     };
-  }, [autoCycling, careerPanels.active]);
+  }, [careerAuto, careerStep]);
 
   useEffect(() => {
     if (careerPanels.departing === null) return;
@@ -324,23 +380,77 @@ export function LandingPage() {
               </p>
             </div>
             <div data-motion-role="artifact" className="home-hero-stage">
-              <ArtifactStage
-                dominant={
-                  <HomeMediaSlot slotId="home-media-arrival" eager hideCaption />
-                }
-                caption="Actual product capture · synthetic records"
-                provenance={CYBER_PROVENANCE}
-              />
+              <div
+                className="home-hero-cards"
+                role="group"
+                aria-label="Careers at Career Expo"
+                onPointerDown={() => {
+                  setHeroAuto(false);
+                }}
+                onKeyDown={() => {
+                  setHeroAuto(false);
+                }}
+              >
+                {HERO_CARDS.map((card, index) => {
+                  const career = careers.find(
+                    (item) => item.id === card.careerId,
+                  );
+                  if (!career) return null;
+                  const emphasized = heroCards.active === index;
+                  return (
+                    <button
+                      key={card.careerId}
+                      type="button"
+                      className="home-hero-card"
+                      data-emphasis={emphasized ? "true" : "false"}
+                      aria-pressed={emphasized}
+                      onClick={() => {
+                        setHeroAuto(false);
+                        setHeroCards((current) => ({
+                          ...current,
+                          active: index,
+                        }));
+                      }}
+                    >
+                      <span className="home-hero-card-cue" aria-hidden="true">
+                        {card.cue}
+                      </span>
+                      <span className="home-hero-card-name">
+                        {career.title}
+                      </span>
+                      <span className="home-hero-card-field">
+                        {career.field}
+                      </span>
+                      <span className="home-hero-card-status">
+                        {career.availability === "ready_now"
+                          ? "Playable now"
+                          : career.availability === "coming_soon"
+                            ? "Coming soon"
+                            : "Workshop preview"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
-          <ul className="home-rail" aria-label="Career areas">
-            {careers.map((career) => (
-              <li key={career.id}>
-                <span className="home-rail-field">{career.field}</span>
-                <strong>{career.title}</strong>
-              </li>
-            ))}
-          </ul>
+        </PublicChapter>
+      </section>
+
+      <section
+        className="home-place"
+        aria-label="The Verdaly security operations floor"
+      >
+        <PublicChapter
+          as="div"
+          surface="base"
+          rhythm="compact"
+          width="full"
+          className="home-place-chapter"
+        >
+          <div className="home-place-crop">
+            <HomeMediaSlot slotId="home-media-arrival" eager />
+          </div>
         </PublicChapter>
       </section>
 
@@ -401,9 +511,7 @@ export function LandingPage() {
               ))}
             </div>
             <p className="home-evidence-note">
-              Sign-in <span aria-hidden="true">·</span> Device{" "}
-              <span aria-hidden="true">·</span> Account{" "}
-              <span aria-hidden="true">·</span> VPN — one record at a time.
+              One record at a time. Compare before you decide.
             </p>
           </div>
         </PublicChapter>
@@ -420,10 +528,6 @@ export function LandingPage() {
             <h2 id="home-shift-title" data-motion-role="argument">
               How a shift works
             </h2>
-            <p className="ui-type-proof">
-              Every Career Expo first day follows the same shape. The work
-              changes — the judgment does not.
-            </p>
             <ol className="home-acts">
               {SHIFT_ACTS.map((entry) => (
                 <li key={entry.act}>
@@ -433,27 +537,31 @@ export function LandingPage() {
               ))}
             </ol>
           </div>
-          <div className="home-desk">
-            <p className="home-desk-note">The work happens at a desk.</p>
-            <HomeMediaSlot slotId="home-media-workplace" />
-          </div>
-          <div className="home-handoff">
-            <div ref={handoffRef} data-motion="handoff-pass">
-              <div data-motion-role="document">
-                <ProductCapture
-                  id="a-08"
-                  slot="home-handoff-pass"
-                  alt="Product capture: the night analyst's handoff email, read at the start of the shift."
-                />
-              </div>
-              <p className="home-media-note">
-                Handoff · actual product capture, synthetic records
+        </PublicChapter>
+      </section>
+
+      <section className="home-handoff" aria-labelledby="home-handoff-title">
+        <PublicChapter
+          as="div"
+          surface="chapter"
+          rhythm="standard"
+          className="home-handoff-chapter"
+        >
+          <div
+            ref={handoffRef}
+            data-motion="chapter-reveal"
+            className="home-handoff-grid"
+          >
+            <div className="home-handoff-copy">
+              <h2 id="home-handoff-title" data-motion-role="argument">
+                Your shift ends. The work does not.
+              </h2>
+              <p className="ui-type-proof">
+                Before you leave, you write down what you know, what is still
+                uncertain, and what the next analyst should check.
               </p>
             </div>
-            <div className="home-handoff-words">
-              <p className="home-pullquote">
-                Your shift ends. The work does not.
-              </p>
+            <div data-motion-role="artifact">
               <HandoffExcerpt />
             </div>
           </div>
@@ -469,10 +577,12 @@ export function LandingPage() {
         >
           <div
             onPointerDown={() => {
-              setAutoCycling(false);
+              careerAutoStarted.current = true;
+              setCareerAuto(false);
             }}
             onKeyDown={() => {
-              setAutoCycling(false);
+              careerAutoStarted.current = true;
+              setCareerAuto(false);
             }}
           >
             <div data-motion="chapter-reveal">
@@ -496,7 +606,8 @@ export function LandingPage() {
                     className="home-career-tab"
                     aria-pressed={careerPanels.active === index}
                     onClick={() => {
-                      setAutoCycling(false);
+                      careerAutoStarted.current = true;
+                      setCareerAuto(false);
                       selectCareer(index);
                     }}
                   >
@@ -532,12 +643,8 @@ export function LandingPage() {
                     <div className="home-career-plate" aria-hidden="true">
                       {entry.artifact}
                     </div>
-                    <p className="home-career-field">{career.field}</p>
                     <h3>{career.title}</h3>
                     <p className="home-career-statement">{entry.statement}</p>
-                    <p className="home-career-object ui-type-technical">
-                      {entry.workObject}
-                    </p>
                     <ProvenanceLabel provenance={entry.provenance} />
                   </div>
                 );
@@ -552,17 +659,22 @@ export function LandingPage() {
         </PublicChapter>
       </section>
 
-      <section className="home-story" aria-label="Inside the security operations floor">
-        <PublicChapter
-          as="div"
-          surface="base"
-          rhythm="compact"
-          width="full"
-          className="home-story-chapter"
+      {hasHomeMedia("home-media-story") ? (
+        <section
+          className="home-story"
+          aria-label="Inside the security operations floor"
         >
-          <HomeMediaSlot slotId="home-media-story" />
-        </PublicChapter>
-      </section>
+          <PublicChapter
+            as="div"
+            surface="base"
+            rhythm="compact"
+            width="full"
+            className="home-story-chapter"
+          >
+            <HomeMediaSlot slotId="home-media-story" />
+          </PublicChapter>
+        </section>
+      ) : null}
 
       <section className="home-reflect" aria-labelledby="home-reflect-title">
         <PublicChapter

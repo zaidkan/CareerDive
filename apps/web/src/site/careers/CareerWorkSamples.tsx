@@ -3,8 +3,8 @@ export function HandoffExcerpt() {
   return (
     <figure className="shift-handoff">
       <figcaption>
-        <strong>Handoff email</strong>
-        <span>Night analyst · 07:55</span>
+        <strong>Night analyst handoff</strong>
+        <span>07:55</span>
       </figcaption>
       <blockquote>
         Still watching the unfamiliar login thread. Did not finish device

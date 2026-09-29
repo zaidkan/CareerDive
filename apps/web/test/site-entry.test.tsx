@@ -121,13 +121,18 @@ describe("site routes", () => {
       "home-evidence-device",
       "home-evidence-account",
       "home-evidence-vpn",
-      "home-handoff-pass",
       "home-debrief-reflection",
     ]) {
       expect(
         document.querySelector(`[data-media-slot="${slot}"]`),
       ).not.toBeNull();
     }
+    // Hero visual is the compact career-card system, not a static thumbnail.
+    expect(document.querySelectorAll(".home-hero-card")).toHaveLength(5);
+    expect(document.querySelector(".home-hero-stage img")).toBeNull();
+    // How a shift works stays text-only; handoff shows exactly one artifact.
+    expect(document.querySelector(".home-desk")).toBeNull();
+    expect(document.querySelectorAll(".home-handoff figure")).toHaveLength(1);
     expect(
       document.querySelectorAll('[data-media-slot^="career-artifact-"]'),
     ).toHaveLength(5);
@@ -187,7 +192,14 @@ describe("site routes", () => {
       panelProvenance.filter((el) => /playable now/i.test(el.textContent))
         .length,
     ).toBe(1);
-    expect(screen.getByText("Playable now")).toBeInTheDocument();
+    // Cyber leads both career systems: first hero card and first switcher tab.
+    const heroCards = Array.from(
+      document.querySelectorAll(".home-hero-card .home-hero-card-name"),
+    );
+    expect(heroCards[0]?.textContent).toBe("Cybersecurity Analyst");
+    const tabs = Array.from(document.querySelectorAll(".home-career-tab"));
+    expect(tabs[0]?.textContent).toBe("Cybersecurity Analyst");
+    expect(screen.getAllByText(/playable now/i).length).toBeGreaterThan(0);
     expect(
       screen.getByText(/real work, not a job description/i),
     ).toBeInTheDocument();
