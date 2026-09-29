@@ -445,10 +445,10 @@ export function LandingPage() {
                   slot="home-handoff-pass"
                   alt="Product capture: the night analyst's handoff email, read at the start of the shift."
                 />
-                <p className="home-media-note">
-                  Handoff · actual product capture, synthetic records
-                </p>
               </div>
+              <p className="home-media-note">
+                Handoff · actual product capture, synthetic records
+              </p>
             </div>
             <div className="home-handoff-words">
               <p className="home-pullquote">
@@ -480,7 +480,7 @@ export function LandingPage() {
                 Different careers. Different work.
               </h2>
               <p className="ui-type-proof">
-                One playable now. Four taking shape.
+                One playable now. Four Workshop previews taking shape.
               </p>
             </div>
             <div className="home-career-tabs" role="group" aria-label="Careers">

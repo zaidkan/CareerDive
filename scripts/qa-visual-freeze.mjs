@@ -392,6 +392,7 @@ async function capture(context, spec) {
     documentWidth: metrics ? metrics.documentWidth : null,
     viewportWidth: metrics ? metrics.viewportWidth : viewport.width,
     textLength: metrics ? metrics.textLength : 0,
+    stableTextLength: metrics ? metrics.stableTextLength : 0,
     cls: metrics ? Number(metrics.cls.toFixed(4)) : 0,
     contrastViolations: contrast,
     h1Text: metrics ? metrics.h1Text : [],
@@ -522,10 +523,10 @@ function renderReport(records, meta) {
       lines.push(`| ${route.key} | n/a | n/a | n/a | skipped |`);
       continue;
     }
-    const ratio = reduced.textLength / Math.max(normal.textLength, 1);
+    const ratio = reduced.stableTextLength / Math.max(normal.stableTextLength, 1);
     const verdict = ratio >= REDUCED_PARITY_FLOOR ? "pass" : "INFORMATION LOSS";
     lines.push(
-      `| ${route.key} | ${String(normal.textLength)} | ${String(reduced.textLength)} | ${ratio.toFixed(3)} | ${verdict} |`,
+      `| ${route.key} | ${String(normal.stableTextLength)} | ${String(reduced.stableTextLength)} | ${ratio.toFixed(3)} | ${verdict} |`,
     );
   }
   lines.push("");
@@ -642,6 +643,7 @@ async function main() {
           documentWidth: null,
           viewportWidth: job.viewport.width,
           textLength: 0,
+          stableTextLength: 0,
           cls: 0,
           contrastViolations: [],
           h1Text: [],
@@ -673,19 +675,19 @@ async function main() {
           entry.viewport.label === "1366" &&
           entry.theme === "light",
       );
-      if (!normal || !reduced || !normal.textLength || !reduced.textLength) continue;
-      const ratio = reduced.textLength / normal.textLength;
+      if (!normal || !reduced || !normal.stableTextLength || !reduced.stableTextLength) continue;
+      const ratio = reduced.stableTextLength / normal.stableTextLength;
       if (ratio < REDUCED_PARITY_FLOOR) {
         parityIssues.push({ route: route.key, ratio: Number(ratio.toFixed(3)) });
         reduced.checks["reduced-motion-keeps-information"] = {
           ok: false,
-          detail: { normal: normal.textLength, reduced: reduced.textLength, ratio },
+          detail: { normal: normal.stableTextLength, reduced: reduced.stableTextLength, ratio },
         };
         reduced.failed.push("reduced-motion-keeps-information");
       } else if (reduced) {
         reduced.checks["reduced-motion-keeps-information"] = {
           ok: true,
-          detail: { normal: normal.textLength, reduced: reduced.textLength, ratio },
+          detail: { normal: normal.stableTextLength, reduced: reduced.stableTextLength, ratio },
         };
       }
     }

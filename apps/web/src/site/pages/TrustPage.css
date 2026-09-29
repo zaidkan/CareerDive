@@ -270,7 +270,8 @@
 .trust-wiring pre {
   max-width: 100%;
   margin: 0;
-  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   padding: 1rem;
   background: var(--ui-surface-c);
   color: var(--text-primary);

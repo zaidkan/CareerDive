@@ -53,8 +53,9 @@ import {
   saveMouseSensitivity,
 } from "./mouseSensitivity.js";
 
+const loadRoomCanvas = () => import("./RoomCanvas.js");
 const RoomCanvas = lazy(async () => {
-  const mod = await import("./RoomCanvas.js");
+  const mod = await loadRoomCanvas();
   return { default: mod.RoomCanvas };
 });
 
@@ -113,6 +114,10 @@ function SpatialShellStage({
   const closeFridgeIntentRef = useRef(false);
   const { active: fullscreen, toggle: toggleFullscreen } =
     useFullscreen(stageRef);
+
+  useEffect(() => {
+    if (spatial.phase === "floor_map") void loadRoomCanvas().catch(() => {});
+  }, [spatial.phase]);
 
   useEffect(() => {
     if (spatial.phase === "floor_map") onRoomExit?.();

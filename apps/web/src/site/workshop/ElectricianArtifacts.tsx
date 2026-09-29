@@ -37,7 +37,7 @@ export function ElectricianWiringSchematic() {
           <text className="wa-svg-label wa-svg-label--mute" x="194" y="138">L2-5</text>
           <rect className="wa-svg-node" x="194" y="142" width="54" height="20" />
           <text className="wa-svg-label wa-svg-label--key" x="221" y="156" textAnchor="middle">30 A</text>
-          <text className="wa-svg-label" x="254" y="156">Air handler</text>
+          <text className="wa-svg-label" x="314" y="156" textAnchor="end">Air handler</text>
           <text className="wa-svg-label wa-svg-label--mute" x="314" y="182" textAnchor="end">SYNTHETIC · NOT FOR CONSTRUCTION</text>
         </svg>
         <figcaption>

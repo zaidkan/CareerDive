@@ -164,6 +164,7 @@ export function collectMetrics({ leakPatterns = [] } = {}) {
 
   const emptySlots = [];
   for (const slot of document.querySelectorAll("[data-media-slot]")) {
+    if (slot.closest('[hidden], [aria-hidden="true"]')) continue;
     const rect = slot.getBoundingClientRect();
     const hasText = Boolean(slot.textContent.trim());
     if (
@@ -180,6 +181,8 @@ export function collectMetrics({ leakPatterns = [] } = {}) {
   }
 
   const bodyText = (document.body.innerText || "").replace(/\s+/g, " ");
+  // Initial career panel differs by motion preference; compare stable page copy.
+  const switcherText = (document.querySelector('[data-motion="career-switch"]')?.innerText || "").replace(/\s+/g, " ");
   const leaks = [];
   for (const { name, pattern } of leakPatterns) {
     const match = bodyText.match(pattern);
@@ -230,6 +233,7 @@ export function collectMetrics({ leakPatterns = [] } = {}) {
       "(prefers-reduced-motion: reduce)",
     ).matches,
     textLength: bodyText.trim().length,
+    stableTextLength: Math.max(0, bodyText.trim().length - switcherText.trim().length),
     bodyText: bodyText.slice(0, 200000),
     h1Count: headings.length,
     h1Text: headings.map((heading) =>

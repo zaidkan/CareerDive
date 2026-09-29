@@ -1065,6 +1065,64 @@
 .cp-hero-content p {
   margin-bottom: 3rem;
 }
+
+/* Keep secondary evidence in the field layout so its text sets field height. */
+.careers-page-v4 .cp-workshop-career .ui-artifact-stage__field {
+  grid-template-columns: minmax(0, 1fr);
+}
+.careers-page-v4 .cp-workshop-career .ui-artifact-stage__primary {
+  grid-area: 1 / 1;
+}
+.careers-page-v4 .cp-workshop-career .ui-artifact-stage__secondary {
+  position: relative;
+  grid-area: 1 / 1;
+  justify-self: end;
+  align-self: start;
+  inset: auto;
+  opacity: 1;
+}
+.careers-page-v4 .cp-workshop-career .ui-artifact-stage--right .ui-artifact-stage__secondary {
+  justify-self: start;
+}
+
+:root[data-theme="light"] .careers-page-v4 .wa-sheet {
+  --text-muted: #586473;
+  --status-success-fg: #276548;
+}
+:root[data-theme="light"] .cyber-detail .start-shift {
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  .careers-page-v4 .cp-workshop-career .ui-artifact-stage__field {
+    gap: 1rem;
+  }
+  .careers-page-v4 .cp-workshop-career .ui-artifact-stage__primary {
+    grid-area: auto;
+    width: 100%;
+  }
+  .careers-page-v4 .cp-workshop-career .ui-artifact-stage__secondary {
+    grid-area: auto;
+    width: min(100%, 380px);
+    max-width: 100%;
+    justify-self: end;
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 360px) {
+  .careers-page-v4 .wa-table th,
+  .careers-page-v4 .wa-table .wa-key {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .careers-page-v4 .wa-table th,
+  .careers-page-v4 .wa-table td {
+    padding-inline: 0.2rem;
+  }
+  .careers-page-v4 .wa-chip { white-space: normal; }
+}
 .cp-chapter-head h2 {
   margin-bottom: 0.5rem;
 }
