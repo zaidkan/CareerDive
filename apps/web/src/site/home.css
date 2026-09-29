@@ -98,7 +98,6 @@
   grid-column: 1 / -1;
 }
 .home-hero-card[data-emphasis="false"] {
-  opacity: 0.72;
   transform: scale(0.98);
 }
 .home-hero-card[data-emphasis="true"] {
@@ -116,7 +115,7 @@
   height: 2.1rem;
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font: 700 0.72rem/1 var(--font-mono);
   letter-spacing: 0.06em;
 }
@@ -130,7 +129,7 @@
 }
 .home-hero-card-field {
   grid-area: field;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.06em;
