@@ -11,9 +11,7 @@ export function TrustPage() {
       <header className="trust-hero">
         <h1>Collect less. Explain exactly what remains.</h1>
         <p className="trust-hero-lede">
-          Career Expo runs the first shift. Verdaly is the fictional workplace
-          inside it. Here is what the current product saves, what it checks, and
-          where its limits are.
+          Career Expo is the platform. Verdaly is just a fictional workplace inside the Cybersecurity Analyst simulation—it does not collect any data. Here is what Career Expo currently saves, what it checks, and where its limits are.
         </p>
         <p className="trust-hero-note">
           This is a product summary from current code, not a legal policy or a
