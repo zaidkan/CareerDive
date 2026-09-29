@@ -101,7 +101,7 @@ describe("site routes", () => {
     ).toBeVisible();
     expect(
       screen.getByRole("heading", {
-        name: /different careers\.?\s*different kinds of work\./i,
+        name: /different careers\.?\s*different work\./i,
       }),
     ).toBeVisible();
     expect(
@@ -174,17 +174,18 @@ describe("site routes", () => {
     ]) {
       expect(screen.getAllByText(title).length).toBeGreaterThanOrEqual(1);
     }
-    // Tile-level provenance is the visible contract; artifact footers repeat it
+    // Panel-level provenance is the visible contract; artifact footers repeat it
     // inside aria-hidden crop plates and are excluded here.
-    const tileProvenance = Array.from(
-      document.querySelectorAll(".home-breadth-tile > .ui-provenance"),
+    const panelProvenance = Array.from(
+      document.querySelectorAll(".home-career-panel > .ui-provenance"),
     );
     expect(
-      tileProvenance.filter((el) => /workshop concept/i.test(el.textContent))
+      panelProvenance.filter((el) => /workshop concept/i.test(el.textContent))
         .length,
     ).toBe(4);
     expect(
-      tileProvenance.filter((el) => /playable now/i.test(el.textContent)).length,
+      panelProvenance.filter((el) => /playable now/i.test(el.textContent))
+        .length,
     ).toBe(1);
     expect(screen.getByText("Playable now")).toBeInTheDocument();
     expect(

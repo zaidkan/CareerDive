@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { careers } from "../../careers/careers.js";
 import {
   ArtifactStage,
@@ -8,20 +8,26 @@ import {
   useChapterReveal,
   type MediaProvenance,
 } from "../ArtDirection.js";
-import {
-  HandoffExcerpt,
-  InvestigationExcerpt,
-} from "../careers/CareerWorkSamples.js";
+import { HandoffExcerpt } from "../careers/CareerWorkSamples.js";
 import {
   ElectricianWiringSchematic,
   LawyerRedline,
   MechanicalAnnotatedDrawing,
   NurseHandoffSheet,
 } from "../workshop/index.js";
+import { HomeMediaSlot } from "../homeMedia.js";
 import { productMedia, type ProductMediaId } from "../productMedia.js";
 import { SiteLink } from "../SiteLink.js";
 
 const GATE_KEY = "first-shift-start-gate";
+
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
 
 function useHasSeenFilm(): boolean {
   const [seen, setSeen] = useState(false);
@@ -106,77 +112,95 @@ const CYBER_PROVENANCE: MediaProvenance = {
 };
 
 const SHIFT_ACTS = [
-  {
-    act: "Prepare",
-    claim: "Context first. Then the actual work.",
-    beats: [
-      ["01", "Brief", "Get the context other people are relying on."],
-      ["02", "Investigate", "Look at the actual work, not a description of it."],
-    ],
-  },
-  {
-    act: "Decide",
-    claim: "You decide before the picture is complete.",
-    beats: [
-      ["03", "Decide", "Make a call with the evidence you have."],
-      ["04", "Adapt", "New information changes what matters next."],
-    ],
-  },
+  { act: "Prepare", claim: "Context first. Then the actual work." },
+  { act: "Decide", claim: "You decide before the picture is complete." },
   {
     act: "Pass it on",
     claim: "The work isn't done until someone else can continue it.",
-    beats: [
-      ["05", "Document", "Write down what's known and what's still open."],
-      ["06", "Hand off", "Pass it on cleanly when the day ends."],
-      ["07", "Reflect", "Look back on the decisions and how the day felt."],
-    ],
   },
 ] as const;
 
-const EVIDENCE_RECORDS = [
+/** One alert, one proof at a time. Labels swap the view manually — no autoplay. */
+const EVIDENCE_VIEWS = [
   {
-    label: "Sign-in record",
-    detail: "Who signed in, and from where?",
+    key: "alert",
+    label: "Alert A-1042",
+    id: "a-01",
+    slot: "home-case-a1042",
+    caption: "Alert record · A-1042 — actual product capture, synthetic records",
+    alt: "Product capture: alert record A-1042, a sign-in from an unfamiliar device, open for review.",
+  },
+  {
+    key: "signin",
+    label: "Sign-in",
     id: "a-02",
     slot: "home-evidence-auth",
+    caption: "Sign-in record · S-0741 — actual product capture, synthetic records",
     alt: "Product capture: the sign-in record for session S-0741, from the Cybersecurity Analyst first day.",
   },
   {
-    label: "Device inventory",
-    detail: "Does inventory recognize it?",
+    key: "device",
+    label: "Device",
     id: "a-03",
     slot: "home-evidence-device",
+    caption:
+      "Device inventory · unknown-laptop-17 — actual product capture, synthetic records",
     alt: "Product capture: the device inventory record for the unfamiliar laptop, from the Cybersecurity Analyst first day.",
   },
   {
-    label: "Account history",
-    detail: "What does the account history show?",
+    key: "account",
+    label: "Account",
     id: "a-04",
     slot: "home-evidence-account",
+    caption:
+      "Account history · A-1042 review — actual product capture, synthetic records",
     alt: "Product capture: the account history opened during the A-1042 review, from the Cybersecurity Analyst first day.",
   },
   {
-    label: "VPN record",
-    detail: "Does access history line up?",
+    key: "vpn",
+    label: "VPN",
     id: "a-05",
     slot: "home-evidence-vpn",
+    caption: "VPN record · V-218 — actual product capture, synthetic records",
     alt: "Product capture: the VPN access record V-218, from the Cybersecurity Analyst first day.",
   },
 ] as const;
 
-type BreadthEntry = {
-  careerId: string;
-  workObject: string;
-  judgment: string;
-  artifact: ReactNode;
-  provenance: MediaProvenance;
-};
+type EvidenceKey = (typeof EVIDENCE_VIEWS)[number]["key"];
 
-const BREADTH: readonly BreadthEntry[] = [
+const CAREER_SHOWCASE = [
+  {
+    careerId: "registered-nurse",
+    workObject: "Handoff sheet · 07:00 report",
+    statement: "Notice the change. Communicate it clearly.",
+    artifact: <NurseHandoffSheet />,
+    provenance: { career: "Registered Nurse", kind: "workshop" },
+  },
+  {
+    careerId: "mechanical-engineer",
+    workObject: "Annotated drawing · MB-204 bracket",
+    statement: "Read the result. Decide what needs revision.",
+    artifact: <MechanicalAnnotatedDrawing />,
+    provenance: { career: "Mechanical Engineer", kind: "workshop" },
+  },
+  {
+    careerId: "electrician",
+    workObject: "Wiring schematic · Panel L2",
+    statement: "Spot the hazard. Decide how the work proceeds.",
+    artifact: <ElectricianWiringSchematic />,
+    provenance: { career: "Electrician", kind: "workshop" },
+  },
+  {
+    careerId: "lawyer-attorney",
+    workObject: "Contract redline · Clause 7.2",
+    statement: "Separate settled facts from open questions.",
+    artifact: <LawyerRedline />,
+    provenance: { career: "Lawyer", kind: "workshop" },
+  },
   {
     careerId: "cybersecurity-analyst",
     workObject: "Alert record · A-1042",
-    judgment: "Compare the records. Say what the evidence supports.",
+    statement: "Compare the records. Say what the evidence supports.",
     artifact: (
       <ProductCapture
         id="a-01"
@@ -186,35 +210,10 @@ const BREADTH: readonly BreadthEntry[] = [
     ),
     provenance: CYBER_PROVENANCE,
   },
-  {
-    careerId: "registered-nurse",
-    workObject: "Handoff sheet · 07:00 report",
-    judgment: "Notice the change. Communicate it clearly.",
-    artifact: <NurseHandoffSheet />,
-    provenance: { career: "Registered Nurse", kind: "workshop" },
-  },
-  {
-    careerId: "mechanical-engineer",
-    workObject: "Annotated drawing · MB-204 bracket",
-    judgment: "Read imperfect results. Recommend what to revise.",
-    artifact: <MechanicalAnnotatedDrawing />,
-    provenance: { career: "Mechanical Engineer", kind: "workshop" },
-  },
-  {
-    careerId: "electrician",
-    workObject: "Wiring schematic · Panel L2",
-    judgment: "Spot the hazard. Decide how the work proceeds.",
-    artifact: <ElectricianWiringSchematic />,
-    provenance: { career: "Electrician", kind: "workshop" },
-  },
-  {
-    careerId: "lawyer-attorney",
-    workObject: "Contract redline · Clause 7.2",
-    judgment: "Separate settled facts from open questions.",
-    artifact: <LawyerRedline />,
-    provenance: { career: "Lawyer", kind: "workshop" },
-  },
-];
+] as const;
+
+/** One full pass through the careers, then it settles on Cyber for good. */
+const CAREER_SWITCH_MS = 4000;
 
 const HOME_FAQ = [
   {
@@ -235,18 +234,60 @@ export function LandingPage() {
   const hasSeenFilm = useHasSeenFilm();
   const heroRef = useChapterReveal<HTMLDivElement>();
   const realWorkRef = useChapterReveal<HTMLDivElement>();
-  const gatherRef = useChapterReveal<HTMLDivElement>();
-  const linkRef = useChapterReveal<HTMLDivElement>();
   const shiftRef = useChapterReveal<HTMLDivElement>();
   const handoffRef = useChapterReveal<HTMLDivElement>();
-  const breadthRef = useChapterReveal<HTMLDivElement>();
+  const careerRef = useChapterReveal<HTMLDivElement>();
   const reflectRef = useChapterReveal<HTMLDivElement>();
   const faqRef = useChapterReveal<HTMLDivElement>();
   const finalRef = useChapterReveal<HTMLDivElement>();
 
+  const [evidence, setEvidence] = useState<EvidenceKey>("alert");
+  const [careerPanels, setCareerPanels] = useState(() => ({
+    active: prefersReducedMotion() ? CAREER_SHOWCASE.length - 1 : 0,
+    departing: null as number | null,
+  }));
+  const [autoCycling, setAutoCycling] = useState(!prefersReducedMotion());
+
+  useEffect(() => {
+    if (!autoCycling) return;
+    if (careerPanels.active >= CAREER_SHOWCASE.length - 1) {
+      setAutoCycling(false);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setCareerPanels((current) => ({
+        active: Math.min(current.active + 1, CAREER_SHOWCASE.length - 1),
+        departing: current.active,
+      }));
+    }, CAREER_SWITCH_MS);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [autoCycling, careerPanels.active]);
+
+  useEffect(() => {
+    if (careerPanels.departing === null) return;
+    const timer = window.setTimeout(() => {
+      setCareerPanels((current) => ({ ...current, departing: null }));
+    }, 280);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [careerPanels.departing]);
+
+  const selectCareer = (index: number) => {
+    setCareerPanels((current) =>
+      current.active === index
+        ? current
+        : { active: index, departing: current.active },
+    );
+  };
+
   const startLabel = hasSeenFilm
     ? "Continue your first day"
     : "Start your first day";
+  const activeEvidence =
+    EVIDENCE_VIEWS.find((view) => view.key === evidence) ?? EVIDENCE_VIEWS[0];
 
   return (
     <div className="v2-home">
@@ -285,12 +326,7 @@ export function LandingPage() {
             <div data-motion-role="artifact" className="home-hero-stage">
               <ArtifactStage
                 dominant={
-                  <ProductCapture
-                    id="a-11"
-                    slot="home-hero-workplace"
-                    eager
-                    alt="Product capture: the Verdaly security operations floor at the start of the first shift."
-                  />
+                  <HomeMediaSlot slotId="home-media-arrival" eager hideCaption />
                 }
                 caption="Actual product capture · synthetic records"
                 provenance={CYBER_PROVENANCE}
@@ -330,51 +366,45 @@ export function LandingPage() {
           <ArtifactStage
             className="home-realwork-stage"
             dominant={
-              <ProductCapture
-                id="a-01"
-                slot="home-case-a1042"
-                alt="Product capture: alert record A-1042, a sign-in from an unfamiliar device, open for review."
-              />
+              <div className="home-evidence-views">
+                {EVIDENCE_VIEWS.map((view) => (
+                  <div key={view.key} hidden={evidence !== view.key}>
+                    <ProductCapture
+                      id={view.id}
+                      slot={view.slot}
+                      alt={view.alt}
+                    />
+                  </div>
+                ))}
+              </div>
             }
-            caption="Alert record · A-1042 — actual product capture, synthetic records"
+            caption={activeEvidence.caption}
             provenance={CYBER_PROVENANCE}
           />
-          <div
-            ref={gatherRef}
-            data-motion="artifact-gather"
-            className="home-evidence"
-          >
+          <div className="home-evidence-bar">
             <div
-              ref={linkRef}
-              data-motion="evidence-link"
-              className="home-evidence-connector"
+              className="home-evidence-swap"
+              role="group"
+              aria-label="Evidence views for alert A-1042"
             >
-              <span className="ui-type-technical">Alert A-1042</span>
-              <span className="home-evidence-rule" data-motion-role="link" />
-              <span className="ui-type-meta">Four records to compare</span>
-            </div>
-            <ul className="home-evidence-row">
-              {EVIDENCE_RECORDS.map((record) => (
-                <li
-                  key={record.slot}
-                  className="home-evidence-item"
-                  data-motion-role="secondary"
+              {EVIDENCE_VIEWS.map((view) => (
+                <button
+                  key={view.key}
+                  type="button"
+                  aria-pressed={evidence === view.key}
+                  onClick={() => {
+                    setEvidence(view.key);
+                  }}
                 >
-                  <ProductCapture
-                    id={record.id}
-                    slot={record.slot}
-                    alt={record.alt}
-                  />
-                  <p className="home-evidence-label">
-                    <strong>{record.label}</strong>
-                    <span>{record.detail}</span>
-                  </p>
-                </li>
+                  {view.label}
+                </button>
               ))}
-            </ul>
-            <div className="home-detail">
-              <InvestigationExcerpt />
             </div>
+            <p className="home-evidence-note">
+              Sign-in <span aria-hidden="true">·</span> Device{" "}
+              <span aria-hidden="true">·</span> Account{" "}
+              <span aria-hidden="true">·</span> VPN — one record at a time.
+            </p>
           </div>
         </PublicChapter>
       </section>
@@ -399,20 +429,13 @@ export function LandingPage() {
                 <li key={entry.act}>
                   <h3>{entry.act}</h3>
                   <p className="home-act-claim">{entry.claim}</p>
-                  <ol className="home-beats">
-                    {entry.beats.map(([num, name, detail]) => (
-                      <li key={num}>
-                        <span className="home-beat-num">{num}</span>
-                        <div>
-                          <strong>{name}</strong>
-                          <p>{detail}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
                 </li>
               ))}
             </ol>
+          </div>
+          <div className="home-desk">
+            <p className="home-desk-note">The work happens at a desk.</p>
+            <HomeMediaSlot slotId="home-media-workplace" />
           </div>
           <div className="home-handoff">
             <div ref={handoffRef} data-motion="handoff-pass">
@@ -437,48 +460,107 @@ export function LandingPage() {
         </PublicChapter>
       </section>
 
-      <section className="home-breadth" aria-labelledby="home-breadth-title">
+      <section className="home-careers" aria-labelledby="home-careers-title">
         <PublicChapter
           as="div"
           surface="stage"
           rhythm="standard"
-          className="home-breadth-chapter"
+          className="home-careers-chapter"
         >
-          <div ref={breadthRef} data-motion="chapter-reveal">
-            <h2 id="home-breadth-title" data-motion-role="argument">
-              Different careers. Different kinds of work.
-            </h2>
-            <p className="ui-type-proof">
-              One career is playable. Four more are taking shape.
+          <div
+            onPointerDown={() => {
+              setAutoCycling(false);
+            }}
+            onKeyDown={() => {
+              setAutoCycling(false);
+            }}
+          >
+            <div data-motion="chapter-reveal">
+              <h2 id="home-careers-title" data-motion-role="argument">
+                Different careers. Different work.
+              </h2>
+              <p className="ui-type-proof">
+                One playable now. Four taking shape.
+              </p>
+            </div>
+            <div className="home-career-tabs" role="group" aria-label="Careers">
+              {CAREER_SHOWCASE.map((entry, index) => {
+                const career = careers.find(
+                  (item) => item.id === entry.careerId,
+                );
+                if (!career) return null;
+                return (
+                  <button
+                    key={entry.careerId}
+                    type="button"
+                    className="home-career-tab"
+                    aria-pressed={careerPanels.active === index}
+                    onClick={() => {
+                      setAutoCycling(false);
+                      selectCareer(index);
+                    }}
+                  >
+                    {career.title}
+                  </button>
+                );
+              })}
+            </div>
+            <div
+              className="home-career-stage"
+              data-motion="career-switch"
+              ref={careerRef}
+            >
+              {CAREER_SHOWCASE.map((entry, index) => {
+                const career = careers.find(
+                  (item) => item.id === entry.careerId,
+                );
+                if (!career) return null;
+                const state =
+                  index === careerPanels.active
+                    ? "active"
+                    : index === careerPanels.departing
+                      ? "departing"
+                      : "inactive";
+                return (
+                  <div
+                    key={entry.careerId}
+                    className="home-career-panel"
+                    data-career={state}
+                    data-media-slot={`career-artifact-${career.slug}`}
+                    aria-hidden={state !== "active"}
+                  >
+                    <div className="home-career-plate" aria-hidden="true">
+                      {entry.artifact}
+                    </div>
+                    <p className="home-career-field">{career.field}</p>
+                    <h3>{career.title}</h3>
+                    <p className="home-career-statement">{entry.statement}</p>
+                    <p className="home-career-object ui-type-technical">
+                      {entry.workObject}
+                    </p>
+                    <ProvenanceLabel provenance={entry.provenance} />
+                  </div>
+                );
+              })}
+            </div>
+            <p>
+              <SiteLink className="v2-text-link" to="/careers">
+                Explore careers <span aria-hidden="true">→</span>
+              </SiteLink>
             </p>
           </div>
-          <ul className="home-breadth-grid">
-            {BREADTH.map((entry) => {
-              const career = careers.find((item) => item.id === entry.careerId);
-              if (!career) return null;
-              return (
-                <li
-                  key={entry.careerId}
-                  className="home-breadth-tile"
-                  data-media-slot={`career-artifact-${career.slug}`}
-                >
-                  <div className="home-breadth-plate" aria-hidden="true">
-                    {entry.artifact}
-                  </div>
-                  <p className="home-breadth-field">{career.field}</p>
-                  <h3>{career.title}</h3>
-                  <p className="ui-type-technical">{entry.workObject}</p>
-                  <p className="home-breadth-judgment">{entry.judgment}</p>
-                  <ProvenanceLabel provenance={entry.provenance} />
-                </li>
-              );
-            })}
-          </ul>
-          <p>
-            <SiteLink className="v2-text-link" to="/careers">
-              Explore careers <span aria-hidden="true">→</span>
-            </SiteLink>
-          </p>
+        </PublicChapter>
+      </section>
+
+      <section className="home-story" aria-label="Inside the security operations floor">
+        <PublicChapter
+          as="div"
+          surface="base"
+          rhythm="compact"
+          width="full"
+          className="home-story-chapter"
+        >
+          <HomeMediaSlot slotId="home-media-story" />
         </PublicChapter>
       </section>
 
@@ -492,18 +574,18 @@ export function LandingPage() {
         >
           <div ref={reflectRef} data-motion="chapter-reveal">
             <h2 id="home-reflect-title" data-motion-role="argument">
-              See how you worked — not a score of who you are.
+              See how you worked.
             </h2>
             <p className="ui-type-proof">
-              The end of the shift is a debrief: what happened, what you
-              decided, and what stayed uncertain. No grade, no ranking, no
-              “you should be ___”.
+              Not a score. A record of the calls you made.
             </p>
-            <ProductCapture
-              id="a-10"
-              slot="home-debrief-reflection"
-              alt="Product capture: the shift debrief, reviewing what happened and what stayed uncertain."
-            />
+            <div className="home-debrief-crop">
+              <ProductCapture
+                id="a-10"
+                slot="home-debrief-reflection"
+                alt="Product capture: one decision block from the shift debrief, reviewing what happened and what stayed uncertain."
+              />
+            </div>
             <p className="home-media-note">
               Shift debrief · actual product capture, synthetic records
             </p>
