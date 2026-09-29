@@ -13,28 +13,30 @@ import {
 import { CareerRequestToggle } from "../careers/CareerRequestToggle.js";
 import { getCareerBySlug, careerPath } from "../../careers/careers.js";
 import { SiteLink } from "../SiteLink.js";
+import type { CSSProperties } from "react";
 
 function ThemedMedia({ id, alt }: { id: ProductMediaId; alt: string }) {
-  const l_desktop = selectProductMedia(id, "light", "desktop").src;
-  const l_mobile = selectProductMedia(id, "light", "mobile").src;
-  const d_desktop = selectProductMedia(id, "dark", "desktop").src;
-  const d_mobile = selectProductMedia(id, "dark", "mobile").src;
+  const l_desktop = selectProductMedia(id, "light", "desktop");
+  const l_mobile = selectProductMedia(id, "light", "mobile");
+  const d_desktop = selectProductMedia(id, "dark", "desktop");
+  const d_mobile = selectProductMedia(id, "dark", "mobile");
 
   return (
     <div className="themed-media-wrapper">
       <style>{`
-        .themed-media-wrapper picture { display: block; width: 100%; height: auto; }
+        .themed-media-wrapper picture { display: block; width: 100%; aspect-ratio: var(--media-desktop-ratio); }
+        @media (max-width: 600px) { .themed-media-wrapper picture { aspect-ratio: var(--media-mobile-ratio); } }
         .themed-media-wrapper img { display: block; width: 100%; height: auto; object-fit: contain; border-radius: var(--ui-radius, 8px); }
         :root[data-theme="light"] .themed-media-wrapper .pm-dark { display: none; }
         :root[data-theme="dark"] .themed-media-wrapper .pm-light { display: none; }
       `}</style>
-      <picture className="pm-light">
-        <source srcSet={l_mobile} media="(max-width: 600px)" />
-        <img src={l_desktop} alt={alt} decoding="async" loading="lazy" />
+      <picture className="pm-light" style={{ "--media-desktop-ratio": l_desktop.aspectRatio, "--media-mobile-ratio": l_mobile.aspectRatio } as CSSProperties}>
+        <source srcSet={l_mobile.src} media="(max-width: 600px)" />
+        <img src={l_desktop.src} alt={alt} decoding="async" loading="lazy" />
       </picture>
-      <picture className="pm-dark">
-        <source srcSet={d_mobile} media="(max-width: 600px)" />
-        <img src={d_desktop} alt={alt} decoding="async" loading="lazy" />
+      <picture className="pm-dark" style={{ "--media-desktop-ratio": d_desktop.aspectRatio, "--media-mobile-ratio": d_mobile.aspectRatio } as CSSProperties}>
+        <source srcSet={d_mobile.src} media="(max-width: 600px)" />
+        <img src={d_desktop.src} alt={alt} decoding="async" loading="lazy" />
       </picture>
     </div>
   );

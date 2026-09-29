@@ -1,5 +1,7 @@
 import { execSync, spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { mkdir, rm, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { setTimeout as delay } from "node:timers/promises";
@@ -15,7 +17,8 @@ import {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const out = process.env.FREEZE_OUT ?? "/tmp/career-expo-ui-freeze";
-const webOrigin = process.env.WEB_ORIGIN ?? "http://localhost:5173";
+const webOrigin = process.env.WEB_ORIGIN ?? "http://localhost:4179";
+const axePath = createRequire(import.meta.url).resolve("axe-core/axe.min.js");
 
 const ROUTES = [
   { key: "home", path: "/", label: "Home" },
@@ -269,9 +272,30 @@ async function capture(context, spec) {
       return null;
     });
   }
+  let contrast = [];
+  if (!navigationError) {
+    try {
+      await page.addScriptTag({ path: axePath });
+      contrast = await page.evaluate(async () => {
+        const result = await window.axe.run(document, {
+          runOnly: { type: "rule", values: ["color-contrast"] },
+        });
+        return result.violations.flatMap((violation) => violation.nodes.map((node) => ({
+          target: node.target,
+          summary: node.failureSummary?.slice(0, 180),
+        })));
+      });
+    } catch (error) {
+      contrast = [{ target: ["harness"], summary: String(error).slice(0, 180) }];
+    }
+  }
   const checks = metrics
     ? evaluateChecks({ route, theme, motion, metrics })
     : { navigation: { ok: false, detail: navigationError || metricsError || "metrics unavailable" } };
+  checks["text-control-contrast"] = {
+    ok: !navigationError && contrast.length === 0,
+    detail: contrast.slice(0, 12),
+  };
   let remeasured = false;
   if (
     metrics &&
@@ -368,9 +392,8 @@ async function capture(context, spec) {
     documentWidth: metrics ? metrics.documentWidth : null,
     viewportWidth: metrics ? metrics.viewportWidth : viewport.width,
     textLength: metrics ? metrics.textLength : 0,
-    heroActiveIndex: metrics ? metrics.heroActiveIndex : -1,
-    heroShelfDocs: metrics ? metrics.heroShelfDocs : 0,
     cls: metrics ? Number(metrics.cls.toFixed(4)) : 0,
+    contrastViolations: contrast,
     h1Text: metrics ? metrics.h1Text : [],
     sections,
     focus,
@@ -506,18 +529,11 @@ function renderReport(records, meta) {
     );
   }
   lines.push("");
-  lines.push("## Hero shelf rotation state");
+  lines.push("## Production CLS by route (1366 light)");
   lines.push("");
-  lines.push(
-    "The hero shelf advances every 4600ms; the recorded index shows how far each capture advanced before the screenshot.",
-  );
-  lines.push("");
-  for (const record of records.filter(
-    (entry) => entry.routeKey === "home" && entry.motion === "normal",
-  )) {
-    lines.push(
-      `- ${record.viewport.label} ${record.theme}: active doc index ${String(record.heroActiveIndex)} of ${String(record.heroShelfDocs ?? 0)}`,
-    );
+  for (const route of ROUTES) {
+    const record = records.find((entry) => entry.routeKey === route.key && entry.viewport.label === "1366" && entry.theme === "light");
+    if (record) lines.push(`- ${route.key}: ${record.cls.toFixed(4)}`);
   }
   lines.push("");
   return lines.join("\n");
@@ -548,10 +564,14 @@ function gitBase() {
 let viteChild = null;
 
 async function main() {
+  if (!existsSync(path.join(root, "apps/web/dist/index.html"))) {
+    throw new Error("Production build missing. Run pnpm build before qa-visual-freeze.");
+  }
   if (await healthy(webOrigin)) {
-    console.log(`qa-visual-freeze: reusing dev app at ${webOrigin}`);
+    if (process.env.FREEZE_REUSE_PREVIEW !== "1") throw new Error(`${webOrigin} is occupied; choose another WEB_ORIGIN or set FREEZE_REUSE_PREVIEW=1 for a known production preview`);
+    console.log(`qa-visual-freeze: reusing production preview at ${webOrigin}`);
   } else {
-    console.log(`qa-visual-freeze: starting dev app at ${webOrigin}`);
+    console.log(`qa-visual-freeze: starting production preview at ${webOrigin}`);
     const vite = spawn(
       "pnpm",
       [
@@ -559,6 +579,7 @@ async function main() {
         "@sim/web",
         "exec",
         "vite",
+        "preview",
         "--host",
         "localhost",
         "--port",
@@ -621,9 +642,8 @@ async function main() {
           documentWidth: null,
           viewportWidth: job.viewport.width,
           textLength: 0,
-          heroActiveIndex: -1,
-          heroShelfDocs: 0,
           cls: 0,
+          contrastViolations: [],
           h1Text: [],
           sections: [],
           focus: null,
