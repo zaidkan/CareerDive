@@ -1,0 +1,265 @@
+@media (max-width: 640px) {
+  .v2-artifact-compact .v2-evidence-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   UI-4 Careers Final
+   ========================================================================== */
+
+.careers-page-v4 .cp-hero {
+  padding-top: var(--space-4xl);
+  padding-bottom: var(--space-4xl);
+  text-align: center;
+}
+
+.careers-page-v4 .cp-hero h1 {
+  margin-bottom: var(--space-md);
+}
+
+.careers-page-v4 .cp-hero .lede {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3xl);
+}
+
+.careers-page-v4 .cp-hero .ui-artifact-stage {
+  margin-top: var(--space-2xl);
+}
+
+.careers-page-v4 .cp-playable-now {
+  padding-top: var(--space-4xl);
+  padding-bottom: var(--space-4xl);
+}
+
+.careers-page-v4 .cp-chapter-head {
+  text-align: center;
+  margin-bottom: var(--space-3xl);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.careers-page-v4 .cp-chapter-head .ui-type-eyebrow {
+  color: var(--text-brand);
+  margin-bottom: var(--space-xs);
+}
+
+.careers-page-v4 .cp-chapter-head h2 {
+  margin-bottom: var(--space-md);
+}
+
+.careers-page-v4 .cp-actions {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: center;
+  margin-top: var(--space-lg);
+}
+
+.careers-page-v4 .cp-taking-shape {
+  padding-top: var(--space-4xl);
+  padding-bottom: var(--space-4xl);
+}
+
+.careers-page-v4 .cp-honesty-note {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  max-width: 60ch;
+  margin: 0 auto;
+}
+
+.careers-page-v4 .cp-workshop-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4xl);
+  margin-top: var(--space-4xl);
+}
+
+.careers-page-v4 .cp-workshop-career {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2xl);
+  align-items: center;
+}
+
+@media (min-width: 834px) {
+  .careers-page-v4 .cp-workshop-career {
+    grid-template-columns: 320px 1fr;
+  }
+
+  /* Alternate layout rhythm */
+  .careers-page-v4 .cp-workshop-career:nth-child(even) {
+    grid-template-columns: 1fr 320px;
+  }
+  .careers-page-v4 .cp-workshop-career:nth-child(even) .cp-workshop-info {
+    order: 2;
+  }
+  .careers-page-v4 .cp-workshop-career:nth-child(even) .ui-artifact-stage {
+    order: 1;
+  }
+}
+
+.careers-page-v4 .cp-workshop-info h3 {
+  margin-bottom: var(--space-sm);
+}
+
+.careers-page-v4 .cp-workshop-info p {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-lg);
+}
+
+/* UI-4 Typography & Control System (Fixing P0s) */
+.careers-page-v4 {
+  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+.ui-type-display {
+  margin: 0;
+  color: var(--text-primary);
+  font: 800 clamp(2.5rem, 5vw, 4rem)/1.1 var(--font-display);
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.ui-type-h1 {
+  margin: 0;
+  color: var(--text-primary);
+  font: 800 clamp(1.75rem, 3.5vw, 2.5rem)/1.15 var(--font-display);
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.ui-type-h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font: 700 clamp(1.25rem, 2.5vw, 1.75rem)/1.2 var(--font-display);
+  letter-spacing: -0.02em;
+}
+.ui-type-lede {
+  margin: 0;
+  color: var(--text-secondary);
+  font: 500 clamp(1.15rem, 2vw, 1.35rem)/1.5 var(--font-body);
+}
+.ui-type-body-large {
+  margin: 0;
+  color: var(--text-secondary);
+  font: 400 clamp(1.05rem, 1.5vw, 1.15rem)/1.6 var(--font-body);
+}
+.ui-type-body {
+  margin: 0;
+  color: var(--text-secondary);
+  font: 400 1rem/1.6 var(--font-body);
+}
+
+.button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0.85rem 1.45rem;
+  border-radius: 999px;
+  background: var(--action-primary);
+  color: var(--action-on-primary, #08111F); /* Fallback for safe dark mode contrast */
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: none;
+  transition: background 180ms ease-out;
+}
+:root[data-theme="dark"] .button-primary {
+  color: #08111F; /* Enforce high contrast text in dark mode */
+}
+.button-primary:hover {
+  background: color-mix(in srgb, var(--action-primary) 88%, var(--text-primary));
+}
+.button-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 52px;
+  padding: 0.85rem 1.45rem;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--action-primary);
+  font-weight: 700;
+  text-decoration-thickness: 1px;
+  transition: background 180ms ease-out;
+}
+.button-secondary:hover {
+  background: color-mix(in srgb, var(--action-primary) 12%, transparent);
+}
+
+.cp-hero-content {
+  max-width: 60ch;
+  margin: 0 auto;
+}
+.cp-hero-content h1 {
+  margin-bottom: 1rem;
+}
+.cp-hero-content p {
+  margin-bottom: 3rem;
+}
+
+/* Keep secondary evidence in the field layout so its text sets field height. */
+.careers-page-v4 .cp-workshop-career .ui-artifact-stage__field {
+  grid-template-columns: minmax(0, 1fr);
+}
+.careers-page-v4 .cp-workshop-career .ui-artifact-stage__primary {
+  grid-area: 1 / 1;
+}
+.careers-page-v4 .cp-workshop-career .ui-artifact-stage__secondary {
+  position: relative;
+  grid-area: 1 / 1;
+  justify-self: end;
+  align-self: start;
+  inset: auto;
+  opacity: 1;
+}
+.careers-page-v4 .cp-workshop-career .ui-artifact-stage--right .ui-artifact-stage__secondary {
+  justify-self: start;
+}
+
+:root[data-theme="light"] .careers-page-v4 .wa-sheet {
+  --text-muted: #586473;
+  --status-success-fg: #276548;
+}
+:root[data-theme="light"] .cyber-detail .start-shift {
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  .careers-page-v4 .cp-workshop-career .ui-artifact-stage__field {
+    gap: 1rem;
+  }
+  .careers-page-v4 .cp-workshop-career .ui-artifact-stage__primary {
+    grid-area: auto;
+    width: 100%;
+  }
+  .careers-page-v4 .cp-workshop-career .ui-artifact-stage__secondary {
+    grid-area: auto;
+    width: min(100%, 380px);
+    max-width: 100%;
+    justify-self: end;
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 360px) {
+  .careers-page-v4 .wa-table th,
+  .careers-page-v4 .wa-table .wa-key {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .careers-page-v4 .wa-table th,
+  .careers-page-v4 .wa-table td {
+    padding-inline: 0.2rem;
+  }
+  .careers-page-v4 .wa-chip { white-space: normal; }
+}
+.cp-chapter-head h2 {
+  margin-bottom: 0.5rem;
+}
+.cp-chapter-head h3 {
+  margin-bottom: 1rem;
+}
+.cp-chapter-head p {
+  margin-bottom: 1.5rem;
+}
