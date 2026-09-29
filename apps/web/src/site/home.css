@@ -108,49 +108,50 @@
   max-width: 34ch;
   margin-bottom: 0.45rem;
 }
-.home-evidence {
-  margin-top: clamp(1.8rem, 3.5vw, 2.8rem);
-}
-.home-evidence-connector {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.15rem;
-}
-.home-evidence-rule {
-  flex: 1;
-  height: 1px;
-  background: var(--border-strong);
-  transform-origin: left center;
-}
-.home-evidence-row {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.15rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.home-evidence-item {
+/* One dominant proof at a time; the labels swap the view manually. */
+.home-evidence-views {
   min-width: 0;
 }
-.home-evidence-label {
-  display: grid;
-  gap: 0.15rem;
-  margin: 0.65rem 0 0;
+.home-evidence-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.55rem 2rem;
+  margin-top: 1.15rem;
 }
-.home-evidence-label strong {
-  color: var(--text-primary);
-  font-size: 0.86rem;
+.home-evidence-swap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.7rem;
 }
-.home-evidence-label span {
+.home-evidence-swap button {
+  padding: 0.35rem 0.15rem;
+  border: 0;
+  background: none;
   color: var(--text-secondary);
-  font-size: 0.82rem;
-  line-height: 1.45;
+  font: 500 0.82rem/1.5 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
 }
-.home-detail {
-  max-width: 74ch;
-  margin-top: clamp(1.8rem, 3.5vw, 2.6rem);
+.home-evidence-swap button + button::before {
+  content: "·";
+  margin-right: 0.7rem;
+  color: var(--text-muted);
+}
+.home-evidence-swap button[aria-pressed="true"] {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+.home-evidence-swap button:hover {
+  color: var(--text-primary);
+}
+.home-evidence-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 
 /* —— How a shift works —— */
@@ -187,32 +188,14 @@
   font-weight: 700;
   line-height: 1.45;
 }
-.home-beats {
-  display: grid;
-  gap: 0.85rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+/* —— Desk moment: one clean product frame —— */
+.home-desk {
+  margin-top: clamp(2.2rem, 5vw, 3.2rem);
 }
-.home-beats li {
-  display: flex;
-  gap: 0.7rem;
-  min-width: 0;
-}
-.home-beat-num {
-  flex: none;
+.home-desk-note {
+  margin: 0 0 0.85rem;
   color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  line-height: 1.75;
-}
-.home-beats strong {
-  color: var(--text-primary);
-  font-size: 0.92rem;
-}
-.home-beats p {
-  margin: 0.15rem 0 0;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   line-height: 1.5;
 }
 .home-handoff {
@@ -231,77 +214,115 @@
   letter-spacing: -0.025em;
 }
 
-/* —— Breadth —— */
-.home-breadth-grid {
+/* —— Careers: one controlled artifact switcher (one cycle, then Cyber) —— */
+.home-career-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 1.55rem;
+  margin: 1.9rem 0 1.35rem;
+}
+.home-career-tab {
+  padding: 0.35rem 0.15rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-secondary);
+  font: 600 0.92rem/1.5 var(--font-body);
+  cursor: pointer;
+}
+.home-career-tab[aria-pressed="true"] {
+  border-bottom-color: var(--text-primary);
+  color: var(--text-primary);
+}
+.home-career-tab:hover {
+  color: var(--text-primary);
+}
+.home-career-stage {
+  min-width: 0;
+}
+.home-career-panel {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.1rem;
-  margin: 2.1rem 0 1.7rem;
-  padding: 0;
-  list-style: none;
-}
-.home-breadth-tile {
-  display: flex;
-  flex-direction: column;
+  gap: 1.15rem 2.4rem;
+  align-items: start;
   min-width: 0;
-  padding: 1.15rem;
+}
+/* One representative work object per career, cropped as a document plate.
+   Named media slots stay stable for future real captures. */
+.home-career-plate {
+  height: clamp(230px, 28vw, 380px);
   border: 1px solid var(--border-subtle);
   border-radius: 6px;
   background: var(--surface-base);
-}
-/* Artifact-led tiles: one representative work object per career, cropped as
-   a document plate. Named media slots stay stable for future real captures. */
-.home-breadth-plate {
-  height: clamp(180px, 20vw, 232px);
-  margin-bottom: 0.9rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 4px;
-  background: var(--surface-subtle);
   overflow: clip;
 }
-.home-breadth-plate .wa-sheet {
+.home-career-plate .wa-sheet {
   height: 100%;
   border: 0;
   border-radius: 0;
 }
-.home-breadth-plate .home-capture,
-.home-breadth-plate .home-capture img {
+.home-career-plate .home-capture,
+.home-career-plate .home-capture img {
   height: 100%;
   border: 0;
   border-radius: 0;
   object-fit: cover;
   object-position: top left;
 }
-.home-breadth-field {
-  margin: 0 0 0.3rem;
+.home-career-field {
+  margin: 0 0 0.35rem;
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-.home-breadth-tile h3 {
-  margin: 0 0 0.55rem;
+.home-career-panel h3 {
+  margin: 0 0 0.65rem;
   color: var(--text-primary);
   font-family: var(--font-display);
-  font-size: 1.12rem;
+  font-size: 1.35rem;
   letter-spacing: -0.02em;
 }
-.home-breadth-judgment {
-  margin: 0.35rem 0 0.85rem;
-  font-size: 0.88rem;
+.home-career-statement {
+  max-width: 32ch;
+  margin: 0 0 0.85rem;
+  color: var(--text-primary);
+  font-size: 1.02rem;
+  font-weight: 600;
   line-height: 1.5;
 }
-.home-breadth-tile .ui-provenance {
-  margin-top: auto;
+.home-career-object {
+  margin: 0 0 0.85rem;
 }
 
-/* —— Reflection —— */
+/* —— Story band: a restrained wide media breath —— */
+.home-story {
+  overflow: clip;
+}
+
+/* —— Reflection: one compact debrief crop —— */
 .home-reflect-chapter h2 {
   max-width: 22ch;
 }
-.home-reflect-chapter .home-capture {
+.home-debrief-crop {
+  height: clamp(300px, 34vw, 480px);
   margin-top: 1.9rem;
+  overflow: clip;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-base);
+}
+.home-debrief-crop .home-capture,
+.home-debrief-crop .home-capture-theme {
+  height: 100%;
+}
+.home-debrief-crop .home-capture img {
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  object-fit: cover;
+  object-position: top center;
 }
 
 /* —— Final —— */
@@ -415,12 +436,42 @@
   font-weight: 600;
 }
 
-/* —— Responsive —— */
-@media (min-width: 560px) {
-  .home-breadth-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+/* —— Media slots (registry-driven; see homeMedia.tsx) —— */
+.home-media-slot {
+  min-width: 0;
+  margin: 0;
 }
+.home-media-frame {
+  min-width: 0;
+}
+.home-media-video {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-base);
+}
+.home-media-frame--band {
+  height: clamp(180px, 24vw, 320px);
+  overflow: clip;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-base);
+}
+.home-media-frame--band .home-capture,
+.home-media-frame--band .home-capture-theme {
+  height: 100%;
+}
+.home-media-frame--band .home-capture img {
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* —— Responsive —— */
 @media (min-width: 834px) {
   .home-acts {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -436,18 +487,29 @@
   .home-handoff {
     grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   }
-}
-@media (min-width: 960px) {
-  .home-evidence-row {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .home-breadth-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .home-career-panel {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
   }
 }
-@media (min-width: 1220px) {
-  .home-breadth-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+@media (max-width: 600px) {
+  /* Deliberate narrow-screen crop — not a tiny full-page screenshot. */
+  .home-media-frame--wide {
+    height: clamp(240px, 62vw, 340px);
+    overflow: clip;
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    background: var(--surface-base);
+  }
+  .home-media-frame--wide .home-capture,
+  .home-media-frame--wide .home-capture-theme {
+    height: 100%;
+  }
+  .home-media-frame--wide .home-capture img {
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+    object-fit: cover;
+    object-position: top left;
   }
 }
 @media (max-width: 480px) {
@@ -456,5 +518,8 @@
   }
   .home-handoff {
     --ui-pass-to: 0px;
+  }
+  .home-career-tabs {
+    gap: 0.35rem 1.15rem;
   }
 }
