@@ -53,9 +53,9 @@ export function CareersPage() {
     <div className="careers-page-v4">
       {/* 1. HERO */}
       <PublicChapter surface="base" rhythm="expansive" width="full" className="cp-hero">
-        <div className="ui-width--reading">
+        <div className="cp-hero-content">
           <h1 className="ui-type-display">Explore careers through the work</h1>
-          <p className="ui-type-lede">1 career is playable now. 4 more are taking shape.</p>
+          <p className="ui-type-lede">1 playable now. 4 taking shape.</p>
         </div>
         <ArtifactStage
           emphasis="center"
@@ -69,8 +69,8 @@ export function CareersPage() {
       {/* 2. PLAYABLE NOW */}
       <PublicChapter surface="stage" rhythm="stage" width="wide" className="cp-playable-now">
         <div className="cp-chapter-head">
-          <h2 className="ui-type-eyebrow" id="playable-now-heading">Playable now</h2>
-          <p className="ui-type-hero">{cyber?.title || "Cybersecurity Analyst"}</p>
+          <h2 className="ui-type-h1" id="playable-now-heading">Playable now</h2>
+          <h3 className="ui-type-h2">{cyber?.title || "Cybersecurity Analyst"}</h3>
           <p className="ui-type-body-large">{cyber?.shortSummary}</p>
           <div className="cp-actions">
             <SiteLink to="/start" className="button-primary">Start your first day</SiteLink>
@@ -88,9 +88,8 @@ export function CareersPage() {
 
       {/* 3. TAKING SHAPE */}
       <PublicChapter surface="chapter" rhythm="expansive" width="wide" className="cp-taking-shape">
-        <div className="cp-chapter-head ui-width--reading">
-          <h2 className="ui-type-eyebrow">Taking shape</h2>
-          <p className="ui-type-h1">Four careers in the workshop</p>
+        <div className="cp-chapter-head">
+          <h2 className="ui-type-h1">Taking shape</h2>
           <p className="ui-type-body-large cp-honesty-note">
             These roles show the kinds of decisions you'll make — previews only, for now.
             Local requests help us understand interest, but they stay on your device and don't guarantee build order.
@@ -149,8 +148,8 @@ export function CareersPage() {
             </div>
             <ArtifactStage
               emphasis="right"
-              dominant={<LawyerCaseFactSheet />}
-              secondary={[<LawyerRedline key="redline" />]}
+              dominant={<LawyerRedline />}
+              secondary={[<LawyerCaseFactSheet key="fact" />]}
             />
           </article>
         </div>
