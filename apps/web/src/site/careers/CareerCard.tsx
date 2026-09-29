@@ -23,7 +23,7 @@ export function CareerCard({
     >
       <p className="career-card-field">{career.field}</p>
       <p className="career-card-status">
-        {ready ? "Ready now" : "In the workshop"}
+        {ready ? "Playable now" : "Taking shape"}
       </p>
       <Heading>{career.title}</Heading>
       <p className="career-card-summary">{career.shortSummary}</p>
