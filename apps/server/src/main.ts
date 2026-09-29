@@ -11,6 +11,9 @@ import {
 import Fastify from "fastify";
 import { InMemoryRepository, createAppRouter, type AppContext } from "./index.js";
 import { createPostgresRepository } from "./db/repository.js";
+import { InMemoryCareerRequestStore, PostgresCareerRequestStore } from "./repository/career-requests.js";
+import { careerRequestRoutes } from "./routes/career-requests.js";
+import postgres from "postgres";
 import {
   allowedWebOrigins,
   describeListenFailure,
@@ -39,6 +42,7 @@ const server = Fastify({
   logger: {
     redact: [
       "req.headers.authorization",
+      "req.headers.x-requester-key",
       "*.freeText",
       "*.reflection",
       "*.dialogue",
@@ -59,6 +63,10 @@ server.get("/health", async () => ({ status: "ok" }));
 const repository = process.env.DATABASE_URL
   ? createPostgresRepository(process.env.DATABASE_URL)
   : new InMemoryRepository();
+const careerRequestStore = process.env.DATABASE_URL
+  ? new PostgresCareerRequestStore(postgres(process.env.DATABASE_URL))
+  : new InMemoryCareerRequestStore();
+await server.register(careerRequestRoutes, { store: careerRequestStore });
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
 const llmProvider = anthropicApiKey
   ? new AnthropicLlmProvider(
