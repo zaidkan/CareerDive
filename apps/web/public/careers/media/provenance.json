@@ -2,8 +2,8 @@
   {
     "id": "a-01",
     "file": "a-01-desktop-dark.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -16,15 +16,15 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:13:48.121Z",
+    "capturedAt": "2026-09-29T00:24:24.202Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
   {
     "id": "a-01",
     "file": "a-01-desktop-light.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -37,15 +37,15 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:13:49.984Z",
+    "capturedAt": "2026-09-29T00:24:25.349Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
   {
     "id": "a-01",
     "file": "a-01-mobile-dark.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -58,15 +58,15 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:13:51.244Z",
+    "capturedAt": "2026-09-29T00:24:26.162Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
   {
     "id": "a-01",
     "file": "a-01-mobile-light.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -79,15 +79,15 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:13:52.702Z",
+    "capturedAt": "2026-09-29T00:24:26.971Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
   {
     "id": "a-02",
     "file": "a-02-desktop-dark.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -100,15 +100,15 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:02:15.179Z",
+    "capturedAt": "2026-09-29T00:24:36.457Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
   {
     "id": "a-03",
     "file": "a-03-desktop-dark.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -121,15 +121,15 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:02:16.510Z",
+    "capturedAt": "2026-09-29T00:24:37.455Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
   {
     "id": "a-04",
     "file": "a-04-desktop-dark.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -144,15 +144,15 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:02:17.590Z",
+    "capturedAt": "2026-09-29T00:24:38.404Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
   {
     "id": "a-05",
     "file": "a-05-desktop-dark.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -165,7 +165,7 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:02:18.769Z",
+    "capturedAt": "2026-09-29T00:24:39.431Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
@@ -200,8 +200,8 @@
   {
     "id": "a-07",
     "file": "a-07-desktop-dark.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -222,15 +222,15 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:17:03.921Z",
+    "capturedAt": "2026-09-29T00:24:40.479Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
   {
     "id": "a-08",
     "file": "a-08-desktop-dark.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -243,15 +243,15 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:02:22.309Z",
+    "capturedAt": "2026-09-29T00:24:41.364Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
   {
     "id": "a-08",
     "file": "a-08-desktop-light.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -264,15 +264,15 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:02:23.436Z",
+    "capturedAt": "2026-09-29T00:24:42.288Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
   {
     "id": "a-08",
     "file": "a-08-mobile-dark.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -285,15 +285,15 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:02:24.471Z",
+    "capturedAt": "2026-09-29T00:24:43.209Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
   {
     "id": "a-08",
     "file": "a-08-mobile-light.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -306,15 +306,15 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:02:25.464Z",
+    "capturedAt": "2026-09-29T00:24:44.149Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
   {
     "id": "a-09",
     "file": "a-09-desktop-dark.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -327,7 +327,7 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:02:27.049Z",
+    "capturedAt": "2026-09-29T00:24:45.159Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
@@ -357,8 +357,8 @@
   {
     "id": "a-11",
     "file": "a-11-desktop-dark.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -371,15 +371,15 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:03:16.023Z",
+    "capturedAt": "2026-09-29T00:24:53.494Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
   {
     "id": "a-12",
     "file": "a-12-desktop-dark.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -392,15 +392,15 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:03:19.240Z",
+    "capturedAt": "2026-09-29T00:24:54.399Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
   {
     "id": "a-12",
     "file": "a-12-desktop-light.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -413,15 +413,15 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:03:21.125Z",
+    "capturedAt": "2026-09-29T00:24:55.210Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
   {
     "id": "a-12",
     "file": "a-12-mobile-dark.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -434,15 +434,15 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:03:22.759Z",
+    "capturedAt": "2026-09-29T00:24:55.967Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },
   {
     "id": "a-12",
     "file": "a-12-mobile-light.webp",
-    "pack": "cybersecurity_analyst@1.0.0",
-    "packSha256": "0ceeb9668fe8bc23645039090a425021d6bb8a91c04e43d3a9d5e98b367edd7a",
+    "pack": "cybersecurity_analyst@2.0.0",
+    "packSha256": "0c5b1e6f2d89fed2b37438a2686318f24fe4a1b093994c0a5a79b6a630532c40",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -455,7 +455,7 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-09-28T18:03:24.849Z",
+    "capturedAt": "2026-09-29T00:24:56.729Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   }

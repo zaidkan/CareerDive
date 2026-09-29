@@ -9,7 +9,7 @@ Routes under freeze:
 | Key | Path | Notes |
 | --- | --- | --- |
 | home | `/` | Arrival Film V2, handoff capture, workshop provenance |
-| careers | `/careers` | five careers, no media today |
+| careers | `/careers` | one playable career with real media; four workshop previews |
 | cyber | `/careers/cybersecurity-analyst` | only `detailPublished` route, real artifact media |
 | faq | `/faq` | no media today |
 | trust | `/trust` | architectural proof first, code proof second |

@@ -94,12 +94,13 @@ pnpm vitest run --config vitest.ai.config.ts
 
 ## Privacy and deployment
 
-- Reflection access defaults to owner-only RLS.
-- Sharing requires explicit, expiring grant.
-- Institutional deployment remains disabled.
-- Apply `apps/server/drizzle/0001_initial.sql`, then `apps/server/drizzle/0002_decision_reviews.sql`, to Supabase before production.
-- `0002_decision_reviews.sql` is repeatable. When integrating `integration/platform-hardening`, add it to that branch's startup migration sequence; this branch does not change the deploy runner. Missing review storage leaves core shift completion intact and hides community comparison.
+- The database migration defines owner-scoped RLS for reflections. Live enforcement depends on deployed roles and configuration.
+- Sharing grants require a recipient and expiry in the API; no public self-service sharing control is wired.
+- Default policy data marks institutional use unavailable; the current entry path does not enforce a school-use gate.
+- Apply `apps/server/drizzle/0001_initial.sql`, `0002_decision_reviews.sql`, then `0003_decision_option_set.sql` to the deployment database before production.
+- `0002_decision_reviews.sql` is repeatable; `0003_decision_option_set.sql` depends on it. Missing review storage leaves core shift completion intact and hides community comparison.
 - Debrief browser QA uses `apps/server/test/debrief-browser-server.ts` to seed prior shift work, then performs the real final completion in Chromium. Start that server with `PORT=3008 pnpm --filter @sim/server exec tsx test/debrief-browser-server.ts`, start Vite with `VITE_SERVER_URL=http://127.0.0.1:3008 pnpm --filter @sim/web exec vite --host 127.0.0.1 --port 5178 --strictPort`, then run `DEBRIEF_BROWSER_FIXTURE=1 WEB_ORIGIN=http://127.0.0.1:5178 pnpm exec playwright test apps/web/e2e/debrief.spec.ts`.
+- For assessed-entry browser QA when port 5173 is occupied, start the same test router unseeded with `ASSESSED_BROWSER_FIXTURE=1 PORT=3018 pnpm --filter @sim/server exec tsx test/debrief-browser-server.ts`, start Vite with `VITE_SERVER_URL=http://127.0.0.1:3018 pnpm --filter @sim/web exec vite --host 127.0.0.1 --port 5218 --strictPort`, then run `WEB_ORIGIN=http://127.0.0.1:5218 API_ORIGIN=http://127.0.0.1:3018 pnpm exec playwright test apps/web/e2e/golden-path.spec.ts`.
 - Render blueprint lives in `render.yaml`.
 
 See `docs/validation-gate.md` before any 3D or second-career work.

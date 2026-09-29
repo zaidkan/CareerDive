@@ -44,4 +44,4 @@ Base: `cd908477723899b46a1288071d6093e28bfca815`. This audits claims on the prio
 
 Published replacement distinguishes implemented API behavior from on-page controls, names Career Expo as data boundary, and uses conditional language for database and AI configuration.
 
-Known out-of-scope copy: the protected simulation UI still says “Reflections stay private unless you explicitly share them.” The public footer no longer repeats this unqualified claim.
+The public footer removed the unqualified reflection-privacy promise. Final integration also replaced that line in the simulation UI with a narrow statement about submitted reflections and a pointer to this page’s access limits.

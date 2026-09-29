@@ -8,8 +8,9 @@ The public Cybersecurity Analyst page uses the real A-12 desktop source at mobil
 
 ## Media replacement targets
 
+- A-01–A-05, A-07–A-09, A-11, and A-12 were recaptured against the integrated 2.0.0 pack. Their provenance records the new pack hash. A-06 and A-10 still carry their original 1.0.0 provenance and remain labeled representative.
 - A-06: replace the representative investigation ticket with a verified, complete in-product ticket state when available.
-- A-10: replace the representative partial-shift debrief with a captured completed-shift debrief after the consequence/debrief branch is integrated.
+- A-10: replace the representative partial-shift debrief with a verified completed-shift capture from the integrated consequence/debrief runtime.
 - A-12: recapture mobile after the Desk OS clipping defect is fixed.
 
 The public route reads static registry sources only; it never requests a live simulation session.

@@ -340,13 +340,13 @@ export function evaluateChecks({ route, theme, motion, metrics }) {
     : [];
   const falseRealClaims = provenanceLabels.filter(
     (label) =>
-      /ready now/i.test(label) &&
+      /playable now/i.test(label) &&
       WORKSHOP_CAREERS.some((career) =>
         label.toLowerCase().includes(career.toLowerCase()),
       ),
   );
   const malformedLabels = provenanceLabels.filter(
-    (label) => !/(ready now|workshop concept|in the workshop)/i.test(label),
+    (label) => !/(playable now|workshop concept|taking shape|in the workshop)/i.test(label),
   );
   const workshopIssues = [];
   if (workshopRoute && !/workshop/i.test(metrics.bodyText)) {

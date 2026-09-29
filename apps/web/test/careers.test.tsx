@@ -206,13 +206,13 @@ describe("public career data", () => {
 });
 
 describe("Career Explorer interaction", () => {
-  it("shows Ready Now and Workshop with useful content and no carousel", async () => {
+  it("shows Playable now and Taking shape with useful content and no carousel", async () => {
     render(<SiteApp initialRoute="/careers" />);
     expect(
-      await screen.findByRole("heading", { name: "Ready Now" }),
+      await screen.findByRole("heading", { name: "Playable now" }),
     ).toBeVisible();
     expect(
-      screen.getByRole("heading", { name: "In the Workshop" }),
+      screen.getByRole("heading", { name: "Taking shape" }),
     ).toBeVisible();
     expect(screen.getByText(careerAt(0).shortSummary)).toBeVisible();
     expect(screen.getByText(careerAt(1).shortSummary)).toBeVisible();

@@ -11,7 +11,7 @@ export function ReadyNowStage({
   const Heading = headingLevel === 2 ? "h2" : "h3";
   return (
     <section className="career-stage" aria-labelledby="ready-now-title">
-      <Heading id="ready-now-title">Ready Now</Heading>
+      <Heading id="ready-now-title">Playable now</Heading>
       <p>Step into a career you can try today.</p>
       <div className="career-ready-grid">
         {careers.map((career) => (

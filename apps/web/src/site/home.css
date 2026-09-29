@@ -454,4 +454,7 @@
   .home-hero-copy h1 {
     font-size: clamp(2.55rem, 11vw, 3.4rem);
   }
+  .home-handoff {
+    --ui-pass-to: 0px;
+  }
 }

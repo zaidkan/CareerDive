@@ -34,11 +34,14 @@ class BrowserReviewRepository extends InMemoryRepository {
 }
 
 const server = Fastify();
+const repository = process.env.ASSESSED_BROWSER_FIXTURE === "1"
+  ? new InMemoryRepository()
+  : new BrowserReviewRepository();
 await server.register(cors, { origin: true });
 await server.register(fastifyTRPCPlugin, {
   prefix: "/trpc",
   trpcOptions: {
-    router: createAppRouter(new BrowserReviewRepository()),
+    router: createAppRouter(repository),
     createContext: () => ({ userId: "local-user" }),
   },
 });

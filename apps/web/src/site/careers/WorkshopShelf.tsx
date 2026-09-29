@@ -14,7 +14,7 @@ export function WorkshopShelf({
   const Heading = headingLevel === 2 ? "h2" : "h3";
   return (
     <section className="career-shelf" aria-labelledby="workshop-title">
-      <Heading id="workshop-title">In the Workshop</Heading>
+      <Heading id="workshop-title">Taking shape</Heading>
       <p>
         Workshop roles show the kinds of decisions you’d make — previews only,
         for now. Want one of these first? Mark it — you can undo anytime.

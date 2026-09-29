@@ -15,8 +15,8 @@ export function CareerDetailPage({ career }: { career: PublicCareer }) {
         <p className="eyebrow">
           {career.field} ·{" "}
           {career.availability === "ready_now"
-            ? "Ready Now"
-            : "In the Workshop"}
+            ? "Playable now"
+            : "Taking shape"}
         </p>
         <h1>{career.title}</h1>
         <p className="lede">{career.shortSummary}</p>

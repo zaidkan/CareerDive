@@ -375,7 +375,7 @@ export function App({
       )}
 
       <aside className="privacy-note">
-        Reflections stay private unless you explicitly share them.
+        Submitted reflections become part of your Career Expo session. See Privacy and safety for access limits.
       </aside>
     </main>
   );

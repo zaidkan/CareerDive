@@ -184,7 +184,7 @@ describe("site routes", () => {
         .length,
     ).toBe(4);
     expect(
-      tileProvenance.filter((el) => /ready now/i.test(el.textContent)).length,
+      tileProvenance.filter((el) => /playable now/i.test(el.textContent)).length,
     ).toBe(1);
     expect(screen.getByText("Playable now")).toBeInTheDocument();
     expect(

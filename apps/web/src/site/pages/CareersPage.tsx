@@ -1,5 +1,5 @@
 import { PublicChapter, ChapterSeparator, ArtifactStage } from "../ArtDirection.js";
-import { productMedia, type ProductMediaId } from "../productMedia.js";
+import { selectProductMedia, type ProductMediaId } from "../productMedia.js";
 import {
   NurseHandoffSheet,
   NurseVitalsTrend,
@@ -15,12 +15,10 @@ import { getCareerBySlug, careerPath } from "../../careers/careers.js";
 import { SiteLink } from "../SiteLink.js";
 
 function ThemedMedia({ id, alt }: { id: ProductMediaId; alt: string }) {
-  const media = productMedia[id];
-  const variants = media.variants as any;
-  const l_desktop = variants.light?.desktop?.src || variants.dark.desktop.src;
-  const l_mobile = variants.light?.mobile?.src || l_desktop;
-  const d_desktop = variants.dark.desktop.src;
-  const d_mobile = variants.dark.mobile?.src || d_desktop;
+  const l_desktop = selectProductMedia(id, "light", "desktop").src;
+  const l_mobile = selectProductMedia(id, "light", "mobile").src;
+  const d_desktop = selectProductMedia(id, "dark", "desktop").src;
+  const d_mobile = selectProductMedia(id, "dark", "mobile").src;
 
   return (
     <div className="themed-media-wrapper">
