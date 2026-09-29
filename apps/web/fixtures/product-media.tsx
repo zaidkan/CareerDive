@@ -2,15 +2,14 @@ import { createRoot } from "react-dom/client";
 import type { ClientView, Debrief } from "@sim/schemas";
 import { AlertRecords } from "../src/components/tools/AlertRecords.js";
 import { ArtifactDetail } from "../src/components/artifacts.js";
+import { CaseReview } from "../src/components/tools/CaseReview.js";
 import { DebriefView } from "../src/components/DebriefView.js";
 import { EmailTool } from "../src/components/tools/EmailTool.js";
 import { RecordQueryTool } from "../src/components/tools/RecordQueryTool.js";
 import { TeamChatTool } from "../src/components/tools/TeamChatTool.js";
-import { SystemToolPanel } from "../src/components/SystemToolPanel.js";
 import { DeskOs } from "../src/world/deskOs/DeskOs.js";
 import { OsSessionProvider } from "../src/world/deskOs/osSession.js";
 import { RoomCanvas } from "../src/world/RoomCanvas.js";
-import { EMPTY_MUTATION_STATE } from "../src/useMutationCoordinator.js";
 import "../src/styles.css";
 import "./product-media.css";
 
@@ -35,7 +34,7 @@ function ProductScene({ scene, view, debrief }: { scene: Scene; view: ClientView
     const artifact = view.artifacts.find(({ id }) => id === "account-history-1");
     return artifact ? <ArtifactDetail artifact={artifact} /> : null;
   }
-  if (scene === "a-06") return <SystemToolPanel view={view} systemId="ticket_queue" selectedEventId="suspicious-login-1" actions={view.availableActions.filter(({ eventId }) => eventId === "suspicious-login-1")} onAction={noAction} mutationState={EMPTY_MUTATION_STATE} />;
+  if (scene === "a-06") return <CaseReview view={view} actions={view.availableActions.filter(({ eventId }) => eventId === "suspicious-login-1")} />;
   if (scene === "a-07") return <OsSessionProvider><TeamChatTool view={view} /></OsSessionProvider>;
   if (scene === "a-08") return <EmailTool artifacts={view.artifacts.filter(({ systemId, eventIds }) => systemId === "email" && eventIds.some((id) => view.events.some((event) => event.id === id && event.status !== "pending")))} selectedId="handoff-email" onSelect={noAction} />;
   return null;
