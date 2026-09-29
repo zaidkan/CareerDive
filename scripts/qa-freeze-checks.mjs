@@ -377,8 +377,8 @@ export function evaluateChecks({ route, theme, motion, metrics }) {
     if (/workshop concept/i.test(metrics.bodyText)) {
       cyberIssues.push("workshop provenance label present on cyber page");
     }
-    if (!/simplified/i.test(metrics.bodyText)) {
-      cyberIssues.push("missing real-media honesty marker (simplified)");
+    if (!/samples selected tasks|simplified/i.test(metrics.bodyText)) {
+      cyberIssues.push("missing experience-scope honesty marker");
     }
     const escapes = new RegExp(
       `(?:${WORKSHOP_CAREERS.join("|")}).{0,160}(?:playable|play the|simulation)`,

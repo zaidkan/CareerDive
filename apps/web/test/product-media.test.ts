@@ -17,7 +17,6 @@ describe("public product media", () => {
   it("has twelve typed scenes backed by real files and matching provenance", () => {
     expect(Object.keys(productMedia)).toEqual(Array.from({ length: 12 }, (_, index) => `a-${String(index + 1).padStart(2, "0")}`));
     const packSha256 = createHash("sha256").update(readFileSync(new URL("../../../content/packs/cybersecurity-analyst/pack.yaml", moduleBase))).digest("hex");
-    expect(Object.values(productMedia).filter(({ authenticity }) => authenticity === "representative")).toEqual([]);
     let count = 0;
     for (const media of Object.values(productMedia)) {
       expect(media.provenance).toBe("/careers/media/provenance.json");

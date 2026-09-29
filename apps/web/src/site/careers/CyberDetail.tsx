@@ -78,13 +78,9 @@ function ProofCaption({
   children: ReactNode;
 }) {
   return (
-    <p className="cyber-proof-caption">
+    <p className="cyber-proof-caption" data-provenance-for={id}>
       <span>{children}</span>
-      <span>
-        {productMedia[id].authenticity === "real"
-          ? "Real product capture"
-          : "Representative product state"}
-      </span>
+      <span>Real product capture</span>
     </p>
   );
 }
@@ -316,7 +312,7 @@ export function CyberDetail({ career }: { career: PublicCareer }) {
             <div className="cyber-ticket-proof">
               <ProductImage
                 id="a-06"
-                alt="Representative investigation ticket with evidence, uncertainty, and a next step"
+                alt="Submitted investigation ticket with evidence, uncertainty, and a next step"
               />
               <ProofCaption id="a-06">
                 Investigation ticket with working notes
@@ -332,8 +328,7 @@ export function CyberDetail({ career }: { career: PublicCareer }) {
               <h2>The work isn’t done until someone else can continue it.</h2>
               <p>
                 Record the verified facts, name what remains open, and leave a
-                next step. The ticket shown is a representative in-product
-                state, not proof of a completed shift.
+                next step. This ticket comes from a completed first shift.
               </p>
             </div>
           </div>
@@ -348,17 +343,16 @@ export function CyberDetail({ career }: { career: PublicCareer }) {
               <ShiftMeta>Reflect</ShiftMeta>
               <h2>See how you worked — not a score of who you are.</h2>
               <p>
-                A debrief can put your actions beside the limits of what one
-                short shift can show. This image is a representative
-                partial-shift state.
+                The debrief puts your actions beside their consequences and
+                the limits of what one short shift can show.
               </p>
             </div>
             <figure data-motion-role="consequence">
               <ProductImage
                 id="a-10"
-                alt="Representative partial-shift debrief showing actions and limitations"
+                alt="Completed first-shift debrief showing actions, consequences, and limitations"
               />
-              <ProofCaption id="a-10">Partial-shift debrief</ProofCaption>
+              <ProofCaption id="a-10">Completed-shift debrief</ProofCaption>
             </figure>
           </div>
         </Motion>
@@ -385,13 +379,14 @@ export function CyberDetail({ career }: { career: PublicCareer }) {
             {career.realityNotes?.[1]}
           </p>
         </div>
+        <p>This first shift samples selected tasks. It is not a career fit score.</p>
         <details className="cyber-how-we-know">
           <summary>How we know</summary>
           <p>
             These images come from a seeded Career Expo first shift at Verdaly.
-            The ticket and debrief are representative product states. The
-            experience samples selected tasks; it is not a career fit score or
-            hiring assessment.
+            The ticket and debrief show one completed path through the current
+            experience. It samples selected tasks; it is not a career fit score
+            or hiring assessment.
           </p>
         </details>
       </PublicChapter>

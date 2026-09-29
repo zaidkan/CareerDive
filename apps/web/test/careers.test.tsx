@@ -404,7 +404,7 @@ describe("public routes", () => {
         name: "The work isn’t done until someone else can continue it.",
       }),
     ).toBeVisible();
-    expect(screen.getAllByText("Representative product state")).toHaveLength(2);
+    expect(screen.queryByText("Representative product state")).toBeNull();
     const detail = document.querySelector(".cyber-detail");
     expect(detail).not.toBeNull();
     for (const id of [
@@ -434,12 +434,12 @@ describe("public routes", () => {
       detail
         ?.querySelector('[data-media-id="a-06"]')
         ?.getAttribute("data-authenticity"),
-    ).toBe("representative");
+    ).toBe("real");
     expect(
       detail
         ?.querySelector('[data-media-id="a-10"]')
         ?.getAttribute("data-authenticity"),
-    ).toBe("representative");
+    ).toBe("real");
     expect(detail?.querySelector('[data-media-id="a-12"] source')).toBeNull();
     expect(detail?.textContent).not.toMatch(
       /content\/packs\/|pack\.yaml|docs\/content\//,
