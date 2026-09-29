@@ -4,9 +4,11 @@
  * in db/repository.ts. Nothing imports this file; that is expected. Deleting it
  * would break `drizzle-kit generate`.
  */
+import { sql } from "drizzle-orm";
 import {
   bigint,
   boolean,
+  check,
   date,
   index,
   integer,
@@ -62,6 +64,17 @@ export const decisionReviews = pgTable("decision_reviews", {
 }, (table) => [
   primaryKey({ columns: [table.sessionId, table.decisionId] }),
   index("decision_reviews_cohort_idx").on(table.careerId, table.careerVersion, table.decisionId, table.optionSetKey, table.choiceId),
+]);
+export const careerRequests = pgTable("career_requests", {
+  requesterKey: uuid("requester_key").notNull(),
+  careerId: text("career_id").notNull(),
+  requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
+  unrequestedAt: timestamp("unrequested_at", { withTimezone: true }),
+  lastActionAt: timestamp("last_action_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  primaryKey({ columns: [table.requesterKey, table.careerId] }),
+  check("career_requests_career_id_check", sql`${table.careerId} IN ('registered-nurse', 'mechanical-engineer', 'electrician', 'lawyer-attorney')`),
+  index("career_requests_career_idx").on(table.careerId),
 ]);
 export const actionLog = pgTable("action_log", {
   id: bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity(),

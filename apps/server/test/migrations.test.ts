@@ -53,4 +53,14 @@ describe("privacy migration", () => {
     expect(sql).toContain("option_set_key text NOT NULL DEFAULT ''");
     expect(sql).toContain("decision_id, option_set_key, choice_id");
   });
+
+  it("limits career requests to four IDs and denies direct client access", async () => {
+    const sql = await readFile(new URL("../drizzle/0004_career_requests.sql", import.meta.url), "utf8");
+    expect(sql).toContain("PRIMARY KEY (requester_key, career_id)");
+    expect(sql).toContain("ALTER TABLE career_requests ENABLE ROW LEVEL SECURITY");
+    expect(sql).not.toMatch(/CREATE POLICY|email|user_agent|ip_address/i);
+    for (const careerId of ["registered-nurse", "mechanical-engineer", "electrician", "lawyer-attorney"]) {
+      expect(sql).toContain(`'${careerId}'`);
+    }
+  });
 });
