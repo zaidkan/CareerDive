@@ -54,6 +54,7 @@ export function DeskOs({
 }) {
   const { state, dispatch } = useOsSession();
   const workspaceRef = useRef<HTMLDivElement>(null);
+  const wasLockedRef = useRef(phase === "desk_login");
   const [currentWorkspace, setCurrentWorkspace] = useState<WorkspaceSize>({ w: 0, h: 0 });
   const [windowNotice, setWindowNotice] = useState("");
   useEffect(() => {
@@ -125,6 +126,11 @@ export function DeskOs({
   };
   const locked = phase === "desk_login";
 
+  useEffect(() => {
+    if (wasLockedRef.current && !locked) workspaceRef.current?.focus({ preventScroll: true });
+    wasLockedRef.current = locked;
+  }, [locked]);
+
   const openFileInNotes = (file: OpenableFile) => {
     setOpenFile(file);
     launch("notes");
@@ -153,7 +159,7 @@ export function DeskOs({
       className={`desk-os${maximized ? " desk-os-max" : ""}${osFullscreen ? " desk-os-os-fs" : ""}${locked ? " desk-os-locked" : " desk-os-shell"}`}
       data-desk-os="true"
     >
-      <div className="os-workspace" hidden={locked} ref={workspaceRef}>
+      <div aria-label="Verdaly workstation ready" className="os-workspace" hidden={locked} ref={workspaceRef} role="group" tabIndex={-1}>
         <Desktop onOpen={launch} />
         {state.windows.windows.filter((window) => !window.minimized).map((window) => (
           <WindowFrame

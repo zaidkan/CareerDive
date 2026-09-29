@@ -11,6 +11,8 @@ const LEGACY_LABELS: Array<[keyof Debrief["sections"], string]> = [
   ["nextAction", "Next action"],
 ];
 
+const describeHandoff = (ids: string[]) => ids.map((id) => id.replaceAll("-", " ")).join(", ");
+
 const DECISIONS: Record<
   string,
   {
@@ -245,8 +247,10 @@ export function DebriefView({ debrief }: { debrief: Debrief }) {
                   ))}
                   {item.reasoningAnalysis?.correctionHistory.map((entry, correctionIndex) => (
                     <p key={correctionIndex}>
-                      Initial handoff: {entry.initialOptionIds.join(", ")}.
-                      {entry.correctedOptionIds ? ` Later correction: ${entry.correctedOptionIds.join(", ")}.` : " Still open."}
+                      <strong>Initial handoff:</strong> {describeHandoff(entry.initialOptionIds)}.
+                      {entry.correctedOptionIds
+                        ? <> <strong>Later correction:</strong> {describeHandoff(entry.correctedOptionIds)}.</>
+                        : " Still open."}
                     </p>
                   ))}
                   <details className="decision-review-other-path">

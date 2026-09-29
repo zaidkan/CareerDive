@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import type { SimulationClient } from "../../client.js";
 import { defaultClient } from "../../client.js";
 import { ArrivalFilm } from "../ArrivalFilm.js";
@@ -32,10 +32,14 @@ function writeGate(g: Gate): void {
   }
 }
 
-type Phase = "arrive" | "brief" | "connecting" | "sim";
+type Phase = "arrive" | "brief" | "sim";
 
 export function StartPage({ client = defaultClient }: { client?: SimulationClient }) {
   const [phase, setPhase] = useState<Phase>(() => (readGate() === "sim" ? "sim" : "arrive"));
+
+  useEffect(() => {
+    if (phase === "brief") void import("../../index.js").catch(() => {});
+  }, [phase]);
 
   function handleSeen() {
     setPhase("brief");
@@ -43,10 +47,7 @@ export function StartPage({ client = defaultClient }: { client?: SimulationClien
 
   function handleContinueToSim() {
     writeGate("sim");
-    setPhase("connecting");
-    requestAnimationFrame(() => {
-      setPhase("sim");
-    });
+    setPhase("sim");
   }
 
   function handleLeave() {
@@ -73,20 +74,16 @@ export function StartPage({ client = defaultClient }: { client?: SimulationClien
     );
   }
 
-  if (phase === "connecting") {
-    return (
+  // ponytail: keep existing runtime ownership — no changes to createSession/auth/baseline/journey
+  return (
+    <Suspense fallback={
       <ThresholdShell rail={rail}>
         <div className="threshold-connecting" aria-live="polite" aria-busy="true">
           <p className="threshold-connecting-title">Connecting to Verdaly</p>
           <p className="mode-note">Entering Floor 12…</p>
         </div>
       </ThresholdShell>
-    );
-  }
-
-  // ponytail: keep existing runtime ownership — no changes to createSession/auth/baseline/journey
-  return (
-    <Suspense fallback={<p className="mode-note">Entering the floor…</p>}>
+    }>
       <App client={client} />
     </Suspense>
   );

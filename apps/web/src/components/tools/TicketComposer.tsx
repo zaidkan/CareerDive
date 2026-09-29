@@ -4,7 +4,7 @@ import type {
   ClientView,
   TicketUpdatePayload,
 } from "@sim/schemas";
-import type { MutationState } from "../../useMutationCoordinator.js";
+import { actionMutationKey, type MutationState } from "../../useMutationCoordinator.js";
 
 export function TicketComposer({
   view,
@@ -151,7 +151,7 @@ export function TicketComposer({
           onAction({ ...action, ticketPayload: payload, ...(decisionOptionId ? { decisionOptionId } : {}) });
         }}
       >
-        Submit ticket
+        {mutationState.pendingKey === actionMutationKey(action) ? "Saving ticket…" : "Submit ticket"}
       </button>
       {ticket ? (
         <p role="status">

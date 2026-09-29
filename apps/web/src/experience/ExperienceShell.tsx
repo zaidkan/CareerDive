@@ -26,7 +26,7 @@ export function ExperienceShell(props: WorkstationProps) {
     </section>
   );
   return (
-    <Suspense fallback={<p>Opening workplace…</p>}>
+    <Suspense fallback={<p className="app-loading" role="status">Opening your workplace…</p>}>
       {recover ? fallback : (
         <SpatialBoundary fallback={fallback}>
           <SpatialShell

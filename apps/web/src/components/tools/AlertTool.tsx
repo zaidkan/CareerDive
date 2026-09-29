@@ -22,9 +22,17 @@ export function AlertTool({
   const selected =
     artifacts.find(({ id }) => id === selectedId) ?? artifacts[0];
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const observedRef = useRef<Record<string, boolean>>({});
   useEffect(() => {
     if (selectedId) headingRef.current?.focus();
   }, [selectedId]);
+  useEffect(() => {
+    if (!selected) return;
+    if (selected.observed && observedRef.current[selected.id] === false) {
+      headingRef.current?.focus({ preventScroll: true });
+    }
+    observedRef.current[selected.id] = selected.observed;
+  }, [selected]);
   if (!selected) return <p>No alert records are available here yet. Check the other tools for open work.</p>;
 
   return (
@@ -46,7 +54,7 @@ export function AlertTool({
           </li>
         ))}
       </ul>
-      <article className="alert-record">
+      <article className="alert-record evidence-record" key={selected.id}>
         <h4 ref={headingRef} tabIndex={selectedId ? -1 : undefined}>
           {selected.title}
         </h4>

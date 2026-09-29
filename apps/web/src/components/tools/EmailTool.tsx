@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { ClientArtifact } from "@sim/schemas";
 import {
   EMPTY_MUTATION_STATE,
@@ -39,6 +40,18 @@ export function EmailTool({
 }) {
   const selected =
     artifacts.find(({ id }) => id === selectedId) ?? artifacts[0];
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const observedRef = useRef<Record<string, boolean>>({});
+  useEffect(() => {
+    if (selectedId) headingRef.current?.focus({ preventScroll: true });
+  }, [selectedId]);
+  useEffect(() => {
+    if (!selected) return;
+    if (selected.observed && observedRef.current[selected.id] === false) {
+      headingRef.current?.focus({ preventScroll: true });
+    }
+    observedRef.current[selected.id] = selected.observed;
+  }, [selected]);
   if (!selected) return <p>No messages are available here yet. You can continue your open work in the other tools.</p>;
 
   return (
@@ -63,11 +76,11 @@ export function EmailTool({
           </li>
         ))}
       </ul>
-      <article className="email-message">
+      <article className="email-message evidence-record" key={selected.id}>
         <p className="eyebrow">
           From {senderFor(selected)} · <MessageTime artifact={selected} />
         </p>
-        <h4>{selected.title}</h4>
+        <h4 ref={headingRef} tabIndex={-1}>{selected.title}</h4>
         <p>{selected.summary}</p>
         {selected.observed ? (
           <pre className="artifact-body">{selected.body}</pre>
