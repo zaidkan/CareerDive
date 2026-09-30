@@ -57,9 +57,7 @@ export function TrustPage() {
           caption="The server stores current state as well as an action log; it does not rebuild the shift from clicks alone."
         />
         <p className="trust-quiet-note">
-          No fixed retention period is established here. Server-memory data ends
-          when that server process restarts; database mode saves records beyond
-          a restart.
+          There is no permanent retention period. Depending on how Career Expo is currently running, your data may be forgotten as soon as you leave, or it may be saved securely so you can resume your shift later.
         </p>
       </PublicChapter>
 
@@ -104,24 +102,19 @@ export function TrustPage() {
       >
         <h2 id="trust-access">How access is protected</h2>
         <p className="trust-lead">
-          In production, a session request needs a verified account identity.
-          Server reads and writes check that identity against the session owner.
+          When deployed, accessing a saved shift requires your verified account. The platform checks your identity before saving or showing any work.
         </p>
         <div className="trust-access-lines">
           <div>
-            <strong>At the API</strong>
+            <strong>Identity checks</strong>
             <p>
-              Production requests use a verified sign-in token. Session queries
-              include the owner ID; another account&apos;s session is rejected
-              in tests.
+              Requests to load a shift require proof of who you are. The system is designed to block access if someone tries to request a shift that belongs to another account.
             </p>
           </div>
           <div>
-            <strong>In the database design</strong>
+            <strong>Data boundaries</strong>
             <p>
-              Database rules are written to limit sessions, actions, evidence,
-              and reflections to their owner. Live enforcement depends on
-              deployed database roles and configuration.
+              The system's storage rules are written so that your actions, files, and reflections are strictly locked to you. These rules ensure private exploration.
             </p>
           </div>
         </div>
@@ -141,15 +134,10 @@ export function TrustPage() {
           <div>
             <h2 id="trust-ai">What AI can and cannot do</h2>
             <p>
-              AI can help phrase Morgan&apos;s answer when a provider is
-              enabled. The server sends a filtered character context and your
-              question. Without a provider, it uses a prepared line.
+              AI can help phrase Morgan&apos;s answer. Career Expo sends only the specific facts Morgan is allowed to know, along with your question. Without an AI connection, it uses a prepared line.
             </p>
             <p>
-              Output checks catch declared restricted facts and selected scoring
-              language; failed generation falls back to a prepared line. Those
-              checks are not a guarantee that every generated sentence is
-              correct.
+              Safety filters catch restricted facts and scoring language; if the AI tries to break the rules, the game falls back to a prepared line. These checks help keep the simulation on track.
             </p>
           </div>
         </div>
@@ -165,8 +153,8 @@ export function TrustPage() {
           <h2 id="trust-no-score">No grades. No fit score.</h2>
           <p>
             The current debrief has eight written sections and a confidence
-            label. Its schema has no career-fit score, grade, ranking, or job
-            recommendation field.
+            label. It does not calculate a career-fit score, grade, ranking, or job
+            recommendation.
           </p>
           <div
             className="trust-debrief-strip"
@@ -189,16 +177,15 @@ export function TrustPage() {
         <h2 id="trust-school">Current school-use status</h2>
         <p>
           Career Expo is presented for individual exploration, not as a school
-          assessment. A policy setting marks institutional use as unavailable,
-          but the current first shift does not enforce a school-entry gate. We
-          make no school approval or legal-compliance claim.
+          assessment. The platform is not currently built for institutional enrollment
+          or classroom management. We make no school approval or legal-compliance claim.
         </p>
       </PublicChapter>
 
       <ChapterSeparator />
       <PublicChapter surface="base" rhythm="compact" className="trust-wiring">
         <details>
-          <summary>See the wiring</summary>
+          <summary>See how this works</summary>
           <p>
             Short source excerpts behind the claims above. A migration shows
             intended database rules; it is not proof of a live deployment.

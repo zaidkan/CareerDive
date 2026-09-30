@@ -17,11 +17,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "What if something doesn’t load, or I get stuck?",
-    a: "Keyboard support and reduced motion are available. If you get stuck, a fallback recovery path can return you to a safe screen.",
-    link: {
-      label: "Report a problem",
-      href: "/support",
-    },
+    a: "Keyboard support and reduced motion are available. If you get stuck, a fallback recovery path can return you to a safe screen. A tool to report problems directly is currently being built.",
   },
   {
     q: "If I write about how I felt, who sees it?",
@@ -32,12 +28,12 @@ const FAQS: Faq[] = [
     a: "No. Career Expo defines the scenario, allowed information, and outcomes. Where AI-assisted dialogue is used, it works inside those strict constraints. It does not get to invent scenario facts or independently change the simulation outcome.",
   },
   {
-    q: "What does “In the workshop” mean?",
+    q: "What does “Taking shape” mean?",
     a: "These pages and artifacts are previews of our current plans, but they aren't playable yet. Tasks and content can change during development. A public preview is not a production commitment, and requesting a career does not guarantee it will be built next.",
   },
   {
     q: "How do career requests work?",
-    a: "Requesting tells Career Expo that you are interested in seeing that career become playable. Requests help us understand interest. They do not create a public popularity score, guarantee priority, guarantee release order, or guarantee a date. You can request or unrequest anytime. No name, email, or account is required.",
+    a: "Right now, the request button is a local preview — it remembers your choice on your device but does not send data to our servers. When connected in the future, your requests will help us understand interest. They will not create a public popularity score, guarantee a release order, or guarantee a date. You can request or unrequest anytime, and no name, email, or account is required.",
   },
   {
     q: "Is there more after this first day?",
