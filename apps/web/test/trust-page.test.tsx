@@ -30,7 +30,7 @@ describe("trust page proof", () => {
     ).toHaveLength(3);
     expect(container.textContent).toContain("not yet self-service controls");
     expect(container.textContent).toContain(
-      "does not enforce a school-entry gate",
+      "not currently built for institutional enrollment",
     );
     expect(container.textContent).not.toMatch(
       /Verdaly (?:stores|remembers|keeps)|only you can ever|delete your account.*everything/i,
@@ -39,7 +39,7 @@ describe("trust page proof", () => {
 
   it("keeps source excerpts secondary and matched to repository proof", () => {
     render(<TrustPage />);
-    fireEvent.click(screen.getByText("See the wiring"));
+    fireEvent.click(screen.getByText("See how this works"));
     const sql = readFileSync("apps/server/drizzle/0001_initial.sql", "utf8");
     const evidenceTest = readFileSync(
       "packages/evidence/test/evidence.test.ts",
