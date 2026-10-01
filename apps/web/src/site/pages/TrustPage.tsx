@@ -57,7 +57,7 @@ export function TrustPage() {
           caption="The server stores current state as well as an action log; it does not rebuild the shift from clicks alone."
         />
         <p className="trust-quiet-note">
-          There is no permanent retention period. Depending on how Career Expo is currently running, your data may be forgotten as soon as you leave, or it may be saved securely so you can resume your shift later.
+          There is no permanent retention period. Depending on how Career Expo is currently running, your data may only last until the system restarts, or it may be saved so you can resume your shift later.
         </p>
       </PublicChapter>
 
@@ -102,19 +102,19 @@ export function TrustPage() {
       >
         <h2 id="trust-access">How access is protected</h2>
         <p className="trust-lead">
-          When deployed, accessing a saved shift requires your verified account. The platform checks your identity before saving or showing any work.
+          Career Expo does not currently require an account to start the first shift. Requests and session data are checked so one shift cannot simply request another shift's protected data.
         </p>
         <div className="trust-access-lines">
           <div>
-            <strong>Identity checks</strong>
+            <strong>Session checks</strong>
             <p>
-              Requests to load a shift require proof of who you are. The system is designed to block access if someone tries to request a shift that belongs to another account.
+              The system requires proof of the active session. It is designed to block access if someone tries to request a shift that belongs to another session.
             </p>
           </div>
           <div>
             <strong>Data boundaries</strong>
             <p>
-              The system's storage rules are written so that your actions, files, and reflections are strictly locked to you. These rules ensure private exploration.
+              Database rules are designed to keep one session's data separate from another. Those protections depend on the deployed database configuration being applied correctly.
             </p>
           </div>
         </div>
@@ -134,10 +134,10 @@ export function TrustPage() {
           <div>
             <h2 id="trust-ai">What AI can and cannot do</h2>
             <p>
-              AI can help phrase Morgan&apos;s answer. Career Expo sends only the specific facts Morgan is allowed to know, along with your question. Without an AI connection, it uses a prepared line.
+              AI can help phrase Morgan&apos;s answer. Career Expo limits which scenario facts the dialogue can use. Without an AI connection, it uses a prepared line.
             </p>
             <p>
-              Safety filters catch restricted facts and scoring language; if the AI tries to break the rules, the game falls back to a prepared line. These checks help keep the simulation on track.
+              If the generated reply tries to break the rules, the game falls back to a prepared line. These checks help keep the simulation on track.
             </p>
           </div>
         </div>
