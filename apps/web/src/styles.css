@@ -5858,3 +5858,38 @@ section[aria-labelledby="structured-title"],
     justify-content: flex-start;
   }
 }
+
+/* Recovery and support use the existing product controls without animation. */
+.problem-report { margin-block: 1.5rem; max-inline-size: 44rem; }
+.problem-report form { display: grid; gap: 1rem; margin-block-start: 1rem; }
+.problem-report label { display: grid; gap: 0.4rem; }
+.problem-report label:has(input[type="checkbox"]) { display: flex; align-items: center; }
+.problem-report input:not([type="checkbox"]), .problem-report textarea, .problem-report select {
+  inline-size: 100%; box-sizing: border-box; font: inherit; font-size: 1rem;
+  color: var(--paper); background: var(--desk); padding: 0.65rem;
+  border: 1px solid currentColor; border-radius: 6px;
+}
+.problem-report textarea { min-block-size: 8rem; resize: vertical; }
+.recovery-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.problem-report :focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+
+.problem-report button,
+[aria-label="Workplace compatibility"] button,
+.app-alert > button {
+  min-block-size: 44px; padding: 0.6rem 1rem; font: inherit;
+  color: var(--paper); background: var(--desk);
+  border: 1px solid var(--line-bright); border-radius: 6px; cursor: pointer;
+}
+.problem-report button:disabled { opacity: 0.6; cursor: wait; }
+.problem-report input[type="checkbox"] { accent-color: var(--cta); }
+[aria-label="Workplace recovery"] .case-rail,
+[aria-label="Workplace recovery"] .action-primary {
+  background: var(--desk); color: var(--paper);
+}
+[aria-label="Workplace recovery"] .case-rail .eyebrow { color: var(--mute); }
+[aria-label="Workplace recovery"] button {
+  appearance: none; min-block-size: 44px;
+  color: var(--paper); background: var(--desk);
+}
+/* Existing action styling uses !important; keep this override recovery-scoped. */
+[aria-label="Workplace recovery"] .action-primary { background: var(--desk) !important; }

@@ -6,6 +6,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import { createInitialWorldState, toClientView } from "@sim/core";
 import type { Debrief } from "@sim/schemas";
+import { StartupFailure } from "../src/client.js";
 import { App, type SimulationClient } from "../src/index.js";
 vi.mock("../src/world/RoomCanvas.js", () => ({
     RoomCanvas: () => <div>Office canvas</div>,
@@ -51,7 +52,7 @@ function client(overrides: Partial<SimulationClient> = {}): SimulationClient {
 it("auto-recovers a failed assessed startup without a permanent error", async () => {
     const createSession = vi
         .fn<SimulationClient["createSession"]>()
-        .mockRejectedValueOnce(new Error("offline"))
+        .mockRejectedValueOnce(new StartupFailure(true, "service-unavailable"))
         .mockResolvedValueOnce({ sessionId: view.sessionId, view });
     render(<App client={client({ createSession })}/>);
     expect(await screen.findByRole("button", { name: /Security Operations/ })).toBeEnabled();
@@ -66,8 +67,8 @@ it("retries failed assessed startup after automatic recovery also fails", async 
     const user = userEvent.setup();
     const createSession = vi
         .fn<SimulationClient["createSession"]>()
-        .mockRejectedValueOnce(new Error("offline"))
-        .mockRejectedValueOnce(new Error("still offline"))
+        .mockRejectedValueOnce(new StartupFailure(true, "service-unavailable"))
+        .mockRejectedValueOnce(new StartupFailure(true, "service-unavailable"))
         .mockResolvedValueOnce({ sessionId: view.sessionId, view });
     render(<App client={client({ createSession })}/>);
     await user.click(await screen.findByRole("button", { name: "Retry starting shift" }));
@@ -100,7 +101,7 @@ it.each(["recovery"])("retries only the debrief read after completion in %s", as
     };
     const getDebrief = vi
         .fn()
-        .mockRejectedValueOnce(new Error("offline"))
+        .mockRejectedValueOnce(new StartupFailure(true, "service-unavailable"))
         .mockResolvedValueOnce(debrief);
     const performAction = vi.fn().mockResolvedValue(finished);
     render(<App client={client({
