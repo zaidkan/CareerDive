@@ -1,5 +1,6 @@
 import { Canvas } from "@react-three/fiber";
-import { lazy, memo, Suspense } from "react";
+import { lazy, memo, Suspense, useState } from "react";
+import { graphicsAvailable } from "../experience/diagnostics.js";
 import type { ClientWorkplaceState } from "@sim/schemas";
 import {
   useWorldQuality,
@@ -72,6 +73,9 @@ export const RoomCanvas = memo(function RoomCanvas({
   onRecover?: (position: [number, number, number]) => void;
   onAcceptedDistance?: (meters: number) => void;
 }) {
+  // R3F initializes its renderer asynchronously; fail here so recovery can catch it.
+  const [canRender] = useState(() => graphicsAvailable("webgl2"));
+  if (!canRender) throw new Error("Workplace graphics unavailable");
   return (
     <div className="room-canvas" data-interaction-id="movement_exertion">
       <Canvas
