@@ -19,11 +19,7 @@ export interface SimulationClient {
   createSession(input: {
     seed: number;
     sessionKind: "assessed";
-    pacingMode:
-      | "standard"
-      | "extended"
-      | "pause_compatible"
-      | "no_hard_timer";
+    pacingMode: "standard" | "extended" | "pause_compatible" | "no_hard_timer";
   }): Promise<{ sessionId: string; view: ClientView }>;
   performAction(
     sessionId: string,
@@ -77,10 +73,24 @@ export type WorkplaceInteractionResult = {
   feedback: WorkplaceFeedbackCode;
 };
 
+export class StartupFailure extends Error {
+  constructor(
+    public readonly safeToRetry: boolean,
+    public readonly category: string,
+  ) {
+    super(
+      safeToRetry
+        ? "Service unavailable before session creation."
+        : "Session creation could not be confirmed.",
+    );
+  }
+}
 export class HttpSimulationClient implements SimulationClient {
+  readonly #baseUrl: string;
   readonly #client: ReturnType<typeof createTRPCUntypedClient>;
 
   constructor(baseUrl: string) {
+    this.#baseUrl = baseUrl;
     this.#client = createTRPCUntypedClient({
       links: [
         // Unbatched: Fastify 404s on comma-joined batch paths with ≥7 procedures,
@@ -96,9 +106,22 @@ export class HttpSimulationClient implements SimulationClient {
   async createSession(
     input: Parameters<SimulationClient["createSession"]>[0],
   ): Promise<{ sessionId: string; view: ClientView }> {
-    return SessionResultSchema.parse(
-      await this.#client.mutation("session.create", input),
-    );
+    // Only a failed read is safe to repeat; session.create has no idempotency contract.
+    try {
+      const response = await fetch(`${this.#baseUrl}/health`, {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!response.ok) throw new Error("Unavailable");
+    } catch {
+      throw new StartupFailure(true, "service-unavailable");
+    }
+    try {
+      return SessionResultSchema.parse(
+        await this.#client.mutation("session.create", input, { signal: AbortSignal.timeout(8000) }),
+      );
+    } catch {
+      throw new StartupFailure(false, "creation-unconfirmed");
+    }
   }
 
   async performAction(

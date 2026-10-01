@@ -31,6 +31,7 @@ it("creates exactly one assessed session after arrival and preserves class-clien
   const requests: { url: string; body: unknown }[] = [];
   vi.stubGlobal("fetch", vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const url = input instanceof Request ? input.url : input.toString();
+    if (url.endsWith("/health")) return new Response("ok");
     if (typeof init?.body !== "string") throw new Error("Expected JSON request body");
     const body: unknown = JSON.parse(init.body);
     requests.push({ url, body });

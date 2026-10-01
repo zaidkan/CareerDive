@@ -41,6 +41,7 @@ it.each(["failure", "accessibility"] as const)("recovers after %s without changi
     await user.click(await screen.findByText("Accessibility recovery"));
     await user.click(screen.getByRole("button", { name: "Recover workstation access" }));
   }
+  if (cause === "failure") await userEvent.click(await screen.findByRole("button", { name: "Open recovery workstation" }));
   expect(await screen.findByRole("heading", { name: "Your workstation" })).toBeVisible();
   expect(JSON.stringify(view)).toBe(before);
   expect(onWorkplaceInteraction).not.toHaveBeenCalled();

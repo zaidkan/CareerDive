@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
@@ -13,6 +14,11 @@ export const devServer = {
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __BUILD_SHA__: JSON.stringify(
+      execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
+    ),
+  },
   server: devServer,
   test: {
     // Playwright specs in e2e/ run under `npx playwright test`, not vitest.

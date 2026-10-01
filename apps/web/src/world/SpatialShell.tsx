@@ -34,7 +34,7 @@ import { JulesDialogue } from "./JulesDialogue.js";
 import { getJourneyStep } from "../journey.js";
 import { INITIAL_SPATIAL, reduceSpatialEvent } from "./presentation.js";
 import { isTypingTarget, useFullscreen } from "./useFullscreen.js";
-import type { HotspotId } from "./worldTypes.js";
+import type { HotspotId, SpatialState } from "./worldTypes.js";
 import type {
   NotificationHandler,
   TaskAttemptHandler,
@@ -87,6 +87,7 @@ function SpatialShellStage({
   onRetryMutation,
   onAcceptedDistance,
   onRoomExit,
+  recoveryPresentation,
 }: {
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
@@ -97,8 +98,12 @@ function SpatialShellStage({
   onRetryMutation?: () => void;
   onAcceptedDistance?: (meters: number) => void;
   onRoomExit?: () => void;
+  recoveryPresentation?: { current: SpatialState };
 }) {
-  const [spatial, dispatch] = useReducer(reduceSpatialEvent, INITIAL_SPATIAL);
+  const [spatial, dispatch] = useReducer(reduceSpatialEvent, recoveryPresentation?.current ?? INITIAL_SPATIAL);
+  useLayoutEffect(() => {
+    if (recoveryPresentation) recoveryPresentation.current = spatial;
+  }, [recoveryPresentation, spatial]);
   const { dispatch: osDispatch } = useOsSession();
   const [nearbyLabel, setNearbyLabel] = useState<string>();
   const [pointerLocked, setPointerLocked] = useState(false);

@@ -8,10 +8,15 @@ import type {
   NotificationResponse,
   WorkplaceInteraction,
 } from "@sim/schemas";
-import { defaultClient, type SimulationClient } from "./client.js";
+import {
+  StartupFailure,
+  defaultClient,
+  type SimulationClient,
+} from "./client.js";
 import { DebriefView } from "./components/DebriefView.js";
 import { DecisionAcknowledgement } from "./components/DecisionAcknowledgement.js";
 import { ExperienceShell } from "./experience/ExperienceShell.js";
+import { ProblemReport } from "./experience/ProblemReport.js";
 import { COMPANY } from "./world/company.js";
 import {
   actionMutationKey,
@@ -22,19 +27,26 @@ import {
 } from "./useMutationCoordinator.js";
 import "./styles.css";
 
-export function App({
-  client = defaultClient,
-}: {
-  client?: SimulationClient;
-}) {
+export function App({ client = defaultClient }: { client?: SimulationClient }) {
   const [view, setView] = useState<ClientView>();
   const [sessionId, setSessionId] = useState<string>();
   const [debrief, setDebrief] = useState<Debrief>();
   const [error, setError] = useState<string>();
+  const [startupStatus, setStartupStatus] = useState("Preparing your shift…");
+  const [startupFailure, setStartupFailure] = useState<StartupFailure>();
+  const retryFocus = useRef<HTMLButtonElement>(null);
   const [sessionRequest, setSessionRequest] = useState(0);
   const [debriefStatus, setDebriefStatus] = useState<"loading" | "failed">();
-  const creationRef = useRef<{ client: SimulationClient; attempt: number; promise: ReturnType<SimulationClient["createSession"]> } | undefined>(undefined);
+  const creationRef = useRef<
+    | {
+        client: SimulationClient;
+        attempt: number;
+        promise: ReturnType<SimulationClient["createSession"]>;
+      }
+    | undefined
+  >(undefined);
   const sessionGenerationRef = useRef(0);
+  const startupActiveRef = useRef(false);
   const currentSessionRef = useRef<
     { generation: number; sessionId: string } | undefined
   >(undefined);
@@ -42,10 +54,13 @@ export function App({
     useMutationCoordinator(setView);
 
   useEffect(() => {
+    startupActiveRef.current = true;
     const generation = ++sessionGenerationRef.current;
     currentSessionRef.current = undefined;
     invalidateMutations();
     setError(undefined);
+    setStartupFailure(undefined);
+    setStartupStatus("Preparing your shift…");
     setView(undefined);
     setDebrief(undefined);
     setDebriefStatus(undefined);
@@ -57,20 +72,28 @@ export function App({
     const isCurrent = () => generation === sessionGenerationRef.current;
     void (async () => {
       try {
-        let created: Awaited<ReturnType<SimulationClient["createSession"]>>;
-        try {
-          if (!creationRef.current || creationRef.current.client !== client || creationRef.current.attempt !== sessionRequest) {
-            creationRef.current = { client, attempt: sessionRequest, promise: client.createSession(input) };
-          }
-          created = await creationRef.current.promise;
-        } catch {
-          // One quiet retry covers a server restart/wake without a dead-end banner.
-          await new Promise((resolve) => {
-            setTimeout(resolve, 400);
-          });
-          if (!isCurrent()) return;
-          created = await client.createSession(input);
+        if (
+          !creationRef.current ||
+          creationRef.current.client !== client ||
+          creationRef.current.attempt !== sessionRequest
+        ) {
+          // Cache the whole retry sequence: StrictMode must not duplicate session creation.
+          const promise = (async () => {
+            try {
+              return await client.createSession(input);
+            } catch (cause) {
+              if (!(cause instanceof StartupFailure) || !cause.safeToRetry)
+                throw cause;
+              if (startupActiveRef.current && creationRef.current?.client === client && creationRef.current.attempt === sessionRequest)
+                setStartupStatus("Connection interrupted. Trying once more…");
+              await new Promise((resolve) => setTimeout(resolve, 400));
+              if (!startupActiveRef.current || creationRef.current?.client !== client || creationRef.current.attempt !== sessionRequest) throw cause;
+              return client.createSession(input);
+            }
+          })();
+          creationRef.current = { client, attempt: sessionRequest, promise };
         }
+        const created = await creationRef.current.promise;
         if (!isCurrent()) return;
         currentSessionRef.current = {
           generation,
@@ -78,17 +101,29 @@ export function App({
         };
         setSessionId(created.sessionId);
         setView(created.view);
-      } catch {
+      } catch (cause) {
         if (!isCurrent()) return;
+        const failure =
+          cause instanceof StartupFailure
+            ? cause
+            : new StartupFailure(false, "creation-unconfirmed");
+        setStartupFailure(failure);
         setError(
-          "We couldn't start your shift — the server might be waking up. Give it a moment and hit Retry.",
+          failure.safeToRetry
+            ? "We couldn't connect to start your shift. Your place is kept. Try again when you're ready."
+            : "We couldn't confirm whether your shift started. To avoid starting it twice, we've paused here. Report the problem for help.",
         );
       }
     })();
     return () => {
+      startupActiveRef.current = false;
       sessionGenerationRef.current += 1;
     };
   }, [client, invalidateMutations, sessionRequest]);
+
+  useEffect(() => {
+    if (error) retryFocus.current?.focus();
+  }, [error]);
 
   function currentSession() {
     const current = currentSessionRef.current;
@@ -312,10 +347,18 @@ export function App({
       </header>
 
       {error ? (
-        <div className="app-alert" role="alert">
+        <div
+          className="app-alert"
+          role="alert"
+          tabIndex={-1}
+          ref={(node) => {
+            if (!startupFailure?.safeToRetry) node?.focus();
+          }}
+        >
           <p>{error}</p>
-          {!view ? (
+          {!view && startupFailure?.safeToRetry ? (
             <button
+              ref={retryFocus}
               type="button"
               onClick={() => {
                 setSessionRequest((current) => current + 1);
@@ -324,17 +367,27 @@ export function App({
               Retry starting shift
             </button>
           ) : null}
+          <ProblemReport
+            context={{
+              phase: "starting-shift",
+              apiFailure: startupFailure?.category ?? "unknown",
+            }}
+          />
         </div>
       ) : null}
 
       {!view ? (
         <p className="app-loading" aria-live="polite">
-          {error ? "Your shift hasn't started yet — hit Retry to try again." : "Preparing workplace…"}
+          {error ? "Your place on this page is kept." : startupStatus}
         </p>
       ) : debrief ? (
         <DebriefView debrief={debrief} />
       ) : debriefStatus ? (
-        <section aria-label="Shift completion" aria-live="polite" className="shift-completion">
+        <section
+          aria-label="Shift completion"
+          aria-live="polite"
+          className="shift-completion"
+        >
           <h2>Shift complete</h2>
           {debriefStatus === "failed" ? (
             <>
@@ -357,25 +410,29 @@ export function App({
         </section>
       ) : (
         <>
-        <DecisionAcknowledgement sessionId={view.sessionId} items={view.acknowledgements ?? []} />
-        <ExperienceShell
-          onAction={(action, freeText) => void perform(action, freeText)}
-          onNotification={respondToWorkNotification}
-          onTaskAttempt={submitTaskAttempt}
-          onWorkplaceInteraction={performWorkplaceInteraction}
-          mutationState={mutationState}
-          onRetryMutation={() => {
-            void retryMutation().catch(() => {
-              // The coordinator exposes the repeated failure in mutationState.
-            });
-          }}
-          view={view}
-        />
+          <DecisionAcknowledgement
+            sessionId={view.sessionId}
+            items={view.acknowledgements ?? []}
+          />
+          <ExperienceShell
+            onAction={(action, freeText) => void perform(action, freeText)}
+            onNotification={respondToWorkNotification}
+            onTaskAttempt={submitTaskAttempt}
+            onWorkplaceInteraction={performWorkplaceInteraction}
+            mutationState={mutationState}
+            onRetryMutation={() => {
+              void retryMutation().catch(() => {
+                // The coordinator exposes the repeated failure in mutationState.
+              });
+            }}
+            view={view}
+          />
         </>
       )}
 
       <aside className="privacy-note">
-        Submitted reflections become part of your Career Expo session. See Privacy and safety for access limits.
+        Submitted reflections become part of your Career Expo session. See
+        Privacy and safety for access limits.
       </aside>
     </main>
   );

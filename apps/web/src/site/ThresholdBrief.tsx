@@ -30,7 +30,7 @@ export function ThresholdBrief({
           <li>Work alerts, email, and tickets one step at a time</li>
         </ol>
         <p className="threshold-brief-note">
-          About 10 minutes, at your own pace. No scores chasing you.
+          About 10–15 minutes.
         </p>
         <div className="threshold-brief-actions">
           <button type="button" className="start-shift" onClick={onContinue} autoFocus>
@@ -61,7 +61,7 @@ export function ThresholdBrief({
         </p>
         <div className="artifact-meta">
           <span className="artifact-badge">F12</span>
-          <span>Badge · 10 min · No scores</span>
+          <span>Security Operations</span>
         </div>
       </aside>
     </section>
