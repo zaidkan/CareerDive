@@ -118,9 +118,6 @@ describe("site routes", () => {
       "home-hero-workplace",
       "home-case-a1042",
       "home-evidence-auth",
-      "home-evidence-device",
-      "home-evidence-account",
-      "home-evidence-vpn",
       "home-debrief-reflection",
     ]) {
       expect(
@@ -158,6 +155,22 @@ describe("site routes", () => {
     ).toBeGreaterThan(0);
   });
 
+  it("switcher CTA is career-aware and never launches cyber for other careers", () => {
+    render(<LandingPage />);
+    const action = () => document.querySelector(".home-career-actions");
+    // Cyber default: an active start route is offered.
+    expect(action()?.querySelector('a[href="/start"]')).not.toBeNull();
+    // Select a taking-shape career (Registered Nurse) → disabled CTA, no route.
+    const tabs = Array.from(
+      document.querySelectorAll<HTMLButtonElement>(".home-career-tab"),
+    );
+    fireEvent.click(tabs[1]!);
+    expect(action()?.querySelector('a[href="/start"]')).toBeNull();
+    const disabled = action()?.querySelector("button[disabled]");
+    expect(disabled).toBeTruthy();
+    expect(disabled?.textContent).toMatch(/taking shape/i);
+  });
+
   it("landing names verified shift moments without invented scoring or urgency", () => {
     render(<LandingPage />);
     expect(screen.queryByText(/minute 25/i)).toBeNull();
@@ -181,15 +194,17 @@ describe("site routes", () => {
     }
     // Panel-level provenance is the visible contract; artifact footers repeat it
     // inside aria-hidden crop plates and are excluded here.
+    // Panel provenance labels the ARTIFACT (real vs concept), never the
+    // career's availability — availability lives in the CTA and hero cards.
     const panelProvenance = Array.from(
       document.querySelectorAll(".home-career-panel > .ui-provenance"),
     );
     expect(
-      panelProvenance.filter((el) => /workshop concept/i.test(el.textContent))
+      panelProvenance.filter((el) => /concept artwork/i.test(el.textContent))
         .length,
     ).toBe(4);
     expect(
-      panelProvenance.filter((el) => /playable now/i.test(el.textContent))
+      panelProvenance.filter((el) => /real product capture/i.test(el.textContent))
         .length,
     ).toBe(1);
     // Cyber leads both career systems: first hero card and first switcher tab.
@@ -197,7 +212,9 @@ describe("site routes", () => {
       document.querySelectorAll(".home-hero-card .home-hero-card-name"),
     );
     expect(heroCards[0]?.textContent).toBe("Cybersecurity Analyst");
-    const tabs = Array.from(document.querySelectorAll(".home-career-tab"));
+    const tabs = Array.from(
+      document.querySelectorAll(".home-career-tab-name"),
+    );
     expect(tabs[0]?.textContent).toBe("Cybersecurity Analyst");
     expect(screen.getAllByText(/playable now/i).length).toBeGreaterThan(0);
     expect(
