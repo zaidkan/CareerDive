@@ -1,10 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { careers } from "../../careers/careers.js";
 import {
   ArtifactStage,
   ChapterSeparator,
   PublicChapter,
-  ProvenanceLabel,
   useChapterReveal,
   type MediaProvenance,
 } from "../ArtDirection.js";
@@ -111,6 +116,40 @@ const CYBER_PROVENANCE: MediaProvenance = {
   kind: "real",
 };
 
+/** Canonical public availability language: only these two labels ship on Home. */
+const AVAILABILITY_LABEL: Record<string, string> = {
+  ready_now: "Playable now",
+  in_workshop: "Taking shape",
+  coming_soon: "Taking shape",
+};
+
+function availabilityLabel(availability: string): string {
+  return AVAILABILITY_LABEL[availability] ?? "Taking shape";
+}
+
+type CareerAction =
+  | { kind: "link"; href: string }
+  | { kind: "disabled"; label: string };
+
+/**
+ * Career-aware CTA. A playable career with a route gets an active action; every
+ * other career gets a concise "Taking shape" state that never launches Cyber.
+ * Adding a future career route is a data change, not a component change.
+ */
+function careerAction(career: {
+  availability: string;
+  simulationRoute?: string;
+}): CareerAction {
+  if (career.availability === "ready_now" && career.simulationRoute) {
+    return { kind: "link", href: career.simulationRoute };
+  }
+  return { kind: "disabled", label: "Taking shape" };
+}
+
+function heroCue(careerId: string): string {
+  return HERO_CARDS.find((card) => card.careerId === careerId)?.cue ?? "";
+}
+
 const SHIFT_ACTS = [
   { act: "Prepare", claim: "Context first. Then the actual work." },
   { act: "Decide", claim: "You decide before the picture is complete." },
@@ -120,49 +159,27 @@ const SHIFT_ACTS = [
   },
 ] as const;
 
-/** One alert, one proof at a time. Labels swap the view manually — no autoplay. */
+/**
+ * Real Work is a PREVIEW: the alert plus ONE supporting evidence transition.
+ * The simulation owns discovery — the homepage establishes that real work
+ * exists, it does not walk through the whole investigation.
+ */
 const EVIDENCE_VIEWS = [
   {
     key: "alert",
     label: "Alert A-1042",
     id: "a-01",
     slot: "home-case-a1042",
-    caption: "Alert record · A-1042 — actual product capture, synthetic records",
+    caption: "Alert record · A-1042",
     alt: "Product capture: alert record A-1042, a sign-in from an unfamiliar device, open for review.",
   },
   {
     key: "signin",
-    label: "Sign-in",
+    label: "Sign-in record",
     id: "a-02",
     slot: "home-evidence-auth",
-    caption: "Sign-in record · S-0741 — actual product capture, synthetic records",
+    caption: "Sign-in record · S-0741",
     alt: "Product capture: the sign-in record for session S-0741, from the Cybersecurity Analyst first day.",
-  },
-  {
-    key: "device",
-    label: "Device",
-    id: "a-03",
-    slot: "home-evidence-device",
-    caption:
-      "Device inventory · unknown-laptop-17 — actual product capture, synthetic records",
-    alt: "Product capture: the device inventory record for the unfamiliar laptop, from the Cybersecurity Analyst first day.",
-  },
-  {
-    key: "account",
-    label: "Account",
-    id: "a-04",
-    slot: "home-evidence-account",
-    caption:
-      "Account history · A-1042 review — actual product capture, synthetic records",
-    alt: "Product capture: the account history opened during the A-1042 review, from the Cybersecurity Analyst first day.",
-  },
-  {
-    key: "vpn",
-    label: "VPN",
-    id: "a-05",
-    slot: "home-evidence-vpn",
-    caption: "VPN record · V-218 — actual product capture, synthetic records",
-    alt: "Product capture: the VPN access record V-218, from the Cybersecurity Analyst first day.",
   },
 ] as const;
 
@@ -180,7 +197,7 @@ const HERO_CARDS = [
   { careerId: "lawyer-attorney", cue: "LA" },
 ] as const;
 
-/** Emphasis travels once through the hero cards (~12s), then settles on Cyber. */
+/** Cards rearrange once through the sequence (~12s), then settle on Cyber. */
 const HERO_CARD_STEP_MS = 2000;
 
 const CAREER_SHOWCASE = [
@@ -228,7 +245,7 @@ const CAREER_SWITCH_MS = 4000;
 const HOME_FAQ = [
   {
     q: "How long does it take?",
-    a: "About 10–15 minutes. It's one shift: read the handoff, check an alert, write it up, hand it off.",
+    a: "One first shift: read the handoff, check an alert, write it up, hand it off.",
   },
   {
     q: "Is this a career test?",
@@ -236,7 +253,7 @@ const HOME_FAQ = [
   },
   {
     q: "Are all these careers playable?",
-    a: "One is. Cybersecurity Analyst has a playable first shift; the other four are Workshop previews for now.",
+    a: "One is. Cybersecurity Analyst has a playable first shift; the other four are taking shape.",
   },
 ] as const;
 
@@ -252,9 +269,12 @@ export function LandingPage() {
   const finalRef = useChapterReveal<HTMLDivElement>();
 
   const [evidence, setEvidence] = useState<EvidenceKey>("alert");
-  // Hero cards: emphasis travels once through the cards, settling on Cyber.
-  const [heroCards, setHeroCards] = useState(() => ({ active: 0, step: 0 }));
+  // Hero cards: one finite rearrangement cycle, settling on Cyber.
+  const [heroActive, setHeroActive] = useState(0);
+  const [heroStep, setHeroStep] = useState(0);
   const [heroAuto, setHeroAuto] = useState(() => !prefersReducedMotion());
+  const [reduceMotion] = useState(() => prefersReducedMotion());
+  const heroCardRefs = useRef(new Map<number, HTMLButtonElement>());
   // Detailed switcher: one cycle starting on viewport entry, settling on Cyber.
   const [careerPanels, setCareerPanels] = useState(() => ({
     active: 0,
@@ -264,23 +284,55 @@ export function LandingPage() {
   const [careerAuto, setCareerAuto] = useState(false);
   const careerAutoStarted = useRef(false);
 
+  // Visible card REARRANGEMENT via pure transforms (FLIP-style, CLS-safe): the
+  // cards keep their grid cells in the DOM and translate into the sequence's
+  // slots — the active card leads, the rest follow, easing into stable rest.
+  // Layout never moves, so there is no cumulative layout shift.
+  const syncHeroCards = useCallback(() => {
+    const cards = heroCardRefs.current;
+    const n = HERO_CARDS.length;
+    const home: ({ x: number; y: number } | null)[] = new Array(n);
+    for (let i = 0; i < n; i++) {
+      const el = cards.get(i);
+      // offsetLeft/Top is the transform-independent home cell of each card.
+      home[i] = el ? { x: el.offsetLeft, y: el.offsetTop } : null;
+    }
+    for (let i = 0; i < n; i++) {
+      const el = cards.get(i);
+      const from = home[i];
+      const t = reduceMotion ? i : (i - heroActive + n) % n;
+      const to = home[t];
+      if (!el || !from || !to) continue;
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      el.style.transform = dx || dy ? `translate(${dx}px, ${dy}px)` : "";
+    }
+  }, [heroActive, reduceMotion]);
+
+  useLayoutEffect(() => {
+    syncHeroCards();
+  }, [syncHeroCards]);
+
+  useEffect(() => {
+    window.addEventListener("resize", syncHeroCards);
+    return () => window.removeEventListener("resize", syncHeroCards);
+  }, [syncHeroCards]);
+
   useEffect(() => {
     if (!heroAuto) return;
-    const nextStep = heroCards.step + 1;
+    const nextStep = heroStep + 1;
     if (nextStep > HERO_CARDS.length) {
       setHeroAuto(false);
       return;
     }
     const timer = window.setTimeout(() => {
-      setHeroCards((current) => ({
-        step: current.step + 1,
-        active: (current.step + 1) % HERO_CARDS.length,
-      }));
+      setHeroActive((nextStep) % HERO_CARDS.length);
+      setHeroStep(nextStep);
     }, HERO_CARD_STEP_MS);
     return () => {
       window.clearTimeout(timer);
     };
-  }, [heroAuto, heroCards.step]);
+  }, [heroAuto, heroStep]);
 
   useEffect(() => {
     const node = careerRef.current;
@@ -342,6 +394,14 @@ export function LandingPage() {
   const startLabel = hasSeenFilm
     ? "Continue your first day"
     : "Start your first day";
+  const activeShowcase =
+    CAREER_SHOWCASE[careerPanels.active] ?? CAREER_SHOWCASE[0];
+  const activeCareer = careers.find(
+    (item) => item.id === activeShowcase.careerId,
+  );
+  const activeAction: CareerAction = activeCareer
+    ? careerAction(activeCareer)
+    : { kind: "disabled", label: "Taking shape" };
   const activeEvidence =
     EVIDENCE_VIEWS.find((view) => view.key === evidence) ?? EVIDENCE_VIEWS[0];
 
@@ -376,7 +436,7 @@ export function LandingPage() {
                 </SiteLink>
               </div>
               <p className="home-hero-meta">
-                <strong>Playable now</strong> · ~10–15 min
+                <strong>~10–15 min</strong> · one first shift
               </p>
             </div>
             <div data-motion-role="artifact" className="home-hero-stage">
@@ -396,7 +456,7 @@ export function LandingPage() {
                     (item) => item.id === card.careerId,
                   );
                   if (!career) return null;
-                  const emphasized = heroCards.active === index;
+                  const emphasized = heroActive === index;
                   return (
                     <button
                       key={card.careerId}
@@ -404,29 +464,31 @@ export function LandingPage() {
                       className="home-hero-card"
                       data-emphasis={emphasized ? "true" : "false"}
                       aria-pressed={emphasized}
+                      ref={(el) => {
+                        if (el) heroCardRefs.current.set(index, el);
+                        else heroCardRefs.current.delete(index);
+                      }}
                       onClick={() => {
                         setHeroAuto(false);
-                        setHeroCards((current) => ({
-                          ...current,
-                          active: index,
-                        }));
+                        setHeroActive(index);
                       }}
                     >
-                      <span className="home-hero-card-cue" aria-hidden="true">
-                        {card.cue}
-                      </span>
-                      <span className="home-hero-card-name">
-                        {career.title}
-                      </span>
-                      <span className="home-hero-card-field">
-                        {career.field}
-                      </span>
-                      <span className="home-hero-card-status">
-                        {career.availability === "ready_now"
-                          ? "Playable now"
-                          : career.availability === "coming_soon"
-                            ? "Coming soon"
-                            : "Workshop preview"}
+                      <span className="home-hero-card-surface">
+                        <span
+                          className="home-hero-card-cue"
+                          aria-hidden="true"
+                        >
+                          {card.cue}
+                        </span>
+                        <span className="home-hero-card-name">
+                          {career.title}
+                        </span>
+                        <span className="home-hero-card-field">
+                          {career.field}
+                        </span>
+                        <span className="home-hero-card-status">
+                          {availabilityLabel(career.availability)}
+                        </span>
                       </span>
                     </button>
                   );
@@ -470,7 +532,7 @@ export function LandingPage() {
               Real work, not a job description.
             </h2>
             <p className="ui-type-proof">
-              One alert. Four records to compare. A call you have to justify.
+              One alert. A decision you have to justify.
             </p>
           </div>
           <ArtifactStage
@@ -489,7 +551,6 @@ export function LandingPage() {
               </div>
             }
             caption={activeEvidence.caption}
-            provenance={CYBER_PROVENANCE}
           />
           <div className="home-evidence-bar">
             <div
@@ -511,7 +572,7 @@ export function LandingPage() {
               ))}
             </div>
             <p className="home-evidence-note">
-              One record at a time. Compare before you decide.
+              Actual product capture · synthetic records.
             </p>
           </div>
         </PublicChapter>
@@ -557,8 +618,8 @@ export function LandingPage() {
                 Your shift ends. The work does not.
               </h2>
               <p className="ui-type-proof">
-                Before you leave, you write down what you know, what is still
-                uncertain, and what the next analyst should check.
+                You won’t finish everything. Before you leave, you record what
+                you found and what the next analyst still needs to check.
               </p>
             </div>
             <div data-motion-role="artifact">
@@ -590,7 +651,7 @@ export function LandingPage() {
                 Different careers. Different work.
               </h2>
               <p className="ui-type-proof">
-                One playable now. Four Workshop previews taking shape.
+                One playable now. Four taking shape.
               </p>
             </div>
             <div className="home-career-tabs" role="group" aria-label="Careers">
@@ -611,7 +672,10 @@ export function LandingPage() {
                       selectCareer(index);
                     }}
                   >
-                    {career.title}
+                    <span className="home-career-tab-cue" aria-hidden="true">
+                      {heroCue(career.id)}
+                    </span>
+                    <span className="home-career-tab-name">{career.title}</span>
                   </button>
                 );
               })}
@@ -645,16 +709,40 @@ export function LandingPage() {
                     </div>
                     <h3>{career.title}</h3>
                     <p className="home-career-statement">{entry.statement}</p>
-                    <ProvenanceLabel provenance={entry.provenance} />
+                    {/* One truth label per artifact block — provenance, not
+                        availability. Availability lives in the CTA. */}
+                    <span className="ui-provenance home-career-provenance">
+                      {entry.provenance.kind === "real"
+                        ? "Real product capture · synthetic records"
+                        : "Concept artwork · not a product capture"}
+                    </span>
                   </div>
                 );
               })}
             </div>
-            <p>
+            <div className="home-career-actions">
+              {activeAction.kind === "link" ? (
+                <SiteLink
+                  className="start-shift v2-primary"
+                  to={activeAction.href}
+                >
+                  {startLabel}
+                  <span aria-hidden="true"> ↗</span>
+                </SiteLink>
+              ) : (
+                <button
+                  type="button"
+                  className="start-shift v2-primary home-career-cta-disabled"
+                  disabled
+                  aria-disabled="true"
+                >
+                  {activeAction.label}
+                </button>
+              )}
               <SiteLink className="v2-text-link" to="/careers">
                 Explore careers <span aria-hidden="true">→</span>
               </SiteLink>
-            </p>
+            </div>
           </div>
         </PublicChapter>
       </section>
