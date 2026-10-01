@@ -43,7 +43,7 @@ export function ProvenanceLabel({ provenance }: { provenance: MediaProvenance })
   return (
     <span className="ui-provenance">
       {provenance.career} <span aria-hidden="true">·</span>{" "}
-      {provenance.kind === "real" ? "Playable now" : "Workshop concept"}
+      {provenance.kind === "real" ? "Playable now" : "Taking shape"}
     </span>
   );
 }

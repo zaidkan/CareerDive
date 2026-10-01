@@ -164,7 +164,9 @@ describe("site routes", () => {
     const tabs = Array.from(
       document.querySelectorAll<HTMLButtonElement>(".home-career-tab"),
     );
-    fireEvent.click(tabs[1]!);
+    const nurseTab = tabs[1];
+    if (!nurseTab) throw new Error("Missing Registered Nurse tab");
+    fireEvent.click(nurseTab);
     expect(action()?.querySelector('a[href="/start"]')).toBeNull();
     const disabled = action()?.querySelector("button[disabled]");
     expect(disabled).toBeTruthy();

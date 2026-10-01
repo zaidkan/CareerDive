@@ -388,7 +388,7 @@ describe("public routes", () => {
       within(detailHeader()).getByText(careerAt(0).workplaceSummary),
     ).toBeVisible();
     expect(
-      screen.getByRole("link", { name: "Begin your first day" }),
+      within(detailHeader()).getByRole("link", { name: "Start your first day" }),
     ).toHaveAttribute("href", "/start");
     expect(
       screen.queryByRole("button", { name: /preview cybersecurity analyst/i }),
@@ -480,7 +480,7 @@ describe("public routes", () => {
       }),
     ).toBeVisible();
     expect(
-      screen.queryByRole("link", { name: "Begin your first day" }),
+      within(screen.getByRole("main")).queryByRole("link", { name: "Start your first day" }),
     ).toBeNull();
     expect(document.querySelector('meta[name="robots"]')).toHaveAttribute(
       "content",

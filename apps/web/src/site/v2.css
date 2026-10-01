@@ -657,7 +657,6 @@
   .site-nav-brand {
     font-size: 1rem;
   }
-  .site-nav-brand .brand-beta,
   .site-nav .button-secondary {
     display: none;
   }
@@ -1132,4 +1131,16 @@
 }
 .cp-chapter-head p {
   margin-bottom: 1.5rem;
+}
+
+/* Shared chrome and disclosure controls keep compact, usable tap targets. */
+.site-footer a {
+  display: inline-flex;
+  align-items: center;
+  min-width: 24px;
+  min-height: 24px;
+}
+.site-nav-brand,
+.site-main-public summary {
+  min-height: 24px;
 }

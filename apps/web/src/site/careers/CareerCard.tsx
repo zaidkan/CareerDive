@@ -1,3 +1,4 @@
+import { availabilityLabel } from "../../careers/publicCopy.js";
 import { careerPath } from "../../careers/careers.js";
 import type { PublicCareer } from "../../careers/types.js";
 import { SiteLink } from "../SiteLink.js";
@@ -23,7 +24,7 @@ export function CareerCard({
     >
       <p className="career-card-field">{career.field}</p>
       <p className="career-card-status">
-        {ready ? "Ready now" : "In the workshop"}
+        {availabilityLabel(career.availability)}
       </p>
       <Heading>{career.title}</Heading>
       <p className="career-card-summary">{career.shortSummary}</p>
@@ -51,7 +52,7 @@ export function CareerCard({
       <div className="career-card-actions">
         {career.simulationRoute ? (
           <SiteLink className="start-shift" to={career.simulationRoute}>
-            Begin your first day
+            Start your first day
           </SiteLink>
         ) : null}
         {career.detailPublished ? (

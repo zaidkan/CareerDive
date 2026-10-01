@@ -1,3 +1,9 @@
+import type { PublicCareer } from "../../careers/types.js";
+import {
+  availabilityLabel,
+  FIRST_SHIFT_DURATION_COMPACT,
+} from "../../careers/publicCopy.js";
+import { HOME_FAQ } from "../faqData.js";
 import {
   useCallback,
   useEffect,
@@ -116,19 +122,8 @@ const CYBER_PROVENANCE: MediaProvenance = {
   kind: "real",
 };
 
-/** Canonical public availability language: only these two labels ship on Home. */
-const AVAILABILITY_LABEL: Record<string, string> = {
-  ready_now: "Playable now",
-  in_workshop: "Taking shape",
-  coming_soon: "Taking shape",
-};
-
-function availabilityLabel(availability: string): string {
-  return AVAILABILITY_LABEL[availability] ?? "Taking shape";
-}
-
 type CareerAction =
-  | { kind: "link"; href: string }
+  | { kind: "link"; href: NonNullable<PublicCareer["simulationRoute"]> }
   | { kind: "disabled"; label: string };
 
 /**
@@ -138,7 +133,7 @@ type CareerAction =
  */
 function careerAction(career: {
   availability: string;
-  simulationRoute?: string;
+  simulationRoute?: PublicCareer["simulationRoute"];
 }): CareerAction {
   if (career.availability === "ready_now" && career.simulationRoute) {
     return { kind: "link", href: career.simulationRoute };
@@ -242,21 +237,6 @@ const CAREER_SHOWCASE = [
 /** One cycle through the detailed switcher (~4s each), then Cyber for good. */
 const CAREER_SWITCH_MS = 4000;
 
-const HOME_FAQ = [
-  {
-    q: "How long does it take?",
-    a: "One first shift: read the handoff, check an alert, write it up, hand it off.",
-  },
-  {
-    q: "Is this a career test?",
-    a: "No. You try selected tasks and reflect on the experience. Career Expo never tells you which career to choose.",
-  },
-  {
-    q: "Are all these careers playable?",
-    a: "One is. Cybersecurity Analyst has a playable first shift; the other four are taking shape.",
-  },
-] as const;
-
 export function LandingPage() {
   const hasSeenFilm = useHasSeenFilm();
   const heroRef = useChapterReveal<HTMLDivElement>();
@@ -291,7 +271,7 @@ export function LandingPage() {
   const syncHeroCards = useCallback(() => {
     const cards = heroCardRefs.current;
     const n = HERO_CARDS.length;
-    const home: ({ x: number; y: number } | null)[] = new Array(n);
+    const home: ({ x: number; y: number } | null)[] = [];
     for (let i = 0; i < n; i++) {
       const el = cards.get(i);
       // offsetLeft/Top is the transform-independent home cell of each card.
@@ -305,7 +285,7 @@ export function LandingPage() {
       if (!el || !from || !to) continue;
       const dx = to.x - from.x;
       const dy = to.y - from.y;
-      el.style.transform = dx || dy ? `translate(${dx}px, ${dy}px)` : "";
+      el.style.transform = dx || dy ? `translate(${String(dx)}px, ${String(dy)}px)` : "";
     }
   }, [heroActive, reduceMotion]);
 
@@ -315,7 +295,9 @@ export function LandingPage() {
 
   useEffect(() => {
     window.addEventListener("resize", syncHeroCards);
-    return () => window.removeEventListener("resize", syncHeroCards);
+    return () => {
+      window.removeEventListener("resize", syncHeroCards);
+    };
   }, [syncHeroCards]);
 
   useEffect(() => {
@@ -436,7 +418,7 @@ export function LandingPage() {
                 </SiteLink>
               </div>
               <p className="home-hero-meta">
-                <strong>~10–15 min</strong> · one first shift
+                <strong>{FIRST_SHIFT_DURATION_COMPACT}</strong> · one first shift
               </p>
             </div>
             <div data-motion-role="artifact" className="home-hero-stage">

@@ -90,7 +90,7 @@ export function SiteChrome({
           </nav>
           <ThemeToggle />
           <a className="button-secondary" href="/start" onClick={go("/start")}>
-            {hasSeenFilm ? "Continue" : "Start"}
+            {hasSeenFilm ? "Continue" : "Start your first day"}
           </a>
         </div>
       </header>
@@ -108,7 +108,7 @@ export function SiteChrome({
             </li>
             <li>
               <a href="/trust" onClick={go("/trust")}>
-                Privacy and safety, beta summary
+                Privacy and safety
               </a>
             </li>
             <li>
@@ -118,7 +118,7 @@ export function SiteChrome({
             </li>
             <li>
               <a href="/start" onClick={go("/start")}>
-                {hasSeenFilm ? "Continue to Verdaly" : "Start your first day"}
+                {hasSeenFilm ? "Continue" : "Start your first day"}
               </a>
             </li>
             <li>
@@ -132,9 +132,6 @@ export function SiteChrome({
             </li>
           </ul>
         </nav>
-        <p className="privacy-note">
-          Beta. Career Expo&apos;s first shift is a playable workday. See the trust page for current data handling and limits.
-        </p>
       </footer>
     </>
   );

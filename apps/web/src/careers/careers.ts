@@ -78,7 +78,7 @@ export const careers: readonly PublicCareer[] = [
       "Handoff sheet",
       "Escalation message",
     ],
-    caveats: ["Workshop preview only. No simulation is available."],
+    caveats: ["Taking shape. No simulation is available."],
     contentCaveats: [
       "Synthetic information only; no real clinical procedure, dosing, or diagnosis instruction.",
     ],
@@ -136,7 +136,7 @@ export const careers: readonly PublicCareer[] = [
       "Failure analysis note",
       "Proposed design change",
     ],
-    caveats: ["Workshop preview only. No simulation is available."],
+    caveats: ["Taking shape. No simulation is available."],
     contentCaveats: [
       "Preserve authentic design and testing reasoning; avoid generic math puzzles.",
     ],
@@ -195,7 +195,7 @@ export const careers: readonly PublicCareer[] = [
       "Conceptual diagnostic result",
       "Work plan note",
     ],
-    caveats: ["Workshop preview only. No simulation is available."],
+    caveats: ["Taking shape. No simulation is available."],
     contentCaveats: [
       "Abstract, de-energized simulated diagnostics; no live-work procedural instruction.",
     ],
@@ -253,7 +253,7 @@ export const careers: readonly PublicCareer[] = [
       "Contract review notes",
       "Issue brief",
     ],
-    caveats: ["Workshop preview only. No simulation is available."],
+    caveats: ["Taking shape. No simulation is available."],
     contentCaveats: [
       "A simplified preview of legal analysis and case organization; not legal advice, a courtroom simulation, or unsupervised professional practice.",
     ],

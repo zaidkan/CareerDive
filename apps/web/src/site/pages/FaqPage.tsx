@@ -1,3 +1,4 @@
+import { HOME_FAQ } from "../faqData.js";
 import { SiteLink } from "../SiteLink.js";
 
 type Faq = {
@@ -7,6 +8,7 @@ type Faq = {
 };
 
 const FAQS: Faq[] = [
+  ...HOME_FAQ,
   {
     q: "What does the first day actually involve?",
     a: "Read the handoff, deal with what comes up, write the ticket, then write how it went. It’s practice, not an application — there’s no score and nothing goes to an employer.",
@@ -17,7 +19,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "What if something doesn’t load, or I get stuck?",
-    a: "If something doesn't load, Career Expo can retry the shift, check compatibility, offer a fallback recovery path, and let you report the problem directly. Keyboard support and reduced motion are available.",
+    a: "If something doesn't load, Career Expo can retry the shift, check compatibility, offer a fallback recovery path, and let you report the problem directly. Keyboard support and reduced motion are available. On the shift screen, use Retry starting shift when offered, or Report a problem. If the office cannot open, a compatibility check can offer the recovery workstation. If report delivery is unavailable, your draft stays during this tab session; use Copy report details or retry delivery later.",
   },
   {
     q: "If I write about how I felt, who sees it?",

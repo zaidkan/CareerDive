@@ -1,3 +1,4 @@
+import { availabilityLabel } from "../../careers/publicCopy.js";
 import type { PublicCareer } from "../../careers/types.js";
 import { CyberDetail } from "../careers/CyberDetail.js";
 import { SiteLink } from "../SiteLink.js";
@@ -14,16 +15,14 @@ export function CareerDetailPage({ career }: { career: PublicCareer }) {
       <header className="page-section page-hero">
         <p className="eyebrow">
           {career.field} ·{" "}
-          {career.availability === "ready_now"
-            ? "Playable now"
-            : "Taking shape"}
+          {availabilityLabel(career.availability)}
         </p>
         <h1>{career.title}</h1>
         <p className="lede">{career.shortSummary}</p>
         <p>{career.workplaceSummary}</p>
         {career.simulationRoute ? (
           <SiteLink className="start-shift" to={career.simulationRoute}>
-            Begin your first day
+            Start your first day
           </SiteLink>
         ) : null}
       </header>

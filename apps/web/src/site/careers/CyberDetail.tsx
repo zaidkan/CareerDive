@@ -80,7 +80,6 @@ function ProofCaption({
   return (
     <p className="cyber-proof-caption" data-provenance-for={id}>
       <span>{children}</span>
-      <span>Real product capture</span>
     </p>
   );
 }
@@ -110,7 +109,7 @@ export function CyberDetail({ career }: { career: PublicCareer }) {
           </p>
           <p>{career.workplaceSummary}</p>
           <SiteLink className="start-shift" to="/start">
-            Begin your first day
+            Start your first day
           </SiteLink>
         </div>
         <figure className="cyber-arrival-proof">
@@ -383,10 +382,9 @@ export function CyberDetail({ career }: { career: PublicCareer }) {
         <details className="cyber-how-we-know">
           <summary>How we know</summary>
           <p>
-            These images come from a seeded Career Expo first shift at Verdaly.
+            These images come from a Career Expo first shift at Verdaly.
             The ticket and debrief show one completed path through the current
-            experience. It samples selected tasks; it is not a career fit score
-            or hiring assessment.
+            experience with synthetic records.
           </p>
         </details>
       </PublicChapter>
@@ -399,7 +397,7 @@ export function CyberDetail({ career }: { career: PublicCareer }) {
           usable record.
         </p>
         <SiteLink className="start-shift" to="/start">
-          Start your first shift <span aria-hidden="true">↗</span>
+          Start your first day <span aria-hidden="true">↗</span>
         </SiteLink>
       </PublicChapter>
     </article>

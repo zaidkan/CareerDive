@@ -1,3 +1,4 @@
+import { FIRST_SHIFT_DURATION } from "../careers/publicCopy.js";
 // ThresholdBrief — ephemeral presentation only, no persistence, no new FSM.
 // Content: canonical beats from Shell.tsx / pack.yaml only. No invented Morgan quote.
 
@@ -30,7 +31,7 @@ export function ThresholdBrief({
           <li>Work alerts, email, and tickets one step at a time</li>
         </ol>
         <p className="threshold-brief-note">
-          About 10–15 minutes.
+          {FIRST_SHIFT_DURATION}.
         </p>
         <div className="threshold-brief-actions">
           <button type="button" className="start-shift" onClick={onContinue} autoFocus>

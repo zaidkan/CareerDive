@@ -57,7 +57,7 @@ export function TrustPage() {
           caption="The server stores current state as well as an action log; it does not rebuild the shift from clicks alone."
         />
         <p className="trust-quiet-note">
-          There is no permanent retention period. Depending on how Career Expo is currently running, your data may only last until the system restarts, or it may be saved so you can resume your shift later.
+          There is no single fixed retention period. Depending on how Career Expo is currently running, your data may only last until the system restarts, or it may be saved so you can resume your shift later.
         </p>
       </PublicChapter>
 
