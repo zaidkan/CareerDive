@@ -17,7 +17,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "What if something doesn’t load, or I get stuck?",
-    a: "Keyboard support and reduced motion are available. If you get stuck, a fallback recovery path can return you to a safe screen. A tool to report problems directly is currently being built.",
+    a: "If something doesn't load, Career Expo can retry the shift, check compatibility, offer a fallback recovery path, and let you report the problem directly. Keyboard support and reduced motion are available.",
   },
   {
     q: "If I write about how I felt, who sees it?",
