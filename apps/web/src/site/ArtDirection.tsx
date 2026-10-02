@@ -1,16 +1,24 @@
 import { useEffect, useRef } from "react";
 import type { CSSProperties, ReactNode } from "react";
-import { motion, useAnimationControls, useReducedMotion } from "motion/react";
+import {
+  motion,
+  useAnimationControls,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "motion/react";
 
 /** Visible baseline; viewport entry rehearses one bounded reveal, never gates content. */
 export function MotionReveal({
   children,
   className,
   depth = false,
+  delay = 0,
 }: {
   children: ReactNode;
   className?: string;
   depth?: boolean;
+  delay?: number;
 }) {
   const reduced = useReducedMotion();
   const controls = useAnimationControls();
@@ -22,7 +30,7 @@ export function MotionReveal({
       className={className}
       initial={false}
       animate={controls}
-      viewport={{ once: true, amount: 0.12 }}
+      viewport={{ once: true, amount: 0.2 }}
       {...(typeof IntersectionObserver === "undefined"
         ? {}
         : {
@@ -30,10 +38,11 @@ export function MotionReveal({
               if (reduced) return;
               void controls.start({
                 opacity: [0, 1],
-                y: [depth ? 28 : 16, 0],
-                scale: depth ? [0.98, 1] : [1, 1],
+                y: [depth ? 32 : 28, 0],
+                scale: depth ? [0.96, 1] : [1, 1],
                 transition: {
-                  duration: depth ? 0.52 : 0.44,
+                  duration: depth ? 0.6 : 0.52,
+                  delay,
                   ease: [0.16, 1, 0.3, 1],
                 },
               });
@@ -42,6 +51,41 @@ export function MotionReveal({
     >
       {children}
     </motion.div>
+  );
+}
+
+/** Native scroll drives the arrival; transforms settle before the reading position. */
+export function ScrollArrival({
+  children,
+  className,
+  y = 48,
+  scale = 0.95,
+  opacity = 0,
+}: {
+  children: ReactNode;
+  className?: string;
+  y?: number;
+  scale?: number;
+  opacity?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start 95%", "start 35%"],
+  });
+  const rise = useTransform(scrollYProgress, [0, 1], [y, 0]);
+  const zoom = useTransform(scrollYProgress, [0, 1], [scale, 1]);
+  const alpha = useTransform(scrollYProgress, [0, 0.85, 1], [opacity, 1, 1]);
+  return (
+    <div ref={ref}>
+      <motion.div
+        className={className}
+        style={reduced ? {} : { y: rise, scale: zoom, opacity: alpha }}
+      >
+        {children}
+      </motion.div>
+    </div>
   );
 }
 

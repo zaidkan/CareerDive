@@ -224,15 +224,12 @@ test("finite introduction, scroll career order, and calm secondary pages", async
   const section = page.locator(".home-careers");
   const careerBounds = await section.evaluate((node) => ({
     top: node.getBoundingClientRect().top + scrollY,
-    height: node.getBoundingClientRect().height,
+    travel: node.getBoundingClientRect().height - innerHeight,
   }));
   for (let index = 0; index < 5; index++) {
     await page.evaluate(
-      ({ top, height, index }) => {
-        window.scrollTo(
-          0,
-          top + (height * (index + 0.1)) / 5 - innerHeight / 2,
-        );
+      ({ top, travel, index }) => {
+        window.scrollTo(0, top + (travel * index) / 4);
       },
       { ...careerBounds, index },
     );

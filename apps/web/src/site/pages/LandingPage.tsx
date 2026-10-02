@@ -5,6 +5,8 @@ import {
   useMotionValueEvent,
   useReducedMotion,
   useScroll,
+  useTransform,
+  type MotionValue,
 } from "motion/react";
 import type { PublicCareer } from "../../careers/types.js";
 import {
@@ -12,13 +14,14 @@ import {
   FIRST_SHIFT_DURATION_COMPACT,
 } from "../../careers/publicCopy.js";
 import { HOME_FAQ } from "../faqData.js";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { careers } from "../../careers/careers.js";
 import {
   ArtifactStage,
   ChapterSeparator,
   PublicChapter,
   MotionReveal,
+  ScrollArrival,
   type MediaProvenance,
 } from "../ArtDirection.js";
 import { HandoffExcerpt } from "../careers/CareerWorkSamples.js";
@@ -236,8 +239,71 @@ const CAREER_SHOWCASE = [
   },
 ] as const;
 
-/** One cycle through the detailed switcher (~4s each), then Cyber for good. */
-// Scroll owns the career sequence; explicit selection takes control permanently.
+function ShiftStep({
+  entry,
+  index,
+  progress,
+}: {
+  entry: (typeof SHIFT_ACTS)[number];
+  index: number;
+  progress: MotionValue<number>;
+}) {
+  const reduced = useReducedMotion();
+  const emphasis = useTransform(progress, [0, 1], [0, 2]);
+  const opacity = useTransform(
+    emphasis,
+    (value) => 1 - Math.min(1, Math.abs(value - index)) * 0.48,
+  );
+  const y = useTransform(
+    emphasis,
+    (value) => Math.min(1, Math.abs(value - index)) * 18,
+  );
+  const scale = useTransform(
+    emphasis,
+    (value) => 1 - Math.min(1, Math.abs(value - index)) * 0.035,
+  );
+  return (
+    <motion.li style={reduced ? {} : { opacity, y, scale }}>
+      <h3>{entry.act}</h3>
+      <p className="home-act-claim">{entry.claim}</p>
+    </motion.li>
+  );
+}
+
+function CareerDepth({
+  index,
+  progress,
+  active,
+  children,
+  careerSlug,
+}: {
+  index: number;
+  progress: MotionValue<number>;
+  active: boolean;
+  children: ReactNode;
+  careerSlug: string;
+}) {
+  const reduced = useReducedMotion();
+  const distance = useTransform(progress, (value) => index - value);
+  const y = useTransform(distance, [-1, 0, 1], [-46, 0, 64]);
+  const scale = useTransform(distance, [-1, 0, 1], [0.92, 1, 0.96]);
+  const opacity = useTransform(
+    distance,
+    [-1, -0.5, 0, 0.5, 1],
+    [0, 0.45, 1, 0.45, 0],
+  );
+  return (
+    <motion.div
+      className="home-career-panel"
+      data-career={active ? "active" : "inactive"}
+      data-media-slot={`career-artifact-${careerSlug}`}
+      aria-hidden={!active}
+      style={reduced ? { opacity: active ? 1 : 0 } : { y, scale, opacity }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 export function LandingPage() {
   const hasSeenFilm = useHasSeenFilm();
@@ -248,10 +314,17 @@ export function LandingPage() {
     null,
   );
   const dragged = useRef(false);
-  const careerControlled = useRef(false);
+  const careerControlled = useRef<number | null>(null);
+  const careerProgress = useMotionValue(0);
+  const careerIndex = useRef(0);
+  const shiftRef = useRef<HTMLOListElement>(null);
+  const { scrollYProgress: shiftProgress } = useScroll({
+    target: shiftRef,
+    offset: ["start 75%", "end 35%"],
+  });
   const { scrollYProgress } = useScroll({
     target: careerRef,
-    offset: ["start center", "end center"],
+    offset: ["start start", "end end"],
   });
 
   const [evidence, setEvidence] = useState<EvidenceKey>("alert");
@@ -293,11 +366,18 @@ export function LandingPage() {
   }, []);
 
   useMotionValueEvent(scrollYProgress, "change", (progress) => {
-    if (reduceMotion || careerControlled.current) return;
-    const index = Math.min(4, Math.floor(progress * 5));
-    setCareerPanels((current) =>
-      current.active === index ? current : { active: index },
-    );
+    if (reduceMotion) return;
+    const position = progress * 4;
+    const index = Math.min(4, Math.round(position));
+    // Manual choice holds until scroll enters another career's interval.
+    if (careerControlled.current === index) return;
+    careerControlled.current = null;
+    careerProgress.stop();
+    careerProgress.set(position);
+    if (careerIndex.current !== index) {
+      careerIndex.current = index;
+      setCareerPanels({ active: index });
+    }
   });
 
   useEffect(() => {
@@ -317,9 +397,15 @@ export function LandingPage() {
   }, [heroAuto, heroStep, reduceMotion]);
 
   const selectCareer = (index: number) => {
-    setCareerPanels((current) =>
-      current.active === index ? current : { active: index },
-    );
+    careerControlled.current = Math.round(scrollYProgress.get() * 4);
+    if (reduceMotion) careerProgress.set(index);
+    else
+      void animate(careerProgress, index, {
+        duration: 0.42,
+        ease: [0.16, 1, 0.3, 1],
+      });
+    careerIndex.current = index;
+    setCareerPanels({ active: index });
   };
 
   const startLabel = hasSeenFilm
@@ -629,8 +715,11 @@ export function LandingPage() {
           width="full"
           className="home-place-chapter"
         >
-          <MotionReveal className="home-place-crop" depth>
-            <HomeMediaSlot slotId="home-media-arrival" eager />
+          <ScrollArrival className="home-place-crop" y={52} scale={0.94} opacity={0.75}>
+            <HomeMediaSlot slotId="home-media-arrival" eager hideCaption />
+          </ScrollArrival>
+          <MotionReveal delay={0.12}>
+            <p className="home-media-note">Actual product capture · synthetic records <span aria-hidden="true">·</span> Cybersecurity Analyst · Playable now</p>
           </MotionReveal>
         </PublicChapter>
       </section>
@@ -642,15 +731,20 @@ export function LandingPage() {
           rhythm="stage"
           className="home-realwork-chapter"
         >
-          <MotionReveal>
+          <div>
             <div className="home-realwork-intro">
+              <MotionReveal>
               <h2 id="home-realwork-title" data-motion-role="argument">
                 Real work, not a job description.
               </h2>
-              <p className="ui-type-proof">
-                One alert. A decision you have to justify.
-              </p>
+              </MotionReveal>
+              <MotionReveal delay={0.12}>
+                <p className="ui-type-proof">
+                  One alert. A decision you have to justify.
+                </p>
+              </MotionReveal>
             </div>
+            <ScrollArrival y={48} scale={0.96}>
             <ArtifactStage
               className="home-realwork-stage"
               dominant={
@@ -668,6 +762,7 @@ export function LandingPage() {
               }
               caption={activeEvidence.caption}
             />
+            </ScrollArrival>
             <div className="home-evidence-bar">
               <div
                 className="home-evidence-swap"
@@ -691,7 +786,7 @@ export function LandingPage() {
                 Actual product capture · synthetic records.
               </p>
             </div>
-          </MotionReveal>
+          </div>
         </PublicChapter>
       </section>
 
@@ -706,21 +801,9 @@ export function LandingPage() {
             <h2 id="home-shift-title" data-motion-role="argument">
               How a shift works
             </h2>
-            <ol className="home-acts">
+            <ol ref={shiftRef} className="home-acts">
               {SHIFT_ACTS.map((entry, index) => (
-                <motion.li
-                  key={entry.act}
-                  initial={false}
-                  {...(typeof IntersectionObserver === "undefined" ||
-                  reduceMotion
-                    ? {}
-                    : { whileInView: { opacity: [0, 1], y: [12, 0] } })}
-                  viewport={{ once: true, amount: 0.1 }}
-                  transition={{ duration: 0.35, delay: index * 0.08 }}
-                >
-                  <h3>{entry.act}</h3>
-                  <p className="home-act-claim">{entry.claim}</p>
-                </motion.li>
+                <ShiftStep key={entry.act} entry={entry} index={index} progress={shiftProgress} />
               ))}
             </ol>
           </MotionReveal>
@@ -734,8 +817,8 @@ export function LandingPage() {
           rhythm="standard"
           className="home-handoff-chapter"
         >
-          <MotionReveal className="home-handoff-grid">
-            <div className="home-handoff-copy">
+          <div className="home-handoff-grid">
+            <MotionReveal className="home-handoff-copy">
               <h2 id="home-handoff-title" data-motion-role="argument">
                 Your shift ends. The work does not.
               </h2>
@@ -743,17 +826,18 @@ export function LandingPage() {
                 You won’t finish everything. Before you leave, you record what
                 you found and what the next analyst still needs to check.
               </p>
-            </div>
-            <div data-motion-role="artifact">
-              <HandoffExcerpt />
-            </div>
-          </MotionReveal>
+            </MotionReveal>
+            <ScrollArrival y={32} scale={0.97}>
+              <div data-motion-role="artifact"><HandoffExcerpt /></div>
+            </ScrollArrival>
+          </div>
         </PublicChapter>
       </section>
 
       <section
         ref={careerRef}
         className="home-careers"
+        data-scroll-motion={reduceMotion ? "off" : "on"}
         aria-labelledby="home-careers-title"
       >
         <PublicChapter
@@ -762,14 +846,7 @@ export function LandingPage() {
           rhythm="standard"
           className="home-careers-chapter"
         >
-          <div
-            onPointerDown={() => {
-              careerControlled.current = true;
-            }}
-            onKeyDown={() => {
-              careerControlled.current = true;
-            }}
-          >
+          <div className="home-careers-sticky">
             <MotionReveal>
               <h2 id="home-careers-title" data-motion-role="argument">
                 Different careers. Different work.
@@ -789,9 +866,9 @@ export function LandingPage() {
                     key={entry.careerId}
                     type="button"
                     className="home-career-tab"
+                    aria-label={career.title}
                     aria-pressed={careerPanels.active === index}
                     onClick={() => {
-                      careerControlled.current = true;
                       selectCareer(index);
                     }}
                   >
@@ -812,22 +889,12 @@ export function LandingPage() {
                 const state =
                   index === careerPanels.active ? "active" : "inactive";
                 return (
-                  <motion.div
-                    initial={false}
-                    animate={{
-                      opacity: state === "active" ? 1 : 0,
-                      y: state === "active" || reduceMotion ? 0 : 22,
-                      scale: state === "active" || reduceMotion ? 1 : 0.98,
-                    }}
-                    transition={{
-                      duration: reduceMotion ? 0 : 0.42,
-                      ease: [0.16, 1, 0.3, 1],
-                    }}
+                  <CareerDepth
                     key={entry.careerId}
-                    className="home-career-panel"
-                    data-career={state}
-                    data-media-slot={`career-artifact-${career.slug}`}
-                    aria-hidden={state !== "active"}
+                    index={index}
+                    progress={careerProgress}
+                    active={state === "active"}
+                    careerSlug={career.slug}
                   >
                     <div className="home-career-plate" aria-hidden="true">
                       {entry.artifact}
@@ -841,7 +908,7 @@ export function LandingPage() {
                         ? "Real product capture · synthetic records"
                         : "Concept artwork · not a product capture"}
                     </span>
-                  </motion.div>
+                  </CareerDepth>
                 );
               })}
             </div>
@@ -897,20 +964,24 @@ export function LandingPage() {
           width="wide"
           className="home-reflect-chapter"
         >
-          <MotionReveal>
+          <div>
+            <MotionReveal>
             <h2 id="home-reflect-title" data-motion-role="argument">
               See how you worked.
             </h2>
-            <p className="ui-type-proof">
-              Not a score. A record of the calls you made.
-            </p>
-            <MotionReveal className="home-debrief-crop" depth>
+            </MotionReveal>
+            <MotionReveal delay={0.12}>
+              <p className="ui-type-proof">
+                Not a score. A record of the calls you made.
+              </p>
+            </MotionReveal>
+            <ScrollArrival className="home-debrief-crop" y={60} scale={0.94}>
               <ProductCapture
                 id="a-10"
                 slot="home-debrief-reflection"
                 alt="Product capture: one decision block from the shift debrief, reviewing what happened and what stayed uncertain."
               />
-            </MotionReveal>
+            </ScrollArrival>
             <p className="home-media-note">
               Shift debrief · actual product capture, synthetic records
             </p>
@@ -919,7 +990,7 @@ export function LandingPage() {
                 Privacy and safety <span aria-hidden="true">→</span>
               </SiteLink>
             </p>
-          </MotionReveal>
+          </div>
         </PublicChapter>
       </section>
 
