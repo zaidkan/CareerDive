@@ -14,20 +14,26 @@ export function MotionReveal({
   className,
   depth = false,
   delay = 0,
+  as = "div",
+  "aria-labelledby": labelledBy,
 }: {
   children: ReactNode;
   className?: string;
   depth?: boolean;
   delay?: number;
+  as?: "div" | "article";
+  "aria-labelledby"?: string;
 }) {
   const reduced = useReducedMotion();
   const controls = useAnimationControls();
+  const Element = as === "article" ? motion.article : motion.div;
   useEffect(() => {
     if (reduced) controls.set({ opacity: 1, y: 0, scale: 1 });
   }, [controls, reduced]);
   return (
-    <motion.div
+    <Element
       className={className}
+      aria-labelledby={labelledBy}
       initial={false}
       animate={controls}
       viewport={{ once: true, amount: 0.2 }}
@@ -41,7 +47,7 @@ export function MotionReveal({
                 y: [depth ? 32 : 28, 0],
                 scale: depth ? [0.96, 1] : [1, 1],
                 transition: {
-                  duration: depth ? 0.6 : 0.52,
+                  duration: 0.72,
                   delay,
                   ease: [0.16, 1, 0.3, 1],
                 },
@@ -50,7 +56,7 @@ export function MotionReveal({
           })}
     >
       {children}
-    </motion.div>
+    </Element>
   );
 }
 

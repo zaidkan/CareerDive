@@ -1,4 +1,4 @@
-import { PublicChapter, ChapterSeparator, ArtifactStage } from "../ArtDirection.js";
+import { PublicChapter, ChapterSeparator, ArtifactStage, MotionReveal } from "../ArtDirection.js";
 import { selectProductMedia, type ProductMediaId } from "../productMedia.js";
 import {
   NurseHandoffSheet,
@@ -53,22 +53,24 @@ export function CareersPage() {
     <div className="careers-page-v4">
       {/* 1. HERO */}
       <PublicChapter surface="base" rhythm="expansive" width="full" className="cp-hero">
-        <div className="cp-hero-content">
+        <MotionReveal className="cp-hero-content">
           <h1 className="ui-type-display">Explore careers through the work</h1>
           <p className="ui-type-lede">1 playable now. 4 taking shape.</p>
-        </div>
+        </MotionReveal>
+        <MotionReveal delay={0.08}>
         <ArtifactStage
           emphasis="center"
           provenance={{ career: "Cybersecurity Analyst", kind: "real" }}
           dominant={<ThemedMedia id="a-12" alt="Verdaly Desk OS interface" />}
         />
+        </MotionReveal>
       </PublicChapter>
 
       <ChapterSeparator />
 
       {/* 2. PLAYABLE NOW */}
       <PublicChapter surface="base" rhythm="stage" width="wide" className="cp-playable-now">
-        <div className="cp-chapter-head">
+        <MotionReveal className="cp-chapter-head">
           <h2 className="ui-type-h1" id="playable-now-heading">Playable now</h2>
           <h3 className="ui-type-h2">{cyber?.title || "Cybersecurity Analyst"}</h3>
           <p className="ui-type-body-large">{cyber?.shortSummary}</p>
@@ -76,29 +78,31 @@ export function CareersPage() {
             <SiteLink to="/start" className="button-primary">Start your first day</SiteLink>
             {cyber && <SiteLink to={careerPath(cyber)} className="button-secondary" aria-label={`${cyber.title} details`}>View career</SiteLink>}
           </div>
-        </div>
+        </MotionReveal>
+        <MotionReveal delay={0.08}>
         <ArtifactStage
           emphasis="center"
           provenance={{ career: "Cybersecurity Analyst", kind: "real" }}
           dominant={<ThemedMedia id="a-01" alt="A-1042 Suspicious login alert" />}
         />
+        </MotionReveal>
       </PublicChapter>
 
       <ChapterSeparator />
 
       {/* 3. TAKING SHAPE */}
       <PublicChapter surface="base" rhythm="expansive" width="wide" className="cp-taking-shape">
-        <div className="cp-chapter-head">
+        <MotionReveal className="cp-chapter-head">
           <h2 className="ui-type-h1">Taking shape</h2>
           <p className="ui-type-body-large cp-honesty-note">
             These roles show the kinds of decisions you'll make — previews only, for now.
             Local requests help us understand interest, but they stay on your device and don't guarantee build order.
           </p>
-        </div>
+        </MotionReveal>
 
         <div className="cp-workshop-stack">
           {/* RN */}
-          <article className="cp-workshop-career" aria-labelledby="rn-heading">
+          <MotionReveal as="article" className="cp-workshop-career" aria-labelledby="rn-heading">
             <div className="cp-workshop-info">
               <h3 id="rn-heading" className="ui-type-h2">{rn?.title}</h3>
               <p className="ui-type-body">{rn?.shortSummary}</p>
@@ -109,10 +113,10 @@ export function CareersPage() {
               dominant={<NurseHandoffSheet />}
               secondary={[<NurseVitalsTrend key="vitals" />]}
             />
-          </article>
+          </MotionReveal>
 
           {/* Mechanical */}
-          <article className="cp-workshop-career" aria-labelledby="mech-heading">
+          <MotionReveal as="article" className="cp-workshop-career" aria-labelledby="mech-heading" delay={0.08}>
             <div className="cp-workshop-info">
               <h3 id="mech-heading" className="ui-type-h2">{mech?.title}</h3>
               <p className="ui-type-body">{mech?.shortSummary}</p>
@@ -123,10 +127,10 @@ export function CareersPage() {
               dominant={<MechanicalAnnotatedDrawing />}
               secondary={[<MechanicalToleranceCallout key="tol" />]}
             />
-          </article>
+          </MotionReveal>
 
           {/* Electrician */}
-          <article className="cp-workshop-career" aria-labelledby="elec-heading">
+          <MotionReveal as="article" className="cp-workshop-career" aria-labelledby="elec-heading" delay={0.16}>
             <div className="cp-workshop-info">
               <h3 id="elec-heading" className="ui-type-h2">{elec?.title}</h3>
               <p className="ui-type-body">{elec?.shortSummary}</p>
@@ -137,10 +141,10 @@ export function CareersPage() {
               dominant={<ElectricianWiringSchematic />}
               secondary={[<ElectricianVerificationChecklist key="ver" />]}
             />
-          </article>
+          </MotionReveal>
 
           {/* Lawyer */}
-          <article className="cp-workshop-career" aria-labelledby="law-heading">
+          <MotionReveal as="article" className="cp-workshop-career" aria-labelledby="law-heading" delay={0.24}>
             <div className="cp-workshop-info">
               <h3 id="law-heading" className="ui-type-h2">{law?.title}</h3>
               <p className="ui-type-body">{law?.shortSummary}</p>
@@ -151,7 +155,7 @@ export function CareersPage() {
               dominant={<LawyerRedline />}
               secondary={[<LawyerCaseFactSheet key="fact" />]}
             />
-          </article>
+          </MotionReveal>
         </div>
       </PublicChapter>
 

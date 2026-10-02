@@ -286,7 +286,7 @@ function CareerDepth({
   const reduced = useReducedMotion();
   const distance = useTransform(progress, (value) => index - value);
   const y = useTransform(distance, [-1, 0, 1], [-46, 0, 64]);
-  const scale = useTransform(distance, [-1, 0, 1], [0.92, 1, 0.96]);
+  const scale = useTransform(distance, [-1, 0, 1], [0.97, 1, 0.98]);
   const opacity = useTransform(
     distance,
     [-1, -0.5, 0, 0.5, 1],

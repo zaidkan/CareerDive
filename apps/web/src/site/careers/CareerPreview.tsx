@@ -1,4 +1,5 @@
 import { useId, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 import type { PublicCareer } from "../../careers/types.js";
 import {
   CareerRequestToggle,
@@ -12,6 +13,7 @@ export function CareerPreview({
   career: PublicCareer;
   setCareerRequest?: SetCareerRequest | undefined;
 }) {
+  const reduced = useReducedMotion();
   const [open, setOpen] = useState(false);
   const panelId = useId();
 
@@ -37,7 +39,18 @@ export function CareerPreview({
           />
         ) : null}
       </div>
-      <div id={panelId} hidden={!open} className="career-preview-panel">
+      <motion.div
+        id={panelId}
+        hidden={!open}
+        className="career-preview-panel"
+        initial={false}
+        animate={
+          open && !reduced
+            ? { opacity: [0.6, 1], y: [12, 0] }
+            : { opacity: 1, y: 0 }
+        }
+        transition={{ duration: reduced ? 0 : 0.32, ease: [0.16, 1, 0.3, 1] }}
+      >
         <p className="career-preview-lead">
           You’d decide what the evidence supports — and what still needs
           checking.
@@ -60,7 +73,7 @@ export function CareerPreview({
           <strong>Reality note</strong>{" "}
           {career.contentCaveats?.[0] ?? career.caveats[0]}
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 }

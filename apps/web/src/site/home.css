@@ -278,7 +278,7 @@
 
 /* Native scroll runway; only this chapter sticks. No wheel interception. */
 .home-careers[data-scroll-motion="on"] .home-careers-chapter {
-  min-height: calc(100svh + 1600px);
+  min-height: calc(100svh + 1100px);
 }
 .home-careers[data-scroll-motion="on"] .home-careers-sticky {
   position: sticky;
@@ -652,7 +652,7 @@
 @media (max-width: 833px) {
   .home-career-panel h3, .home-career-statement, .home-career-provenance { grid-column: 1; }
   .home-career-plate { grid-row: auto; }
-  .home-careers[data-scroll-motion="on"] .home-careers-chapter { min-height: calc(100svh + 1000px); }
+  .home-careers[data-scroll-motion="on"] .home-careers-chapter { min-height: calc(100svh + 800px); }
   .home-careers[data-scroll-motion="on"] .home-careers-sticky { top: 76px; }
   .home-careers[data-scroll-motion="on"] .home-career-tab-name { display: none; }
   .home-careers[data-scroll-motion="on"] .home-career-tab { min-height: 44px; padding: 0.35rem 0.55rem; }
@@ -664,7 +664,7 @@
   .home-careers[data-scroll-motion="on"] .home-career-panel { gap: 0.6rem; padding: 0.8rem; }
   .home-careers[data-scroll-motion="on"] .home-career-panel h3 { margin: 0; }
   .home-careers[data-scroll-motion="on"] .home-career-statement { margin: 0; font-size: 0.9rem; }
-  .home-careers[data-scroll-motion="on"] .home-career-actions { margin-top: 1.25rem; gap: 0.6rem; }
+  .home-careers[data-scroll-motion="on"] .home-career-actions { margin-top: 1.25rem; gap: 0.6rem; min-height: 100px; align-content: start; }
 }
 @media (max-height: 740px) and (min-width: 834px) {
   .home-careers[data-scroll-motion="on"] .home-career-plate { height: 220px; }
@@ -703,6 +703,7 @@
   .home-hero-copy h1 {
     font-size: clamp(2.55rem, 11vw, 3.4rem);
   }
+  .home-hero-actions { min-height: 100px; align-content: start; }
   .home-hero-cards { height: 365px; }
   .home-hero-card { top: calc(var(--shelf-top) * 0.8); height: 160px; width: 84%; left: 8%; }
   .home-hero-card-surface { padding: 0.8rem 0.9rem; }
