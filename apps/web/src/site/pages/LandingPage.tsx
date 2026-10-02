@@ -1,6 +1,7 @@
 import {
   animate,
   motion,
+  LayoutGroup,
   useMotionValue,
   useMotionValueEvent,
   useReducedMotion,
@@ -16,26 +17,20 @@ import {
 import { HOME_FAQ } from "../faqData.js";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { careers } from "../../careers/careers.js";
-import {
-  ArtifactStage,
-  ChapterSeparator,
-  PublicChapter,
-  MotionReveal,
-  ScrollArrival,
-  type MediaProvenance,
-} from "../ArtDirection.js";
-import { HandoffExcerpt } from "../careers/CareerWorkSamples.js";
-import {
-  ElectricianWiringSchematic,
-  LawyerRedline,
-  MechanicalAnnotatedDrawing,
-  NurseHandoffSheet,
-} from "../workshop/index.js";
-import { hasHomeMedia, HomeMediaSlot } from "../homeMedia.js";
+import { PublicChapter, MotionReveal } from "../ArtDirection.js";
+import { HomeMediaSlot } from "../homeMedia.js";
 import { productMedia, type ProductMediaId } from "../productMedia.js";
 import { SiteLink } from "../SiteLink.js";
 
 const GATE_KEY = "first-shift-start-gate";
+
+function storyDistance(distance: number): number {
+  return typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(max-width: 833px)").matches
+    ? distance / 2
+    : distance;
+}
 
 function prefersReducedMotion(): boolean {
   return (
@@ -122,11 +117,6 @@ function ProductCapture({
   );
 }
 
-const CYBER_PROVENANCE: MediaProvenance = {
-  career: "Cybersecurity Analyst",
-  kind: "real",
-};
-
 type CareerAction =
   | { kind: "link"; href: NonNullable<PublicCareer["simulationRoute"]> }
   | { kind: "disabled"; label: string };
@@ -151,39 +141,52 @@ function heroCue(careerId: string): string {
 }
 
 const SHIFT_ACTS = [
-  { act: "Prepare", claim: "Context first. Then the actual work." },
-  { act: "Decide", claim: "You decide before the picture is complete." },
-  {
-    act: "Pass it on",
-    claim: "The work isn't done until someone else can continue it.",
-  },
+  { act: "Enter", claim: "Get the brief. Find your desk." },
+  { act: "Investigate & decide", claim: "Check the evidence. Make the call." },
+  { act: "Hand it off", claim: "Leave the next person a clear next step." },
 ] as const;
 
-/**
- * Real Work is a PREVIEW: the alert plus ONE supporting evidence transition.
- * The simulation owns discovery — the homepage establishes that real work
- * exists, it does not walk through the whole investigation.
- */
-const EVIDENCE_VIEWS = [
-  {
-    key: "alert",
-    label: "Alert A-1042",
-    id: "a-01",
-    slot: "home-case-a1042",
-    caption: "Alert record · A-1042",
-    alt: "Product capture: alert record A-1042, a sign-in from an unfamiliar device, open for review.",
-  },
-  {
-    key: "signin",
-    label: "Sign-in record",
-    id: "a-02",
-    slot: "home-evidence-auth",
-    caption: "Sign-in record · S-0741",
-    alt: "Product capture: the sign-in record for session S-0741, from the Cybersecurity Analyst first day.",
-  },
-] as const;
-
-type EvidenceKey = (typeof EVIDENCE_VIEWS)[number]["key"];
+/** One coherent scene advances, then recedes as the next scene arrives.
+ * The containing section stays untransformed so native layout remains stable. */
+function ScrollScene({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduced = useReducedMotion();
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  });
+  const y = useTransform(
+    scrollYProgress,
+    [0, 0.35, 0.65, 1],
+    [storyDistance(80), 0, 0, -storyDistance(64)],
+  );
+  const scale = useTransform(
+    scrollYProgress,
+    [0, 0.35, 0.65, 1],
+    [0.92, 1, 1, 0.94],
+  );
+  const opacity = useTransform(
+    scrollYProgress,
+    [0, 0.25, 0.75, 1],
+    [0.98, 1, 1, 0.98],
+  );
+  return (
+    <div ref={ref} className="home-scene">
+      <motion.div
+        className={`home-scene-composition ${className}`}
+        style={reduced ? {} : { y, scale, opacity }}
+      >
+        {children}
+      </motion.div>
+    </div>
+  );
+}
 
 /**
  * Compact hero cards: career name, field, availability, and one restrained
@@ -204,38 +207,22 @@ const CAREER_SHOWCASE = [
   {
     careerId: "cybersecurity-analyst",
     statement: "Compare the records. Say what the evidence supports.",
-    artifact: (
-      <ProductCapture
-        id="a-01"
-        slot="home-career-artifact-cybersecurity-analyst"
-        alt=""
-      />
-    ),
-    provenance: CYBER_PROVENANCE,
   },
   {
     careerId: "registered-nurse",
     statement: "Notice the change. Communicate it clearly.",
-    artifact: <NurseHandoffSheet />,
-    provenance: { career: "Registered Nurse", kind: "workshop" },
   },
   {
     careerId: "mechanical-engineer",
     statement: "Read the result. Decide what needs revision.",
-    artifact: <MechanicalAnnotatedDrawing />,
-    provenance: { career: "Mechanical Engineer", kind: "workshop" },
   },
   {
     careerId: "electrician",
     statement: "Spot the hazard. Decide how the work proceeds.",
-    artifact: <ElectricianWiringSchematic />,
-    provenance: { career: "Electrician", kind: "workshop" },
   },
   {
     careerId: "lawyer-attorney",
     statement: "Separate settled facts from open questions.",
-    artifact: <LawyerRedline />,
-    provenance: { career: "Lawyer", kind: "workshop" },
   },
 ] as const;
 
@@ -252,18 +239,21 @@ function ShiftStep({
   const emphasis = useTransform(progress, [0, 1], [0, 2]);
   const opacity = useTransform(
     emphasis,
-    (value) => 1 - Math.min(1, Math.abs(value - index)) * 0.48,
+    (value) => 1 - Math.min(1, Math.abs(value - index)) * 0.12,
   );
   const y = useTransform(
     emphasis,
-    (value) => Math.min(1, Math.abs(value - index)) * 18,
+    (value) => Math.max(0, Math.min(1, index - value)) * storyDistance(48),
   );
   const scale = useTransform(
     emphasis,
-    (value) => 1 - Math.min(1, Math.abs(value - index)) * 0.035,
+    (value) => 1 - Math.min(1, Math.abs(value - index)) * 0.06,
   );
   return (
     <motion.li style={reduced ? {} : { opacity, y, scale }}>
+      <span className="home-act-number" aria-hidden="true">
+        0{index + 1}
+      </span>
       <h3>{entry.act}</h3>
       <p className="home-act-claim">{entry.claim}</p>
     </motion.li>
@@ -276,21 +266,28 @@ function CareerDepth({
   active,
   children,
   careerSlug,
+  entrance,
 }: {
   index: number;
   progress: MotionValue<number>;
   active: boolean;
   children: ReactNode;
   careerSlug: string;
+  entrance: MotionValue<number>;
 }) {
   const reduced = useReducedMotion();
   const distance = useTransform(progress, (value) => index - value);
-  const y = useTransform(distance, [-1, 0, 1], [-46, 0, 64]);
+  const y = useTransform(
+    distance,
+    [-1, 0, 1],
+    [-storyDistance(46), 0, storyDistance(64)],
+  );
+  const sceneY = useTransform(() => y.get() + entrance.get());
   const scale = useTransform(distance, [-1, 0, 1], [0.97, 1, 0.98]);
   const opacity = useTransform(
     distance,
-    [-1, -0.5, 0, 0.5, 1],
-    [0, 0.45, 1, 0.45, 0],
+    [-0.5, -0.4, 0, 0.4, 0.5],
+    [0, 1, 1, 1, 0],
   );
   return (
     <motion.div
@@ -298,7 +295,9 @@ function CareerDepth({
       data-career={active ? "active" : "inactive"}
       data-media-slot={`career-artifact-${careerSlug}`}
       aria-hidden={!active}
-      style={reduced ? { opacity: active ? 1 : 0 } : { y, scale, opacity }}
+      style={
+        reduced ? { opacity: active ? 1 : 0 } : { y: sceneY, scale, opacity }
+      }
     >
       {children}
     </motion.div>
@@ -317,18 +316,35 @@ export function LandingPage() {
   const careerControlled = useRef<number | null>(null);
   const careerProgress = useMotionValue(0);
   const careerIndex = useRef(0);
-  const shiftRef = useRef<HTMLOListElement>(null);
+  const shiftRef = useRef<HTMLElement>(null);
+  const heroRef = useRef<HTMLElement>(null);
+  const careerTabRefs = useRef(new Map<number, HTMLButtonElement>());
+  const { scrollYProgress: heroProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const heroY = useTransform(heroProgress, [0, 1], [0, -storyDistance(80)]);
+  const heroScale = useTransform(heroProgress, [0, 1], [1, 0.94]);
+  const heroOpacity = useTransform(heroProgress, [0, 1], [1, 0.98]);
   const { scrollYProgress: shiftProgress } = useScroll({
     target: shiftRef,
-    offset: ["start 75%", "end 35%"],
+    offset: ["start start", "end end"],
   });
   const { scrollYProgress } = useScroll({
     target: careerRef,
     offset: ["start start", "end end"],
   });
 
-  const [evidence, setEvidence] = useState<EvidenceKey>("alert");
   // Hero cards: one finite rearrangement cycle, settling on Cyber.
+  const { scrollYProgress: careerEntranceProgress } = useScroll({
+    target: careerRef,
+    offset: ["start end", "start 15%"],
+  });
+  const careerEntranceY = useTransform(
+    careerEntranceProgress,
+    [0, 1],
+    [storyDistance(80), 0],
+  );
   const [heroActive, setHeroActive] = useState(0);
   const [heroStep, setHeroStep] = useState(0);
   const [heroAuto, setHeroAuto] = useState(() => !prefersReducedMotion());
@@ -425,12 +441,11 @@ export function LandingPage() {
   const activeAction: CareerAction = activeCareer
     ? careerAction(activeCareer)
     : { kind: "disabled", label: "Taking shape" };
-  const activeEvidence =
-    EVIDENCE_VIEWS.find((view) => view.key === evidence) ?? EVIDENCE_VIEWS[0];
 
   return (
     <div className="v2-home">
       <section
+        ref={heroRef}
         className="home-hero"
         aria-labelledby="home-hero-title"
         onPointerDownCapture={() => {
@@ -449,7 +464,14 @@ export function LandingPage() {
           rhythm="expansive"
           className="home-hero-chapter"
         >
-          <div className="home-hero-grid ui-editorial-split">
+          <motion.div
+            className="home-hero-grid ui-editorial-split"
+            style={
+              reduceMotion
+                ? {}
+                : { y: heroY, scale: heroScale, opacity: heroOpacity }
+            }
+          >
             <div className="home-hero-copy">
               <h1 id="home-hero-title">
                 {"Know the work before you choose the career."
@@ -465,8 +487,8 @@ export function LandingPage() {
                           : { opacity: [0, 1], y: [12, 0] }
                       }
                       transition={{
-                        duration: 0.4,
-                        delay: index * 0.035,
+                        duration: 0.72,
+                        delay: index * 0.06,
                         ease: [0.16, 1, 0.3, 1],
                       }}
                     >
@@ -476,17 +498,33 @@ export function LandingPage() {
                   ))}
               </h1>
               <p className="ui-type-proof">
-                You can read about a career — or step into its first shift.
+                Try the ordinary work people usually don’t show you.
               </p>
-              <div className="home-hero-actions">
+              <motion.div
+                className="home-hero-actions"
+                initial={false}
+                animate={reduceMotion ? {} : { y: [12, 0], opacity: [0, 1] }}
+                transition={{
+                  duration: 0.72,
+                  delay: 0.25,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+              >
                 {heroAction.kind === "link" ? (
-                  <SiteLink
-                    className="start-shift v2-primary"
-                    to={heroAction.href}
+                  <motion.div
+                    className="home-start-motion"
+                    whileHover={reduceMotion ? {} : { y: -3 }}
+                    whileTap={reduceMotion ? {} : { scale: 0.97 }}
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
                   >
-                    {startLabel}
-                    <span aria-hidden="true"> ↗</span>
-                  </SiteLink>
+                    <SiteLink
+                      className="start-shift v2-primary"
+                      to={heroAction.href}
+                    >
+                      {startLabel}
+                      <span aria-hidden="true"> ↗</span>
+                    </SiteLink>
+                  </motion.div>
                 ) : (
                   <button
                     type="button"
@@ -499,10 +537,10 @@ export function LandingPage() {
                 <SiteLink className="v2-text-link" to="/careers">
                   Explore careers <span aria-hidden="true">→</span>
                 </SiteLink>
-              </div>
+              </motion.div>
               <p className="home-hero-meta">
-                <strong>{FIRST_SHIFT_DURATION_COMPACT}</strong> · one first
-                shift
+                <strong>{FIRST_SHIFT_DURATION_COMPACT}</strong> · Cybersecurity
+                · Playable now
               </p>
             </div>
             <div data-motion-role="artifact" className="home-hero-stage">
@@ -619,7 +657,7 @@ export function LandingPage() {
                             : 0.96,
                         opacity: emphasized
                           ? 1
-                          : ([0.62, 0.75, 0.85, 0.92, 1][index] ?? 1),
+                          : ([0.96, 0.97, 0.98, 0.99, 1][index] ?? 1),
                       }}
                       transition={
                         reduceMotion
@@ -700,27 +738,29 @@ export function LandingPage() {
                 ) : null}
               </div>
             </div>
-          </div>
+          </motion.div>
         </PublicChapter>
       </section>
 
-      <section
-        className="home-place"
-        aria-label="The Verdaly security operations floor"
-      >
+      <section className="home-place" aria-labelledby="home-place-title">
         <PublicChapter
           as="div"
           surface="base"
           rhythm="compact"
-          width="full"
           className="home-place-chapter"
         >
-          <ScrollArrival className="home-place-crop" y={52} scale={0.94} opacity={0.75}>
-            <HomeMediaSlot slotId="home-media-arrival" eager hideCaption />
-          </ScrollArrival>
-          <MotionReveal delay={0.12}>
-            <p className="home-media-note">Actual product capture · synthetic records <span aria-hidden="true">·</span> Cybersecurity Analyst · Playable now</p>
-          </MotionReveal>
+          <ScrollScene>
+            <h2 id="home-place-title">Walk into the job.</h2>
+            <p className="ui-type-proof">
+              An actual workplace. Your first shift.
+            </p>
+            <div className="home-place-crop">
+              <HomeMediaSlot slotId="home-media-arrival" eager hideCaption />
+            </div>
+            <p className="home-media-note">
+              Actual product capture · Cybersecurity Analyst
+            </p>
+          </ScrollScene>
         </PublicChapter>
       </section>
 
@@ -728,109 +768,101 @@ export function LandingPage() {
         <PublicChapter
           as="div"
           surface="chapter"
-          rhythm="stage"
+          rhythm="standard"
           className="home-realwork-chapter"
         >
-          <div>
-            <div className="home-realwork-intro">
-              <MotionReveal>
-              <h2 id="home-realwork-title" data-motion-role="argument">
-                Real work, not a job description.
-              </h2>
-              </MotionReveal>
-              <MotionReveal delay={0.12}>
-                <p className="ui-type-proof">
-                  One alert. A decision you have to justify.
+          <ScrollScene>
+            <h2 id="home-realwork-title">
+              Do the work people usually don’t show you.
+            </h2>
+            <p className="ui-type-proof">
+              Open the alert. Check the evidence. Make the call.
+            </p>
+            <figure
+              className="home-alert-proof"
+              data-media-slot="home-case-a1042"
+            >
+              <figcaption>
+                Alert A-1042 · Unfamiliar successful login
+              </figcaption>
+              <blockquote>
+                Repeated failures were followed by a successful sign-in from an
+                unfamiliar network.
+              </blockquote>
+              <div className="home-alert-sequence">
+                <p>
+                  <strong>6</strong> failed identity checks
                 </p>
-              </MotionReveal>
-            </div>
-            <ScrollArrival y={48} scale={0.96}>
-            <ArtifactStage
-              className="home-realwork-stage"
-              dominant={
-                <div className="home-evidence-views">
-                  {EVIDENCE_VIEWS.map((view) => (
-                    <div key={view.key} hidden={evidence !== view.key}>
-                      <ProductCapture
-                        id={view.id}
-                        slot={view.slot}
-                        alt={view.alt}
-                      />
-                    </div>
-                  ))}
-                </div>
-              }
-              caption={activeEvidence.caption}
-            />
-            </ScrollArrival>
-            <div className="home-evidence-bar">
-              <div
-                className="home-evidence-swap"
-                role="group"
-                aria-label="Evidence views for alert A-1042"
-              >
-                {EVIDENCE_VIEWS.map((view) => (
-                  <button
-                    key={view.key}
-                    type="button"
-                    aria-pressed={evidence === view.key}
-                    onClick={() => {
-                      setEvidence(view.key);
-                    }}
-                  >
-                    {view.label}
-                  </button>
-                ))}
+                <span aria-hidden="true">→</span>
+                <p>
+                  <strong>1</strong> successful sign-in
+                </p>
               </div>
-              <p className="home-evidence-note">
-                Actual product capture · synthetic records.
+              <p className="home-alert-question">
+                What does the evidence actually support?
               </p>
-            </div>
-          </div>
+            </figure>
+            <p className="home-media-note">
+              Excerpt from the actual alert · synthetic records
+            </p>
+          </ScrollScene>
         </PublicChapter>
       </section>
 
-      <section className="home-shift" aria-labelledby="home-shift-title">
+      <section
+        ref={shiftRef}
+        className="home-shift"
+        aria-labelledby="home-shift-title"
+      >
         <PublicChapter
           as="div"
           surface="base"
           rhythm="standard"
           className="home-shift-chapter"
         >
-          <MotionReveal>
-            <h2 id="home-shift-title" data-motion-role="argument">
-              How a shift works
-            </h2>
-            <ol ref={shiftRef} className="home-acts">
+          <div className="home-shift-sticky">
+            <h2 id="home-shift-title">A shift has a flow.</h2>
+            <p className="ui-type-proof">
+              Real work keeps moving after your shift ends.
+            </p>
+            <ol className="home-acts">
               {SHIFT_ACTS.map((entry, index) => (
-                <ShiftStep key={entry.act} entry={entry} index={index} progress={shiftProgress} />
+                <ShiftStep
+                  key={entry.act}
+                  entry={entry}
+                  index={index}
+                  progress={shiftProgress}
+                />
               ))}
             </ol>
-          </MotionReveal>
+          </div>
         </PublicChapter>
       </section>
 
-      <section className="home-handoff" aria-labelledby="home-handoff-title">
+      <section className="home-reflect" aria-labelledby="home-reflect-title">
         <PublicChapter
           as="div"
           surface="chapter"
           rhythm="standard"
-          className="home-handoff-chapter"
+          width="wide"
+          className="home-reflect-chapter"
         >
-          <div className="home-handoff-grid">
-            <MotionReveal className="home-handoff-copy">
-              <h2 id="home-handoff-title" data-motion-role="argument">
-                Your shift ends. The work does not.
-              </h2>
-              <p className="ui-type-proof">
-                You won’t finish everything. Before you leave, you record what
-                you found and what the next analyst still needs to check.
-              </p>
-            </MotionReveal>
-            <ScrollArrival y={32} scale={0.97}>
-              <div data-motion-role="artifact"><HandoffExcerpt /></div>
-            </ScrollArrival>
-          </div>
+          <ScrollScene>
+            <h2 id="home-reflect-title">See how you worked.</h2>
+            <p className="ui-type-proof">
+              A record of the calls you made. Not a score.
+            </p>
+            <div className="home-debrief-crop">
+              <ProductCapture
+                id="a-10"
+                slot="home-debrief-reflection"
+                alt="Actual shift debrief: a record of decisions, what happened and what stayed uncertain."
+              />
+            </div>
+            <p className="home-media-note">
+              Shift debrief · actual product capture, synthetic records
+            </p>
+          </ScrollScene>
         </PublicChapter>
       </section>
 
@@ -847,72 +879,111 @@ export function LandingPage() {
           className="home-careers-chapter"
         >
           <div className="home-careers-sticky">
-            <MotionReveal>
-              <h2 id="home-careers-title" data-motion-role="argument">
+            <motion.div style={reduceMotion ? {} : { y: careerEntranceY }}>
+              <h2 id="home-careers-title">
                 Different careers. Different work.
               </h2>
               <p className="ui-type-proof">
-                One playable now. Four taking shape.
+                Cybersecurity is playable now. Four more are taking shape.
               </p>
-            </MotionReveal>
-            <div className="home-career-tabs" role="group" aria-label="Careers">
-              {CAREER_SHOWCASE.map((entry, index) => {
-                const career = careers.find(
-                  (item) => item.id === entry.careerId,
-                );
-                if (!career) return null;
-                return (
-                  <button
-                    key={entry.careerId}
-                    type="button"
-                    className="home-career-tab"
-                    aria-label={career.title}
-                    aria-pressed={careerPanels.active === index}
-                    onClick={() => {
-                      selectCareer(index);
-                    }}
-                  >
-                    <span className="home-career-tab-cue" aria-hidden="true">
-                      {heroCue(career.id)}
-                    </span>
-                    <span className="home-career-tab-name">{career.title}</span>
-                  </button>
-                );
-              })}
-            </div>
+            </motion.div>
+            <LayoutGroup id="home-career-selection">
+              <motion.div
+                style={reduceMotion ? {} : { y: careerEntranceY }}
+                className="home-career-tabs"
+                role="group"
+                aria-label="Careers"
+              >
+                {CAREER_SHOWCASE.map((entry, index) => {
+                  const career = careers.find(
+                    (item) => item.id === entry.careerId,
+                  );
+                  if (!career) return null;
+                  return (
+                    <button
+                      key={entry.careerId}
+                      ref={(node) => {
+                        if (node) careerTabRefs.current.set(index, node);
+                        else careerTabRefs.current.delete(index);
+                      }}
+                      type="button"
+                      className="home-career-tab"
+                      aria-label={career.title}
+                      aria-pressed={careerPanels.active === index}
+                      onClick={() => {
+                        selectCareer(index);
+                      }}
+                      onKeyDown={(event) => {
+                        let next = index;
+                        if (
+                          event.key === "ArrowRight" ||
+                          event.key === "ArrowDown"
+                        )
+                          next = (index + 1) % 5;
+                        else if (
+                          event.key === "ArrowLeft" ||
+                          event.key === "ArrowUp"
+                        )
+                          next = (index + 4) % 5;
+                        else if (event.key === "Home") next = 0;
+                        else if (event.key === "End") next = 4;
+                        else return;
+                        event.preventDefault();
+                        selectCareer(next);
+                        careerTabRefs.current.get(next)?.focus();
+                      }}
+                    >
+                      {careerPanels.active === index && (
+                        <motion.span
+                          className="home-career-active-pill"
+                          layoutId="active-pill"
+                          aria-hidden="true"
+                          transition={
+                            reduceMotion
+                              ? { duration: 0 }
+                              : { type: "spring", stiffness: 380, damping: 30 }
+                          }
+                        />
+                      )}
+                      <span className="home-career-tab-cue" aria-hidden="true">
+                        {heroCue(career.id)}
+                      </span>
+                      <span className="home-career-tab-name">
+                        {career.title}
+                      </span>
+                    </button>
+                  );
+                })}
+              </motion.div>
+            </LayoutGroup>
             <div className="home-career-stage" data-motion="career-switch">
               {CAREER_SHOWCASE.map((entry, index) => {
                 const career = careers.find(
                   (item) => item.id === entry.careerId,
                 );
                 if (!career) return null;
-                const state =
-                  index === careerPanels.active ? "active" : "inactive";
                 return (
                   <CareerDepth
                     key={entry.careerId}
                     index={index}
                     progress={careerProgress}
-                    active={state === "active"}
+                    active={index === careerPanels.active}
+                    entrance={careerEntranceY}
                     careerSlug={career.slug}
                   >
-                    <div className="home-career-plate" aria-hidden="true">
-                      {entry.artifact}
-                    </div>
+                    <span className="home-career-status">
+                      {availabilityLabel(career.availability)}
+                    </span>
                     <h3>{career.title}</h3>
                     <p className="home-career-statement">{entry.statement}</p>
-                    {/* One truth label per artifact block — provenance, not
-                        availability. Availability lives in the CTA. */}
-                    <span className="ui-provenance home-career-provenance">
-                      {entry.provenance.kind === "real"
-                        ? "Real product capture · synthetic records"
-                        : "Concept artwork · not a product capture"}
-                    </span>
                   </CareerDepth>
                 );
               })}
             </div>
-            <div className="home-career-actions">
+            <motion.div
+              className="home-career-actions"
+              style={reduceMotion ? {} : { y: careerEntranceY }}
+            >
               {activeAction.kind === "link" ? (
                 <SiteLink
                   className="start-shift v2-primary"
@@ -934,67 +1005,10 @@ export function LandingPage() {
               <SiteLink className="v2-text-link" to="/careers">
                 Explore careers <span aria-hidden="true">→</span>
               </SiteLink>
-            </div>
+            </motion.div>
           </div>
         </PublicChapter>
       </section>
-
-      {hasHomeMedia("home-media-story") ? (
-        <section
-          className="home-story"
-          aria-label="Inside the security operations floor"
-        >
-          <PublicChapter
-            as="div"
-            surface="base"
-            rhythm="compact"
-            width="full"
-            className="home-story-chapter"
-          >
-            <HomeMediaSlot slotId="home-media-story" />
-          </PublicChapter>
-        </section>
-      ) : null}
-
-      <section className="home-reflect" aria-labelledby="home-reflect-title">
-        <PublicChapter
-          as="div"
-          surface="chapter"
-          rhythm="standard"
-          width="wide"
-          className="home-reflect-chapter"
-        >
-          <div>
-            <MotionReveal>
-            <h2 id="home-reflect-title" data-motion-role="argument">
-              See how you worked.
-            </h2>
-            </MotionReveal>
-            <MotionReveal delay={0.12}>
-              <p className="ui-type-proof">
-                Not a score. A record of the calls you made.
-              </p>
-            </MotionReveal>
-            <ScrollArrival className="home-debrief-crop" y={60} scale={0.94}>
-              <ProductCapture
-                id="a-10"
-                slot="home-debrief-reflection"
-                alt="Product capture: one decision block from the shift debrief, reviewing what happened and what stayed uncertain."
-              />
-            </ScrollArrival>
-            <p className="home-media-note">
-              Shift debrief · actual product capture, synthetic records
-            </p>
-            <p>
-              <SiteLink className="v2-text-link" to="/trust">
-                Privacy and safety <span aria-hidden="true">→</span>
-              </SiteLink>
-            </p>
-          </div>
-        </PublicChapter>
-      </section>
-
-      <ChapterSeparator />
 
       <section className="home-faq" aria-labelledby="home-faq-title">
         <PublicChapter
@@ -1004,9 +1018,7 @@ export function LandingPage() {
           className="home-faq-chapter"
         >
           <MotionReveal>
-            <h2 id="home-faq-title" data-motion-role="argument">
-              Questions, answered plainly.
-            </h2>
+            <h2 id="home-faq-title">Before you start.</h2>
             <div className="v2-faq-list">
               {HOME_FAQ.map(({ q, a }) => (
                 <details key={q}>
@@ -1015,38 +1027,12 @@ export function LandingPage() {
                 </details>
               ))}
             </div>
-            <p>
+            <div className="home-faq-links">
               <SiteLink className="v2-text-link" to="/faq">
                 More questions <span aria-hidden="true">→</span>
               </SiteLink>
-            </p>
-          </MotionReveal>
-        </PublicChapter>
-      </section>
-
-      <section className="home-final" aria-labelledby="home-final-title">
-        <PublicChapter
-          as="div"
-          surface="finale"
-          rhythm="final"
-          width="wide"
-          className="home-final-chapter"
-        >
-          <MotionReveal className="home-final-inner">
-            <h2 id="home-final-title" data-motion-role="argument">
-              One short day. One real first shift.
-            </h2>
-            <p>
-              Try the work <span aria-hidden="true">→</span> Make the calls{" "}
-              <span aria-hidden="true">→</span> See how you worked
-            </p>
-            <div className="home-final-actions">
-              <SiteLink className="start-shift v2-primary" to="/start">
-                {startLabel}
-                <span aria-hidden="true"> ↗</span>
-              </SiteLink>
-              <SiteLink className="v2-text-link" to="/careers">
-                Explore careers <span aria-hidden="true">→</span>
+              <SiteLink className="v2-text-link" to="/trust">
+                Privacy and safety <span aria-hidden="true">→</span>
               </SiteLink>
             </div>
           </MotionReveal>
