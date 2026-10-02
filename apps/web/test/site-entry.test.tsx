@@ -99,7 +99,7 @@ describe("site routes", () => {
     ).toBeNull();
     expect(
       screen.getByRole("heading", {
-        name: /real work, not a job description/i,
+        name: /do the work people usually don’t show you/i,
       }),
     ).toBeVisible();
     expect(
@@ -109,10 +109,12 @@ describe("site routes", () => {
     ).toBeVisible();
     expect(
       screen.getByRole("heading", {
-        name: "How a shift works",
+        name: "A shift has a flow.",
       }),
     ).toBeVisible();
-    expect(screen.getByText("Alert A-1042")).toBeVisible();
+    expect(
+      screen.getByText(/Alert A-1042 · Unfamiliar successful login/),
+    ).toBeVisible();
     expect(
       screen.getAllByText(/actual product capture/i).length,
     ).toBeGreaterThanOrEqual(1);
@@ -120,7 +122,6 @@ describe("site routes", () => {
     for (const slot of [
       "home-hero-workplace",
       "home-case-a1042",
-      "home-evidence-auth",
       "home-debrief-reflection",
     ]) {
       expect(
@@ -130,9 +131,12 @@ describe("site routes", () => {
     // Hero visual is the compact career-card system, not a static thumbnail.
     expect(document.querySelectorAll(".home-hero-card")).toHaveLength(5);
     expect(document.querySelector(".home-hero-stage img")).toBeNull();
-    // How a shift works stays text-only; handoff shows exactly one artifact.
+    // One readable work proof; handoff is part of the single shift flow.
     expect(document.querySelector(".home-desk")).toBeNull();
-    expect(document.querySelectorAll(".home-handoff figure")).toHaveLength(1);
+    expect(document.querySelector(".home-handoff")).toBeNull();
+    expect(document.querySelectorAll(".home-realwork figure")).toHaveLength(1);
+    expect(screen.getByRole("heading", { name: "Hand it off" })).toBeVisible();
+    expect(document.querySelectorAll(".v2-home > section")).toHaveLength(7);
     expect(
       document.querySelectorAll('[data-media-slot^="career-artifact-"]'),
     ).toHaveLength(5);
@@ -144,12 +148,12 @@ describe("site routes", () => {
     ).toBeNull();
     expect(screen.queryByText(/requests stay on this page/i)).toBeNull();
     expect(
-      screen.getByRole("heading", {
+      screen.queryByRole("heading", {
         name: "One short day. One real first shift.",
       }),
-    ).toBeVisible();
+    ).toBeNull();
     expect(
-      screen.getByRole("heading", { name: /questions, answered plainly/i }),
+      screen.getByRole("heading", { name: "Before you start." }),
     ).toBeVisible();
     expect(
       screen.getAllByRole("link", { name: /start your first day/i }).length,
@@ -283,22 +287,15 @@ describe("site routes", () => {
     ]) {
       expect(screen.getAllByText(title).length).toBeGreaterThanOrEqual(1);
     }
-    // Panel-level provenance is the visible contract; artifact footers repeat it
-    // inside aria-hidden crop plates and are excluded here.
-    // Panel provenance labels the ARTIFACT (real vs concept), never the
-    // career's availability — availability lives in the CTA and hero cards.
-    const panelProvenance = Array.from(
-      document.querySelectorAll(".home-career-panel > .ui-provenance"),
-    );
+    // Deep work samples live on /careers; homepage panels state availability honestly.
+    const labels = Array.from(document.querySelectorAll(".home-career-status"));
     expect(
-      panelProvenance.filter((el) => /concept artwork/i.test(el.textContent))
-        .length,
-    ).toBe(4);
+      labels.filter((el) => el.textContent === "Taking shape"),
+    ).toHaveLength(4);
     expect(
-      panelProvenance.filter((el) =>
-        /real product capture/i.test(el.textContent),
-      ).length,
-    ).toBe(1);
+      labels.filter((el) => el.textContent === "Playable now"),
+    ).toHaveLength(1);
+    expect(document.querySelector(".home-career-panel img")).toBeNull();
     // Cyber leads both career systems: first hero card and first switcher tab.
     const heroCards = Array.from(
       document.querySelectorAll(".home-hero-card .home-hero-card-name"),
@@ -308,7 +305,7 @@ describe("site routes", () => {
     expect(tabs[0]?.textContent).toBe("Cybersecurity Analyst");
     expect(screen.getAllByText(/playable now/i).length).toBeGreaterThan(0);
     expect(
-      screen.getByText(/real work, not a job description/i),
+      screen.getByText(/do the work people usually don’t show you/i),
     ).toBeInTheDocument();
   });
 

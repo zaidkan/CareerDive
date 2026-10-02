@@ -1,6 +1,6 @@
 export const HOME_FAQ = [
   {
-    q: "How long does it take?",
+    q: "What will I do?",
     a: "One first shift: read the handoff, check an alert, write it up, hand it off.",
   },
   {
