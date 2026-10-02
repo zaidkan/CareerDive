@@ -62,7 +62,7 @@ for (const width of [1366, 834, 390]) {
             top: node.getBoundingClientRect().top + scrollY,
             height: node.getBoundingClientRect().height,
           }));
-          // Barely visible content stays at its readable baseline. Careers wait for 40%.
+          // Unreached content is hidden from mount. Careers wait for 40%.
           await page.evaluate(({ top, height }) => {
             window.scrollTo(0, top + height * 0.2 - innerHeight + 120);
           }, bounds);
@@ -71,7 +71,7 @@ for (const width of [1366, 834, 390]) {
             await row.evaluate((node) =>
               Number(getComputedStyle(node).opacity),
             ),
-          ).toBe(1);
+          ).toBe(reducedMotion === "reduce" ? 1 : 0);
           await page.evaluate(({ top, height }) => {
             window.scrollTo(0, top + height * 0.45 - innerHeight + 120);
           }, bounds);
@@ -87,7 +87,7 @@ for (const width of [1366, 834, 390]) {
             expect(arrival.opacity).toBeLessThan(1);
             expect(arrival.transform).not.toBe("none");
           }
-          await page.waitForTimeout(850);
+          await page.waitForTimeout(1100);
           const request = row.getByRole("button");
           await request.scrollIntoViewIfNeeded();
           const before = await row.evaluate((node) => ({
@@ -167,7 +167,7 @@ for (const width of [1366, 834, 390]) {
             },
             { ...bounds, index },
           );
-          await page.waitForTimeout(850);
+          await page.waitForTimeout(1100);
           for (const selector of [
             ".home-careers",
             ".home-careers-chapter",

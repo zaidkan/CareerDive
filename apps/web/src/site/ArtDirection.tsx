@@ -2,13 +2,12 @@ import { useEffect, useRef } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import {
   motion,
-  useAnimationControls,
   useReducedMotion,
   useScroll,
   useTransform,
 } from "motion/react";
 
-/** Visible baseline; viewport entry rehearses one bounded reveal, never gates content. */
+/** Hidden from first render; viewport entry reveals once without an opacity reset. */
 export function MotionReveal({
   children,
   className,
@@ -29,37 +28,21 @@ export function MotionReveal({
   "aria-labelledby"?: string;
 }) {
   const reduced = useReducedMotion();
-  const controls = useAnimationControls();
-  const revealed = useRef(false);
+  const staticContent = reduced || typeof IntersectionObserver === "undefined";
   const Element = as === "article" ? motion.article : motion.div;
-  useEffect(() => {
-    if (reduced) controls.set({ opacity: 1, y: 0, scale: 1 });
-  }, [controls, reduced]);
+  const final = { opacity: 1, y: 0, scale: 1 };
   return (
     <Element
       className={className}
       aria-labelledby={labelledBy}
-      initial={false}
-      animate={controls}
+      initial={
+        staticContent
+          ? false
+          : { opacity: 0, y: depth ? 30 : 28, scale: depth ? 0.96 : 1 }
+      }
+      {...(staticContent ? { animate: final } : { whileInView: final })}
       viewport={{ once: true, amount, margin }}
-      {...(typeof IntersectionObserver === "undefined"
-        ? {}
-        : {
-            onViewportEnter: () => {
-              if (reduced || revealed.current) return;
-              revealed.current = true;
-              void controls.start({
-                opacity: [0, 1],
-                y: [depth ? 32 : 28, 0],
-                scale: depth ? [0.96, 1] : [1, 1],
-                transition: {
-                  duration: 0.72,
-                  delay,
-                  ease: [0.16, 1, 0.3, 1],
-                },
-              });
-            },
-          })}
+      transition={{ duration: 0.96, delay, ease: [0.16, 1, 0.3, 1] }}
     >
       {children}
     </Element>

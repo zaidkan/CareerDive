@@ -6,6 +6,7 @@ export type SitePath =
   | `/careers/${string}`
   | "/how-it-works"
   | "/trust"
+  | "/privacy"
   | "/faq"
   | "/start";
 
@@ -24,7 +25,7 @@ export function parseRoute(pathname: string): SiteRoute {
   if (path === "/") return { kind: "home" };
   if (path === "/careers") return { kind: "careers" };
   if (path === "/how-it-works") return { kind: "how-it-works" };
-  if (path === "/trust") return { kind: "trust" };
+  if (path === "/trust" || path === "/privacy") return { kind: "trust" };
   if (path === "/faq") return { kind: "faq" };
   if (path === "/start") return { kind: "start" };
   const match = /^\/careers\/([a-z0-9]+(?:-[a-z0-9]+)*)$/.exec(path);

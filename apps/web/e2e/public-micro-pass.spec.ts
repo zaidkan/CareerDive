@@ -137,11 +137,11 @@ for (const width of [1366, 834, 390]) {
         }
         expect(cls).toBeLessThan(0.05);
         expect(home.overflow).toBeLessThanOrEqual(0);
-        await page.goto("/trust", { waitUntil: "networkidle" });
+        await page.goto("/privacy", { waitUntil: "networkidle" });
         await expect(
           page.getByRole("heading", { level: 1, name: "Privacy and safety" }),
         ).toBeVisible();
-        await expect(page.locator(".trust-sections > section")).toHaveCount(8);
+        await expect(page.locator(".trust-sections section")).toHaveCount(8);
         await expect(
           page.getByText("Persistent report storage is not implemented.", {
             exact: false,

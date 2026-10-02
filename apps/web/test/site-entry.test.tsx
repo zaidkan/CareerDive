@@ -62,6 +62,7 @@ describe("site routes", () => {
     });
     expect(parseRoute("/how-it-works")).toEqual({ kind: "how-it-works" });
     expect(parseRoute("/trust")).toEqual({ kind: "trust" });
+    expect(parseRoute("/privacy")).toEqual({ kind: "trust" });
     expect(parseRoute("/faq")).toEqual({ kind: "faq" });
     expect(parseRoute("/start")).toEqual({ kind: "start" });
     expect(parseRoute("/unknown")).toEqual({
