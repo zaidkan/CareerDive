@@ -1,5 +1,49 @@
 import { useEffect, useRef } from "react";
 import type { CSSProperties, ReactNode } from "react";
+import { motion, useAnimationControls, useReducedMotion } from "motion/react";
+
+/** Visible baseline; viewport entry rehearses one bounded reveal, never gates content. */
+export function MotionReveal({
+  children,
+  className,
+  depth = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  depth?: boolean;
+}) {
+  const reduced = useReducedMotion();
+  const controls = useAnimationControls();
+  useEffect(() => {
+    if (reduced) controls.set({ opacity: 1, y: 0, scale: 1 });
+  }, [controls, reduced]);
+  return (
+    <motion.div
+      className={className}
+      initial={false}
+      animate={controls}
+      viewport={{ once: true, amount: 0.12 }}
+      {...(typeof IntersectionObserver === "undefined"
+        ? {}
+        : {
+            onViewportEnter: () => {
+              if (reduced) return;
+              void controls.start({
+                opacity: [0, 1],
+                y: [depth ? 28 : 16, 0],
+                scale: depth ? [0.98, 1] : [1, 1],
+                transition: {
+                  duration: depth ? 0.52 : 0.44,
+                  ease: [0.16, 1, 0.3, 1],
+                },
+              });
+            },
+          })}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 type Surface = "base" | "chapter" | "stage" | "finale";
 type Rhythm = "compact" | "standard" | "expansive" | "stage" | "final";
@@ -22,7 +66,9 @@ export function PublicChapter({
   children: ReactNode;
 }) {
   return (
-    <Element className={`ui-chapter ui-surface--${surface} ui-rhythm--${rhythm} ui-width--${width} ${className}`.trim()}>
+    <Element
+      className={`ui-chapter ui-surface--${surface} ui-rhythm--${rhythm} ui-width--${width} ${className}`.trim()}
+    >
       {children}
     </Element>
   );
@@ -35,11 +81,19 @@ export function ChapterSeparator() {
 export type MediaProvenance =
   | { career: "Cybersecurity Analyst"; kind: "real" }
   | {
-      career: "Registered Nurse" | "Mechanical Engineer" | "Electrician" | "Lawyer";
+      career:
+        | "Registered Nurse"
+        | "Mechanical Engineer"
+        | "Electrician"
+        | "Lawyer";
       kind: "workshop";
     };
 
-export function ProvenanceLabel({ provenance }: { provenance: MediaProvenance }) {
+export function ProvenanceLabel({
+  provenance,
+}: {
+  provenance: MediaProvenance;
+}) {
   return (
     <span className="ui-provenance">
       {provenance.career} <span aria-hidden="true">·</span>{" "}
@@ -67,12 +121,22 @@ export function ArtifactStage({
   className?: string;
 }) {
   return (
-    <figure className={`ui-artifact-stage ui-artifact-stage--${emphasis} ${className}`.trim()} data-media-slot="artifact-stage">
+    <figure
+      className={`ui-artifact-stage ui-artifact-stage--${emphasis} ${className}`.trim()}
+      data-media-slot="artifact-stage"
+    >
       {eyebrow ? <p className="ui-type-eyebrow">{eyebrow}</p> : null}
       <div className="ui-artifact-stage__field">
-        <div className="ui-artifact-stage__primary" data-media-layer="dominant">{dominant}</div>
+        <div className="ui-artifact-stage__primary" data-media-layer="dominant">
+          {dominant}
+        </div>
         {secondary?.map((artifact, index) => (
-          <div className="ui-artifact-stage__secondary" data-media-layer="secondary" key={index} style={{ "--ui-layer": index } as CSSProperties}>
+          <div
+            className="ui-artifact-stage__secondary"
+            data-media-layer="secondary"
+            key={index}
+            style={{ "--ui-layer": index } as CSSProperties}
+          >
             {artifact}
           </div>
         ))}
@@ -93,14 +157,23 @@ export function useChapterReveal<T extends HTMLElement>() {
   useEffect(() => {
     const node = ref.current;
     if (!node || typeof IntersectionObserver === "undefined") return;
-    if (typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const observer = new IntersectionObserver((entries) => {
-      if (!entries[0]?.isIntersecting) return;
-      node.dataset.motionActive = "true";
-      observer.disconnect();
-    }, { threshold: 0.18 });
+    if (
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) return;
+        node.dataset.motionActive = "true";
+        observer.disconnect();
+      },
+      { threshold: 0.18 },
+    );
     observer.observe(node);
-    return () => { observer.disconnect(); };
+    return () => {
+      observer.disconnect();
+    };
   }, []);
   return ref;
 }

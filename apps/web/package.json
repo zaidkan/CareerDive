@@ -17,6 +17,7 @@
     "@sim/core": "workspace:*",
     "@sim/schemas": "workspace:*",
     "@trpc/client": "^11.4.3",
+    "motion": "^13.4.6",
     "postprocessing": "^6.39.4",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

@@ -82,13 +82,20 @@
   color: var(--action-primary);
   font-weight: 700;
   text-decoration-thickness: 1px;
+  text-decoration: none;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: left calc(100% - 8px);
+  background-size: 0 1px;
+  transition: background-size 180ms var(--ease-out);
 }
+.v2-text-link:is(:hover, :focus-visible) { background-size: 100% 1px; }
 .v2-text-link span {
 
   display: inline-block;
   transition: transform 180ms var(--ease-out);
 }
-.v2-text-link:hover span {
+.v2-text-link:is(:hover, :focus-visible) span {
 
   transform: translateX(3px);
 }
@@ -104,13 +111,31 @@
   font-weight: 800;
   text-decoration: none;
   box-shadow: none;
+  transition: transform 180ms var(--ease-out), background-color 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
 }
-.v2-primary:hover {
+.v2-primary:not(:disabled):is(:hover, :focus-visible) {
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 18%), 0 5px 14px -10px rgb(0 0 0 / 30%);
+}
+.v2-primary:not(:disabled):active { transform: scale(0.985); }
+.v2-primary:not(:disabled):hover {
   background: color-mix(
     in srgb,
     var(--action-primary) 88%,
     var(--text-primary)
   );
+}
+@media (prefers-reduced-motion: reduce) {
+  .v2-primary, .v2-text-link, .v2-text-link span { transition: none; }
+  .v2-primary:not(:disabled):is(:hover, :focus-visible, :active), .v2-text-link:is(:hover, :focus-visible) span { transform: none; }
+}
+@supports (interpolate-size: allow-keywords) {
+  :is(.v2-faq-list, .faq-list, .trust-wiring) details { interpolate-size: allow-keywords; }
+  :is(.v2-faq-list, .faq-list, .trust-wiring) details::details-content { height: 0; overflow: clip; transition: height 220ms var(--ease-out), content-visibility 220ms allow-discrete; }
+  :is(.v2-faq-list, .faq-list, .trust-wiring) details[open]::details-content { height: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.v2-faq-list, .faq-list, .trust-wiring) details::details-content { transition: none; }
 }
 .site-main-public .career-stage > h2,
 .site-main-public .career-shelf > h2 {

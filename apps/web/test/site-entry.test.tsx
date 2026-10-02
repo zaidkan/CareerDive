@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -23,6 +24,8 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
   try {
     window.sessionStorage.removeItem("first-shift-start-gate");
   } catch {
@@ -135,7 +138,9 @@ describe("site routes", () => {
     ).toHaveLength(5);
     // The old third career presentation is gone from home.
     expect(
-      screen.queryByRole("heading", { name: "Which career do you want to try?" }),
+      screen.queryByRole("heading", {
+        name: "Which career do you want to try?",
+      }),
     ).toBeNull();
     expect(screen.queryByText(/requests stay on this page/i)).toBeNull();
     expect(
@@ -153,6 +158,90 @@ describe("site routes", () => {
     expect(
       screen.getAllByRole("link", { name: /explore careers/i }).length,
     ).toBeGreaterThan(0);
+  });
+
+  it("hero selection disables taking-shape CTA and supports arrow/Home/End keyboard selection", () => {
+    render(<LandingPage />);
+    const cards = Array.from(
+      document.querySelectorAll<HTMLButtonElement>(".home-hero-card"),
+    );
+    const heroAction = () => document.querySelector(".home-hero-actions");
+    expect(cards[0]).toHaveAttribute("aria-pressed", "true");
+    const [cyber, nurse, mechanical, , lawyer] = cards;
+    if (!cyber || !nurse || !mechanical || !lawyer)
+      throw new Error("Hero cards missing");
+    fireEvent.click(nurse);
+    expect(cards[1]).toHaveAttribute("aria-pressed", "true");
+    expect(heroAction()?.querySelector("button")).toBeDisabled();
+    expect(heroAction()?.querySelector('a[href="/start"]')).toBeNull();
+    fireEvent.keyDown(nurse, { key: "ArrowRight" });
+    expect(cards[2]).toHaveFocus();
+    expect(cards[2]).toHaveAttribute("aria-pressed", "true");
+    fireEvent.keyDown(mechanical, { key: "End" });
+    expect(cards[4]).toHaveFocus();
+    fireEvent.keyDown(lawyer, { key: "Home" });
+    expect(cards[0]).toHaveFocus();
+    expect(heroAction()?.querySelector('a[href="/start"]')).not.toBeNull();
+  });
+
+  it("hero introduction visits all five careers once then stops on Cyber", () => {
+    vi.useFakeTimers();
+    render(<LandingPage />);
+    const cards = document.querySelectorAll(".home-hero-card");
+    for (const index of [1, 2, 3, 4, 0]) {
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      });
+      expect(cards[index]).toHaveAttribute("aria-pressed", "true");
+    }
+    act(() => {
+      vi.advanceTimersByTime(20000);
+    });
+    expect(cards[0]).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it.each(["click", "focus", "keyboard", "pointer"])(
+    "hero %s permanently cancels introduction",
+    (interaction) => {
+      vi.useFakeTimers();
+      render(<LandingPage />);
+      const card = document.querySelector<HTMLButtonElement>(".home-hero-card");
+      if (!card) throw new Error("Hero card missing");
+      if (interaction === "click") fireEvent.click(card);
+      if (interaction === "focus") fireEvent.focus(card);
+      if (interaction === "keyboard") fireEvent.keyDown(card, { key: "Home" });
+      if (interaction === "pointer")
+        fireEvent.pointerDown(card, { isPrimary: true, button: 0 });
+      act(() => {
+        vi.advanceTimersByTime(20000);
+      });
+      expect(card).toHaveAttribute("aria-pressed", "true");
+    },
+  );
+
+  it("reduced motion has no introduction, but all careers remain selectable", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+      })),
+    );
+    render(<LandingPage />);
+    const cards = document.querySelectorAll(".home-hero-card");
+    act(() => {
+      vi.advanceTimersByTime(20000);
+    });
+    expect(cards[0]).toHaveAttribute("aria-pressed", "true");
+    const electrician = cards[3];
+    if (!electrician) throw new Error("Electrician card missing");
+    fireEvent.click(electrician);
+    expect(cards[3]).toHaveAttribute("aria-pressed", "true");
+    expect(document.querySelector(".home-hero-actions button")).toBeDisabled();
   });
 
   it("switcher CTA is career-aware and never launches cyber for other careers", () => {
@@ -206,17 +295,16 @@ describe("site routes", () => {
         .length,
     ).toBe(4);
     expect(
-      panelProvenance.filter((el) => /real product capture/i.test(el.textContent))
-        .length,
+      panelProvenance.filter((el) =>
+        /real product capture/i.test(el.textContent),
+      ).length,
     ).toBe(1);
     // Cyber leads both career systems: first hero card and first switcher tab.
     const heroCards = Array.from(
       document.querySelectorAll(".home-hero-card .home-hero-card-name"),
     );
     expect(heroCards[0]?.textContent).toBe("Cybersecurity Analyst");
-    const tabs = Array.from(
-      document.querySelectorAll(".home-career-tab-name"),
-    );
+    const tabs = Array.from(document.querySelectorAll(".home-career-tab-name"));
     expect(tabs[0]?.textContent).toBe("Cybersecurity Analyst");
     expect(screen.getAllByText(/playable now/i).length).toBeGreaterThan(0);
     expect(
@@ -296,8 +384,12 @@ describe("site routes", () => {
       }),
     );
     // Brief is ephemeral presentation between Arrive and Connecting — canonical briefing beats
-    expect(await screen.findByRole("heading", { name: /day one as a junior/i })).toBeVisible();
-    expect(screen.getByText(/walk the floor map into security operations/i)).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: /day one as a junior/i }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(/walk the floor map into security operations/i),
+    ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /continue to floor/i }));
     await waitFor(() => {
       expect(createSession).toHaveBeenCalledTimes(1);
@@ -350,12 +442,16 @@ describe("site routes", () => {
       screen.getByRole("button", { name: /start your first day/i }),
     );
     // Brief sits between Arrive and Connecting — still reaches sim after Continue
-    expect(await screen.findByRole("heading", { name: /day one as a junior/i })).toBeVisible();
+    expect(
+      await screen.findByRole("heading", { name: /day one as a junior/i }),
+    ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /continue to floor/i }));
     await waitFor(() => {
       expect(createSession).toHaveBeenCalledTimes(1);
     });
-    expect(screen.queryByRole("button", { name: /play arrival film/i })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /play arrival film/i }),
+    ).toBeNull();
   }, 15000);
 
   it("sets per-route document title", () => {

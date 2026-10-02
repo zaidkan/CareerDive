@@ -1,22 +1,24 @@
+import {
+  animate,
+  motion,
+  useMotionValue,
+  useMotionValueEvent,
+  useReducedMotion,
+  useScroll,
+} from "motion/react";
 import type { PublicCareer } from "../../careers/types.js";
 import {
   availabilityLabel,
   FIRST_SHIFT_DURATION_COMPACT,
 } from "../../careers/publicCopy.js";
 import { HOME_FAQ } from "../faqData.js";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 import { careers } from "../../careers/careers.js";
 import {
   ArtifactStage,
   ChapterSeparator,
   PublicChapter,
-  useChapterReveal,
+  MotionReveal,
   type MediaProvenance,
 } from "../ArtDirection.js";
 import { HandoffExcerpt } from "../careers/CareerWorkSamples.js";
@@ -235,147 +237,100 @@ const CAREER_SHOWCASE = [
 ] as const;
 
 /** One cycle through the detailed switcher (~4s each), then Cyber for good. */
-const CAREER_SWITCH_MS = 4000;
+// Scroll owns the career sequence; explicit selection takes control permanently.
 
 export function LandingPage() {
   const hasSeenFilm = useHasSeenFilm();
-  const heroRef = useChapterReveal<HTMLDivElement>();
-  const realWorkRef = useChapterReveal<HTMLDivElement>();
-  const shiftRef = useChapterReveal<HTMLDivElement>();
-  const handoffRef = useChapterReveal<HTMLDivElement>();
-  const careerRef = useChapterReveal<HTMLDivElement>();
-  const reflectRef = useChapterReveal<HTMLDivElement>();
-  const faqRef = useChapterReveal<HTMLDivElement>();
-  const finalRef = useChapterReveal<HTMLDivElement>();
+  const careerRef = useRef<HTMLElement>(null);
+  const reduceMotion = useReducedMotion();
+  const dragX = useMotionValue(0);
+  const pointerStart = useRef<{ x: number; y: number; id: number } | null>(
+    null,
+  );
+  const dragged = useRef(false);
+  const careerControlled = useRef(false);
+  const { scrollYProgress } = useScroll({
+    target: careerRef,
+    offset: ["start center", "end center"],
+  });
 
   const [evidence, setEvidence] = useState<EvidenceKey>("alert");
   // Hero cards: one finite rearrangement cycle, settling on Cyber.
   const [heroActive, setHeroActive] = useState(0);
   const [heroStep, setHeroStep] = useState(0);
   const [heroAuto, setHeroAuto] = useState(() => !prefersReducedMotion());
-  const [reduceMotion] = useState(() => prefersReducedMotion());
+
   const heroCardRefs = useRef(new Map<number, HTMLButtonElement>());
-  // Detailed switcher: one cycle starting on viewport entry, settling on Cyber.
+  // Detailed switcher: scroll sequence, overridden by deliberate selection.
   const [careerPanels, setCareerPanels] = useState(() => ({
     active: 0,
-    departing: null as number | null,
   }));
-  const [careerStep, setCareerStep] = useState(0);
-  const [careerAuto, setCareerAuto] = useState(false);
-  const careerAutoStarted = useRef(false);
-
-  // Visible card REARRANGEMENT via pure transforms (FLIP-style, CLS-safe): the
-  // cards keep their grid cells in the DOM and translate into the sequence's
-  // slots — the active card leads, the rest follow, easing into stable rest.
-  // Layout never moves, so there is no cumulative layout shift.
-  const syncHeroCards = useCallback(() => {
-    const cards = heroCardRefs.current;
-    const n = HERO_CARDS.length;
-    const home: ({ x: number; y: number } | null)[] = [];
-    for (let i = 0; i < n; i++) {
-      const el = cards.get(i);
-      // offsetLeft/Top is the transform-independent home cell of each card.
-      home[i] = el ? { x: el.offsetLeft, y: el.offsetTop } : null;
-    }
-    for (let i = 0; i < n; i++) {
-      const el = cards.get(i);
-      const from = home[i];
-      const t = reduceMotion ? i : (i - heroActive + n) % n;
-      const to = home[t];
-      if (!el || !from || !to) continue;
-      const dx = to.x - from.x;
-      const dy = to.y - from.y;
-      el.style.transform = dx || dy ? `translate(${String(dx)}px, ${String(dy)}px)` : "";
-    }
-  }, [heroActive, reduceMotion]);
-
-  useLayoutEffect(() => {
-    syncHeroCards();
-  }, [syncHeroCards]);
 
   useEffect(() => {
-    window.addEventListener("resize", syncHeroCards);
-    return () => {
-      window.removeEventListener("resize", syncHeroCards);
+    if (reduceMotion) setHeroAuto(false);
+  }, [reduceMotion]);
+
+  useEffect(() => {
+    const stop = () => {
+      setHeroAuto(false);
     };
-  }, [syncHeroCards]);
+    const events = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
+    for (const event of events)
+      document.addEventListener(event, stop, {
+        once: true,
+        passive: true,
+        capture: true,
+      });
+    const onVisibility = () => {
+      if (document.hidden) stop();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      for (const event of events)
+        document.removeEventListener(event, stop, true);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+
+  useMotionValueEvent(scrollYProgress, "change", (progress) => {
+    if (reduceMotion || careerControlled.current) return;
+    const index = Math.min(4, Math.floor(progress * 5));
+    setCareerPanels((current) =>
+      current.active === index ? current : { active: index },
+    );
+  });
 
   useEffect(() => {
-    if (!heroAuto) return;
+    if (!heroAuto || reduceMotion) return;
     const nextStep = heroStep + 1;
     if (nextStep > HERO_CARDS.length) {
       setHeroAuto(false);
       return;
     }
     const timer = window.setTimeout(() => {
-      setHeroActive((nextStep) % HERO_CARDS.length);
+      setHeroActive(nextStep % HERO_CARDS.length);
       setHeroStep(nextStep);
     }, HERO_CARD_STEP_MS);
     return () => {
       window.clearTimeout(timer);
     };
-  }, [heroAuto, heroStep]);
-
-  useEffect(() => {
-    const node = careerRef.current;
-    if (!node || typeof IntersectionObserver === "undefined") return;
-    if (prefersReducedMotion()) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0]?.isIntersecting) return;
-        observer.disconnect();
-        if (careerAutoStarted.current) return;
-        careerAutoStarted.current = true;
-        setCareerAuto(true);
-      },
-      { threshold: 0.35 },
-    );
-    observer.observe(node);
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!careerAuto) return;
-    const nextStep = careerStep + 1;
-    if (nextStep > CAREER_SHOWCASE.length) {
-      setCareerAuto(false);
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      setCareerPanels((current) => ({
-        active: nextStep % CAREER_SHOWCASE.length,
-        departing: current.active,
-      }));
-      setCareerStep(nextStep);
-    }, CAREER_SWITCH_MS);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [careerAuto, careerStep]);
-
-  useEffect(() => {
-    if (careerPanels.departing === null) return;
-    const timer = window.setTimeout(() => {
-      setCareerPanels((current) => ({ ...current, departing: null }));
-    }, 280);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [careerPanels.departing]);
+  }, [heroAuto, heroStep, reduceMotion]);
 
   const selectCareer = (index: number) => {
     setCareerPanels((current) =>
-      current.active === index
-        ? current
-        : { active: index, departing: current.active },
+      current.active === index ? current : { active: index },
     );
   };
 
   const startLabel = hasSeenFilm
     ? "Continue your first day"
     : "Start your first day";
+  const heroCareer = careers.find(
+    (item) => item.id === HERO_CARDS[heroActive]?.careerId,
+  );
+  const heroAction = heroCareer
+    ? careerAction(heroCareer)
+    : { kind: "disabled" as const, label: "Taking shape" };
   const activeShowcase =
     CAREER_SHOWCASE[careerPanels.active] ?? CAREER_SHOWCASE[0];
   const activeCareer = careers.find(
@@ -389,36 +344,79 @@ export function LandingPage() {
 
   return (
     <div className="v2-home">
-      <section className="home-hero" aria-labelledby="home-hero-title">
+      <section
+        className="home-hero"
+        aria-labelledby="home-hero-title"
+        onPointerDownCapture={() => {
+          setHeroAuto(false);
+        }}
+        onKeyDownCapture={() => {
+          setHeroAuto(false);
+        }}
+        onFocusCapture={() => {
+          setHeroAuto(false);
+        }}
+      >
         <PublicChapter
           as="div"
           surface="base"
           rhythm="expansive"
           className="home-hero-chapter"
         >
-          <div
-            ref={heroRef}
-            data-motion="chapter-reveal"
-            className="home-hero-grid ui-editorial-split"
-          >
+          <div className="home-hero-grid ui-editorial-split">
             <div className="home-hero-copy">
-              <h1 id="home-hero-title" data-motion-role="argument">
-                Know the work before you choose the career.
+              <h1 id="home-hero-title">
+                {"Know the work before you choose the career."
+                  .split(" ")
+                  .map((word, index) => (
+                    <motion.span
+                      key={`${word}-${String(index)}`}
+                      className="home-headline-word"
+                      initial={reduceMotion ? false : { opacity: 1, y: 0 }}
+                      animate={
+                        reduceMotion
+                          ? { opacity: 1, y: 0 }
+                          : { opacity: [0, 1], y: [12, 0] }
+                      }
+                      transition={{
+                        duration: 0.4,
+                        delay: index * 0.035,
+                        ease: [0.16, 1, 0.3, 1],
+                      }}
+                    >
+                      {word}
+                      {index < 8 ? " " : ""}
+                    </motion.span>
+                  ))}
               </h1>
               <p className="ui-type-proof">
                 You can read about a career — or step into its first shift.
               </p>
               <div className="home-hero-actions">
-                <SiteLink className="start-shift v2-primary" to="/start">
-                  {startLabel}
-                  <span aria-hidden="true"> ↗</span>
-                </SiteLink>
+                {heroAction.kind === "link" ? (
+                  <SiteLink
+                    className="start-shift v2-primary"
+                    to={heroAction.href}
+                  >
+                    {startLabel}
+                    <span aria-hidden="true"> ↗</span>
+                  </SiteLink>
+                ) : (
+                  <button
+                    type="button"
+                    className="start-shift v2-primary home-career-cta-disabled"
+                    disabled
+                  >
+                    Taking shape
+                  </button>
+                )}
                 <SiteLink className="v2-text-link" to="/careers">
                   Explore careers <span aria-hidden="true">→</span>
                 </SiteLink>
               </div>
               <p className="home-hero-meta">
-                <strong>{FIRST_SHIFT_DURATION_COMPACT}</strong> · one first shift
+                <strong>{FIRST_SHIFT_DURATION_COMPACT}</strong> · one first
+                shift
               </p>
             </div>
             <div data-motion-role="artifact" className="home-hero-stage">
@@ -426,11 +424,68 @@ export function LandingPage() {
                 className="home-hero-cards"
                 role="group"
                 aria-label="Careers at Career Expo"
-                onPointerDown={() => {
+                onFocusCapture={() => {
                   setHeroAuto(false);
                 }}
-                onKeyDown={() => {
+                onPointerDown={(event) => {
                   setHeroAuto(false);
+                  if (event.button > 0) return;
+                  dragged.current = false;
+                  pointerStart.current = {
+                    x: event.clientX,
+                    y: event.clientY,
+                    id: event.pointerId,
+                  };
+                }}
+                onPointerMove={(event) => {
+                  const start = pointerStart.current;
+                  if (!start || start.id !== event.pointerId) return;
+                  const dx = event.clientX - start.x;
+                  if (
+                    Math.abs(dx) < 10 ||
+                    Math.abs(dx) < Math.abs(event.clientY - start.y)
+                  )
+                    return;
+                  dragged.current = true;
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  if (!reduceMotion)
+                    dragX.set(Math.max(-60, Math.min(60, dx * 0.3)));
+                }}
+                onPointerUp={(event) => {
+                  const start = pointerStart.current;
+                  if (!start) return;
+                  const dx = event.clientX - start.x;
+                  if (dragged.current && Math.abs(dx) > 35) {
+                    setHeroActive((current) =>
+                      Math.max(0, Math.min(4, current + (dx < 0 ? 1 : -1))),
+                    );
+                  }
+                  pointerStart.current = null;
+                  if (reduceMotion) dragX.set(0);
+                  else
+                    void animate(dragX, 0, {
+                      type: "spring",
+                      stiffness: 260,
+                      damping: 28,
+                    });
+                }}
+                onPointerCancel={() => {
+                  pointerStart.current = null;
+                  dragX.set(0);
+                }}
+                onKeyDown={(event) => {
+                  setHeroAuto(false);
+                  let next = heroActive;
+                  if (event.key === "ArrowRight" || event.key === "ArrowDown")
+                    next = Math.min(4, heroActive + 1);
+                  else if (event.key === "ArrowLeft" || event.key === "ArrowUp")
+                    next = Math.max(0, heroActive - 1);
+                  else if (event.key === "Home") next = 0;
+                  else if (event.key === "End") next = 4;
+                  else return;
+                  event.preventDefault();
+                  setHeroActive(next);
+                  heroCardRefs.current.get(next)?.focus();
                 }}
               >
                 {HERO_CARDS.map((card, index) => {
@@ -440,11 +495,51 @@ export function LandingPage() {
                   if (!career) return null;
                   const emphasized = heroActive === index;
                   return (
-                    <button
+                    <motion.button
                       key={card.careerId}
                       type="button"
                       className="home-hero-card"
                       data-emphasis={emphasized ? "true" : "false"}
+                      data-slot={index}
+                      style={{
+                        x:
+                          emphasized && !reduceMotion
+                            ? dragX
+                            : (["6%", "-8%", "10%", "-4%", "2%"][index] ?? 0),
+                        zIndex: emphasized ? 6 : index + 1,
+                      }}
+                      initial={false}
+                      animate={{
+                        y: reduceMotion
+                          ? index === 0
+                            ? "50%"
+                            : 0
+                          : emphasized
+                            ? `${String([50, 24, -4, -32, -62][index] ?? 0)}%`
+                            : 0,
+                        rotate: reduceMotion
+                          ? index === 0
+                            ? 0
+                            : ([5, -4, 3, -2, 1][index] ?? 0)
+                          : emphasized
+                            ? 0
+                            : ([5, -4, 3, -2, 1][index] ?? 0),
+                        scale: reduceMotion
+                          ? index === 0
+                            ? 1.04
+                            : 0.96
+                          : emphasized
+                            ? 1.04
+                            : 0.96,
+                        opacity: emphasized
+                          ? 1
+                          : ([0.62, 0.75, 0.85, 0.92, 1][index] ?? 1),
+                      }}
+                      transition={
+                        reduceMotion
+                          ? { duration: 0 }
+                          : { type: "spring", stiffness: 190, damping: 27 }
+                      }
                       aria-pressed={emphasized}
                       ref={(el) => {
                         if (el) heroCardRefs.current.set(index, el);
@@ -452,14 +547,15 @@ export function LandingPage() {
                       }}
                       onClick={() => {
                         setHeroAuto(false);
+                        if (dragged.current) {
+                          dragged.current = false;
+                          return;
+                        }
                         setHeroActive(index);
                       }}
                     >
                       <span className="home-hero-card-surface">
-                        <span
-                          className="home-hero-card-cue"
-                          aria-hidden="true"
-                        >
+                        <span className="home-hero-card-cue" aria-hidden="true">
                           {card.cue}
                         </span>
                         <span className="home-hero-card-name">
@@ -472,9 +568,50 @@ export function LandingPage() {
                           {availabilityLabel(career.availability)}
                         </span>
                       </span>
-                    </button>
+                    </motion.button>
                   );
                 })}
+              </div>
+              <div
+                className="home-shelf-selectors"
+                role="group"
+                aria-label="Select a career"
+              >
+                {HERO_CARDS.map((card, index) => (
+                  <button
+                    key={card.careerId}
+                    type="button"
+                    aria-label={
+                      careers.find((career) => career.id === card.careerId)
+                        ?.title
+                    }
+                    aria-pressed={heroActive === index}
+                    onFocus={() => {
+                      setHeroAuto(false);
+                    }}
+                    onClick={() => {
+                      setHeroAuto(false);
+                      setHeroActive(index);
+                    }}
+                  >
+                    {card.cue}
+                  </button>
+                ))}
+              </div>
+              <p className="home-shelf-helper">
+                Pick one. See what the work feels like.
+              </p>
+              <div className="home-shelf-intro-control">
+                {heroAuto && !reduceMotion ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeroAuto(false);
+                    }}
+                  >
+                    Pause introduction
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>
@@ -492,9 +629,9 @@ export function LandingPage() {
           width="full"
           className="home-place-chapter"
         >
-          <div className="home-place-crop">
+          <MotionReveal className="home-place-crop" depth>
             <HomeMediaSlot slotId="home-media-arrival" eager />
-          </div>
+          </MotionReveal>
         </PublicChapter>
       </section>
 
@@ -505,58 +642,56 @@ export function LandingPage() {
           rhythm="stage"
           className="home-realwork-chapter"
         >
-          <div
-            ref={realWorkRef}
-            data-motion="chapter-reveal"
-            className="home-realwork-intro"
-          >
-            <h2 id="home-realwork-title" data-motion-role="argument">
-              Real work, not a job description.
-            </h2>
-            <p className="ui-type-proof">
-              One alert. A decision you have to justify.
-            </p>
-          </div>
-          <ArtifactStage
-            className="home-realwork-stage"
-            dominant={
-              <div className="home-evidence-views">
+          <MotionReveal>
+            <div className="home-realwork-intro">
+              <h2 id="home-realwork-title" data-motion-role="argument">
+                Real work, not a job description.
+              </h2>
+              <p className="ui-type-proof">
+                One alert. A decision you have to justify.
+              </p>
+            </div>
+            <ArtifactStage
+              className="home-realwork-stage"
+              dominant={
+                <div className="home-evidence-views">
+                  {EVIDENCE_VIEWS.map((view) => (
+                    <div key={view.key} hidden={evidence !== view.key}>
+                      <ProductCapture
+                        id={view.id}
+                        slot={view.slot}
+                        alt={view.alt}
+                      />
+                    </div>
+                  ))}
+                </div>
+              }
+              caption={activeEvidence.caption}
+            />
+            <div className="home-evidence-bar">
+              <div
+                className="home-evidence-swap"
+                role="group"
+                aria-label="Evidence views for alert A-1042"
+              >
                 {EVIDENCE_VIEWS.map((view) => (
-                  <div key={view.key} hidden={evidence !== view.key}>
-                    <ProductCapture
-                      id={view.id}
-                      slot={view.slot}
-                      alt={view.alt}
-                    />
-                  </div>
+                  <button
+                    key={view.key}
+                    type="button"
+                    aria-pressed={evidence === view.key}
+                    onClick={() => {
+                      setEvidence(view.key);
+                    }}
+                  >
+                    {view.label}
+                  </button>
                 ))}
               </div>
-            }
-            caption={activeEvidence.caption}
-          />
-          <div className="home-evidence-bar">
-            <div
-              className="home-evidence-swap"
-              role="group"
-              aria-label="Evidence views for alert A-1042"
-            >
-              {EVIDENCE_VIEWS.map((view) => (
-                <button
-                  key={view.key}
-                  type="button"
-                  aria-pressed={evidence === view.key}
-                  onClick={() => {
-                    setEvidence(view.key);
-                  }}
-                >
-                  {view.label}
-                </button>
-              ))}
+              <p className="home-evidence-note">
+                Actual product capture · synthetic records.
+              </p>
             </div>
-            <p className="home-evidence-note">
-              Actual product capture · synthetic records.
-            </p>
-          </div>
+          </MotionReveal>
         </PublicChapter>
       </section>
 
@@ -567,19 +702,28 @@ export function LandingPage() {
           rhythm="standard"
           className="home-shift-chapter"
         >
-          <div ref={shiftRef} data-motion="chapter-reveal">
+          <MotionReveal>
             <h2 id="home-shift-title" data-motion-role="argument">
               How a shift works
             </h2>
             <ol className="home-acts">
-              {SHIFT_ACTS.map((entry) => (
-                <li key={entry.act}>
+              {SHIFT_ACTS.map((entry, index) => (
+                <motion.li
+                  key={entry.act}
+                  initial={false}
+                  {...(typeof IntersectionObserver === "undefined" ||
+                  reduceMotion
+                    ? {}
+                    : { whileInView: { opacity: [0, 1], y: [12, 0] } })}
+                  viewport={{ once: true, amount: 0.1 }}
+                  transition={{ duration: 0.35, delay: index * 0.08 }}
+                >
                   <h3>{entry.act}</h3>
                   <p className="home-act-claim">{entry.claim}</p>
-                </li>
+                </motion.li>
               ))}
             </ol>
-          </div>
+          </MotionReveal>
         </PublicChapter>
       </section>
 
@@ -590,11 +734,7 @@ export function LandingPage() {
           rhythm="standard"
           className="home-handoff-chapter"
         >
-          <div
-            ref={handoffRef}
-            data-motion="chapter-reveal"
-            className="home-handoff-grid"
-          >
+          <MotionReveal className="home-handoff-grid">
             <div className="home-handoff-copy">
               <h2 id="home-handoff-title" data-motion-role="argument">
                 Your shift ends. The work does not.
@@ -607,11 +747,15 @@ export function LandingPage() {
             <div data-motion-role="artifact">
               <HandoffExcerpt />
             </div>
-          </div>
+          </MotionReveal>
         </PublicChapter>
       </section>
 
-      <section className="home-careers" aria-labelledby="home-careers-title">
+      <section
+        ref={careerRef}
+        className="home-careers"
+        aria-labelledby="home-careers-title"
+      >
         <PublicChapter
           as="div"
           surface="stage"
@@ -620,22 +764,20 @@ export function LandingPage() {
         >
           <div
             onPointerDown={() => {
-              careerAutoStarted.current = true;
-              setCareerAuto(false);
+              careerControlled.current = true;
             }}
             onKeyDown={() => {
-              careerAutoStarted.current = true;
-              setCareerAuto(false);
+              careerControlled.current = true;
             }}
           >
-            <div data-motion="chapter-reveal">
+            <MotionReveal>
               <h2 id="home-careers-title" data-motion-role="argument">
                 Different careers. Different work.
               </h2>
               <p className="ui-type-proof">
                 One playable now. Four taking shape.
               </p>
-            </div>
+            </MotionReveal>
             <div className="home-career-tabs" role="group" aria-label="Careers">
               {CAREER_SHOWCASE.map((entry, index) => {
                 const career = careers.find(
@@ -649,8 +791,7 @@ export function LandingPage() {
                     className="home-career-tab"
                     aria-pressed={careerPanels.active === index}
                     onClick={() => {
-                      careerAutoStarted.current = true;
-                      setCareerAuto(false);
+                      careerControlled.current = true;
                       selectCareer(index);
                     }}
                   >
@@ -662,24 +803,26 @@ export function LandingPage() {
                 );
               })}
             </div>
-            <div
-              className="home-career-stage"
-              data-motion="career-switch"
-              ref={careerRef}
-            >
+            <div className="home-career-stage" data-motion="career-switch">
               {CAREER_SHOWCASE.map((entry, index) => {
                 const career = careers.find(
                   (item) => item.id === entry.careerId,
                 );
                 if (!career) return null;
                 const state =
-                  index === careerPanels.active
-                    ? "active"
-                    : index === careerPanels.departing
-                      ? "departing"
-                      : "inactive";
+                  index === careerPanels.active ? "active" : "inactive";
                 return (
-                  <div
+                  <motion.div
+                    initial={false}
+                    animate={{
+                      opacity: state === "active" ? 1 : 0,
+                      y: state === "active" || reduceMotion ? 0 : 22,
+                      scale: state === "active" || reduceMotion ? 1 : 0.98,
+                    }}
+                    transition={{
+                      duration: reduceMotion ? 0 : 0.42,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
                     key={entry.careerId}
                     className="home-career-panel"
                     data-career={state}
@@ -698,7 +841,7 @@ export function LandingPage() {
                         ? "Real product capture · synthetic records"
                         : "Concept artwork · not a product capture"}
                     </span>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -751,23 +894,23 @@ export function LandingPage() {
           as="div"
           surface="chapter"
           rhythm="standard"
-          width="reading"
+          width="wide"
           className="home-reflect-chapter"
         >
-          <div ref={reflectRef} data-motion="chapter-reveal">
+          <MotionReveal>
             <h2 id="home-reflect-title" data-motion-role="argument">
               See how you worked.
             </h2>
             <p className="ui-type-proof">
               Not a score. A record of the calls you made.
             </p>
-            <div className="home-debrief-crop">
+            <MotionReveal className="home-debrief-crop" depth>
               <ProductCapture
                 id="a-10"
                 slot="home-debrief-reflection"
                 alt="Product capture: one decision block from the shift debrief, reviewing what happened and what stayed uncertain."
               />
-            </div>
+            </MotionReveal>
             <p className="home-media-note">
               Shift debrief · actual product capture, synthetic records
             </p>
@@ -776,7 +919,7 @@ export function LandingPage() {
                 Privacy and safety <span aria-hidden="true">→</span>
               </SiteLink>
             </p>
-          </div>
+          </MotionReveal>
         </PublicChapter>
       </section>
 
@@ -789,7 +932,7 @@ export function LandingPage() {
           rhythm="compact"
           className="home-faq-chapter"
         >
-          <div ref={faqRef} data-motion="chapter-reveal">
+          <MotionReveal>
             <h2 id="home-faq-title" data-motion-role="argument">
               Questions, answered plainly.
             </h2>
@@ -806,7 +949,7 @@ export function LandingPage() {
                 More questions <span aria-hidden="true">→</span>
               </SiteLink>
             </p>
-          </div>
+          </MotionReveal>
         </PublicChapter>
       </section>
 
@@ -818,11 +961,7 @@ export function LandingPage() {
           width="wide"
           className="home-final-chapter"
         >
-          <div
-            ref={finalRef}
-            data-motion="chapter-reveal"
-            className="home-final-inner"
-          >
+          <MotionReveal className="home-final-inner">
             <h2 id="home-final-title" data-motion-role="argument">
               One short day. One real first shift.
             </h2>
@@ -839,7 +978,7 @@ export function LandingPage() {
                 Explore careers <span aria-hidden="true">→</span>
               </SiteLink>
             </div>
-          </div>
+          </MotionReveal>
         </PublicChapter>
       </section>
     </div>
