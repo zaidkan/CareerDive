@@ -53,11 +53,11 @@ export function CareersPage() {
     <div className="careers-page-v4">
       {/* 1. HERO */}
       <PublicChapter surface="base" rhythm="expansive" width="full" className="cp-hero">
-        <MotionReveal className="cp-hero-content">
+        <MotionReveal amount={0.4} margin="0px 0px -120px 0px" className="cp-hero-content">
           <h1 className="ui-type-display">Explore careers through the work</h1>
           <p className="ui-type-lede">1 playable now. 4 taking shape.</p>
         </MotionReveal>
-        <MotionReveal delay={0.08}>
+        <MotionReveal amount={0.4} margin="0px 0px -120px 0px" delay={0.08}>
         <ArtifactStage
           emphasis="center"
           provenance={{ career: "Cybersecurity Analyst", kind: "real" }}
@@ -70,7 +70,7 @@ export function CareersPage() {
 
       {/* 2. PLAYABLE NOW */}
       <PublicChapter surface="base" rhythm="stage" width="wide" className="cp-playable-now">
-        <MotionReveal className="cp-chapter-head">
+        <MotionReveal amount={0.4} margin="0px 0px -120px 0px" className="cp-chapter-head">
           <h2 className="ui-type-h1" id="playable-now-heading">Playable now</h2>
           <h3 className="ui-type-h2">{cyber?.title || "Cybersecurity Analyst"}</h3>
           <p className="ui-type-body-large">{cyber?.shortSummary}</p>
@@ -79,7 +79,7 @@ export function CareersPage() {
             {cyber && <SiteLink to={careerPath(cyber)} className="button-secondary" aria-label={`${cyber.title} details`}>View career</SiteLink>}
           </div>
         </MotionReveal>
-        <MotionReveal delay={0.08}>
+        <MotionReveal amount={0.4} margin="0px 0px -120px 0px" delay={0.08}>
         <ArtifactStage
           emphasis="center"
           provenance={{ career: "Cybersecurity Analyst", kind: "real" }}
@@ -92,7 +92,7 @@ export function CareersPage() {
 
       {/* 3. TAKING SHAPE */}
       <PublicChapter surface="base" rhythm="expansive" width="wide" className="cp-taking-shape">
-        <MotionReveal className="cp-chapter-head">
+        <MotionReveal amount={0.4} margin="0px 0px -120px 0px" className="cp-chapter-head">
           <h2 className="ui-type-h1">Taking shape</h2>
           <p className="ui-type-body-large cp-honesty-note">
             These roles show the kinds of decisions you'll make — previews only, for now.
@@ -102,7 +102,7 @@ export function CareersPage() {
 
         <div className="cp-workshop-stack">
           {/* RN */}
-          <MotionReveal as="article" className="cp-workshop-career" aria-labelledby="rn-heading">
+          <MotionReveal amount={0.4} margin="0px 0px -120px 0px" as="article" className="cp-workshop-career" aria-labelledby="rn-heading">
             <div className="cp-workshop-info">
               <h3 id="rn-heading" className="ui-type-h2">{rn?.title}</h3>
               <p className="ui-type-body">{rn?.shortSummary}</p>
@@ -116,7 +116,7 @@ export function CareersPage() {
           </MotionReveal>
 
           {/* Mechanical */}
-          <MotionReveal as="article" className="cp-workshop-career" aria-labelledby="mech-heading" delay={0.08}>
+          <MotionReveal amount={0.4} margin="0px 0px -120px 0px" as="article" className="cp-workshop-career" aria-labelledby="mech-heading" delay={0.08}>
             <div className="cp-workshop-info">
               <h3 id="mech-heading" className="ui-type-h2">{mech?.title}</h3>
               <p className="ui-type-body">{mech?.shortSummary}</p>
@@ -130,7 +130,7 @@ export function CareersPage() {
           </MotionReveal>
 
           {/* Electrician */}
-          <MotionReveal as="article" className="cp-workshop-career" aria-labelledby="elec-heading" delay={0.16}>
+          <MotionReveal amount={0.4} margin="0px 0px -120px 0px" as="article" className="cp-workshop-career" aria-labelledby="elec-heading" delay={0.16}>
             <div className="cp-workshop-info">
               <h3 id="elec-heading" className="ui-type-h2">{elec?.title}</h3>
               <p className="ui-type-body">{elec?.shortSummary}</p>
@@ -144,7 +144,7 @@ export function CareersPage() {
           </MotionReveal>
 
           {/* Lawyer */}
-          <MotionReveal as="article" className="cp-workshop-career" aria-labelledby="law-heading" delay={0.24}>
+          <MotionReveal amount={0.4} margin="0px 0px -120px 0px" as="article" className="cp-workshop-career" aria-labelledby="law-heading" delay={0.24}>
             <div className="cp-workshop-info">
               <h3 id="law-heading" className="ui-type-h2">{law?.title}</h3>
               <p className="ui-type-body">{law?.shortSummary}</p>

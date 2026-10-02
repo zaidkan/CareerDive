@@ -15,6 +15,8 @@ export function MotionReveal({
   depth = false,
   delay = 0,
   as = "div",
+  amount = 0.2,
+  margin = "0px",
   "aria-labelledby": labelledBy,
 }: {
   children: ReactNode;
@@ -22,10 +24,13 @@ export function MotionReveal({
   depth?: boolean;
   delay?: number;
   as?: "div" | "article";
+  amount?: number;
+  margin?: string;
   "aria-labelledby"?: string;
 }) {
   const reduced = useReducedMotion();
   const controls = useAnimationControls();
+  const revealed = useRef(false);
   const Element = as === "article" ? motion.article : motion.div;
   useEffect(() => {
     if (reduced) controls.set({ opacity: 1, y: 0, scale: 1 });
@@ -36,12 +41,13 @@ export function MotionReveal({
       aria-labelledby={labelledBy}
       initial={false}
       animate={controls}
-      viewport={{ once: true, amount: 0.2 }}
+      viewport={{ once: true, amount, margin }}
       {...(typeof IntersectionObserver === "undefined"
         ? {}
         : {
             onViewportEnter: () => {
-              if (reduced) return;
+              if (reduced || revealed.current) return;
+              revealed.current = true;
               void controls.start({
                 opacity: [0, 1],
                 y: [depth ? 32 : 28, 0],

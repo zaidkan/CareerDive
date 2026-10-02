@@ -260,6 +260,119 @@ function ShiftStep({
   );
 }
 
+// Verbatim excerpts from the existing synthetic handoff and A-1042 alert.
+const SHIFT_WORK = [
+  {
+    title: "Start with the handoff",
+    text: "Still watching the unfamiliar login thread. Did not finish device inventory check.",
+  },
+  {
+    title: "Check the sign-in",
+    text: "Repeated failures were followed by a successful sign-in from an unfamiliar network.",
+  },
+  {
+    title: "Leave a clear handoff",
+    text: "The location estimate is only a lead; I have not confirmed who signed in.",
+  },
+] as const;
+
+function ShiftWorkState({
+  index,
+  progress,
+  active,
+}: {
+  index: number;
+  progress: MotionValue<number>;
+  active: boolean;
+}) {
+  const reduced = useReducedMotion();
+  const distance = useTransform(progress, (value) => index - value * 2);
+  // The shared case stays in place; one readable context passes to the next.
+  const opacity = useTransform(
+    distance,
+    [-0.5, -0.35, 0, 0.35, 0.5],
+    [0, 1, 1, 1, 0],
+  );
+  const y = useTransform(
+    distance,
+    [-1, 0, 1],
+    [-storyDistance(28), 0, storyDistance(28)],
+  );
+  const scale = useTransform(distance, [-1, 0, 1], [0.96, 1, 0.97]);
+  const work = SHIFT_WORK[index];
+  if (!work) return null;
+  return (
+    <motion.div
+      className="home-shift-work-state"
+      data-shift-step={index}
+      aria-hidden={!active}
+      style={reduced ? { opacity: active ? 1 : 0 } : { opacity, y, scale }}
+    >
+      <h3>{work.title}</h3>
+      <blockquote>{work.text}</blockquote>
+      {index === 1 && (
+        <p className="home-shift-evidence">
+          6 failed identity checks <span aria-hidden="true">→</span> 1
+          successful sign-in
+        </p>
+      )}
+    </motion.div>
+  );
+}
+
+function ShiftWorkPanel({ progress }: { progress: MotionValue<number> }) {
+  const reduced = useReducedMotion();
+  const [active, setActive] = useState(0);
+  const current = useRef(0);
+  useMotionValueEvent(progress, "change", (value) => {
+    if (reduced) return;
+    const next = Math.min(2, Math.round(value * 2));
+    if (current.current !== next) {
+      current.current = next;
+      setActive(next);
+    }
+  });
+  return (
+    <figure
+      className="home-shift-proof"
+      aria-label="A-1042 from brief to handoff"
+    >
+      <figcaption>Alert A-1042 · Open sign-in item</figcaption>
+      <div className="home-shift-work-states">
+        {SHIFT_WORK.map((work, index) => (
+          <ShiftWorkState
+            key={work.title}
+            index={index}
+            active={active === index}
+            progress={progress}
+          />
+        ))}
+      </div>
+      <p className="home-media-note">Excerpts from synthetic work records</p>
+      {reduced && (
+        <div
+          className="home-shift-context-controls"
+          role="group"
+          aria-label="Shift work context"
+        >
+          {SHIFT_ACTS.map((step, index) => (
+            <button
+              key={step.act}
+              type="button"
+              aria-pressed={active === index}
+              onClick={() => {
+                setActive(index);
+              }}
+            >
+              {step.act}
+            </button>
+          ))}
+        </div>
+      )}
+    </figure>
+  );
+}
+
 function CareerDepth({
   index,
   progress,
@@ -825,16 +938,19 @@ export function LandingPage() {
             <p className="ui-type-proof">
               Real work keeps moving after your shift ends.
             </p>
-            <ol className="home-acts">
-              {SHIFT_ACTS.map((entry, index) => (
-                <ShiftStep
-                  key={entry.act}
-                  entry={entry}
-                  index={index}
-                  progress={shiftProgress}
-                />
-              ))}
-            </ol>
+            <div className="home-shift-grid">
+              <ol className="home-acts">
+                {SHIFT_ACTS.map((entry, index) => (
+                  <ShiftStep
+                    key={entry.act}
+                    entry={entry}
+                    index={index}
+                    progress={shiftProgress}
+                  />
+                ))}
+              </ol>
+              <ShiftWorkPanel progress={shiftProgress} />
+            </div>
           </div>
         </PublicChapter>
       </section>

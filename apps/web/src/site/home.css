@@ -770,3 +770,111 @@
 .home-start-motion .v2-primary:is(:hover, :active) {
   transform: none;
 }
+
+/* One shared work record fills the flow's right side; its context follows focus. */
+.home-shift-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  align-items: center;
+  gap: 3rem;
+  margin-top: 2rem;
+}
+.home-shift-grid .home-acts {
+  margin: 0;
+}
+.home-shift-proof {
+  min-width: 0;
+  margin: 0;
+  padding: clamp(1.4rem, 2.5vw, 2rem);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-subtle);
+}
+.home-shift-proof figcaption {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.home-shift-work-states {
+  display: grid;
+  margin-top: 1.25rem;
+}
+.home-shift-work-state {
+  grid-area: 1 / 1;
+  transform-origin: center;
+}
+.home-shift-work-state[aria-hidden="true"] {
+  pointer-events: none;
+}
+.home-shift-work-state h3 {
+  margin: 0 0 1rem;
+  color: var(--text-primary);
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+  line-height: 1.2;
+}
+.home-shift-work-state blockquote {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.22rem;
+  line-height: 1.5;
+}
+.home-shift-work-state .home-shift-evidence {
+  margin: 1rem 0 0;
+  font-size: 1rem;
+}
+.home-shift-context-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+.home-shift-context-controls button {
+  min-height: 36px;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--surface-base);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.home-shift-context-controls button[aria-pressed="true"] {
+  border-color: var(--action-primary);
+  color: var(--text-primary);
+}
+@media (max-width: 834px) {
+  .home-shift-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 1.4rem;
+  }
+  .home-shift-grid .home-acts {
+    gap: 0.65rem;
+  }
+  .home-shift-grid .home-act-claim {
+    display: none;
+  }
+  .home-shift-grid .home-acts h3 {
+    font-size: 1.45rem;
+  }
+  .home-shift-work-state blockquote {
+    font-size: 1.12rem;
+  }
+  .home-shift-proof {
+    padding: 1.2rem;
+  }
+  .home-shift-proof figcaption {
+    font-size: 0.92rem;
+    padding-bottom: 0.6rem;
+  }
+  .home-shift-work-states {
+    margin-top: 0.85rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-shift-grid .home-act-claim {
+    display: block;
+  }
+}

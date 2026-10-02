@@ -12,34 +12,40 @@ describe("trust page proof", () => {
     const { container } = render(<TrustPage />);
     expect(
       screen.getByRole("heading", {
-        name: "Collect less. Explain exactly what remains.",
+        name: "Privacy and safety",
       }),
     ).toBeVisible();
     for (const heading of [
-      "What we keep",
-      "Your controls",
-      "How access is protected",
-      "What AI can and cannot do",
-      "No grades. No fit score.",
-      "Current school-use status",
+      "What we collect",
+      "Why we use it",
+      "What we do not do",
+      "Services and processors",
+      "Retention",
+      "AI and generated content",
+      "Safety and reporting",
+      "Questions and controls",
     ]) {
       expect(screen.getByRole("heading", { name: heading })).toBeVisible();
     }
-    expect(
-      screen.getByRole("list", { name: "How first-shift data moves" }).children,
-    ).toHaveLength(3);
     expect(container.textContent).toContain("not yet self-service controls");
     expect(container.textContent).toContain(
-      "not currently built for institutional enrollment",
+      "institutional enrollment is not supported",
     );
+    expect(container.textContent).toContain(
+      "Persistent report storage is not implemented",
+    );
+    expect(container.textContent).toContain(
+      "There is no single fixed retention period",
+    );
+    expect(container.textContent).toContain("To be confirmed before launch");
     expect(container.textContent).not.toMatch(
       /Verdaly (?:stores|remembers|keeps)|only you can ever|delete your account.*everything/i,
     );
   });
 
-  it("keeps source excerpts secondary and matched to repository proof", () => {
+  it("keeps access limits secondary and vendor claims matched to repository proof", () => {
     render(<TrustPage />);
-    fireEvent.click(screen.getByText("See how this works"));
+    fireEvent.click(screen.getByText("Access and data-control details"));
     const sql = readFileSync("apps/server/drizzle/0001_initial.sql", "utf8");
     const evidenceTest = readFileSync(
       "packages/evidence/test/evidence.test.ts",
@@ -58,7 +64,14 @@ describe("trust page proof", () => {
     );
     expect(ai).toContain("speakerMayKnow(fact, npcId)");
     expect(
-      screen.getByText(/CREATE POLICY simulation_sessions_owner_all/),
+      screen.getByText(/database protection depends on correct deployment/),
     ).toBeVisible();
+    const server = readFileSync("apps/server/src/main.ts", "utf8");
+    const deployment = readFileSync("render.yaml", "utf8");
+    expect(server).toContain("ANTHROPIC_API_KEY");
+    expect(server).toContain("SUPABASE_URL");
+    expect(deployment).toContain("type: web");
+    expect(screen.getByText("Anthropic")).toBeVisible();
+    expect(screen.getByText("Supabase")).toBeVisible();
   });
 });
