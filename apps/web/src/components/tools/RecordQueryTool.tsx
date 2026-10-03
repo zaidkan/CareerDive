@@ -245,12 +245,14 @@ export function RecordQueryTool({
   return (
     <section aria-label="Record search" className="record-query-tool">
       <div className="rq-head">
-        <p className="eyebrow">Investigate · structured records</p>
         <h3>Record search</h3>
-        <p className="rq-subtle">
-          Search operational records by dataset and field. Results reflect the
-          records on file, including empty ones. Adjust filters and run again.
-        </p>
+        <details className="work-detail-help">
+          <summary>Search help</summary>
+          <p className="rq-subtle">
+            Search operational records by dataset and field. Results reflect the
+            records on file, including empty ones. Adjust filters and run again.
+          </p>
+        </details>
       </div>
 
       <form

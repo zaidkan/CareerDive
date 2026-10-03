@@ -208,9 +208,10 @@ function EventTaskPanel({
             </ul>
           </section>
         ) : null}
-        <p>
-          <strong>Why this matters:</strong> {task.whyItMatters}
-        </p>
+        <details className="work-detail-help">
+          <summary>Why this matters</summary>
+          <p>{task.whyItMatters}</p>
+        </details>
         <button
           className="action-primary"
           disabled={

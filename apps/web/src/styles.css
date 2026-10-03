@@ -1,108 +1,18 @@
-:root {
-  --ink: #0d0f12;
-  --ink-lift: #14171b;
-  --desk: #16191d;
-  --panel: #1e2227;
-  --line: #2a2f36;
-  --line-bright: #3d444d;
-  --phosphor: #6ea8fe;
-  --phosphor-dim: #9aa0a6;
-  --signal: #2dd4bf;
-  --signal-hot: #f26d5f;
-  --paper: #e6e8eb;
-  --paper-ink: #17191d;
-  --fog: #c3c9d1;
-  --mute: #9aa0a6;
-  --ok: #34d399;
-  --cta: #2563eb;
-  --cta-hover: #1d4ed8;
-  --mode-surface: #17302d;
-  --mode-ink: #dce9e4;
-  --mode-line: #8aa69e;
-  --mode-active-bg: #f3d47a;
-  --mode-active-ink: #152b27;
-  --font-display: "Syne", "DM Sans", system-ui, sans-serif;
-  --font-body: "DM Sans", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --shadow-soft: 0 1px 2px rgb(0 0 0 / 18%);
-  --shadow-lift: 0 10px 28px rgb(0 0 0 / 28%);
-  --grid: rgb(255 255 255 / 7%);
-  color: var(--fog);
-  background: var(--ink);
-  font-family: var(--font-body);
-  font-synthesis: none;
-  line-height: 1.55;
-  font-size: 16px;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* Light warm theme. Dark SOC remains default; toggle sets data-theme="light". */
-:root[data-theme="light"] {
-  --ink: #faf6ef;
-  --ink-lift: #f3ecdf;
-  --desk: #fffdf8;
-  --panel: #ffffff;
-  --line: #e3d9c7;
-  --line-bright: #c9bda6;
-  --phosphor: #1d4ed8;
-  --phosphor-dim: #5b6470;
-  --signal: #0f766e;
-  --signal-hot: #b91c1c;
-  --paper: #1c1917;
-  --paper-ink: #1c1917;
-  --fog: #44403c;
-  --mute: #57534e;
-  --ok: #047857;
-  --cta: #1d4ed8;
-  --cta-hover: #1e40af;
-  --mode-surface: #fffdf8;
-  --mode-ink: #1c1917;
-  --mode-line: #a8a29e;
-  --mode-active-bg: #1c1917;
-  --mode-active-ink: #faf6ef;
-  --shadow-soft: 0 1px 2px rgb(28 25 23 / 10%);
-  --shadow-lift: 0 10px 28px rgb(28 25 23 / 14%);
-  --grid: rgb(28 25 23 / 7%);
+/* Simulation-only compatibility names; foundation.css owns semantic colors,
+   fonts and radii. Loading this sheet must not redefine the public palette. */
+.simulation-main {
+  --paper-ink: var(--text-primary);
+  --ok: var(--status-success-fg);
+  --cta-hover: var(--action-primary);
+  --mode-surface: var(--surface-base);
+  --mode-ink: var(--text-primary);
+  --mode-line: var(--border-strong);
+  --mode-active-bg: var(--action-primary);
+  --mode-active-ink: var(--action-on-primary);
 }
 
 * {
   box-sizing: border-box;
-}
-
-html,
-body {
-  overflow-x: clip;
-}
-
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background:
-    linear-gradient(180deg, #111418 0%, var(--ink) 45%, #0a0c0e 100%);
-  background-attachment: fixed;
-}
-
-:root[data-theme="light"] body {
-  background:
-    linear-gradient(180deg, #fffdf8 0%, var(--ink) 55%, #f3ecdf 100%);
-  background-attachment: fixed;
 }
 
 /* Light-theme surface corrections: keep dark gradients from washing out ink text. */
@@ -569,12 +479,12 @@ section[aria-labelledby="structured-title"],
 
 .queue-item[data-priority="high"] .sev,
 .queue-item[data-priority="urgent"] .sev {
-  background: var(--signal-hot);
-  box-shadow: 0 0 10px rgb(255 107 74 / 40%);
+  background: var(--status-warning-fg);
+  box-shadow: none;
 }
 
 .queue-item[data-priority="low"] .sev {
-  background: var(--ok);
+  background: var(--text-muted);
 }
 
 .queue-item .queue-body {
@@ -698,71 +608,7 @@ section[aria-labelledby="structured-title"],
 
 .tool-panel[data-system="alert_dashboard"] .artifact-list button {
   font-family: var(--font-mono);
-  border-left: 3px solid var(--signal-hot);
-}
-
-.tool-panel[data-system="email"] .artifact-detail {
-  background: #f4f6f8;
-  color: var(--paper-ink);
-  border-color: #d4d9de;
-  border-radius: 8px;
-  box-shadow:
-    0 1px 2px rgb(0 0 0 / 30%),
-    0 8px 24px rgb(0 0 0 / 25%);
-}
-
-.tool-panel[data-system="email"] .artifact-detail .eyebrow,
-.tool-panel[data-system="email"] .artifact-detail h4,
-.tool-panel[data-system="email"] .artifact-detail p,
-.tool-panel[data-system="email"] .artifact-body {
-  color: var(--paper-ink);
-}
-
-.tool-panel[data-system="email"] .artifact-body {
-  background: #efe0bd;
-  border: 1px dashed #b9a27a;
-}
-
-.tool-panel[data-system="ticket_queue"] .artifact-detail {
-  border: 2px solid var(--line-bright);
-  background:
-    radial-gradient(
-      circle at 92% 12%,
-      rgb(110 168 254 / 20%),
-      transparent 2.2rem
-    ),
-    var(--panel);
-}
-
-.tool-panel[data-system="ticket_queue"] .artifact-detail::after {
-  content: "CASE";
-  position: absolute;
-  top: 0.85rem;
-  right: 0.85rem;
-  padding: 0.2rem 0.45rem;
-  border: 2px solid var(--signal-hot);
-  color: var(--signal-hot);
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.2em;
-  opacity: 0.7;
-  transform: rotate(8deg);
-}
-
-.tool-panel[data-system="ticket_queue"] .artifact-detail {
-  position: relative;
-}
-
-.tool-panel[data-system="knowledge_base"] .artifact-detail {
-  border-style: double;
-  border-width: 4px;
-  background: #17120f;
-}
-
-.tool-panel[data-system="team_chat"] .artifact-detail {
-  border-color: var(--signal);
-  background: #0f1716;
-  box-shadow: inset 0 0 30px rgb(79 208 200 / 8%);
+  border-color: var(--status-warning-fg);
 }
 
 .artifact-list {
@@ -1015,7 +861,7 @@ section[aria-labelledby="structured-title"],
 .kb-search input {
   width: 100%;
   border: 1px solid var(--line-bright);
-  background: #120e0b;
+  background: var(--surface-base);
   color: var(--paper);
   padding: 0.8rem;
   font-family: var(--font-body);
@@ -1031,7 +877,7 @@ section[aria-labelledby="structured-title"],
       transparent 1.45rem,
       rgb(110 168 254 / 8%) 1.46rem
     ),
-    #120e0b;
+    var(--surface-base);
   line-height: 1.5rem;
 }
 
@@ -1060,7 +906,7 @@ section[aria-labelledby="structured-title"],
   padding: 0.9rem 1rem;
   border: 1px solid var(--line-bright);
   color: var(--paper);
-  background: linear-gradient(180deg, #2a1f18, #1a130f);
+  background: var(--surface-raised);
   text-align: left;
   cursor: pointer;
   font-family: var(--font-body);
@@ -1069,14 +915,14 @@ section[aria-labelledby="structured-title"],
 }
 
 .action-primary {
-  border-color: var(--phosphor) !important;
-  background: linear-gradient(
-    180deg,
-    rgb(110 168 254 / 22%),
-    #2a1f18
-  ) !important;
-  box-shadow: 0 0 0 1px rgb(110 168 254 / 20%);
+  border-color: var(--action-primary);
+  background: var(--action-primary);
+  color: var(--action-on-primary);
+  box-shadow: none;
 }
+.context-actions .action-primary small,
+.context-actions .action-primary .action-time,
+.action-primary .action-time { color: var(--action-on-primary); }
 
 .more-actions {
   border: 1px dashed var(--line-bright);
@@ -1119,7 +965,7 @@ section[aria-labelledby="structured-title"],
 }
 
 .action-time {
-  color: var(--signal) !important;
+  color: inherit;
 }
 
 .workplace-shell .activity-log {
@@ -3843,16 +3689,14 @@ section[aria-labelledby="structured-title"],
   text-align: right;
 }
 
-.mutation-status-pending,
-.mutation-status-success {
-  color: var(--phosphor);
-}
+.mutation-status-pending { color: var(--status-info-fg); }
+.mutation-status-success { color: var(--status-success-fg); }
 
 .mutation-status-error {
   display: flex;
   gap: 0.45rem;
   align-items: center;
-  color: #f49a8e;
+  color: var(--status-danger-fg);
 }
 
 .mutation-status-error:focus,
@@ -4034,7 +3878,7 @@ section[aria-labelledby="structured-title"],
 
 .desk-os-error {
   margin: 0;
-  color: #f49a8e;
+  color: var(--status-danger-fg);
   font-size: 0.78rem;
 }
 
@@ -5626,7 +5470,7 @@ section[aria-labelledby="structured-title"],
 }
 
 .case-rail-item[data-priority="high"] {
-  border-left: 3px solid var(--signal-hot);
+  border-color: var(--status-warning-fg);
 }
 
 .work-notification {

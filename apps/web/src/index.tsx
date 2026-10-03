@@ -26,6 +26,7 @@ import {
   workplaceMutationKey,
 } from "./useMutationCoordinator.js";
 import "./styles.css";
+import "./desk-os-polish.css";
 import { readTabValue, writeTabValue } from "./useTabDraft.js";
 // Route changes retain the pending creation promise as well as its confirmed session.
 const liveSessions = new WeakMap<
@@ -390,7 +391,7 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
   }
 
   return (
-    <main>
+    <main className="simulation-main">
       <header className="site-header">
         <div className="site-brand">
           <p className="brand-mark">Career Expo</p>

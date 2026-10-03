@@ -1,0 +1,778 @@
+/* Operate surface: semantic colors from foundation.css, one compact spacing
+   rhythm. Public pages never match these selectors. */
+.simulation-main,
+.desk-os {
+  --work-inset: 1.25rem;
+  --source-surface: var(--surface-base);
+  --source-border: var(--border-strong);
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+}
+.simulation-main :is(input, textarea, select) {
+  caret-color: var(--action-primary);
+}
+.simulation-main :is(button, input, textarea, select, summary):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+.simulation-main :is(button, input, textarea, select):disabled {
+  cursor: not-allowed;
+}
+.simulation-main .action-primary {
+  background: var(--action-primary);
+  color: var(--action-on-primary);
+  border-color: var(--action-primary);
+  border-radius: var(--radius-sm);
+  font-weight: 650;
+}
+.simulation-main .action-primary :is(small, .action-time) {
+  color: var(--action-on-primary);
+}
+.simulation-main .action-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+  box-shadow: none;
+}
+.simulation-main :is(.notes-editor textarea, .kb-search input) {
+  background: var(--surface-base);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  line-height: 1.6;
+}
+.simulation-main .notes-editor textarea {
+  background-image: none;
+}
+.simulation-main .mutation-status-error {
+  color: var(--status-danger-fg);
+}
+.simulation-main .mutation-status-success {
+  color: var(--status-success-fg);
+}
+.simulation-main .room-hud-route {
+  pointer-events: auto;
+  margin-top: 0.65rem;
+}
+.simulation-main .room-hud-route summary {
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  padding-block: 0.35rem;
+}
+.simulation-main .room-desk-hud {
+  background: var(--surface-base);
+  color: var(--text-primary);
+}
+.simulation-main .room-desk-hud p {
+  margin-block: 0.3rem;
+}
+.simulation-main .room-hud-brief {
+  background: var(--surface-base);
+  color: var(--text-primary);
+  padding: 1rem 1.25rem;
+}
+.simulation-main .room-hud-count {
+  color: var(--text-muted);
+}
+.threshold-brief-guidance {
+  margin-block: 1rem;
+}
+.threshold-brief-guidance summary {
+  cursor: pointer;
+  padding-block: 0.5rem;
+  font-weight: 600;
+}
+.threshold-brief-guidance p {
+  margin-top: 0.75rem;
+}
+
+/* Window identity and focus stay visible in a multi-window workspace. */
+.desk-os .os-window-frame {
+  border-radius: var(--radius-md);
+  border-color: var(--border-strong);
+  background: var(--surface-base);
+}
+.desk-os .os-window-frame-active {
+  border-color: var(--action-primary);
+}
+.desk-os .os-window-frame-active .os-window-bar {
+  background: var(--status-info-bg);
+  box-shadow: inset 0 2px 0 var(--action-primary);
+}
+.desk-os .os-window-bar {
+  background: var(--surface-subtle);
+}
+.desk-os .os-window-bar-main {
+  padding: 0.5rem 0.75rem;
+  gap: 0.75rem;
+}
+.desk-os .os-window-controls {
+  gap: 0.25rem;
+}
+.desk-os .os-window-control {
+  min-height: 1.75rem;
+}
+.desk-os .os-window-body {
+  container-type: inline-size;
+}
+.desk-os :is(.os-browser-bar, .os-bookmarks, .os-toolbar) {
+  padding: 0.5rem 0.75rem;
+  gap: 0.5rem;
+}
+.desk-os .os-bookmark {
+  border-radius: var(--radius-sm);
+}
+.desk-os .os-desktop {
+  background: var(--surface-subtle);
+}
+.desk-os :is(.os-bookmark-active, .os-taskbar-btn-active, .desk-os-tab-active) {
+  background: var(--status-info-bg);
+  color: var(--action-primary);
+  border-color: var(--action-primary);
+  box-shadow: none;
+}
+.desk-os .desk-os-tab-target:not(.desk-os-tab-active) {
+  background: transparent;
+  border-color: var(--border-strong);
+  box-shadow: none;
+}
+.desk-os .desk-os-app-bar {
+  flex-wrap: wrap;
+  padding: 0.5rem 1rem;
+  gap: 0.75rem;
+}
+.desk-os .desk-os-tabs {
+  gap: 0.25rem;
+  padding: 0.125rem;
+}
+.desk-os .desk-os-app-route {
+  max-width: 15rem;
+}
+.desk-os .desk-os-tab {
+  min-height: 2.25rem;
+  font-size: 0.8125rem;
+  border-radius: var(--radius-sm);
+}
+.desk-os .desk-os-status-strip {
+  padding: 0.65rem 1rem;
+  gap: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  grid-template-columns: auto auto minmax(0, 1fr);
+}
+.desk-os .desk-os-status-objective {
+  white-space: normal;
+  overflow: visible;
+}
+.desk-os .mutation-status {
+  grid-column: 1 / -1;
+  justify-self: start;
+  white-space: normal;
+  text-align: left;
+}
+.desk-os .desk-os-status-strip:has(.mutation-status) {
+  row-gap: 0.25rem;
+}
+.desk-os .desk-os-console > .desk-os-body {
+  grid-template-columns: minmax(0, 1fr);
+  padding: 1rem;
+  gap: 1rem;
+}
+.desk-os .case-rail {
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--surface-base);
+}
+.desk-os .case-rail-items {
+  gap: 0.625rem;
+  padding-block: 0.5rem 0.25rem;
+}
+.desk-os .case-rail-item {
+  flex: 0 0 clamp(12rem, 25cqi, 18rem);
+  padding: 0.75rem;
+  gap: 0.25rem;
+  border-radius: var(--radius-sm);
+}
+.desk-os .case-rail-item[data-priority="high"] {
+  border: 1px solid var(--border-strong);
+}
+.desk-os .case-rail-item > span:first-child {
+  color: var(--text-muted);
+}
+.desk-os .case-rail-history summary {
+  padding-block: 0.5rem;
+}
+.desk-os .desk-os-system {
+  grid-template-columns: minmax(10rem, 0.28fr) minmax(0, 1fr);
+  gap: 1rem;
+}
+.desk-os .desk-os-queue {
+  padding: 0.25rem 0.75rem 0.25rem 0.25rem;
+  gap: 0.5rem;
+}
+.desk-os .desk-os-queue-item {
+  padding: 0.75rem;
+  gap: 0.35rem;
+  border-radius: var(--radius-sm);
+}
+.desk-os .desk-os-queue-item[aria-pressed="true"] {
+  background: var(--status-info-bg);
+  border-color: var(--action-primary);
+  box-shadow: none;
+}
+.desk-os .desk-os-queue-item small {
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+.desk-os .desk-os-detail {
+  padding: var(--work-inset);
+  background: var(--surface-subtle);
+  border-radius: var(--radius-md);
+  scroll-padding: 1rem;
+}
+.desk-os .desk-os-detail > h3 {
+  margin: 0.5rem 0 0.625rem;
+  font-size: 1.2rem;
+  line-height: 1.4;
+}
+.desk-os .desk-os-detail > p {
+  margin-bottom: 1rem;
+  max-width: 72ch;
+  line-height: 1.65;
+}
+.desk-os .desk-os-meta {
+  gap: 0.75rem;
+  font-size: 0.72rem;
+}
+.desk-os .desk-os-resolution {
+  background: var(--status-success-bg);
+  border-color: var(--border-subtle);
+  color: var(--status-success-fg);
+  padding: 0.875rem;
+  line-height: 1.65;
+}
+.desk-os .tool-panel {
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.desk-os :is(.tool-panel, .tool-split, .context-actions) {
+  font-size: 0.875rem;
+}
+.desk-os .tool-chrome {
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom-style: solid;
+}
+.desk-os .tool-panel :is(h4, h5) {
+  margin: 0 0 0.625rem;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+.desk-os .tool-panel h4 {
+  font-size: 1rem;
+}
+.desk-os .tool-panel h5 {
+  font-size: 0.9rem;
+}
+.desk-os .tool-panel p {
+  margin-block: 0 0.875rem;
+}
+.desk-os
+  :is(.artifact-detail, .email-message, .alert-record, .record-query-tool) {
+  padding: 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-base);
+  box-shadow: none;
+  min-width: 0;
+}
+.desk-os .artifact-detail::after {
+  content: none;
+}
+.desk-os .artifact-body {
+  background: var(--surface-base);
+  color: var(--text-primary);
+  padding: 1rem;
+  margin-top: 0.75rem;
+  border: 1px solid var(--border-subtle);
+  font: 0.875rem/1.7 var(--font-body);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.desk-os :is(.artifact-meta div, .alert-fields div) {
+  gap: 0.75rem;
+  padding-block: 0.5rem;
+  min-width: 0;
+}
+.desk-os :is(.artifact-meta dd, .alert-fields dd) {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.desk-os
+  :is(.artifact-list button, .email-queue button, .alert-timeline button) {
+  padding: 0.75rem;
+  border-radius: var(--radius-sm);
+}
+.desk-os .tool-panel button {
+  min-height: 2.25rem;
+  padding: 0.625rem 0.875rem;
+  max-width: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font: inherit;
+  line-height: 1.4;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.desk-os .tool-panel button:hover:not(:disabled) {
+  border-color: var(--action-primary);
+  background: var(--status-info-bg);
+}
+.desk-os .tool-panel button[aria-pressed="true"] {
+  border-color: var(--action-primary);
+  background: var(--status-info-bg);
+}
+.desk-os .tool-panel button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.desk-os .tool-panel :is(.action-primary, .rq-submit),
+.desk-os .handoff-builder > button,
+.desk-os .case-ticket-composer > button:last-child,
+.desk-os .desk-os-primary {
+  color: var(--action-on-primary);
+  background: var(--action-primary);
+  border-color: var(--action-primary);
+}
+.desk-os .tool-panel :is(.action-primary, .rq-submit):hover:not(:disabled),
+.desk-os .handoff-builder > button:hover:not(:disabled),
+.desk-os .case-ticket-composer > button:last-child:hover:not(:disabled) {
+  background: var(--action-primary);
+  filter: brightness(1.08);
+}
+.desk-os .tool-panel .action-primary small {
+  color: var(--action-on-primary);
+}
+.desk-os .context-actions {
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+.desk-os .work-detail-help {
+  padding-block: 0.5rem;
+  color: var(--text-secondary);
+}
+.desk-os .work-detail-help summary {
+  padding-block: 0.375rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-weight: 600;
+}
+.desk-os .work-detail-help p {
+  margin-top: 0.75rem;
+}
+
+/* Investigations and forms: controls lead; source prose is opened on demand. */
+.desk-os :is(.case-ticket-composer, .handoff-builder, .case-evidence) {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  margin-block: 1.5rem;
+}
+.desk-os :is(.case-ticket-composer, .handoff-builder) {
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-strong);
+}
+.desk-os :is(.case-ticket-composer, .handoff-builder) :is(h4, h5, p) {
+  margin: 0;
+}
+.desk-os .tool-panel form {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+.desk-os :is(.tool-panel form > label, .handoff-builder > label) {
+  display: grid;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+.desk-os
+  :is(
+    .tool-panel textarea,
+    .tool-panel input:not([type="radio"]):not([type="checkbox"]),
+    .tool-panel select
+  ) {
+  width: 100%;
+  min-width: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background-color: var(--surface-base);
+  color: var(--text-primary);
+  font: 0.875rem/1.55 var(--font-body);
+}
+.desk-os .tool-panel textarea {
+  min-height: 6rem;
+  resize: vertical;
+  background-image: none;
+}
+.desk-os :is(input, textarea)::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+.desk-os .tool-panel fieldset {
+  display: grid;
+  gap: 0.375rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.875rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+.desk-os .tool-panel legend {
+  padding-inline: 0.375rem;
+  color: var(--text-primary);
+  font: 600 0.875rem/1.5 var(--font-body);
+}
+.desk-os .tool-panel fieldset label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.625rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.desk-os .tool-panel fieldset label:has(input:checked) {
+  border-color: var(--action-primary);
+  background: var(--status-info-bg);
+  color: var(--text-primary);
+}
+.desk-os .tool-panel input:is([type="checkbox"], [type="radio"]) {
+  width: 1rem;
+  height: 1rem;
+  flex: none;
+  margin: 0.2rem 0 0;
+  accent-color: var(--action-primary);
+}
+.desk-os .tool-panel fieldset label small {
+  display: block;
+  margin-top: 0.375rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+.desk-os .case-source-links {
+  gap: 0.625rem;
+}
+.desk-os .case-source-links button {
+  flex: 1 1 12rem;
+  text-align: left;
+  padding: 0.875rem;
+  border-color: var(--source-border);
+}
+.desk-os .case-source-links small {
+  display: block;
+  margin-top: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.desk-os .case-evidence article {
+  padding: 1rem;
+  min-width: 0;
+  background: var(--source-surface);
+  border-radius: var(--radius-md);
+}
+.desk-os .case-evidence :is(h4, h5, p) {
+  margin: 0;
+}
+.desk-os .case-evidence summary {
+  padding-block: 0.625rem;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+.desk-os .case-comparison {
+  gap: 1rem;
+}
+.desk-os .case-evidence .artifact-body {
+  padding: 0;
+  border: 0;
+  font: 0.875rem/1.7 var(--font-body);
+  margin-top: 0.75rem;
+}
+.desk-os .handoff-builder > section {
+  padding: 1.25rem;
+  background: var(--source-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  display: grid;
+  gap: 0.75rem;
+}
+.desk-os :is(.case-ticket-composer, .handoff-builder) > button {
+  justify-self: start;
+  margin-top: 0.25rem;
+}
+.desk-os .handoff-builder li p {
+  margin-top: 0.375rem;
+  line-height: 1.65;
+}
+.desk-os .rq-head,
+.desk-os .rq-field {
+  gap: 0.5rem;
+}
+.desk-os :is(.rq-form, .rq-results, .rq-stack) {
+  gap: 1rem;
+}
+.desk-os .rq-fields div {
+  grid-template-columns: minmax(7rem, 0.38fr) minmax(0, 1fr);
+  gap: 0.5rem 1rem;
+  padding: 0.625rem 0.25rem;
+  border-color: var(--border-subtle);
+}
+.desk-os .rq-fields dt {
+  font-size: 0.72rem;
+}
+.desk-os .rq-fields dd {
+  font-size: 0.875rem;
+}
+.desk-os .rq-record {
+  padding: 0.875rem;
+  background: var(--surface-base);
+  border-radius: var(--radius-sm);
+}
+.desk-os .rq-badge {
+  color: var(--status-info-fg);
+  background: var(--status-info-bg);
+}
+.desk-os .rq-validation {
+  color: var(--status-danger-fg);
+  background: var(--status-danger-bg);
+}
+.desk-os .work-task {
+  padding: 1rem;
+  background: var(--surface-base);
+  border-radius: var(--radius-md);
+  border-color: var(--border-subtle);
+  margin-top: 1rem;
+}
+.desk-os .work-task-header {
+  gap: 0.75rem;
+}
+.desk-os .work-task-footer {
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-subtle);
+  gap: 0.75rem;
+}
+.desk-os .work-task-choice blockquote {
+  padding: 0.75rem;
+  margin: 0.625rem 0;
+  background: var(--surface-subtle);
+  border-radius: var(--radius-sm);
+  font: 0.8125rem/1.6 var(--font-body);
+}
+.desk-os .tool-panel ol[aria-label="Team conversation"] {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  padding: 0;
+}
+.desk-os .tool-panel ol[aria-label="Team conversation"] li {
+  padding: 0.875rem 1rem;
+  background: var(--surface-base);
+  border-radius: var(--radius-sm);
+}
+.desk-os .tool-panel ol[aria-label="Team conversation"] li strong {
+  display: block;
+  margin-bottom: 0.375rem;
+}
+.desk-os .tool-panel aside {
+  padding: 1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+.desk-os
+  :is(.os-intranet, .os-blocked, .desk-os-home, .desk-os-calendar, .os-notes) {
+  padding: 1.25rem;
+}
+.desk-os .os-files-body {
+  padding: 1rem;
+  gap: 1rem;
+}
+.desk-os :is(.os-folders, .os-file-list) {
+  padding: 0.25rem;
+  gap: 0.5rem;
+}
+.desk-os :is(.os-folder, .os-file) {
+  padding: 0.75rem;
+}
+.desk-os :is(.os-file-preview, .os-status-note) {
+  padding: 0.875rem;
+  overflow-wrap: anywhere;
+}
+.desk-os .os-notes-area {
+  padding: 1rem;
+  font: 0.9rem/1.7 var(--font-body);
+  color: var(--text-primary);
+  background: var(--surface-base);
+  border-radius: var(--radius-sm);
+}
+.desk-os .desk-os-tile {
+  padding: 1rem;
+  border-radius: var(--radius-md);
+}
+.desk-os .desk-os-guidance {
+  padding: 1rem;
+}
+.desk-os .os-taskbar {
+  padding: 0.5rem 0.75rem;
+  gap: 0.625rem;
+}
+.desk-os .os-taskbar-btn {
+  min-height: 2.25rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+}
+.desk-os .os-taskbar-actions {
+  gap: 0.5rem;
+}
+.desk-os .work-notification {
+  background: var(--surface-base);
+  border-color: var(--border-strong);
+  padding: 1rem;
+}
+.desk-os .work-notification-actions button:first-child {
+  color: var(--action-on-primary);
+  background: var(--action-primary);
+}
+.desk-os .work-notification-actions button {
+  min-height: 2.25rem;
+  padding: 0.625rem 0.75rem;
+}
+.desk-os .desk-os-lock.login-surface {
+  padding: 1rem 1.25rem;
+}
+.simulation-main .debrief-shell {
+  color: var(--text-secondary);
+}
+.simulation-main .decision-review-reasoning {
+  line-height: 1.65;
+}
+.simulation-main .decision-review-reasoning li {
+  margin-block: 0.625rem;
+}
+
+/* A restored Browser window needs the same layout as a narrow device. */
+@container (max-width: 960px) {
+  .desk-os .desk-os-app-route {
+    display: none;
+  }
+  .desk-os :is(.email-tool, .alert-tool) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@container (max-width: 720px) {
+  .desk-os .desk-os-system {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    overflow-y: auto;
+    align-content: start;
+  }
+  .desk-os .desk-os-queue {
+    display: grid;
+    grid-template-columns: none;
+    grid-template-rows: auto auto;
+    grid-auto-flow: column;
+    grid-auto-columns: min(14rem, 80cqi);
+    overflow: auto;
+    padding: 0.25rem 0.25rem 0.75rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .desk-os .desk-os-queue > .eyebrow {
+    grid-row: 1;
+    grid-column: 1;
+    margin: 0;
+  }
+  .desk-os .desk-os-queue-item {
+    grid-row: 2;
+  }
+  .desk-os .desk-os-detail {
+    min-height: min-content;
+    overflow: visible;
+  }
+  .desk-os .desk-os-status-strip {
+    grid-template-columns: auto auto;
+  }
+  .desk-os .desk-os-status-objective {
+    grid-column: 1 / -1;
+  }
+  .desk-os :is(.rq-filters, .rq-time-grid, .case-comparison) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .desk-os .os-files-body {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-y: auto;
+    align-content: start;
+  }
+}
+@container (max-width: 480px) {
+  .desk-os .desk-os-detail {
+    padding: 1rem;
+  }
+  .desk-os .desk-os-app-name {
+    flex-basis: 100%;
+  }
+  .desk-os .desk-os-tabs {
+    flex-basis: 100%;
+  }
+  .desk-os :is(.rq-fields div, .alert-fields div) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.25rem;
+  }
+  .desk-os .work-task-footer {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .desk-os .work-task-header {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 720px) {
+  .desk-os .os-taskbar {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+  .desk-os .os-taskbar-actions {
+    grid-column: 1;
+    flex-wrap: wrap;
+  }
+}
+
+/* Scene controls need an opaque semantic surface in either site theme. */
+.simulation-main .room-hud-actions,
+.simulation-main .room-look-hint,
+.simulation-main .room-hud-status,
+.simulation-main .room-desk-hud {
+  color: var(--text-primary);
+  background: var(--surface-base);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.625rem 0.875rem;
+}
+.simulation-main .room-hud-actions button,
+.simulation-main .room-hud-actions label,
+.simulation-main .room-hud-status button,
+.simulation-main .room-hud-status summary {
+  color: var(--text-primary);
+}
+.desk-os .artifact-body {
+  max-height: none;
+  overflow: visible;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.desk-os .desk-os-meta {
+  color: var(--status-info-fg);
+}

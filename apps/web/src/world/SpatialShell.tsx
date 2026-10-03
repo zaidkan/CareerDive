@@ -468,8 +468,12 @@ function SpatialShellStage({
               </p>
               {compass ? <p className="room-hud-compass">{compass}</p> : null}
               {!nearbyIsTarget && nearbyPrompt ? (
-                <p className="room-hud-nearby">{nearbyPrompt}</p>
+                <details className="room-hud-route">
+                  <summary>Nearby context</summary>
+                  <p className="room-hud-nearby">{nearbyPrompt}</p>
+                </details>
               ) : null}
+
               {spatial.flavorMessage ? (
                 <p className="room-flavor">{spatial.flavorMessage}</p>
               ) : null}
