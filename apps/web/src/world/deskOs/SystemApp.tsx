@@ -24,6 +24,7 @@ export function SystemApp({
   guidance,
   focusRequestId = 0,
   onSelectCase,
+  onOpenSystem,
   mutationState = EMPTY_MUTATION_STATE,
 }: {
   view: ClientView;
@@ -35,6 +36,7 @@ export function SystemApp({
   guidance: ShiftGuidance | null;
   focusRequestId?: number;
   onSelectCase?: (id: string) => void;
+  onOpenSystem?: (systemId: WorkSystemId, eventId?: string) => void;
   mutationState?: MutationState;
 }) {
   const [selectedEventIds, setSelectedEventIds] = useState<
@@ -103,6 +105,12 @@ export function SystemApp({
           <>
             <div className="desk-os-meta">
               <span>{selectedEvent.status.replaceAll("_", " ")}</span>
+              <span
+                className="case-priority"
+                data-priority={selectedEvent.priority}
+              >
+                {selectedEvent.priority} priority
+              </span>
               <span>
                 Due in{" "}
                 {remainingMinutes(selectedEvent.deadlineAt, view.simClock)}m
@@ -122,6 +130,13 @@ export function SystemApp({
               mutationState={mutationState}
               {...(onTaskAttempt ? { onTaskAttempt } : {})}
               {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
+              {...(onOpenSystem
+                ? {
+                    onOpenCaseSources: () => {
+                      onOpenSystem("alert_dashboard", selectedEvent.id);
+                    },
+                  }
+                : {})}
               selectedEventId={selectedEvent.id}
               systemId={systemId}
               view={view}

@@ -263,6 +263,8 @@ describe("finite break-room interaction loop", () => {
     await enterSoc(user);
     await user.click(screen.getByRole("button", { name: "Sit at desk" }));
 
+    await user.click(screen.getByText(/Desk resources · energy/));
+
     for (const bites of [3, 2, 1] as const) {
       expect(
         screen.getByRole("button", {

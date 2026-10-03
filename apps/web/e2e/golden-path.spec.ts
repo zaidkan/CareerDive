@@ -295,6 +295,8 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
   await test.step("8 · sit and sign in", async () => {
     await page.getByRole("button", { name: "Sit at computer" }).click();
     await expect(page.getByTestId("login-curtain")).toBeVisible();
+    await expect(page.locator(".site-nav")).toBeHidden();
+    await expect(page.locator(".site-footer")).toBeHidden();
     await expect.poll(() => workstationFitsViewport(page)).toBe(true);
     await page.getByTestId("login-surface").click();
     await expect(page.getByRole("heading", { name: "Sign in to Verdaly" })).toBeVisible();
@@ -314,6 +316,8 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
     await page.getByRole("group", { name: "Pinned apps" }).getByRole("button", { name: "Notes", exact: true }).click();
     await page.getByRole("textbox", { name: "Scratch notes" }).fill("continuity probe");
     await page.getByRole("button", { name: "Leave desk" }).click();
+    await expect(page.locator(".site-nav")).toBeVisible();
+    await expect(page.locator(".site-footer")).toBeVisible();
     await expect(page.getByRole("button", { name: "Sit at computer" })).toBeVisible();
     await page.locator('section[aria-label="Workplace space"] .room-canvas canvas').click({ position: { x: 100, y: 100 } });
     await page.keyboard.down("s");

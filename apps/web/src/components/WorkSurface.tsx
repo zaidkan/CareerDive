@@ -46,7 +46,6 @@ export function WorkSurface({
     if (focusRequest > 0) headingRef.current?.focus();
   }, [focusRequest]);
 
-
   const { systemEvents, selectedEvent, contextualActions, highlightActionId } =
     deriveSystemState(view, systemId, { selectedEventId, guidance });
   const openCounts = systemOpenCounts(view);
@@ -67,7 +66,10 @@ export function WorkSurface({
           <span>{view.simClock} minutes in</span>
         </time>
       </header>
-      <MutationStatus state={mutationState ?? {}} {...(onRetryMutation ? { onRetry: onRetryMutation } : {})} />
+      <MutationStatus
+        state={mutationState ?? {}}
+        {...(onRetryMutation ? { onRetry: onRetryMutation } : {})}
+      />
 
       <NotificationBanner
         {...(mutationState ? { mutationState } : {})}
@@ -88,6 +90,7 @@ export function WorkSurface({
       />
 
       <CaseRail
+        selectedEventId={selectedEvent?.id}
         onResume={({ eventId, systemId: targetSystem }) => {
           openSystem(targetSystem, eventId);
         }}
@@ -177,7 +180,9 @@ export function WorkSurface({
                   minutes
                 </span>
               </div>
-              <h3 ref={headingRef} tabIndex={-1}>{selectedEvent.title}</h3>
+              <h3 ref={headingRef} tabIndex={-1}>
+                {selectedEvent.title}
+              </h3>
               <p>{selectedEvent.summary}</p>
               {selectedEvent.resolution ? (
                 <p className="resolution-note">{selectedEvent.resolution}</p>
@@ -189,6 +194,9 @@ export function WorkSurface({
                 {...(mutationState ? { mutationState } : {})}
                 {...(onTaskAttempt ? { onTaskAttempt } : {})}
                 {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
+                onOpenCaseSources={() => {
+                  openSystem("alert_dashboard", selectedEvent.id);
+                }}
                 selectedEventId={selectedEvent.id}
                 systemId={systemId}
                 view={view}
@@ -196,7 +204,9 @@ export function WorkSurface({
             </>
           ) : (
             <>
-              <h3 ref={headingRef} tabIndex={-1}>{systemLabel(systemId)}</h3>
+              <h3 ref={headingRef} tabIndex={-1}>
+                {systemLabel(systemId)}
+              </h3>
               <p>
                 {contextualActions.length > 0
                   ? "Select an item on the left, or use the suggested action above."

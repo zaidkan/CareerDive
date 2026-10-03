@@ -330,12 +330,12 @@ describe("RecordQueryTool", () => {
     ).toBeVisible();
   });
 
-  it("mounts in the desk knowledge-base panel", () => {
+  it("mounts in the desk Alerts panel", () => {
     const { unmount } = render(
       <SystemToolPanel
         actions={[]}
         onAction={() => undefined}
-        systemId="knowledge_base"
+        systemId="alert_dashboard"
         view={baseView()}
       />,
     );

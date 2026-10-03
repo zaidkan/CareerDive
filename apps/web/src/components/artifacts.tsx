@@ -83,7 +83,7 @@ export function ArtifactDetail({
       {artifact.observed && artifact.body ? (
         <pre className="artifact-body">{artifact.body}</pre>
       ) : (
-        <p className="artifact-unopened">Open this item to read its details.</p>
+        <p className="artifact-unopened">Open record to inspect.</p>
       )}
       {artifact.observed && Object.keys(artifact.metadata ?? {}).length > 0 ? (
         <dl className="artifact-meta">

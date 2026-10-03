@@ -7,6 +7,7 @@ import { SystemApp } from "./SystemApp.js";
 import { APP_TABS, type DeskOsTab } from "./tabs.js";
 import { OsIcon } from "./os/Icons.js";
 import { useOsSession } from "./osSession.js";
+import { deriveSystemState } from "../../workstation.js";
 import { CaseRail } from "../../components/CaseRail.js";
 import { MutationStatus } from "../../components/MutationStatus.js";
 import type {
@@ -94,6 +95,14 @@ export function OpsConsole({
   const locked = phase === "desk_login";
   const activeTab = APP_TABS.find((item) => item.id === tab) ?? APP_TABS[0];
 
+  const selectedCase =
+    tab === "home" || tab === "calendar"
+      ? undefined
+      : deriveSystemState(view, tab, {
+          selectedEventId: focusTarget?.eventId,
+          guidance,
+        }).selectedEvent;
+
   return (
     <div className="desk-os-console">
       <div className="desk-os-app-bar">
@@ -146,9 +155,12 @@ export function OpsConsole({
             <small>Energy</small> {view.workplace.energy.current}/
             {view.workplace.energy.max}
           </span>
-          <span className="desk-os-status-objective">
-            <small>Objective</small> {guidance?.headline ?? "Finish the shift"}
-          </span>
+          {tab !== "home" ? (
+            <span className="desk-os-status-objective">
+              <small>Objective</small>{" "}
+              {guidance?.headline ?? "Finish the shift"}
+            </span>
+          ) : null}
           <MutationStatus
             state={mutationState}
             {...(onRetryMutation ? { onRetry: onRetryMutation } : {})}
@@ -160,6 +172,7 @@ export function OpsConsole({
         {!locked ? (
           <>
             <CaseRail
+              selectedEventId={selectedCase?.id}
               onResume={({ eventId, systemId }) => {
                 openTab(systemId, eventId);
               }}
@@ -179,6 +192,7 @@ export function OpsConsole({
         ) : (
           <SystemApp
             guidance={guidance}
+            onOpenSystem={openTab}
             onSelectCase={(eventId) => {
               setFocusTarget((current) => ({
                 eventId,

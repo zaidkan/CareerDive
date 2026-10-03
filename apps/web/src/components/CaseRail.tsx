@@ -16,8 +16,10 @@ function caseType(category: WorkItemCategory): string {
 export function CaseRail({
   view,
   onResume,
+  selectedEventId,
 }: {
   view: ClientView;
+  selectedEventId?: string | undefined;
   onResume: (target: ResumeTarget) => void;
 }) {
   const active = activeCases(view);
@@ -40,6 +42,7 @@ export function CaseRail({
               const systemId = task?.systemId ?? event.systemId;
               return (
                 <button
+                  aria-pressed={event.id === selectedEventId}
                   className="case-rail-item"
                   data-priority={event.priority}
                   key={event.id}
@@ -49,6 +52,12 @@ export function CaseRail({
                   type="button"
                 >
                   <span>{caseType(event.category)}</span>
+                  <span
+                    className="case-priority"
+                    data-priority={event.priority}
+                  >
+                    {event.priority} priority
+                  </span>
                   <strong>{event.title}</strong>
                   <small>
                     {task?.title ?? event.status.replaceAll("_", " ")}

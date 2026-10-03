@@ -24,7 +24,6 @@ export function Desktop({ onOpen }: { onOpen: (app: OsAppId) => void }) {
           </li>
         ))}
       </ul>
-      <p className="os-desktop-hint">Open the Browser to continue your shift.</p>
     </section>
   );
 }

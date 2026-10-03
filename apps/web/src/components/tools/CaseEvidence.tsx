@@ -72,9 +72,7 @@ export function CaseEvidence({
             }}
           >
             {item.title}
-            <small>
-              {inspected.includes(item.id) ? "Opened" : "Available to inspect"}
-            </small>
+            {inspected.includes(item.id) ? <small>Opened</small> : null}
           </button>
         ))}
       </div>
@@ -97,11 +95,7 @@ export function CaseEvidence({
                 }}
               >
                 {item.title}
-                <small>
-                  {inspected.includes(item.id)
-                    ? "Opened"
-                    : "Available to inspect"}
-                </small>
+                {inspected.includes(item.id) ? <small>Opened</small> : null}
               </button>
             ))}
           </div>

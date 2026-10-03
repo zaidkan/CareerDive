@@ -41,6 +41,9 @@ function SearchHarness() {
       </button>
       <SystemToolPanel
         key={tab}
+        onOpenCaseSources={() => {
+          setTab("alert_dashboard");
+        }}
         view={view}
         selectedEventId="suspicious-login-1"
         systemId={tab}
@@ -90,6 +93,14 @@ it("mounted case search discovers authored records, inspects/revisits and retain
     within(search()).getByRole("button", { name: "Revisit AUTH-0741-PATEL" }),
   ).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Switch app" }));
+  expect(
+    screen.queryByRole("region", { name: "Record search" }),
+  ).not.toBeInTheDocument();
+  await user.click(
+    screen.getByRole("button", {
+      name: "Open case sources and record search in Alerts",
+    }),
+  );
   expect(within(search()).getByLabelText("User")).toHaveValue(
     "j.patel@example.com",
   );
@@ -105,6 +116,14 @@ it("mounted case search discovers authored records, inspects/revisits and retain
     within(search()).getByText("No matching records for these filters."),
   ).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Switch app" }));
+  expect(
+    screen.queryByRole("region", { name: "Record search" }),
+  ).not.toBeInTheDocument();
+  await user.click(
+    screen.getByRole("button", {
+      name: "Open case sources and record search in Alerts",
+    }),
+  );
   expect(within(search()).getByLabelText("User")).toHaveValue(
     "no-such-account",
   );

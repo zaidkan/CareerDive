@@ -147,8 +147,7 @@ export function CalendarPanel({
         <p>No current work checkpoints.</p>
       ) : null}
       <p className="desk-os-hint">
-        These checkpoints mirror your visible queue and available guidance —
-        not scheduled meetings. They don’t gate progress.
+        Current queue and team check-ins.
       </p>
       <button className="desk-os-primary" onClick={onOpenEmail} type="button">
         Open Email

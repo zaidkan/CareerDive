@@ -51,21 +51,13 @@ function ActionButtons({
     ({ id }) => id !== "query_records" && id !== "submit_shift_handoff",
   );
   if (choices.length === 0) {
-    return (
-      <p className="empty-actions">
-        No actions here yet. Try another tab or read the item on the left.
-      </p>
-    );
+    return <p className="empty-actions">No pending actions in this tool.</p>;
   }
 
   const highlighted =
     choices.find(({ id }) => id === highlightActionId) ?? choices[0];
   if (!highlighted) {
-    return (
-      <p className="empty-actions">
-        No actions here yet. Try another tab or read the item on the left.
-      </p>
-    );
+    return <p className="empty-actions">No pending actions in this tool.</p>;
   }
   const others = choices.filter(({ id }) => id !== highlighted.id);
   const highlightedKey = actionMutationKey(highlighted);
@@ -224,10 +216,12 @@ export function SystemToolPanel({
   onTaskAttempt,
   onWorkplaceInteraction,
   highlightActionId,
+  onOpenCaseSources,
   mutationState = EMPTY_MUTATION_STATE,
 }: {
   view: ClientView;
   systemId: ClientView["events"][number]["systemId"];
+  onOpenCaseSources?: () => void;
   selectedEventId?: string;
   actions: AvailableAction[];
   onAction: (action: AvailableAction, freeText?: string) => void;
@@ -377,14 +371,14 @@ export function SystemToolPanel({
     return (
       <div className="tool-panel" data-system={systemId}>
         <ToolChrome systemId={systemId} />
-        {selectedEventId && onWorkplaceInteraction ? (
-          <CaseEvidence
-            key={selectedEventId}
-            view={view}
-            eventId={selectedEventId}
-            onInspect={onWorkplaceInteraction}
-            pending={Boolean(mutationState.pendingKey)}
-          />
+        {onOpenCaseSources ? (
+          <button
+            className="case-sources-link"
+            type="button"
+            onClick={onOpenCaseSources}
+          >
+            Open case sources and record search in Alerts
+          </button>
         ) : null}
         <GuideSearch
           canonicalSearchAction={
@@ -405,18 +399,6 @@ export function SystemToolPanel({
             mutationState={mutationState}
           />
         ) : null}
-        <RecordQueryTool
-          view={view}
-          queryAction={view.availableActions.find(
-            ({ id, eventId }) =>
-              id === "query_records" && eventId === selectedEventId,
-          )}
-          onQueryRecords={(action, payload) => {
-            onAction({ ...action, queryPayload: payload });
-          }}
-          onInspectRecord={onWorkplaceInteraction}
-          mutationState={mutationState}
-        />
         <WorkInteraction
           onOpenArtifact={openArtifact}
           actions={workInteractionActions(actions).filter(

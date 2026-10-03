@@ -573,38 +573,34 @@ function SpatialShellStage({
             </div>
           </div>
         ) : null}
-        {atDesk ? (
-          <div className="room-desk-hud">
-            <div>
-              <p className="room-hud-step">
-                {stepLabel} · {journey.title}
-              </p>
-              <p>
-                {spatial.phase === "desk_login"
-                  ? "Sign in on the laptop — credentials are on the yellow note"
-                  : "Use the laptop for the full desk view"}
-              </p>
-              {energyLow ? (
-                <p className="room-hud-compass">
-                  Energy low · use a carried snack here, or stand and visit the
-                  break room
-                </p>
-              ) : null}
-              <EnergyMeter workplace={view.workplace} />
-              <EmergencyRecoveryControl
-                workplace={view.workplace}
-                onSubmit={requestWorkplaceInteraction}
-                pending={resourcePending || !onWorkplaceInteraction}
-              />
-              <CarriedSnackControl
-                onSubmit={requestWorkplaceInteraction}
-                pending={resourcePending || !onWorkplaceInteraction}
-                workplace={view.workplace}
-              />
-            </div>
-          </div>
-        ) : null}
       </div>
+      {atDesk ? (
+        <details className="room-desk-hud">
+          <summary>
+            Desk resources · energy {view.workplace.energy.current}/
+            {view.workplace.energy.max}
+          </summary>
+          <div>
+            {energyLow ? (
+              <p className="room-hud-compass">
+                Energy low · use a carried snack here, or stand and visit the
+                break room
+              </p>
+            ) : null}
+            <EnergyMeter workplace={view.workplace} />
+            <EmergencyRecoveryControl
+              workplace={view.workplace}
+              onSubmit={requestWorkplaceInteraction}
+              pending={resourcePending || !onWorkplaceInteraction}
+            />
+            <CarriedSnackControl
+              onSubmit={requestWorkplaceInteraction}
+              pending={resourcePending || !onWorkplaceInteraction}
+              workplace={view.workplace}
+            />
+          </div>
+        </details>
+      ) : null}
     </section>
   );
 }
