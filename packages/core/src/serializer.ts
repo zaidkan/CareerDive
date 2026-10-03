@@ -104,6 +104,7 @@ export function toClientView(state: WorldState): ClientView {
   });
   return {
     sessionId: state.sessionId,
+    completed: state.completedActionIds.includes("complete_shift"),
     sessionKind: state.sessionKind,
     simClock: state.simClock,
     currentLocation: location,

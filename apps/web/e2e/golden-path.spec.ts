@@ -333,7 +333,21 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
     expect(sessionCreates.length, "return creates no extra session").toBe(1);
   });
 
-  await test.step("10 · runtime product-contract and session integrity hold", async () => {
+  await test.step("10 · browser Back, Forward and reload retain the same shift and OS", async () => {
+    await page.goBack();
+    await expect(page.getByRole("heading", { name: "Know the work before you choose the career." })).toBeVisible();
+    await page.goForward();
+    await expect(page.getByRole("toolbar", { name: "Taskbar" })).toBeVisible({ timeout: 30000 });
+    await expect(page.getByRole("heading", { name: "Sign in to Verdaly" })).toHaveCount(0);
+    await expect(page.getByRole("textbox", { name: "Scratch notes" })).toHaveValue("continuity probe");
+    expect(sessionCreates.length, "Forward resumes instead of creating").toBe(1);
+    await page.reload();
+    await expect(page.getByRole("toolbar", { name: "Taskbar" })).toBeVisible({ timeout: 30000 });
+    await expect(page.getByRole("textbox", { name: "Scratch notes" })).toHaveValue("continuity probe");
+    expect(sessionCreates.length, "reload resumes instead of creating").toBe(1);
+  });
+
+  await test.step("11 · runtime product-contract and session integrity hold", async () => {
     await expect(page.locator("body")).toContainText("Career Expo");
     await expect(page.locator("body")).not.toContainText(
       "That workplace interaction could not be completed.",

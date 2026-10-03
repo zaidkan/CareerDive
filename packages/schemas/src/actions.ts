@@ -32,6 +32,18 @@ export const SimulationActionIdSchema = z.enum([
 ]);
 export type SimulationActionId = z.infer<typeof SimulationActionIdSchema>;
 
+export const HandoffPayloadSchema = z.object({
+  sourceArtifactIds: z.array(z.string().min(1)).max(30),
+  followUp: z.enum([
+    "senior-review",
+    "verify-employee",
+    "review-device",
+    "monitor",
+  ]),
+  note: z.string().max(300).optional(),
+});
+export type HandoffPayload = z.infer<typeof HandoffPayloadSchema>;
+
 export const SimulationActionSchema = z.object({
   id: SimulationActionIdSchema,
   actorId: z.string().min(1),
@@ -43,6 +55,7 @@ export const SimulationActionSchema = z.object({
    * enforced in the reducer, keeping the envelope back-compatible.
    */
   queryPayload: QueryRecordsPayloadSchema.optional(),
+  handoffPayload: HandoffPayloadSchema.optional(),
   ticketPayload: TicketUpdatePayloadSchema.optional(),
   decisionOptionId: z.string().min(1).optional(),
   sourceRecordId: z.string().min(1).optional(),
@@ -60,8 +73,12 @@ export const AvailableActionSchema = z.object({
   taskId: z.string().min(1).optional(),
   sourceRecordId: z.string().min(1).optional(),
   sourceArtifactId: z.string().min(1).optional(),
+  queryPayload: QueryRecordsPayloadSchema.optional(),
+  handoffPayload: HandoffPayloadSchema.optional(),
   ticketPayload: TicketUpdatePayloadSchema.optional(),
-  decisionOptions: z.array(z.object({ id: z.string(), label: z.string() })).optional(),
+  decisionOptions: z
+    .array(z.object({ id: z.string(), label: z.string() }))
+    .optional(),
   decisionOptionId: z.string().min(1).optional(),
 });
 export type AvailableAction = z.infer<typeof AvailableActionSchema>;

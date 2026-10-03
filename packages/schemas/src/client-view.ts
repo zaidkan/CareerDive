@@ -52,6 +52,7 @@ export const ClientEventSchema = EventInstanceSchema.pick({
 });
 export const ClientViewSchema = z.object({
   sessionId: z.string(),
+  completed: z.boolean().optional(),
   sessionKind: SessionKindSchema,
   simClock: z.number(),
   currentLocation: LocationSchema,
@@ -79,12 +80,17 @@ export const ClientViewSchema = z.object({
   kbQuery: z.string(),
   tasks: z.array(ClientTaskViewSchema).default([]),
   notifications: z.array(ClientNotificationSchema).default([]),
-  acknowledgements: z.array(z.object({
-    id: z.string(),
-    decisionId: z.string(),
-    text: z.string(),
-    simMinutes: z.number().int().nonnegative(),
-  })).max(3).optional(),
+  acknowledgements: z
+    .array(
+      z.object({
+        id: z.string(),
+        decisionId: z.string(),
+        text: z.string(),
+        simMinutes: z.number().int().nonnegative(),
+      }),
+    )
+    .max(3)
+    .optional(),
   // P2-T01: per-query result views only (never the full server-side history).
   queryResults: z.array(QueryResultViewSchema).default([]),
   workplace: ClientWorkplaceStateSchema,

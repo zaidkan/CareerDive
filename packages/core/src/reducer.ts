@@ -5,7 +5,11 @@ import type {
   TurnResult,
   WorldState,
 } from "@sim/schemas";
-import { TicketUpdatePayloadSchema, WorldStateSchema } from "@sim/schemas";
+import {
+  HandoffPayloadSchema,
+  TicketUpdatePayloadSchema,
+  WorldStateSchema,
+} from "@sim/schemas";
 import { availableActions } from "./availability.js";
 import { applyResolvedEffect, resolveActionEffect } from "./effects.js";
 import { runQuery } from "./query.js";
@@ -96,6 +100,7 @@ function updateTicket(
       actionId === "document_ticket" || previous?.status === "pending_review"
         ? "pending_review"
         : "in_progress",
+    ...(previous?.disposition ? { disposition: previous.disposition } : {}),
     entityRefs: previous?.entityRefs ?? [],
     evidenceFactIds: previous?.evidenceFactIds ?? [],
     verifiedEvidence:
@@ -115,6 +120,8 @@ export function applyAction(
   currentState: WorldState,
   action: SimulationAction,
 ): TurnResult {
+  if (action.handoffPayload && action.id !== "submit_shift_handoff")
+    throw new ActionUnavailableError(action.id);
   if (action.id === "query_records") {
     return applyQueryRecords(currentState, action);
   }
@@ -133,6 +140,25 @@ export function applyAction(
     action,
     targetEventId,
   );
+  const handoff = action.handoffPayload
+    ? HandoffPayloadSchema.parse(action.handoffPayload)
+    : undefined;
+  if (
+    handoff &&
+    (targetEventId !== "shift-handoff-1" ||
+      new Set(handoff.sourceArtifactIds).size !==
+        handoff.sourceArtifactIds.length ||
+      !handoff.sourceArtifactIds.every(
+        (id) =>
+          currentState.workplace.inspectedArtifactIds?.includes(id) &&
+          currentState.artifacts[id]?.eventIds.some((eventId) =>
+            currentState.events.some(
+              (event) => event.id === eventId && event.status !== "pending",
+            ),
+          ),
+      ))
+  )
+    throw new ActionUnavailableError("Handoff can cite only inspected sources");
   const selectedId =
     currentState.workplace.selectedAlertIdsByEvent?.[allowedAction.eventId];
   if (
@@ -153,7 +179,8 @@ export function applyAction(
   }
   if (
     allowedAction.taskId &&
-    !(action.id === "document_ticket" && ticketPayload)
+    !(action.id === "document_ticket" && ticketPayload) &&
+    !handoff
   ) {
     // P1-T03: released bindings never gate, even if a taskId is present
     // (availability omits it; this covers any divergent caller state).
@@ -181,29 +208,109 @@ export function applyAction(
   const effects: DomainEffect[] = [
     { type: "action_applied", actionId: action.id },
   ];
+  if (handoff) {
+    if (!state.flags.b3_choice)
+      state.flags.b3_choice = handoff.sourceArtifactIds.length
+        ? "complete"
+        : "thin";
+    const findings = handoff.sourceArtifactIds.map(
+      (id) => state.artifacts[id]?.title ?? id,
+    );
+    const cases = state.events.filter(({ id }) =>
+      ["suspicious-login-1", "routine-alert-1"].includes(id),
+    );
+    const dispositions = cases.map(
+      (event) =>
+        `${event.title}: ${event.status}. ${event.resolution ?? "No final disposition recorded."}`,
+    );
+    const open = cases
+      .filter(({ status }) => status === "active")
+      .map(({ title }) => `${title} still needs a final decision.`);
+    const caseTicket = state.structuredTickets["ticket-suspicious-login-1"];
+    const followUp = {
+      "senior-review":
+        "Senior reviewer: check unresolved session ownership and whether containment is warranted.",
+      "verify-employee":
+        "Next analyst: verify the employee's account of the activity through the approved contact route.",
+      "review-device":
+        "Next analyst: review the flagged device and missing session activity.",
+      monitor:
+        "Next analyst: continue monitoring and reassess if new evidence arrives.",
+    }[handoff.followUp];
+    const body = `FOUND — Sources inspected and selected: ${findings.join(", ") || "No source references selected"}.\nDECIDED — ${dispositions.join(" ")}\nSTILL NEEDS FOLLOW-UP — ${[...open, caseTicket?.uncertainty ? `Saved uncertainty (your note): ${caseTicket.uncertainty}` : "Session ownership has not been independently established.", followUp].join(" ")}${handoff.note?.trim() ? `\nAdditional note (your words): ${handoff.note.trim()}` : ""}`;
+    state.teamMessages ??= [];
+    state.teamMessages.push({
+      id: `${state.sessionId}-handoff`,
+      eventId: targetEventId,
+      author: "player",
+      actionId: "submit_shift_handoff",
+      body,
+      simMinutes: state.simClock,
+    });
+  }
   if (action.id === "document_ticket" && action.decisionOptionId) {
-    const eventTemplateId = state.events.find(({ id }) => id === targetEventId)?.templateId;
-    const task = Object.values(state.rules.tasks).find(({ eventTemplateId: templateId, actionId }) =>
-      templateId === eventTemplateId && actionId === "document_ticket");
-    const outcome = task?.steps.at(-1)?.outcomes.find(({ selectedOptionIds }) =>
-      selectedOptionIds.length === 1 && selectedOptionIds[0] === action.decisionOptionId);
+    const eventTemplateId = state.events.find(
+      ({ id }) => id === targetEventId,
+    )?.templateId;
+    const task = Object.values(state.rules.tasks).find(
+      ({ eventTemplateId: templateId, actionId }) =>
+        templateId === eventTemplateId && actionId === "document_ticket",
+    );
+    const outcome = task?.steps
+      .at(-1)
+      ?.outcomes.find(
+        ({ selectedOptionIds }) =>
+          selectedOptionIds.length === 1 &&
+          selectedOptionIds[0] === action.decisionOptionId,
+      );
     if (!outcome) throw new ActionUnavailableError("Unknown ticket decision");
     Object.assign(state.flags, outcome.setFlags);
   }
-  if (action.id === "document_ticket" && targetEventId === "suspicious-login-1" && state.careerVersion === "2.0.0" && !state.flags.b1_choice) {
+  if (
+    action.id === "document_ticket" &&
+    targetEventId === "suspicious-login-1" &&
+    state.careerVersion === "2.0.0" &&
+    !state.flags.b1_choice
+  ) {
     throw new ActionUnavailableError("Choose a final case disposition");
   }
   if (state.careerVersion === "2.0.0") {
-    if (action.id === "acknowledge_handoff" && targetEventId === "handoff-1" && !state.flags.d1_triage) {
-      state.flags.d1_triage = state.events.find(({ id }) => id === "routine-alert-1")?.completedActionIds.includes("review_alert")
-        ? "routine-first" : "login-first";
+    if (
+      action.id === "acknowledge_handoff" &&
+      targetEventId === "handoff-1" &&
+      !state.flags.d1_triage
+    ) {
+      state.flags.d1_triage = state.events
+        .find(({ id }) => id === "routine-alert-1")
+        ?.completedActionIds.includes("review_alert")
+        ? "routine-first"
+        : "login-first";
     }
-    if (action.id === "review_alert" && targetEventId === "suspicious-login-1" && !state.flags.d2_first_read) {
-      state.flags.d2_first_read = state.observedArtifactIds.includes("login-session-timeline") ? "location-limit" : "priority-first";
+    if (
+      action.id === "review_alert" &&
+      targetEventId === "suspicious-login-1" &&
+      !state.flags.d2_first_read
+    ) {
+      state.flags.d2_first_read = state.observedArtifactIds.includes(
+        "login-session-timeline",
+      )
+        ? "location-limit"
+        : "priority-first";
     }
-    if (action.id === "inspect_account_history" && targetEventId === "suspicious-login-1" && !state.flags.d3_vpn) {
-      state.flags.d3_vpn = ["prior-session-1", "vpn-context-1", "login-session-timeline"].every((id) => state.observedArtifactIds.includes(id))
-        ? "route-compared" : "city-led";
+    if (
+      action.id === "inspect_account_history" &&
+      targetEventId === "suspicious-login-1" &&
+      !state.flags.d3_vpn
+    ) {
+      state.flags.d3_vpn = state.workplace.comparisons?.some(
+        ({ eventId, artifactIds }) =>
+          eventId === targetEventId &&
+          ["vpn-context-1", "login-session-timeline"].every((id) =>
+            artifactIds.includes(id),
+          ),
+      )
+        ? "route-compared"
+        : "city-led";
     }
   }
   if (action.id === "complete_shift") {
@@ -225,8 +332,18 @@ export function applyAction(
     const effect = resolveActionEffect(state, event, action.id);
     applyResolvedEffect({ state, event, action, effect, effects });
   }
-  if (ticketPayload)
+  if (ticketPayload) {
     updateTicket(state, targetEventId, action.id, ticketPayload);
+    const savedTicket = state.structuredTickets[ticketPayload.ticketId];
+    if (action.decisionOptionId && savedTicket)
+      savedTicket.disposition = action.decisionOptionId;
+  }
+  const finalTicket = state.structuredTickets[`ticket-${targetEventId}`];
+  if (finalTicket && ["dismiss_alert", "escalate_alert"].includes(action.id)) {
+    finalTicket.status =
+      action.id === "dismiss_alert" ? "closed" : "pending_review";
+    finalTicket.disposition ??= action.id;
+  }
 
   activatePendingEvents(state, action.id, effects);
   wakeSnoozedNotifications(state);

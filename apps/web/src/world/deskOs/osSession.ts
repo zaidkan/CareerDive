@@ -3,6 +3,7 @@ import {
   createElement,
   useContext,
   useReducer,
+  useEffect,
   type Dispatch,
   type ReactNode,
 } from "react";
@@ -10,9 +11,19 @@ import type { WorkSystemId } from "@sim/schemas";
 import type { BrowserNav, OsAppId } from "./os/browserState.js";
 import type { DeskOsTab } from "./tabs.js";
 import {
-  canOpenWindow, closeWindow, focusWindow, initialWindowState, maximizeWindow, minimizeWindow,
-  moveWindow, openWindow, restoreMaximizedWindow, restoreWindow,
-  selectTaskbarWindow, type WindowState, type WorkspaceSize,
+  canOpenWindow,
+  closeWindow,
+  focusWindow,
+  initialWindowState,
+  maximizeWindow,
+  minimizeWindow,
+  moveWindow,
+  openWindow,
+  restoreMaximizedWindow,
+  restoreWindow,
+  selectTaskbarWindow,
+  type WindowState,
+  type WorkspaceSize,
 } from "./os/windows.js";
 import {
   FS_FALLBACK_FOLDER,
@@ -75,7 +86,13 @@ export interface OsSessionState {
 export type OsSessionAction =
   | { type: "open_window"; app: OsAppId; workspace?: WorkspaceSize }
   | { type: "focus_window"; id: string }
-  | { type: "move_window"; id: string; x: number; y: number; workspace: WorkspaceSize }
+  | {
+      type: "move_window";
+      id: string;
+      x: number;
+      y: number;
+      workspace: WorkspaceSize;
+    }
   | { type: "minimize_window"; id: string }
   | { type: "restore_window"; id: string }
   | { type: "maximize_window"; id: string }
@@ -94,8 +111,18 @@ export type OsSessionAction =
   | { type: "set_explorer_folder"; folder: FsFolderId }
   | { type: "set_explorer_selected"; fileId: string | null }
   | { type: "set_files_clipboard"; fileId: string | null }
-  | { type: "queue_notification_target"; notificationId: string; windowId: string | null; eventId: string; systemId: WorkSystemId }
-  | { type: "route_notification_target"; requestId: number; workspace: WorkspaceSize }
+  | {
+      type: "queue_notification_target";
+      notificationId: string;
+      windowId: string | null;
+      eventId: string;
+      systemId: WorkSystemId;
+    }
+  | {
+      type: "route_notification_target";
+      requestId: number;
+      workspace: WorkspaceSize;
+    }
   | { type: "clear_notification_target"; requestId: number };
 
 export function createInitialOsSession(): OsSessionState {
@@ -103,7 +130,9 @@ export function createInitialOsSession(): OsSessionState {
     windows: initialWindowState(),
     openFile: null,
     fakeFs: initialFakeFs(),
-    browserHistories: { "window-1": { entries: [{ kind: "page", page: "ops" }], index: 0 } },
+    browserHistories: {
+      "window-1": { entries: [{ kind: "page", page: "ops" }], index: 0 },
+    },
     browserDraftByWindow: {},
     opsTabByWindow: {},
     notesText: "",
@@ -127,15 +156,30 @@ export function osSessionReducer(
       return {
         ...state,
         windows,
-        browserHistories: id && !state.browserHistories[id] && windows.windows.find((window) => window.id === id)?.app === "browser"
-          ? { ...state.browserHistories, [id]: { entries: [{ kind: "page", page: "ops" }], index: 0 } }
-          : state.browserHistories,
+        browserHistories:
+          id &&
+          !state.browserHistories[id] &&
+          windows.windows.find((window) => window.id === id)?.app === "browser"
+            ? {
+                ...state.browserHistories,
+                [id]: { entries: [{ kind: "page", page: "ops" }], index: 0 },
+              }
+            : state.browserHistories,
       };
     }
     case "focus_window":
       return { ...state, windows: focusWindow(state.windows, action.id) };
     case "move_window":
-      return { ...state, windows: moveWindow(state.windows, action.id, action.x, action.y, action.workspace) };
+      return {
+        ...state,
+        windows: moveWindow(
+          state.windows,
+          action.id,
+          action.x,
+          action.y,
+          action.workspace,
+        ),
+      };
     case "minimize_window":
       return { ...state, windows: minimizeWindow(state.windows, action.id) };
     case "restore_window":
@@ -143,43 +187,70 @@ export function osSessionReducer(
     case "maximize_window":
       return { ...state, windows: maximizeWindow(state.windows, action.id) };
     case "restore_maximized_window":
-      return { ...state, windows: restoreMaximizedWindow(state.windows, action.id, action.workspace) };
+      return {
+        ...state,
+        windows: restoreMaximizedWindow(
+          state.windows,
+          action.id,
+          action.workspace,
+        ),
+      };
     case "close_window": {
-      const closedApp = state.windows.windows.find((window) => window.id === action.id)?.app;
+      const closedApp = state.windows.windows.find(
+        (window) => window.id === action.id,
+      )?.app;
       const browserHistories = Object.fromEntries(
-        Object.entries(state.browserHistories).filter(([id]) => id !== action.id),
+        Object.entries(state.browserHistories).filter(
+          ([id]) => id !== action.id,
+        ),
       );
       const browserDraftByWindow = Object.fromEntries(
-        Object.entries(state.browserDraftByWindow).filter(([id]) => id !== action.id),
+        Object.entries(state.browserDraftByWindow).filter(
+          ([id]) => id !== action.id,
+        ),
       );
       const opsTabByWindow = Object.fromEntries(
         Object.entries(state.opsTabByWindow).filter(([id]) => id !== action.id),
       );
-      return { ...state, windows: closeWindow(state.windows, action.id), browserHistories, browserDraftByWindow,
-        opsTabByWindow, filesClipboard: closedApp === "files" ? null : state.filesClipboard,
-        notificationTarget: state.notificationTarget?.windowId === action.id ? null : state.notificationTarget };
+      return {
+        ...state,
+        windows: closeWindow(state.windows, action.id),
+        browserHistories,
+        browserDraftByWindow,
+        opsTabByWindow,
+        filesClipboard: closedApp === "files" ? null : state.filesClipboard,
+        notificationTarget:
+          state.notificationTarget?.windowId === action.id
+            ? null
+            : state.notificationTarget,
+      };
     }
     case "select_taskbar_window":
-      return { ...state, windows: selectTaskbarWindow(state.windows, action.id) };
+      return {
+        ...state,
+        windows: selectTaskbarWindow(state.windows, action.id),
+      };
     case "set_open_file":
       return state.openFile === action.file
         ? state
         : { ...state, openFile: action.file };
     case "set_fake_fs":
-      return state.fakeFs === action.fs ? state : { ...state, fakeFs: action.fs };
+      return state.fakeFs === action.fs
+        ? state
+        : { ...state, fakeFs: action.fs };
     case "browser_navigate": {
       const history = state.browserHistories[action.windowId];
       if (!history) return state;
-      const base = history.entries.slice(
-        0,
-        history.index + 1,
-      );
+      const base = history.entries.slice(0, history.index + 1);
       const top = base[base.length - 1];
       if (top && sameNav(top, action.nav)) return state;
       const entries = [...base, action.nav];
       return {
         ...state,
-        browserHistories: { ...state.browserHistories, [action.windowId]: { entries, index: entries.length - 1 } },
+        browserHistories: {
+          ...state.browserHistories,
+          [action.windowId]: { entries, index: entries.length - 1 },
+        },
       };
     }
     case "browser_back": {
@@ -187,7 +258,13 @@ export function osSessionReducer(
       if (!history) return state;
       return {
         ...state,
-        browserHistories: { ...state.browserHistories, [action.windowId]: { ...history, index: Math.max(0, history.index - 1) } },
+        browserHistories: {
+          ...state.browserHistories,
+          [action.windowId]: {
+            ...history,
+            index: Math.max(0, history.index - 1),
+          },
+        },
       };
     }
     case "browser_forward": {
@@ -195,22 +272,38 @@ export function osSessionReducer(
       if (!history) return state;
       return {
         ...state,
-        browserHistories: { ...state.browserHistories, [action.windowId]: {
-          ...history,
-          index: Math.min(
-            history.entries.length - 1,
-            history.index + 1,
-          ),
-        } },
+        browserHistories: {
+          ...state.browserHistories,
+          [action.windowId]: {
+            ...history,
+            index: Math.min(history.entries.length - 1, history.index + 1),
+          },
+        },
       };
     }
     case "set_browser_draft":
-      return state.windows.windows.some((window) => window.id === action.windowId && window.app === "browser")
-        ? { ...state, browserDraftByWindow: { ...state.browserDraftByWindow, [action.windowId]: action.draft } }
+      return state.windows.windows.some(
+        (window) => window.id === action.windowId && window.app === "browser",
+      )
+        ? {
+            ...state,
+            browserDraftByWindow: {
+              ...state.browserDraftByWindow,
+              [action.windowId]: action.draft,
+            },
+          }
         : state;
     case "set_ops_tab":
-      return state.windows.windows.some((window) => window.id === action.windowId && window.app === "browser")
-        ? { ...state, opsTabByWindow: { ...state.opsTabByWindow, [action.windowId]: action.tab } }
+      return state.windows.windows.some(
+        (window) => window.id === action.windowId && window.app === "browser",
+      )
+        ? {
+            ...state,
+            opsTabByWindow: {
+              ...state.opsTabByWindow,
+              [action.windowId]: action.tab,
+            },
+          }
         : state;
     case "set_notes_text":
       return state.notesText === action.text
@@ -233,7 +326,12 @@ export function osSessionReducer(
         ? state
         : { ...state, filesClipboard: action.fileId };
     case "queue_notification_target": {
-      if (action.windowId && !state.windows.windows.some((window) => window.id === action.windowId && window.app === "browser")) {
+      if (
+        action.windowId &&
+        !state.windows.windows.some(
+          (window) => window.id === action.windowId && window.app === "browser",
+        )
+      ) {
         return { ...state, notificationTarget: null };
       }
       return {
@@ -251,22 +349,43 @@ export function osSessionReducer(
     }
     case "route_notification_target": {
       const target = state.notificationTarget;
-      if (!target || target.phase !== "pending" || target.requestId !== action.requestId) return state;
-      if (target.windowId && !state.windows.windows.some((window) => window.id === target.windowId && window.app === "browser")) {
+      if (
+        !target ||
+        target.phase !== "pending" ||
+        target.requestId !== action.requestId
+      )
+        return state;
+      if (
+        target.windowId &&
+        !state.windows.windows.some(
+          (window) => window.id === target.windowId && window.app === "browser",
+        )
+      ) {
         return { ...state, notificationTarget: null };
       }
-      const existing = target.windowId ?? state.windows.windows
-        .filter((window) => window.app === "browser")
-        .sort((a, b) => b.z - a.z)[0]?.id;
-      if (!existing && !canOpenWindow(state.windows, "browser")) return { ...state, notificationTarget: null };
+      const existing =
+        target.windowId ??
+        state.windows.windows
+          .filter((window) => window.app === "browser")
+          .sort((a, b) => b.z - a.z)[0]?.id;
+      if (!existing && !canOpenWindow(state.windows, "browser"))
+        return { ...state, notificationTarget: null };
       const windows = existing
         ? restoreWindow(state.windows, existing)
         : openWindow(state.windows, "browser", action.workspace);
       const windowId = existing ?? windows.focusedWindowId;
-      if (!windowId || !windows.windows.some((window) => window.id === windowId && window.app === "browser")) {
+      if (
+        !windowId ||
+        !windows.windows.some(
+          (window) => window.id === windowId && window.app === "browser",
+        )
+      ) {
         return { ...state, notificationTarget: null };
       }
-      const history = state.browserHistories[windowId] ?? { entries: [{ kind: "page" as const, page: "ops" as const }], index: 0 };
+      const history = state.browserHistories[windowId] ?? {
+        entries: [{ kind: "page" as const, page: "ops" as const }],
+        index: 0,
+      };
       const base = history.entries.slice(0, history.index + 1);
       const current = base[base.length - 1];
       const alreadyAtOps = current?.kind === "page" && current.page === "ops";
@@ -276,11 +395,20 @@ export function osSessionReducer(
       return {
         ...state,
         windows,
-        browserHistories: { ...state.browserHistories, [windowId]: { entries, index: alreadyAtOps ? history.index : entries.length - 1 } },
+        browserHistories: {
+          ...state.browserHistories,
+          [windowId]: {
+            entries,
+            index: alreadyAtOps ? history.index : entries.length - 1,
+          },
+        },
         browserDraftByWindow: alreadyAtOps
           ? state.browserDraftByWindow
           : { ...state.browserDraftByWindow, [windowId]: "verdaly://ops" },
-        opsTabByWindow: { ...state.opsTabByWindow, [windowId]: target.systemId },
+        opsTabByWindow: {
+          ...state.opsTabByWindow,
+          [windowId]: target.systemId,
+        },
         notificationTarget: { ...target, windowId, phase: "routed" },
       };
     }
@@ -300,13 +428,24 @@ interface OsSessionContextValue {
 
 const OsSessionContext = createContext<OsSessionContextValue | null>(null);
 
+import { readTabValue, writeTabValue } from "../../useTabDraft.js";
+
 /** One provider per Career Expo session — no global singleton. */
-export function OsSessionProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(
-    osSessionReducer,
-    undefined,
-    createInitialOsSession,
+export function OsSessionProvider({
+  children,
+  sessionId,
+}: {
+  children: ReactNode;
+  sessionId?: string;
+}) {
+  const [state, dispatch] = useReducer(osSessionReducer, undefined, () =>
+    sessionId
+      ? readTabValue(`desk-os:${sessionId}`, createInitialOsSession())
+      : createInitialOsSession(),
   );
+  useEffect(() => {
+    if (sessionId) writeTabValue(`desk-os:${sessionId}`, state);
+  }, [sessionId, state]);
   return createElement(
     OsSessionContext.Provider,
     { value: { state, dispatch } },

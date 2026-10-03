@@ -11,7 +11,8 @@ const LEGACY_LABELS: Array<[keyof Debrief["sections"], string]> = [
   ["nextAction", "Next action"],
 ];
 
-const describeHandoff = (ids: string[]) => ids.map((id) => id.replaceAll("-", " ")).join(", ");
+const describeHandoff = (ids: string[]) =>
+  ids.map((id) => id.replaceAll("-", " ")).join(", ");
 
 const DECISIONS: Record<
   string,
@@ -43,7 +44,7 @@ const DECISIONS: Record<
       "close-familiar-account": "Closed using familiar account history",
     },
     signals: {
-      compared_records: "Compared session and VPN context",
+      compared_records: "Compared flagged session with VPN catalogue",
       checked_device: "Checked the exact device inventory",
       documented_uncertainty: "Documented the collection gap",
       kept_review_boundary: "Kept the final determination with senior review",
@@ -137,7 +138,13 @@ const PROFILE_STATES = {
   needs_more_evidence: "Needs more evidence",
 };
 
-export function DebriefView({ debrief }: { debrief: Debrief }) {
+export function DebriefView({
+  debrief,
+  sourceTitles = {},
+}: {
+  debrief: Debrief;
+  sourceTitles?: Record<string, string>;
+}) {
   const review = debrief.decisionReview;
   if (!review)
     return (
@@ -207,7 +214,13 @@ export function DebriefView({ debrief }: { debrief: Debrief }) {
                   </h3>
                   <p>{meta.context}</p>
                   <p className="decision-review-recordline">
-                    {meta.recordLine}
+                    {item.decisionId === "finance_access" &&
+                    item.userChoiceId === "self-approve"
+                      ? "finance-reporting-prod · role approved directly"
+                      : item.decisionId === "finance_access" &&
+                          item.userChoiceId === "reject-as-attack"
+                        ? "finance-reporting-prod · request rejected; business need unresolved"
+                        : meta.recordLine}
                   </p>
                 </div>
                 <div className="decision-review-choice">
@@ -233,33 +246,46 @@ export function DebriefView({ debrief }: { debrief: Debrief }) {
                         className={supported ? "is-supported" : "is-open"}
                       >
                         <span aria-hidden="true">{supported ? "✓" : "○"}</span>
+                        {supported ? "Recorded: " : "Not established: "}
                         {meta.signals[id] ?? id}
                       </li>
                     ))}
                   </ul>
                   <p className="decision-review-sources">
                     {item.evidenceUsedIds.length
-                      ? `Records inspected ${item.decisionId === "scanner_interruption" ? "before closure" : "before this decision"}: ${item.evidenceUsedIds.join(" · ")}`
+                      ? `Records inspected ${item.decisionId === "scanner_interruption" ? "before closure" : "before this decision"}: ${item.evidenceUsedIds.map((id) => sourceTitles[id] ?? id).join(" · ")}`
                       : `No source opening recorded ${item.decisionId === "scanner_interruption" ? "before closure" : "before this decision"}.`}
                   </p>
-                  {item.reasoningAnalysis?.callbackText.map((body, callbackIndex) => (
-                    <p key={callbackIndex}>Later response: {body}</p>
-                  ))}
-                  {item.reasoningAnalysis?.correctionHistory.map((entry, correctionIndex) => (
-                    <p key={correctionIndex}>
-                      <strong>Initial handoff:</strong> {describeHandoff(entry.initialOptionIds)}.
-                      {entry.correctedOptionIds
-                        ? <> <strong>Later correction:</strong> {describeHandoff(entry.correctedOptionIds)}.</>
-                        : " Still open."}
-                    </p>
-                  ))}
+                  {item.reasoningAnalysis?.callbackText.map(
+                    (body, callbackIndex) => (
+                      <p key={callbackIndex}>Later response: {body}</p>
+                    ),
+                  )}
+                  {item.reasoningAnalysis?.correctionHistory.map(
+                    (entry, correctionIndex) => (
+                      <p key={correctionIndex}>
+                        <strong>Initial handoff:</strong>{" "}
+                        {describeHandoff(entry.initialOptionIds)}.
+                        {entry.correctedOptionIds ? (
+                          <>
+                            {" "}
+                            <strong>Later correction:</strong>{" "}
+                            {describeHandoff(entry.correctedOptionIds)}.
+                          </>
+                        ) : (
+                          " Still open."
+                        )}
+                      </p>
+                    ),
+                  )}
                   <details className="decision-review-other-path">
                     <summary>Consider another path</summary>
                     <p>{meta.reflection}</p>
                   </details>
                 </div>
-                {item.comparisonEligible && item.cohort.status === "ready" ? <div className="decision-review-community">
-                  <h4>How other completed shifts handled this</h4>
+                {item.comparisonEligible && item.cohort.status === "ready" ? (
+                  <div className="decision-review-community">
+                    <h4>How other completed shifts handled this</h4>
                     <>
                       <ul>
                         {item.availableChoiceIds.map((choiceId) => {
@@ -289,7 +315,8 @@ export function DebriefView({ debrief }: { debrief: Debrief }) {
                         Popularity does not decide quality.
                       </p>
                     </>
-                </div> : null}
+                  </div>
+                ) : null}
               </div>
             </article>
           );

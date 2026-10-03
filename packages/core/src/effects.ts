@@ -105,6 +105,18 @@ function managerGuidanceForA1042(
   if (event.templateId !== "suspicious_login") return authoredGuidance;
 
   const completed = new Set<string>(event.completedActionIds);
+  if (event.status !== "active")
+    return "This case has a recorded disposition. Keep the saved ticket and any remaining questions available for the next analyst.";
+  if (
+    completed.has("inspect_login_context") &&
+    !completed.has("check_device_inventory")
+  )
+    return "The records you opened are context, not proof of who used the flagged device. The device record has not been checked yet; it may help separate managed equipment from an unfamiliar label.";
+  if (
+    completed.has("check_device_inventory") &&
+    !state.workplace.comparisons?.some(({ eventId }) => eventId === event.id)
+  )
+    return "The records you opened are context, not proof of who used the flagged device. The device check is recorded; the session timeline and VPN record can help test whether the two sign-ins followed the same route.";
   if (!completed.has("review_alert")) return authoredGuidance;
 
   const inspectedRelevantRecord = [
@@ -132,6 +144,26 @@ export function applyResolvedEffect(input: {
   const { state, event, action, effect, effects } = input;
   applyHiddenDelta(state, effect);
 
+  const inspectedByAction: Record<string, string[]> = {
+    read_handoff: ["handoff-note"],
+    review_alert:
+      event.id === "suspicious-login-1"
+        ? ["suspicious-login-alert"]
+        : event.id === "routine-alert-1"
+          ? ["scanner-alert"]
+          : [],
+    inspect_login_context: ["login-context-1"],
+    inspect_account_history: ["account-history-1"],
+    check_device_inventory: ["device-inventory-1"],
+  };
+  for (const id of inspectedByAction[action.id] ?? []) {
+    if (effect.observeArtifactIds.includes(id)) {
+      state.workplace.lastInspectedArtifactId = id;
+      state.workplace.inspectedArtifactIds ??= [];
+      if (!state.workplace.inspectedArtifactIds.includes(id))
+        state.workplace.inspectedArtifactIds.push(id);
+    }
+  }
   for (const artifactId of effect.observeArtifactIds) {
     if (!event.observedArtifactIds.includes(artifactId)) {
       event.observedArtifactIds.push(artifactId);
@@ -182,16 +214,23 @@ export function applyResolvedEffect(input: {
   }
 
   if (action.id === "ask_manager") {
-    event.managerConsulted = true;
+    const relevant =
+      !action.freeText ||
+      /\b(login|alert|case|record|device|vpn|session|account|ticket|handoff|review|scanner|approval|access|evidence|check|priority|patel|rivera|finance|investigat\w*)\b/i.test(
+        action.freeText,
+      );
+    event.managerConsulted = relevant;
     const template = state.rules.eventTemplates[event.templateId];
-    const guidance = managerGuidanceForA1042(
-      state,
-      event,
-      (
-        template?.managerGuidance ??
-        "Morgan has no additional operational context for this work."
-      ).trim(),
-    );
+    const guidance = !relevant
+      ? "I can help with this shift’s cases and procedure. Which case or record are you asking about?"
+      : managerGuidanceForA1042(
+          state,
+          event,
+          (
+            template?.managerGuidance ??
+            "Morgan has no additional operational context for this work."
+          ).trim(),
+        );
     const entry = consequence(state, event.id, action.id, guidance);
     state.ledger.push(entry);
     effects.push({ type: "consequence_recorded", consequenceId: entry.id });
@@ -216,7 +255,13 @@ export function applyResolvedEffect(input: {
       state,
       event.id,
       action.id,
-      fillDescription(effect.consequence.description, event),
+      action.id === "send_status_update" &&
+        state.events.some(
+          ({ id, status }) =>
+            id === "suspicious-login-1" && status === "resolved",
+        )
+        ? "Morgan received your bounded status update. The login decision is already recorded; keep its unresolved questions with the next analyst."
+        : fillDescription(effect.consequence.description, event),
       dueAt,
     );
     state.ledger.push(entry);
@@ -225,16 +270,47 @@ export function applyResolvedEffect(input: {
 
   for (const callback of effect.callbacks) {
     if (!conditionsMet(state, callback.when)) continue;
-    if (state.pendingCallbacks.some(({ id, eventId }) => id === callback.id && eventId === event.id)) continue;
+    if (
+      state.pendingCallbacks.some(
+        ({ id, eventId }) => id === callback.id && eventId === event.id,
+      )
+    )
+      continue;
+    const compared = state.workplace.comparisons?.some(
+      ({ eventId, artifactIds }) =>
+        eventId === event.id &&
+        ["login-session-timeline", "vpn-context-1"].every((id) =>
+          artifactIds.includes(id),
+        ),
+    );
+    const attached =
+      state.structuredTickets[`ticket-${event.id}`]?.sourceArtifactIds ?? [];
+    const comparisonSupported =
+      compared &&
+      ["login-session-timeline", "vpn-context-1", "device-inventory-1"].every(
+        (id) =>
+          attached.includes(id) &&
+          state.workplace.inspectedArtifactIds?.includes(id),
+      );
     state.pendingCallbacks.push({
       ...callback,
+      ...(callback.id === "b1-comparison-review" && !comparisonSupported
+        ? {
+            body: "I received your review request. The flagged-session/VPN comparison or required source attachments are missing from the saved review request. I will recover the missing record before deciding next steps.",
+          }
+        : {}),
       eventId: event.id,
       actionId: action.id,
       dueAt: state.simClock + callback.delayMinutes,
       applied: false,
     });
-    if (callback.acknowledgement && state.acknowledgements.length < 3 &&
-      !state.acknowledgements.some(({ decisionId }) => decisionId === (callback.decisionId ?? callback.id))) {
+    if (
+      callback.acknowledgement &&
+      state.acknowledgements.length < 3 &&
+      !state.acknowledgements.some(
+        ({ decisionId }) => decisionId === (callback.decisionId ?? callback.id),
+      )
+    ) {
       state.acknowledgements.push({
         id: callback.id,
         decisionId: callback.decisionId ?? callback.id,

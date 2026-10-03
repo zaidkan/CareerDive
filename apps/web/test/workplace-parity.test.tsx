@@ -12,7 +12,7 @@ import { WorkSurface } from "../src/components/WorkSurface.js";
 vi.mock("../src/world/RoomCanvas.js", () => ({
     RoomCanvas: () => <div>Office canvas</div>,
 }));
-afterEach(cleanup);
+afterEach(() => { cleanup(); sessionStorage.clear(); });
 const pack = loadDefaultCybersecurityPack();
 function required<T>(value: T | null | undefined): T {
     if (value === null || value === undefined)
@@ -29,7 +29,7 @@ describe("structured workplace acceptance", () => {
         const button = within(screen.getByRole("navigation", { name: "Work systems" })).getByRole("button", { name: /^Guides/ });
         button.focus();
         await user.keyboard("{Enter}");
-        expect(screen.getByRole("heading", { name: "Guides" })).toHaveFocus();
+        expect(screen.getByRole("heading", { name: "Unfamiliar successful login" })).toHaveFocus();
     });
     it("offers the same one-time emergency recovery in the spatial HUD", async () => {
         const user = userEvent.setup();

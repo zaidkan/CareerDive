@@ -49,6 +49,10 @@ function belongsToSystem(
 ): boolean {
   return (
     event.systemId === systemId ||
+    view.artifacts.some(
+      (artifact) =>
+        artifact.systemId === systemId && artifact.eventIds.includes(event.id),
+    ) ||
     view.availableActions.some(
       (action) => action.eventId === event.id && action.systemId === systemId,
     )
@@ -92,7 +96,7 @@ export function deriveSystemState(
   const { selectedEventId, guidance } = input;
   const systemEvents = eventsForSystem(view, systemId);
   const selectedEvent =
-    systemEvents.find(({ id }) => id === selectedEventId) ?? systemEvents[0];
+    view.events.find(({ id }) => id === selectedEventId) ?? systemEvents[0];
   const contextualActions = view.availableActions.filter(
     (action) =>
       action.systemId === systemId &&

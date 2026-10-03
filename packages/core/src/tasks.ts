@@ -93,14 +93,18 @@ export function applyTaskAttempt(
   state.taskProgress[key] = progress;
 
   const chosen = new Set(attempt.selectedOptionIds);
-  const outcome = step.outcomes.find(({ selectedOptionIds, when }) =>
-    selectedOptionIds.length === chosen.size &&
-    selectedOptionIds.every((id) => chosen.has(id)) &&
-    conditionsMet(state, when),
+  const outcome = step.outcomes.find(
+    ({ selectedOptionIds, when }) =>
+      selectedOptionIds.length === chosen.size &&
+      selectedOptionIds.every((id) => chosen.has(id)) &&
+      conditionsMet(state, when),
   );
 
-  if (chosen.size !== attempt.selectedOptionIds.length ||
-    (!outcome && !exactRequiredSelection(state, step, attempt.selectedOptionIds))) {
+  if (
+    chosen.size !== attempt.selectedOptionIds.length ||
+    (!outcome &&
+      !exactRequiredSelection(state, step, attempt.selectedOptionIds))
+  ) {
     return TaskAttemptTurnSchema.parse({
       state,
       effects: [],
@@ -115,15 +119,21 @@ export function applyTaskAttempt(
     progress.outcomeIdsByStep[step.id] = outcome.id;
     Object.assign(state.flags, outcome.setFlags);
     if (outcome.recordOmission) {
-      progress.correctionHistory.push({ stepId: step.id, initialOptionIds: [...attempt.selectedOptionIds] });
+      progress.correctionHistory.push({
+        stepId: step.id,
+        initialOptionIds: [...attempt.selectedOptionIds],
+      });
     }
     if (outcome.correctsOmission) {
-      const omitted = progress.correctionHistory.find((entry) => !entry.correctedOptionIds);
+      const omitted = progress.correctionHistory.find(
+        (entry) => !entry.correctedOptionIds,
+      );
       if (omitted) omitted.correctedOptionIds = [...attempt.selectedOptionIds];
     }
   }
 
-  const finalStep = outcome?.completeTask || progress.currentStep === task.steps.length - 1;
+  const finalStep =
+    outcome?.completeTask || progress.currentStep === task.steps.length - 1;
   if (!finalStep) {
     progress.currentStep += 1;
     return TaskAttemptTurnSchema.parse({
@@ -155,9 +165,19 @@ export function applyTaskAttempt(
     eventId: attempt.eventId,
     actorId: "user",
     ...(summary ? { freeText: summary } : {}),
+    ...(task.id === "end-shift-continuity" && state.careerVersion === "2.0.0"
+      ? {
+          handoffPayload: {
+            sourceArtifactIds: state.workplace.inspectedArtifactIds ?? [],
+            followUp: "senior-review" as const,
+          },
+        }
+      : {}),
   });
   if (outcome?.resolution) {
-    const event = actionTurn.state.events.find(({ id }) => id === attempt.eventId);
+    const event = actionTurn.state.events.find(
+      ({ id }) => id === attempt.eventId,
+    );
     if (event) event.resolution = outcome.resolution;
   }
   return TaskAttemptTurnSchema.parse({

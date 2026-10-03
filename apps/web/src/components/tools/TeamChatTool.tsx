@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useTabDraft } from "../../useTabDraft.js";
 import type { AvailableAction, ClientView } from "@sim/schemas";
 import { useOptionalOsSession } from "../../world/deskOs/osSession.js";
 import {
@@ -22,7 +22,10 @@ export function TeamChatTool({
   actions?: AvailableAction[];
   onAction?: (action: AvailableAction, freeText?: string) => void;
 }) {
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [drafts, setDrafts] = useTabDraft<Record<string, string>>(
+    `chat:${view.sessionId}`,
+    {},
+  );
   const osSession = useOptionalOsSession();
   const morganIntroSeen = osSession?.state.morganIntroSeen ?? false;
   const chatActions = actions.filter(
@@ -89,7 +92,17 @@ export function TeamChatTool({
           {view.teamMessages?.map((message) => (
             <li key={message.id}>
               <strong>
-                {({ player: "You", morgan: "Morgan", reviewer: "Reviewer", employee: "Employee" } as const)[message.author]} ·{" "}
+                {
+                  (
+                    {
+                      player: "You",
+                      morgan: "Morgan",
+                      reviewer: "Reviewer",
+                      employee: "Employee",
+                    } as const
+                  )[message.author]
+                }{" "}
+                ·{" "}
                 {view.events.find(({ id }) => id === message.eventId)?.title ??
                   message.eventId}
                 :
@@ -113,7 +126,7 @@ export function TeamChatTool({
           >
             <label>
               {action.id === "ask_manager"
-                ? "Question for Morgan"
+                ? "Ask Morgan about case procedure"
                 : "Handoff to Morgan"}
               <textarea
                 maxLength={2000}

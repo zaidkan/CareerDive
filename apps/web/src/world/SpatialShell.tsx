@@ -28,6 +28,7 @@ import {
 import { coffeeControl, fridgeControl } from "./breakRoom.js";
 import { ControlsHelp } from "./ControlsHelp.js";
 import { LaptopOverlay } from "./deskOs/LaptopOverlay.js";
+import { writeTabValue } from "../useTabDraft.js";
 import { OsSessionProvider, useOsSession } from "./deskOs/osSession.js";
 import { FloorMap } from "./FloorMap.js";
 import { JulesDialogue } from "./JulesDialogue.js";
@@ -100,16 +101,19 @@ function SpatialShellStage({
   onRoomExit?: () => void;
   recoveryPresentation?: { current: SpatialState };
 }) {
-  const [spatial, dispatch] = useReducer(reduceSpatialEvent, recoveryPresentation?.current ?? INITIAL_SPATIAL);
+  const [spatial, dispatch] = useReducer(
+    reduceSpatialEvent,
+    recoveryPresentation?.current ?? INITIAL_SPATIAL,
+  );
   useLayoutEffect(() => {
     if (recoveryPresentation) recoveryPresentation.current = spatial;
-  }, [recoveryPresentation, spatial]);
+    writeTabValue(`spatial:${view.sessionId}`, spatial);
+  }, [recoveryPresentation, spatial, view.sessionId]);
   const { dispatch: osDispatch } = useOsSession();
   const [nearbyLabel, setNearbyLabel] = useState<string>();
   const [pointerLocked, setPointerLocked] = useState(false);
-  const [mouseSensitivity, setMouseSensitivity] = useState(
-    loadMouseSensitivity,
-  );
+  const [mouseSensitivity, setMouseSensitivity] =
+    useState(loadMouseSensitivity);
   const [workplacePending, setWorkplacePending] = useState(false);
   const [julesOpen, setJulesOpen] = useState(false);
   const [julesReply, setJulesReply] = useState<JulesDialogueReply>();
@@ -472,10 +476,16 @@ function SpatialShellStage({
               {walkBlocked ? (
                 <div className="room-flavor" role="status">
                   That way is blocked — head back to the aisle.
-                  <button className="guidance-secondary" type="button" onClick={() => {
-                    window.dispatchEvent(new Event("soc-recover-aisle"));
-                    setWalkBlocked(false);
-                  }}>Return to aisle</button>
+                  <button
+                    className="guidance-secondary"
+                    type="button"
+                    onClick={() => {
+                      window.dispatchEvent(new Event("soc-recover-aisle"));
+                      setWalkBlocked(false);
+                    }}
+                  >
+                    Return to aisle
+                  </button>
                 </div>
               ) : null}
               {breakStation ? (
@@ -491,7 +501,11 @@ function SpatialShellStage({
               <EnergyMeter workplace={view.workplace} />
               <details className="room-hud-details">
                 <summary>Supplies</summary>
-                <EmergencyRecoveryControl workplace={view.workplace} onSubmit={requestWorkplaceInteraction} pending={resourcePending || !onWorkplaceInteraction} />
+                <EmergencyRecoveryControl
+                  workplace={view.workplace}
+                  onSubmit={requestWorkplaceInteraction}
+                  pending={resourcePending || !onWorkplaceInteraction}
+                />
                 <CarriedSnackControl
                   onSubmit={requestWorkplaceInteraction}
                   pending={resourcePending || !onWorkplaceInteraction}
@@ -573,7 +587,11 @@ function SpatialShellStage({
                 </p>
               ) : null}
               <EnergyMeter workplace={view.workplace} />
-              <EmergencyRecoveryControl workplace={view.workplace} onSubmit={requestWorkplaceInteraction} pending={resourcePending || !onWorkplaceInteraction} />
+              <EmergencyRecoveryControl
+                workplace={view.workplace}
+                onSubmit={requestWorkplaceInteraction}
+                pending={resourcePending || !onWorkplaceInteraction}
+              />
               <CarriedSnackControl
                 onSubmit={requestWorkplaceInteraction}
                 pending={resourcePending || !onWorkplaceInteraction}
@@ -593,7 +611,7 @@ function SpatialShellStage({
  */
 export function SpatialShell(props: Parameters<typeof SpatialShellStage>[0]) {
   return (
-    <OsSessionProvider>
+    <OsSessionProvider sessionId={props.view.sessionId}>
       <SpatialShellStage {...props} />
     </OsSessionProvider>
   );

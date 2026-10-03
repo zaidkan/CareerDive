@@ -23,6 +23,7 @@ export function SystemApp({
   focusEventId,
   guidance,
   focusRequestId = 0,
+  onSelectCase,
   mutationState = EMPTY_MUTATION_STATE,
 }: {
   view: ClientView;
@@ -33,6 +34,7 @@ export function SystemApp({
   focusEventId?: string;
   guidance: ShiftGuidance | null;
   focusRequestId?: number;
+  onSelectCase?: (id: string) => void;
   mutationState?: MutationState;
 }) {
   const [selectedEventIds, setSelectedEventIds] = useState<
@@ -82,6 +84,7 @@ export function SystemApp({
                   ...current,
                   [systemId]: event.id,
                 }));
+                onSelectCase?.(event.id);
                 setLocalFocusRequest((current) => current + 1);
               }}
               type="button"
@@ -129,9 +132,7 @@ export function SystemApp({
             <h3 ref={headingRef} tabIndex={-1}>
               {systemLabel(systemId)}
             </h3>
-            <p>
-              Nothing assigned here yet.
-            </p>
+            <p>Nothing assigned here yet.</p>
             <SystemToolPanel
               actions={contextualActions}
               {...(highlightActionId ? { highlightActionId } : {})}

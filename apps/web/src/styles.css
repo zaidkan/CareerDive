@@ -5893,3 +5893,18 @@ section[aria-labelledby="structured-title"],
 }
 /* Existing action styling uses !important; keep this override recovery-scoped. */
 [aria-label="Workplace recovery"] .action-primary { background: var(--desk) !important; }
+
+.case-evidence, .handoff-builder { margin-block: 1.25rem; }
+.case-source-links { display: flex; flex-wrap: wrap; gap: .5rem; }
+.case-source-links button { text-align: left; max-width: 22rem; }
+.case-source-links small, .work-task-choice small { display: block; }
+.case-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.case-evidence .artifact-body { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .94rem; line-height: 1.6; }
+.handoff-builder fieldset label, .case-evidence fieldset label, .work-task-choice { display: flex; gap: .6rem; align-items: flex-start; padding-block: .5rem; }
+.work-task-choice blockquote { margin: .5rem 0; font-size: .9rem; }
+@media (max-width: 700px) { .case-comparison { grid-template-columns: 1fr; } }
+
+.case-ticket-composer > label, .handoff-builder > label { display: grid; gap: .5rem; margin-block: .8rem; }
+.case-ticket-composer textarea, .handoff-builder textarea { box-sizing: border-box; width: 100%; min-height: 5rem; padding: .75rem; font: inherit; line-height: 1.5; color: inherit; background: var(--surface, transparent); border: 1px solid currentColor; border-radius: .4rem; }
+.case-ticket-composer fieldset label { display: flex; align-items: flex-start; gap: .6rem; padding-block: .5rem; }
+.case-ticket-composer small { display: block; margin-top: .25rem; }

@@ -68,6 +68,7 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
 
 afterEach(() => {
   cleanup();
+  sessionStorage.clear();
   vi.restoreAllMocks();
 });
 
@@ -1121,14 +1122,14 @@ describe("Desk OS selection, task, and expansion reliability", () => {
     expect(screen.getByRole("heading", { name: "Alert A-2048" })).toHaveFocus();
 
     await user.click(screen.getByRole("tab", { name: "Email" }));
-    expect(
-      screen.getByRole("heading", { name: "Handoff email" }),
-    ).toHaveFocus();
+    expect(screen.getByRole("heading", { name: "Second alert" })).toHaveFocus();
+    await user.click(within(screen.getByLabelText("Email items")).getByRole("button", { name: /Handoff email/ }));
     await user.click(
       screen.getByRole("button", { name: /Night shift handoff/i }),
     );
 
     await user.click(screen.getByRole("tab", { name: /^Alerts/ }));
+    await user.click(within(screen.getByLabelText("Alerts items")).getByRole("button", { name: /Second alert/ }));
     expect(screen.getByRole("heading", { name: "Second alert" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Alert A-2048" })).toBeVisible();
   });

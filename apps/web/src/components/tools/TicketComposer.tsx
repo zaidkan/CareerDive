@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useTabDraft } from "../../useTabDraft.js";
 import type {
   AvailableAction,
   ClientView,
   TicketUpdatePayload,
 } from "@sim/schemas";
-import { actionMutationKey, type MutationState } from "../../useMutationCoordinator.js";
+import {
+  actionMutationKey,
+  type MutationState,
+} from "../../useMutationCoordinator.js";
 
 export function TicketComposer({
   view,
@@ -20,17 +23,30 @@ export function TicketComposer({
   mutationState: MutationState;
 }) {
   const ticket = view.structuredTickets?.[`ticket-${action.eventId}`];
-  const [verifiedEvidence, setVerifiedEvidence] = useState(
+  const [verifiedEvidence, setVerifiedEvidence] = useTabDraft(
+    `ticket:${view.sessionId}:${action.eventId}:verifiedEvidence`,
     ticket?.verifiedEvidence ?? "",
   );
-  const [uncertainty, setUncertainty] = useState(ticket?.uncertainty ?? "");
-  const [followUp, setFollowUp] = useState(ticket?.followUp ?? "");
-  const [sourceArtifactIds, setSourceArtifactIds] = useState<string[]>(
+  const [uncertainty, setUncertainty] = useTabDraft(
+    `ticket:${view.sessionId}:${action.eventId}:uncertainty`,
+    ticket?.uncertainty ?? "",
+  );
+  const [followUp, setFollowUp] = useTabDraft(
+    `ticket:${view.sessionId}:${action.eventId}:followUp`,
+    ticket?.followUp ?? "",
+  );
+  const [sourceArtifactIds, setSourceArtifactIds] = useTabDraft<string[]>(
+    `ticket:${view.sessionId}:${action.eventId}:sourceArtifactIds`,
     ticket?.sourceArtifactIds ?? [],
   );
-  const [decisionOptionId, setDecisionOptionId] = useState("");
+  const [decisionOptionId, setDecisionOptionId] = useTabDraft(
+    `ticket:${view.sessionId}:${action.eventId}:decisionOptionId`,
+    ticket?.disposition ?? "",
+  );
   const sources = view.artifacts.filter(
-    ({ observed, eventIds }) => observed && eventIds.includes(action.eventId),
+    ({ id, eventIds }) =>
+      view.workplace.inspectedArtifactIds?.includes(id) &&
+      eventIds.includes(action.eventId),
   );
   const payload: TicketUpdatePayload = {
     ticketId: `ticket-${action.eventId}`,
@@ -47,6 +63,7 @@ export function TicketComposer({
     (!action.decisionOptions?.length || decisionOptionId);
   return (
     <form
+      className="case-ticket-composer"
       aria-label={`Ticket for ${view.events.find(({ id }) => id === action.eventId)?.title ?? action.eventId}`}
       onSubmit={(event) => {
         event.preventDefault();
@@ -60,6 +77,7 @@ export function TicketComposer({
       <label>
         Verified evidence
         <textarea
+          aria-label="Verified evidence"
           maxLength={2000}
           value={verifiedEvidence}
           onChange={(event) => {
@@ -70,6 +88,7 @@ export function TicketComposer({
       <label>
         Uncertainty
         <textarea
+          aria-label="Uncertainty"
           maxLength={2000}
           value={uncertainty}
           onChange={(event) => {
@@ -80,6 +99,7 @@ export function TicketComposer({
       <label>
         Next step
         <textarea
+          aria-label="Next step"
           maxLength={500}
           value={followUp}
           onChange={(event) => {
@@ -120,9 +140,18 @@ export function TicketComposer({
                 name={`disposition-${action.eventId}`}
                 value={id}
                 checked={decisionOptionId === id}
-                onChange={() => { setDecisionOptionId(id); }}
+                onChange={() => {
+                  setDecisionOptionId(id);
+                }}
               />
-              {label}
+              <span>
+                <strong>{label}</strong>
+                <small>
+                  {id.startsWith("escalate")
+                    ? "Save this review request; send it from Alerts after saving the ticket."
+                    : "Save this proposed closure; close the alert from Alerts after saving the ticket."}
+                </small>
+              </span>
             </label>
           ))}
         </fieldset>
@@ -148,14 +177,20 @@ export function TicketComposer({
         data-event-id={action.eventId}
         disabled={Boolean(mutationState.pendingKey) || !canSubmit}
         onClick={() => {
-          onAction({ ...action, ticketPayload: payload, ...(decisionOptionId ? { decisionOptionId } : {}) });
+          onAction({
+            ...action,
+            ticketPayload: payload,
+            ...(decisionOptionId ? { decisionOptionId } : {}),
+          });
         }}
       >
-        {mutationState.pendingKey === actionMutationKey(action) ? "Saving ticket…" : "Submit ticket"}
+        {mutationState.pendingKey === actionMutationKey(action)
+          ? "Saving ticket…"
+          : "Save analysis and decision"}
       </button>
       {ticket ? (
         <p role="status">
-          Canonical ticket: {ticket.status.replaceAll("_", " ")}.{" "}
+          Saved ticket: {ticket.status.replaceAll("_", " ")}.{" "}
           {ticket.sourceArtifactIds?.length ?? 0} source(s) attached.
         </p>
       ) : null}

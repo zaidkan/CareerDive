@@ -11,6 +11,7 @@ import {
 import type { WorkstationProps } from "../components/shared.js";
 import { useMovementExertion } from "../world/useMovementExertion.js";
 import { compatibilityDetails } from "./diagnostics.js";
+import { readTabValue } from "../useTabDraft.js";
 import { INITIAL_SPATIAL } from "../world/presentation.js";
 import { ProblemReport } from "./ProblemReport.js";
 
@@ -35,7 +36,9 @@ export function ExperienceShell(props: WorkstationProps) {
     "workplace" | "retry" | "compatibility" | "workstation"
   >("workplace");
   const [attempt, setAttempt] = useState(0);
-  const recoveryPresentation = useRef(INITIAL_SPATIAL);
+  const recoveryPresentation = useRef(
+    readTabValue(`spatial:${props.view.sessionId}`, INITIAL_SPATIAL),
+  );
   const [failure, setFailure] = useState("none");
   const [compatibility, setCompatibility] =
     useState<ReturnType<typeof compatibilityDetails>>();

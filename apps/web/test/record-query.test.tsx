@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { SystemToolPanel } from "../src/components/SystemToolPanel.js";
 import { RecordQueryTool } from "../src/components/tools/RecordQueryTool.js";
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); sessionStorage.clear(); });
 
 const queryAction: AvailableAction = {
   id: "query_records",
@@ -117,12 +117,7 @@ describe("RecordQueryTool", () => {
     expect(screen.getByLabelText("Device")).toBeVisible();
     expect(screen.queryByLabelText("Session ID")).toBeNull();
 
-    await user.selectOptions(
-      screen.getByLabelText("Dataset"),
-      "phishing",
-    );
-    expect(screen.getByLabelText("Link host")).toBeVisible();
-    expect(screen.queryByLabelText("Assigned user")).toBeNull();
+    expect(screen.queryByRole("option", { name: "Phishing reports" })).toBeNull();
   });
 
   it("submits structured filters and a time window as a query payload", async () => {
@@ -139,10 +134,10 @@ describe("RecordQueryTool", () => {
     await user.type(screen.getByLabelText("User"), "j.patel@example.com");
     await user.type(screen.getByLabelText("Session ID"), "S-0741");
     await user.type(
-      screen.getByLabelText("Time from (shift minute)"),
+      screen.getByLabelText("Time from (minute since midnight)"),
       "441",
     );
-    await user.type(screen.getByLabelText("Time to (shift minute)"), "465");
+    await user.type(screen.getByLabelText("Time to (minute since midnight)"), "465");
     await user.click(screen.getByRole("button", { name: "Search records" }));
 
     expect(onQueryRecords).toHaveBeenCalledTimes(1);
@@ -184,8 +179,8 @@ describe("RecordQueryTool", () => {
       />,
     );
 
-    await user.type(screen.getByLabelText("Time from (shift minute)"), "465");
-    await user.type(screen.getByLabelText("Time to (shift minute)"), "441");
+    await user.type(screen.getByLabelText("Time from (minute since midnight)"), "465");
+    await user.type(screen.getByLabelText("Time to (minute since midnight)"), "441");
     await user.click(screen.getByRole("button", { name: "Search records" }));
 
     expect(onQueryRecords).not.toHaveBeenCalled();
@@ -193,16 +188,16 @@ describe("RecordQueryTool", () => {
       "Time window start must be at or before the window end.",
     );
 
-    await user.clear(screen.getByLabelText("Time to (shift minute)"));
-    await user.type(screen.getByLabelText("Time to (shift minute)"), "later");
+    await user.clear(screen.getByLabelText("Time to (minute since midnight)"));
+    await user.type(screen.getByLabelText("Time to (minute since midnight)"), "later");
     await user.click(screen.getByRole("button", { name: "Search records" }));
     expect(onQueryRecords).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Time window bounds must be whole numbers zero or above.",
     );
 
-    await user.clear(screen.getByLabelText("Time from (shift minute)"));
-    await user.clear(screen.getByLabelText("Time to (shift minute)"));
+    await user.clear(screen.getByLabelText("Time from (minute since midnight)"));
+    await user.clear(screen.getByLabelText("Time to (minute since midnight)"));
     await user.click(screen.getByRole("button", { name: "Search records" }));
     expect(onQueryRecords).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("alert")).toBeNull();
