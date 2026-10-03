@@ -17,7 +17,9 @@ type WorkTaskPanelProps = {
 };
 
 export function WorkTaskPanel(props: WorkTaskPanelProps) {
-  return <EventTaskPanel key={`${props.task.eventId}:${props.task.id}`} {...props} />;
+  return (
+    <EventTaskPanel key={`${props.task.eventId}:${props.task.id}`} {...props} />
+  );
 }
 
 function EventTaskPanel({
@@ -35,7 +37,9 @@ function EventTaskPanel({
   }>();
   const [submitting, setSubmitting] = useState(false);
   const feedbackRef = useRef<HTMLParagraphElement>(null);
-  useEffect(() => { if (feedback) feedbackRef.current?.focus(); }, [feedback]);
+  useEffect(() => {
+    if (feedback) feedbackRef.current?.focus();
+  }, [feedback]);
 
   useEffect(() => {
     setSelected([]);
@@ -76,9 +80,14 @@ function EventTaskPanel({
   const globallyPending = Boolean(mutationState.pendingKey);
   const submittingThisTask =
     submitting || mutationState.pendingKey === mutationKey;
-  const summaryGroup = task.kind === "build_summary"
-    ? task.stepIndex === 0 ? "Verified evidence" : task.stepIndex === task.stepCount - 1 ? "Next step" : "Uncertainty"
-    : undefined;
+  const summaryGroup =
+    task.kind === "build_summary"
+      ? task.stepIndex === 0
+        ? "Verified evidence"
+        : task.stepIndex === task.stepCount - 1
+          ? "Next step"
+          : "Uncertainty"
+      : undefined;
 
   return (
     <section
@@ -100,7 +109,9 @@ function EventTaskPanel({
       </header>
       <p className="work-task-prompt">{task.prompt}</p>
       <p className="work-task-instruction">{task.instruction}</p>
-      {summaryGroup ? <h5 className="ticket-composer-group">{summaryGroup}</h5> : null}
+      {summaryGroup ? (
+        <h5 className="ticket-composer-group">{summaryGroup}</h5>
+      ) : null}
       {comparison ? (
         <RecordComparison
           task={task}
@@ -137,7 +148,9 @@ function EventTaskPanel({
           className="work-task-options"
           disabled={submitting || globallyPending}
         >
-          <legend className="visually-hidden">{summaryGroup ?? task.instruction}</legend>
+          <legend className="visually-hidden">
+            {summaryGroup ?? task.instruction}
+          </legend>
           {task.options.map((option) => {
             const checked = selected.includes(option.id);
             return (
@@ -181,9 +194,18 @@ function EventTaskPanel({
       )}
       <div className="work-task-footer">
         {task.kind === "build_summary" && selected.length > 0 ? (
-          <section aria-label="Generated ticket preview" className="ticket-preview">
+          <section
+            aria-label="Generated ticket preview"
+            className="ticket-preview"
+          >
             <strong>Generated ticket preview</strong>
-            <ul>{task.options.filter((option) => selected.includes(option.id)).map((option) => <li key={option.id}>{option.label}</li>)}</ul>
+            <ul>
+              {task.options
+                .filter((option) => selected.includes(option.id))
+                .map((option) => (
+                  <li key={option.id}>{option.label}</li>
+                ))}
+            </ul>
           </section>
         ) : null}
         <p>
@@ -228,13 +250,21 @@ function EventTaskPanel({
           {submittingThisTask
             ? "Checking…"
             : sourceBased
-              ? "Submit findings"
+              ? task.kind === "choose_response"
+                ? "Send selected response"
+                : "Submit findings"
               : "Check my work"}
         </button>
       </div>
       {feedback?.taskId === task.id &&
       (feedback.accepted || feedback.key === mutationKey) ? (
-        <p ref={feedbackRef} tabIndex={-1} className="work-task-feedback" aria-live="polite" key={feedback.key}>
+        <p
+          ref={feedbackRef}
+          tabIndex={-1}
+          className="work-task-feedback"
+          aria-live="polite"
+          key={feedback.key}
+        >
           {feedback.message}
         </p>
       ) : null}

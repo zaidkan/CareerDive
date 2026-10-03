@@ -10,6 +10,8 @@ import {
   type NotificationResponse,
   type SimulationActionId,
   type TicketUpdatePayload,
+  type QueryRecordsPayload,
+  type HandoffPayload,
   type WorkplaceFeedbackCode,
   type WorkplaceInteraction,
 } from "@sim/schemas";
@@ -29,6 +31,8 @@ export interface SimulationClient {
     source?: { sourceRecordId: string; sourceArtifactId: string },
     ticketPayload?: TicketUpdatePayload,
     decisionOptionId?: string,
+    queryPayload?: QueryRecordsPayload,
+    handoffPayload?: HandoffPayload,
   ): Promise<ClientView>;
   performWorkplaceInteraction(
     sessionId: string,
@@ -50,6 +54,9 @@ export interface SimulationClient {
     notificationId: string,
     response: NotificationResponse["response"],
   ): Promise<ClientView>;
+  getSession?(
+    sessionId: string,
+  ): Promise<{ sessionId: string; view: ClientView }>;
   getDebrief(sessionId: string): Promise<Debrief>;
 }
 
@@ -117,7 +124,9 @@ export class HttpSimulationClient implements SimulationClient {
     }
     try {
       return SessionResultSchema.parse(
-        await this.#client.mutation("session.create", input, { signal: AbortSignal.timeout(8000) }),
+        await this.#client.mutation("session.create", input, {
+          signal: AbortSignal.timeout(8000),
+        }),
       );
     } catch {
       throw new StartupFailure(false, "creation-unconfirmed");
@@ -132,6 +141,8 @@ export class HttpSimulationClient implements SimulationClient {
     source?: { sourceRecordId: string; sourceArtifactId: string },
     ticketPayload?: TicketUpdatePayload,
     decisionOptionId?: string,
+    queryPayload?: QueryRecordsPayload,
+    handoffPayload?: HandoffPayload,
   ): Promise<ClientView> {
     return TurnResultSchema.parse(
       await this.#client.mutation("simulation.performAction", {
@@ -142,6 +153,8 @@ export class HttpSimulationClient implements SimulationClient {
         ...source,
         ...(ticketPayload ? { ticketPayload } : {}),
         ...(decisionOptionId ? { decisionOptionId } : {}),
+        ...(queryPayload ? { queryPayload } : {}),
+        ...(handoffPayload ? { handoffPayload } : {}),
       }),
     ).view;
   }
@@ -186,6 +199,12 @@ export class HttpSimulationClient implements SimulationClient {
         response,
       }),
     ).view;
+  }
+
+  async getSession(sessionId: string) {
+    return SessionResultSchema.parse(
+      await this.#client.query("session.get", { sessionId }),
+    );
   }
 
   async getDebrief(sessionId: string): Promise<Debrief> {

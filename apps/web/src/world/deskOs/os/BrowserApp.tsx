@@ -158,7 +158,7 @@ export function BrowserApp({ opsConsole, windowId = "window-1" }: { opsConsole: 
             <p className="eyebrow">Intranet</p>
             <h3>Company intranet</h3>
             <p>
-              Office news, lunch menus, and the IT helpdesk live here. Your open
+              This noticeboard is background context. Your open
               work is in the SOC Ops Console bookmark.
             </p>
           </article>

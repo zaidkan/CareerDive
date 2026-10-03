@@ -40,32 +40,67 @@ export const REVIEW_CHOICES: Record<string, readonly string[]> = {
 };
 const V2_CHOICES: Record<string, readonly string[]> = {
   ...REVIEW_CHOICES,
-  suspicious_login: ["escalate-with-comparisons", "escalate-identifiers-only", "close-location-explained", "close-familiar-account"],
-  finance_access: ["route-to-owner", "route-with-interim", "self-approve", "reject-as-attack"],
+  suspicious_login: [
+    "escalate-with-comparisons",
+    "escalate-identifiers-only",
+    "close-location-explained",
+    "close-familiar-account",
+  ],
+  finance_access: [
+    "route-to-owner",
+    "route-with-interim",
+    "self-approve",
+    "reject-as-attack",
+  ],
   shift_handoff: ["complete", "corrected", "thin"],
 };
 
-function authoredChoice(state: WorldState, eventId: string, choices: readonly string[]) {
+function authoredChoice(
+  state: WorldState,
+  eventId: string,
+  choices: readonly string[],
+) {
   const progress = Object.entries(state.taskProgress)
     .filter(([key]) => key.startsWith(`${eventId}:`))
     .map(([, value]) => value);
-  const choice = progress.flatMap(({ outcomeIdsByStep, selectedOptionIdsByStep }) => [
-    ...Object.values(outcomeIdsByStep),
-    ...Object.values(selectedOptionIdsByStep).flat(),
-  ]).find((id) => choices.includes(id)) ??
+  const choice =
+    progress
+      .flatMap(({ outcomeIdsByStep, selectedOptionIdsByStep }) => [
+        ...Object.values(outcomeIdsByStep),
+        ...Object.values(selectedOptionIdsByStep).flat(),
+      ])
+      .find((id) => choices.includes(id)) ??
     Object.values(state.flags).find((value) => choices.includes(value));
   return choice ?? null;
 }
 
-function authoredSequence(log: ActionLogEntry[], eventId: string, choice: string | null) {
+function authoredSequence(
+  log: ActionLogEntry[],
+  eventId: string,
+  choice: string | null,
+) {
   if (!choice) return Infinity;
-  const direct = log.find(({ interaction }) => interaction.type === "action" &&
-    interaction.action.eventId === eventId && interaction.action.decisionOptionId === choice);
+  const direct = log.find(
+    ({ interaction }) =>
+      interaction.type === "action" &&
+      interaction.action.eventId === eventId &&
+      interaction.action.decisionOptionId === choice,
+  );
   if (direct) return direct.sequence;
-  return log.findLast(({ interaction }) => interaction.type === "task_attempt" &&
-    interaction.attempt.eventId === eventId)?.sequence ??
-    log.find(({ interaction }) => interaction.type === "action" &&
-      interaction.action.eventId === eventId && interaction.action.id === "document_ticket")?.sequence ?? Infinity;
+  return (
+    log.findLast(
+      ({ interaction }) =>
+        interaction.type === "task_attempt" &&
+        interaction.attempt.eventId === eventId,
+    )?.sequence ??
+    log.find(
+      ({ interaction }) =>
+        interaction.type === "action" &&
+        interaction.action.eventId === eventId &&
+        interaction.action.id === "document_ticket",
+    )?.sequence ??
+    Infinity
+  );
 }
 
 function firstAction(
@@ -130,7 +165,28 @@ function evidenceBefore(
   for (const entry of log) {
     if (entry.sequence >= sequence) break;
     const interaction = entry.interaction;
+    if (interaction.type === "action") {
+      const action = interaction.action;
+      const event = state.events.find(({ id }) => id === action.eventId);
+      const sourceByAction: Record<string, string[]> = {
+        inspect_login_context: ["login-context-1"],
+        inspect_account_history: ["account-history-1"],
+        check_device_inventory: ["device-inventory-1"],
+        review_alert:
+          action.eventId === CASE
+            ? ["suspicious-login-alert"]
+            : action.eventId === SCANNER
+              ? ["scanner-alert"]
+              : [],
+      };
+      const effect = event
+        ? state.rules.eventTemplates[event.templateId]?.actionEffects[action.id]
+        : undefined;
+      for (const id of sourceByAction[action.id] ?? [])
+        if (effect?.observeArtifactIds.includes(id)) opened.add(id);
+    }
     if (interaction.type === "workplace_interaction") {
+      if (interaction.interaction.type === "inspect_query_record") opened.add(interaction.interaction.recordId);
       if (interaction.interaction.type === "open_artifact")
         opened.add(interaction.interaction.artifactId);
       if (interaction.interaction.type === "open_alert_record") {
@@ -155,9 +211,15 @@ function decision(input: {
   outcome: Decision["outcomeLabel"];
   choices?: readonly string[];
   callbackText?: string[];
-  correctionHistory?: Array<{ stepId: string; initialOptionIds: string[]; correctedOptionIds?: string[] | undefined }>;
+  correctionHistory?: Array<{
+    stepId: string;
+    initialOptionIds: string[];
+    correctedOptionIds?: string[] | undefined;
+  }>;
 }): Decision {
-  const availableChoiceIds = [...(input.choices ?? REVIEW_CHOICES[input.id] ?? [])];
+  const availableChoiceIds = [
+    ...(input.choices ?? REVIEW_CHOICES[input.id] ?? []),
+  ];
   const comparisonEligible = availableChoiceIds.length >= 2;
   return {
     decisionId: input.id,
@@ -173,8 +235,12 @@ function decision(input: {
       choice: input.choice,
       availableChoices: availableChoiceIds,
       evidenceUsedBeforeDecision: input.reasoningEvidence ?? input.evidence,
-      whatSupportedIt: input.signals.filter(([, supported]) => supported).map(([id]) => id),
-      whatWeakenedIt: input.signals.filter(([, supported]) => !supported).map(([id]) => id),
+      whatSupportedIt: input.signals
+        .filter(([, supported]) => supported)
+        .map(([id]) => id),
+      whatWeakenedIt: input.signals
+        .filter(([, supported]) => !supported)
+        .map(([id]) => id),
       callbackText: input.callbackText ?? [],
       correctionHistory: input.correctionHistory ?? [],
     },
@@ -187,23 +253,28 @@ export function buildDecisionReview(
   log: ActionLogEntry[],
 ): NonNullable<Debrief["decisionReview"]> {
   const v2 = state.careerVersion === "2.0.0";
-  const choicesFor = (id: string) => v2 ? V2_CHOICES[id] ?? [] : REVIEW_CHOICES[id] ?? [];
-  const callbacksFor = (eventId: string) => state.pendingCallbacks
-    .filter((callback) => callback.eventId === eventId && callback.applied)
-    .map(({ body }) => body);
+  const choicesFor = (id: string) =>
+    v2 ? (V2_CHOICES[id] ?? []) : (REVIEW_CHOICES[id] ?? []);
+  const callbacksFor = (eventId: string) =>
+    state.pendingCallbacks
+      .filter((callback) => callback.eventId === eventId && callback.applied)
+      .map(({ body }) => body);
   const caseAction = firstAction(
     log,
     CASE,
     REVIEW_CHOICES.suspicious_login ?? [],
   );
-  const caseChoice = v2 ? authoredChoice(state, CASE, choicesFor("suspicious_login")) :
-    caseAction?.interaction.type === "action"
+  const caseChoice = v2
+    ? authoredChoice(state, CASE, choicesFor("suspicious_login"))
+    : caseAction?.interaction.type === "action"
       ? caseAction.interaction.action.id
       : null;
   const caseEvidence = evidenceBefore(
     state,
     log,
-    v2 ? authoredSequence(log, CASE, caseChoice) : caseAction?.sequence ?? Infinity,
+    v2
+      ? authoredSequence(log, CASE, caseChoice)
+      : (caseAction?.sequence ?? Infinity),
     [
       "suspicious-login-alert",
       "login-context-1",
@@ -214,6 +285,7 @@ export function buildDecisionReview(
       "vpn-context-1",
       "login-session-timeline",
       "travel-status-1",
+      ...state.queryHistory.filter(({ actorEventId }) => actorEventId === CASE).flatMap(({ resultIds }) => resultIds),
     ],
   );
   const caseDocumented =
@@ -231,9 +303,23 @@ export function buildDecisionReview(
     );
   const routeCompared =
     caseEvidence.includes("login-session-timeline") &&
-    caseEvidence.includes("vpn-context-1");
+    caseEvidence.includes("vpn-context-1") &&
+    (!v2 ||
+      log.some(
+        ({ sequence, interaction }) =>
+          sequence < authoredSequence(log, CASE, caseChoice) &&
+          interaction.type === "workplace_interaction" &&
+          interaction.interaction.type === "compare_artifacts" &&
+          interaction.interaction.eventId === CASE &&
+          ["login-session-timeline", "vpn-context-1"].every(
+            (id) =>
+              interaction.interaction.type === "compare_artifacts" &&
+              interaction.interaction.artifactIds.includes(id),
+          ),
+      ));
   const caseSupported =
-    (caseChoice === "escalate_alert" || caseChoice === "escalate-with-comparisons") &&
+    (caseChoice === "escalate_alert" ||
+      caseChoice === "escalate-with-comparisons") &&
     caseEvidence.includes("device-inventory-1") &&
     routeCompared &&
     caseDocumented;
@@ -270,7 +356,8 @@ export function buildDecisionReview(
         ticket.linkedWorkItemIds.includes(SCANNER) &&
         Boolean(ticket.disposition),
     );
-  const scannerChecked = scannerEvidence.includes("scanner-run-log") &&
+  const scannerChecked =
+    scannerEvidence.includes("scanner-run-log") &&
     scannerEvidence.includes("scanner-window");
 
   const accessDecision = actionDecision(
@@ -280,20 +367,29 @@ export function buildDecisionReview(
     "route_access_request",
     "access-authority-check",
   );
-  const accessChoice = v2 ? authoredChoice(state, ACCESS, choicesFor("finance_access")) : accessDecision.choice;
-  const accessEvidence = evidenceBefore(state, log, v2 ? authoredSequence(log, ACCESS, accessChoice) : accessDecision.sequence, [
-    "access-request-email",
-    "access-approval-guide",
-  ]);
+  const accessChoice = v2
+    ? authoredChoice(state, ACCESS, choicesFor("finance_access"))
+    : accessDecision.choice;
+  const accessEvidence = evidenceBefore(
+    state,
+    log,
+    v2 ? authoredSequence(log, ACCESS, accessChoice) : accessDecision.sequence,
+    ["access-request-email", "access-approval-guide"],
+  );
   const accessBoundary =
-    (v2 ? ["route-to-owner", "route-with-interim"].includes(accessChoice ?? "") : hasStep(
-      state,
-      ACCESS,
-      "access-authority-check",
-      "identify-approval-boundary",
-      "route-to-owner",
-    )) || (!v2 && accessEvidence.includes("access-approval-guide"));
-  const accessSupported = accessChoice !== null && accessBoundary &&
+    (v2
+      ? ["route-to-owner", "route-with-interim"].includes(accessChoice ?? "")
+      : hasStep(
+          state,
+          ACCESS,
+          "access-authority-check",
+          "identify-approval-boundary",
+          "route-to-owner",
+        )) ||
+    (!v2 && accessEvidence.includes("access-approval-guide"));
+  const accessSupported =
+    accessChoice !== null &&
+    accessBoundary &&
     accessEvidence.includes("access-approval-guide");
 
   const loginDecision = actionDecision(
@@ -332,7 +428,9 @@ export function buildDecisionReview(
       "login-help-next-step",
       "update-saved-password",
     );
-  const loginSupported = loginChoice !== null && loginReasoned &&
+  const loginSupported =
+    loginChoice !== null &&
+    loginReasoned &&
     loginEvidence.includes("rivera-auth-summary");
 
   const handoffDecision = actionDecision(
@@ -342,35 +440,65 @@ export function buildDecisionReview(
     "submit_shift_handoff",
     "end-shift-continuity",
   );
-  const handoffChoice = v2 ? authoredChoice(state, HANDOFF, choicesFor("shift_handoff")) : handoffDecision.choice;
-  const handoffEvidence = evidenceBefore(state, log, v2 ? authoredSequence(log, HANDOFF, handoffChoice) : handoffDecision.sequence, [
-    "ticket-suspicious-login",
-    "scanner-run-log",
-    "shift-handoff-prompt",
-  ]);
-  const handoffFact = hasStep(
+  const handoffChoice = v2
+    ? authoredChoice(state, HANDOFF, choicesFor("shift_handoff"))
+    : handoffDecision.choice;
+  const handoffEvidence = evidenceBefore(
     state,
-    HANDOFF,
-    "end-shift-continuity",
-    "handoff-checked",
-    "login-records-checked",
-  ) && hasStep(state, HANDOFF, "end-shift-continuity", "handoff-checked", "scanner-checked");
-  const handoffUncertainty = hasStep(
-    state,
-    HANDOFF,
-    "end-shift-continuity",
-    "handoff-open-question",
-    "reviewer-question",
+    log,
+    v2
+      ? authoredSequence(log, HANDOFF, handoffChoice)
+      : handoffDecision.sequence,
+    ["ticket-suspicious-login", "scanner-run-log", "shift-handoff-prompt"],
   );
-  const handoffOwner = hasStep(
-    state,
-    HANDOFF,
-    "end-shift-continuity",
-    "handoff-next-owner",
-    "next-analyst-review",
-  );
-  const handoffSupported = handoffChoice !== null && handoffFact &&
-    handoffUncertainty && handoffOwner && caseHasEvidence && scannerChecked;
+  const savedHandoff = firstAction(log, HANDOFF, ["submit_shift_handoff"]);
+  const handoffPayload =
+    savedHandoff?.interaction.type === "action"
+      ? savedHandoff.interaction.action.handoffPayload
+      : undefined;
+  const handoffFact = handoffPayload
+    ? handoffPayload.sourceArtifactIds.length > 0 &&
+      handoffPayload.sourceArtifactIds.every((id) =>
+        state.workplace.inspectedArtifactIds?.includes(id),
+      )
+    : hasStep(
+        state,
+        HANDOFF,
+        "end-shift-continuity",
+        "handoff-checked",
+        "login-records-checked",
+      ) &&
+      hasStep(
+        state,
+        HANDOFF,
+        "end-shift-continuity",
+        "handoff-checked",
+        "scanner-checked",
+      );
+  const handoffUncertainty = handoffPayload
+    ? true
+    : hasStep(
+        state,
+        HANDOFF,
+        "end-shift-continuity",
+        "handoff-open-question",
+        "reviewer-question",
+      );
+  const handoffOwner = handoffPayload
+    ? Boolean(handoffPayload.followUp)
+    : hasStep(
+        state,
+        HANDOFF,
+        "end-shift-continuity",
+        "handoff-next-owner",
+        "next-analyst-review",
+      );
+  const handoffSupported =
+    handoffChoice !== null &&
+    handoffFact &&
+    handoffUncertainty &&
+    handoffOwner &&
+    (handoffPayload ? true : caseHasEvidence && scannerChecked);
 
   const decisions = [
     decision({
@@ -383,38 +511,62 @@ export function buildDecisionReview(
         ["compared_records", routeCompared],
         ["checked_device", caseEvidence.includes("device-inventory-1")],
         ["documented_uncertainty", caseDocumented],
-        ["kept_review_boundary", caseChoice === "escalate_alert" || caseChoice?.startsWith("escalate-") === true],
+        [
+          "kept_review_boundary",
+          caseChoice === "escalate_alert" ||
+            caseChoice?.startsWith("escalate-") === true,
+        ],
       ],
       outcome: caseSupported
         ? "supported"
         : caseChoice && caseHasEvidence
           ? "partially_supported"
           : "needs_more_evidence",
-      explanation: v2 && caseChoice
-        ? ({
-            "escalate-with-comparisons": "You sent the identifiers, route and device comparisons, and remaining uncertainty for senior review.",
-            "escalate-identifiers-only": "You sent the identifiers for senior review. The reviewer must reconstruct the comparisons from saved records.",
-            "close-location-explained": "You closed using the location explanation. The saved route mismatch and session-owner question remain available for later review.",
-            "close-familiar-account": "You closed using familiar account history. The flagged session's owner remains unverified in the record.",
-          }[caseChoice] ?? "The final disposition was recorded.")
-        :
-        caseChoice === "dismiss_alert"
-          ? caseHasEvidence
-            ? "You closed the alert while the session owner and route explanation remained unverified. The recorded checks can support later review."
-            : "You closed the alert without a recorded source inspection to explain the unfamiliar session."
-          : caseSupported
-            ? "Your escalation carried traceable records and a clear collection limit into senior review. It did not claim identity or access was proven."
-            : caseChoice && caseHasEvidence
-              ? "You requested review, but the saved record does not show every comparison or uncertainty note needed for a traceable handoff."
-              : caseChoice
-                ? "You requested review without a recorded source inspection before that decision."
-                : "No final A-1042 decision was recorded in this shift.",
+      explanation:
+        v2 && caseChoice
+          ? ({
+              "escalate-with-comparisons":
+                caseSupported &&
+                [
+                  "login-session-timeline",
+                  "vpn-context-1",
+                  "device-inventory-1",
+                ].every((id) =>
+                  state.structuredTickets[
+                    `ticket-${CASE}`
+                  ]?.sourceArtifactIds?.includes(id),
+                )
+                  ? "Your review request included opened route and device sources, a recorded comparison, and a saved uncertainty note."
+                  : "You chose to request review with comparisons. The saved record does not establish every comparison or attachment; the reviewer must recover the missing checks.",
+              "escalate-identifiers-only":
+                "You sent the identifiers for senior review. The reviewer must reconstruct the comparisons from saved records.",
+              "close-location-explained":
+                "You closed using the location explanation. The saved route mismatch and session-owner question remain available for later review.",
+              "close-familiar-account":
+                "You closed using familiar account history. The flagged session's owner remains unverified in the record.",
+            }[caseChoice] ?? "The final disposition was recorded.")
+          : caseChoice === "dismiss_alert"
+            ? caseHasEvidence
+              ? "You closed the alert while the session owner and route explanation remained unverified. The recorded checks can support later review."
+              : "You closed the alert without a recorded source inspection to explain the unfamiliar session."
+            : caseSupported
+              ? "Your escalation carried traceable records and a clear collection limit into senior review. It did not claim identity or access was proven."
+              : caseChoice && caseHasEvidence
+                ? "You requested review, but the saved record does not show every comparison or uncertainty note needed for a traceable handoff."
+                : caseChoice
+                  ? "You requested review without a recorded source inspection before that decision."
+                  : "No final A-1042 decision was recorded in this shift.",
     }),
     decision({
       id: "scanner_interruption",
       choice: scannerChoice,
       evidence: scannerEvidence,
-      reasoningEvidence: evidenceBefore(state, log, scannerResponse?.sequence ?? Infinity, ["scanner-alert", "scanner-run-log", "scanner-window"]),
+      reasoningEvidence: evidenceBefore(
+        state,
+        log,
+        scannerResponse?.sequence ?? Infinity,
+        ["scanner-alert", "scanner-run-log", "scanner-window"],
+      ),
       signals: [
         ["made_priority_choice", scannerChoice !== null],
         ["checked_run", scannerEvidence.includes("scanner-run-log")],
@@ -442,27 +594,36 @@ export function buildDecisionReview(
           "reviewed_approval_owner",
           accessEvidence.includes("access-approval-guide"),
         ],
-        ["stayed_in_role", accessChoice === "route_access_request" || accessChoice === "route-to-owner" || accessChoice === "route-with-interim"],
+        [
+          "stayed_in_role",
+          accessChoice === "route_access_request" ||
+            accessChoice === "route-to-owner" ||
+            accessChoice === "route-with-interim",
+        ],
         ["explained_boundary", accessBoundary],
       ],
-      outcome:
-        accessSupported
-          ? "supported"
-          : accessChoice && accessBoundary
-            ? "partially_supported"
-            : "needs_more_evidence",
-      explanation: v2 && accessChoice
-        ? ({
-            "route-to-owner": "You routed the request to the finance data owner and kept access pending.",
-            "route-with-interim": "You routed the request to the owner and offered an interim report without granting the requested role.",
-            "self-approve": "You approved the role directly. The record shows the finance data owner's authorization was not obtained.",
-            "reject-as-attack": "You rejected the request as an attack. The urgency alone does not establish malicious intent, and the business request remains unresolved.",
-          }[accessChoice] ?? "The access decision was recorded.")
-        : accessChoice
-        ? accessSupported
-          ? "You checked the approval guide, routed the request to the finance data owner, and kept access pending."
-          : "You routed the request, but the saved record does not show both an approval-guide check and a clear authority boundary."
-        : "No approval-routing action was recorded. Project urgency alone cannot authorize access.",
+      outcome: accessSupported
+        ? "supported"
+        : accessChoice && accessBoundary
+          ? "partially_supported"
+          : "needs_more_evidence",
+      explanation:
+        v2 && accessChoice
+          ? ({
+              "route-to-owner":
+                "You routed the request to the finance data owner and kept access pending.",
+              "route-with-interim":
+                "You routed the request to the owner and offered an interim report without granting the requested role.",
+              "self-approve":
+                "You approved the role directly. The record shows the finance data owner's authorization was not obtained.",
+              "reject-as-attack":
+                "You rejected the request as an attack. The urgency alone does not establish malicious intent, and the business request remains unresolved.",
+            }[accessChoice] ?? "The access decision was recorded.")
+          : accessChoice
+            ? accessSupported
+              ? "You checked the approval guide, routed the request to the finance data owner, and kept access pending."
+              : "You routed the request, but the saved record does not show both an approval-guide check and a clear authority boundary."
+            : "No approval-routing action was recorded. Project urgency alone cannot authorize access.",
     }),
     decision({
       id: "routine_login",
@@ -473,12 +634,11 @@ export function buildDecisionReview(
         ["tested_ordinary_cause", loginReasoned],
         ["kept_reassessment_open", loginReasoned],
       ],
-      outcome:
-        loginSupported
-          ? "supported"
-          : loginChoice && (loginEvidence.length > 0 || loginReasoned)
-            ? "partially_supported"
-            : "needs_more_evidence",
+      outcome: loginSupported
+        ? "supported"
+        : loginChoice && (loginEvidence.length > 0 || loginReasoned)
+          ? "partially_supported"
+          : "needs_more_evidence",
       explanation: loginChoice
         ? loginSupported
           ? "You compared the phone retries with a working laptop, chose a bounded saved-password check, and kept monitoring open."
@@ -490,33 +650,40 @@ export function buildDecisionReview(
       choice: handoffChoice,
       choices: choicesFor("shift_handoff"),
       callbackText: callbacksFor(HANDOFF),
-      correctionHistory: state.taskProgress[`${HANDOFF}:end-shift-continuity`]?.correctionHistory ?? [],
-      evidence: handoffEvidence,
+      correctionHistory:
+        state.taskProgress[`${HANDOFF}:end-shift-continuity`]
+          ?.correctionHistory ?? [],
+      evidence: handoffPayload
+        ? handoffPayload.sourceArtifactIds
+        : handoffEvidence,
       signals: [
         ["named_confirmed_work", handoffFact],
         ["kept_open_question", handoffUncertainty],
         ["named_next_owner", handoffOwner],
       ],
-      outcome:
-        handoffSupported
-          ? "supported"
-          : handoffChoice && (handoffFact || handoffUncertainty || handoffOwner)
-            ? "partially_supported"
-            : "needs_more_evidence",
-      explanation: v2 && handoffChoice
-        ? `You sent a ${handoffChoice} handoff. The saved record keeps initial omissions and later corrections in order.`
-        : handoffChoice
-        ? handoffSupported
-          ? "Your handoff named checked work, an unresolved reviewer question, and the next owner with supporting records."
-          : "You sent a handoff, but the saved record does not support every checked fact, open question, and next owner it needs."
-        : "No end-of-shift handoff was recorded; the next analyst has no confirmed continuation point from this shift.",
+      outcome: handoffSupported
+        ? "supported"
+        : handoffChoice && (handoffFact || handoffUncertainty || handoffOwner)
+          ? "partially_supported"
+          : "needs_more_evidence",
+      explanation:
+        v2 && handoffChoice
+          ? handoffPayload
+            ? "You sent a structured handoff containing selected opened sources, actual case states, and follow-up for the next analyst. Any additional note remains your own statement."
+            : `You sent a ${handoffChoice} handoff. The saved record keeps initial omissions and later corrections in order.`
+          : handoffChoice
+            ? handoffSupported
+              ? "Your handoff named checked work, an unresolved reviewer question, and the next owner with supporting records."
+              : "You sent a handoff, but the saved record does not support every checked fact, open question, and next owner it needs."
+            : "No end-of-shift handoff was recorded; the next analyst has no confirmed continuation point from this shift.",
     }),
   ];
   const profile = [
     [
       "Evidence review",
       caseEvidence.includes("device-inventory-1") &&
-        routeCompared && scannerChecked,
+        routeCompared &&
+        scannerChecked,
       caseEvidence.length > 0 || scannerEvidence.length > 0,
       "Tracks case and scanner records inspected before decisions.",
     ],
@@ -528,7 +695,10 @@ export function buildDecisionReview(
     ],
     [
       "Prioritization",
-      scannerChoice !== null && scannerClosed && scannerChecked && scannerDocumented,
+      scannerChoice !== null &&
+        scannerClosed &&
+        scannerChecked &&
+        scannerDocumented,
       scannerChoice !== null,
       "Tracks interruption choice and later scanner work.",
     ],
@@ -573,8 +743,11 @@ export function completedDecisions(
 ): CompletedDecision[] {
   const careerVersion = state.careerVersion;
   const sessionKind: string = state.sessionKind;
-  if (!careerVersion || sessionKind !== "assessed" ||
-    !state.completedActionIds.includes("complete_shift"))
+  if (
+    !careerVersion ||
+    sessionKind !== "assessed" ||
+    !state.completedActionIds.includes("complete_shift")
+  )
     return [];
   return buildDecisionReview(state, log).decisions.flatMap(
     ({ decisionId, userChoiceId, availableChoiceIds }) =>
@@ -586,7 +759,9 @@ export function completedDecisions(
               careerVersion,
               decisionId,
               choiceId: userChoiceId,
-              ...(careerVersion === "2.0.0" ? { optionSetKey: optionSetKey(availableChoiceIds) } : {}),
+              ...(careerVersion === "2.0.0"
+                ? { optionSetKey: optionSetKey(availableChoiceIds) }
+                : {}),
             },
           ]
         : [],
@@ -604,16 +779,25 @@ export function cohortForDecision(
   const counts = Object.fromEntries(
     choices.map((choice) => [
       choice,
-      rows.find((row) => row.decisionId === id && row.choiceId === choice &&
-        (row.optionSetKey === key || (!row.optionSetKey && key === legacyKey)))
-        ?.count ?? 0,
+      rows.find(
+        (row) =>
+          row.decisionId === id &&
+          row.choiceId === choice &&
+          (row.optionSetKey === key ||
+            (!row.optionSetKey && key === legacyKey)),
+      )?.count ?? 0,
     ]),
   );
   const sampleSize = Object.values(counts).reduce(
     (total, count) => total + count,
     0,
   );
-  if (!Number.isSafeInteger(sampleSize) || Object.values(counts).some((count) => !Number.isSafeInteger(count) || count < 0))
+  if (
+    !Number.isSafeInteger(sampleSize) ||
+    Object.values(counts).some(
+      (count) => !Number.isSafeInteger(count) || count < 0,
+    )
+  )
     return { status: "unavailable" };
   if (sampleSize < 30) return { status: "insufficient" };
   const fractions = choices.map((choice) => ({

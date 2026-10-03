@@ -31,7 +31,11 @@ import { z } from "zod";
 import { generateSafeNpcReply } from "../ai/npc-dialogue.js";
 import { getDefaultCareerPack } from "../career-pack.js";
 import { EvidenceNotFoundError } from "../domain/errors.js";
-import { buildDecisionReview, cohortForDecision, completedDecisions } from "../domain/decision-review.js";
+import {
+  buildDecisionReview,
+  cohortForDecision,
+  completedDecisions,
+} from "../domain/decision-review.js";
 import type { StoredSession } from "../domain/session.js";
 import { toPublicGrant } from "../repository/in-memory.js";
 import type { SimulationRepository } from "../repository/types.js";
@@ -56,7 +60,11 @@ export function createAppRouter(
   async function persistReview(session: StoredSession): Promise<void> {
     try {
       await repository.saveCompletedDecisions(
-        completedDecisions(session.state, session.actionLog, careerPack.career.id),
+        completedDecisions(
+          session.state,
+          session.actionLog,
+          careerPack.career.id,
+        ),
       );
     } catch {
       // Review storage must not block authoritative shift completion.
@@ -112,6 +120,7 @@ export function createAppRouter(
             freeText: z.string().max(2_000).optional(),
             sourceRecordId: z.string().min(1).optional(),
             sourceArtifactId: z.string().min(1).optional(),
+            handoffPayload: z.unknown().optional(),
             ticketPayload: z.unknown().optional(),
             decisionOptionId: z.string().optional(),
             /**
@@ -136,10 +145,20 @@ export function createAppRouter(
             ctx.userId,
             input.sessionId,
           );
-          const session = input.actionId === "complete_shift" ? structuredClone(stored) : stored;
-          if (input.actionId === "complete_shift" && session.state.completedActionIds.includes("complete_shift")) {
+          const session =
+            input.actionId === "complete_shift"
+              ? structuredClone(stored)
+              : stored;
+          if (
+            input.actionId === "complete_shift" &&
+            session.state.completedActionIds.includes("complete_shift")
+          ) {
             await persistReview(session);
-            return { view: toClientView(session.state), sequence: session.actionLog.length, effects: [] };
+            return {
+              view: toClientView(session.state),
+              sequence: session.actionLog.length,
+              effects: [],
+            };
           }
           const action = {
             id: input.actionId,
@@ -160,7 +179,15 @@ export function createAppRouter(
                   ticketPayload:
                     input.ticketPayload as SimulationAction["ticketPayload"],
                 }),
-            ...(input.decisionOptionId ? { decisionOptionId: input.decisionOptionId } : {}),
+            ...(input.handoffPayload === undefined
+              ? {}
+              : {
+                  handoffPayload:
+                    input.handoffPayload as SimulationAction["handoffPayload"],
+                }),
+            ...(input.decisionOptionId
+              ? { decisionOptionId: input.decisionOptionId }
+              : {}),
             ...(input.queryPayload === undefined
               ? {}
               : {
@@ -431,21 +458,42 @@ export function createAppRouter(
               .filter(({ applied }) => applied)
               .map(({ description }) => description),
           });
-          if (!session.state.completedActionIds.includes("complete_shift")) return personal;
+          if (!session.state.completedActionIds.includes("complete_shift"))
+            return personal;
           const review = buildDecisionReview(session.state, session.actionLog);
           const sessionKind: string = session.state.sessionKind;
-          if (review.decisions.some(({ comparisonEligible, userChoiceId }) => comparisonEligible && userChoiceId) &&
+          if (
+            review.decisions.some(
+              ({ comparisonEligible, userChoiceId }) =>
+                comparisonEligible && userChoiceId,
+            ) &&
             sessionKind === "assessed" &&
-            session.state.careerVersion === careerPack.career.packVersion) {
+            session.state.careerVersion === careerPack.career.packVersion
+          ) {
             try {
-              const recorded = new Set(await repository.getRecordedDecisionIds(
-                session.state.sessionId, careerPack.career.id, review.careerVersion,
-              ));
+              const recorded = new Set(
+                await repository.getRecordedDecisionIds(
+                  session.state.sessionId,
+                  careerPack.career.id,
+                  review.careerVersion,
+                ),
+              );
               if (recorded.size > 0) {
-                const counts = await repository.getCohortCounts(careerPack.career.id, review.careerVersion);
+                const counts = await repository.getCohortCounts(
+                  careerPack.career.id,
+                  review.careerVersion,
+                );
                 for (const item of review.decisions) {
-                  if (item.comparisonEligible && item.userChoiceId && recorded.has(item.decisionId)) {
-                    item.cohort = cohortForDecision(item.decisionId, counts, item.availableChoiceIds);
+                  if (
+                    item.comparisonEligible &&
+                    item.userChoiceId &&
+                    recorded.has(item.decisionId)
+                  ) {
+                    item.cohort = cohortForDecision(
+                      item.decisionId,
+                      counts,
+                      item.availableChoiceIds,
+                    );
                   }
                 }
               }

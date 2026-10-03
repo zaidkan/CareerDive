@@ -26,6 +26,13 @@ import {
   workplaceMutationKey,
 } from "./useMutationCoordinator.js";
 import "./styles.css";
+import { readTabValue, writeTabValue } from "./useTabDraft.js";
+// Route changes retain the pending creation promise as well as its confirmed session.
+const liveSessions = new WeakMap<
+  SimulationClient,
+  { promise: ReturnType<SimulationClient["createSession"]> }
+>();
+const SESSION_KEY = "career-expo-active-session";
 
 export function App({ client = defaultClient }: { client?: SimulationClient }) {
   const [view, setView] = useState<ClientView>();
@@ -78,22 +85,61 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
           creationRef.current.attempt !== sessionRequest
         ) {
           // Cache the whole retry sequence: StrictMode must not duplicate session creation.
-          const promise = (async () => {
-            try {
-              return await client.createSession(input);
-            } catch (cause) {
-              if (!(cause instanceof StartupFailure) || !cause.safeToRetry)
-                throw cause;
-              if (startupActiveRef.current && creationRef.current?.client === client && creationRef.current.attempt === sessionRequest)
-                setStartupStatus("Connection interrupted. Trying once more…");
-              await new Promise((resolve) => setTimeout(resolve, 400));
-              if (!startupActiveRef.current || creationRef.current?.client !== client || creationRef.current.attempt !== sessionRequest) throw cause;
-              return client.createSession(input);
-            }
-          })();
+          const existing = liveSessions.get(client);
+          const savedId =
+            client === defaultClient
+              ? readTabValue<string | null>(SESSION_KEY, null)
+              : null;
+          const promise =
+            (existing && client.getSession
+              ? existing.promise
+                  .then(
+                    ({ sessionId }) =>
+                      client.getSession?.(sessionId) ?? existing.promise,
+                  )
+                  .catch(() => {
+                    throw new StartupFailure(true, "resume-unavailable");
+                  })
+              : existing?.promise) ??
+            (async () => {
+              if (savedId && client.getSession) {
+                try {
+                  return await client.getSession(savedId);
+                } catch {
+                  throw new StartupFailure(true, "resume-unavailable");
+                }
+              }
+              try {
+                return await client.createSession(input);
+              } catch (cause) {
+                if (!(cause instanceof StartupFailure) || !cause.safeToRetry)
+                  throw cause;
+                if (
+                  startupActiveRef.current &&
+                  creationRef.current?.client === client &&
+                  creationRef.current.attempt === sessionRequest
+                )
+                  setStartupStatus("Connection interrupted. Trying once more…");
+                await new Promise((resolve) => setTimeout(resolve, 400));
+                if (
+                  !startupActiveRef.current ||
+                  creationRef.current?.client !== client ||
+                  creationRef.current.attempt !== sessionRequest
+                )
+                  throw cause;
+                return client.createSession(input);
+              }
+            })();
+          liveSessions.set(client, { promise });
           creationRef.current = { client, attempt: sessionRequest, promise };
+          void promise.catch(() => {
+            if (liveSessions.get(client)?.promise === promise)
+              liveSessions.delete(client);
+          });
         }
         const created = await creationRef.current.promise;
+        if (client === defaultClient)
+          writeTabValue(SESSION_KEY, created.sessionId);
         if (!isCurrent()) return;
         currentSessionRef.current = {
           generation,
@@ -101,6 +147,9 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
         };
         setSessionId(created.sessionId);
         setView(created.view);
+        if (created.view.completed) {
+          void loadDebrief({ generation, sessionId: created.sessionId });
+        }
       } catch (cause) {
         if (!isCurrent()) return;
         const failure =
@@ -109,9 +158,11 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
             : new StartupFailure(false, "creation-unconfirmed");
         setStartupFailure(failure);
         setError(
-          failure.safeToRetry
-            ? "We couldn't connect to start your shift. Your place is kept. Try again when you're ready."
-            : "We couldn't confirm whether your shift started. To avoid starting it twice, we've paused here. Report the problem for help.",
+          failure.category === "resume-unavailable"
+            ? "Your saved shift could not be loaded. Your place is kept; retry the connection instead of starting over."
+            : failure.safeToRetry
+              ? "We couldn't connect to start your shift. Your place is kept. Try again when you're ready."
+              : "We couldn't confirm whether your shift started. To avoid starting it twice, we've paused here. Report the problem for help.",
         );
       }
     })();
@@ -124,6 +175,13 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
   useEffect(() => {
     if (error) retryFocus.current?.focus();
   }, [error]);
+
+  useEffect(() => {
+    if (sessionId && view)
+      liveSessions.set(client, {
+        promise: Promise.resolve({ sessionId, view }),
+      });
+  }, [client, sessionId, view]);
 
   function currentSession() {
     const current = currentSessionRef.current;
@@ -182,6 +240,8 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
               : undefined,
             action.ticketPayload,
             action.decisionOptionId,
+            action.queryPayload,
+            action.handoffPayload,
           );
         } catch (cause) {
           throw new Error("That action could not be completed.", { cause });
@@ -381,7 +441,12 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
           {error ? "Your place on this page is kept." : startupStatus}
         </p>
       ) : debrief ? (
-        <DebriefView debrief={debrief} />
+        <DebriefView
+          debrief={debrief}
+          sourceTitles={Object.fromEntries(
+            view.artifacts.map(({ id, title }) => [id, title]),
+          )}
+        />
       ) : debriefStatus ? (
         <section
           aria-label="Shift completion"
@@ -415,6 +480,7 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
             items={view.acknowledgements ?? []}
           />
           <ExperienceShell
+            key={view.sessionId}
             onAction={(action, freeText) => void perform(action, freeText)}
             onNotification={respondToWorkNotification}
             onTaskAttempt={submitTaskAttempt}

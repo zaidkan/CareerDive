@@ -1,0 +1,177 @@
+import type { ClientView, WorkplaceInteraction } from "@sim/schemas";
+import { useTabDraft } from "../../useTabDraft.js";
+
+export function CaseEvidence({
+  view,
+  eventId,
+  onInspect,
+  pending,
+}: {
+  view: ClientView;
+  eventId: string;
+  onInspect?:
+    | ((interaction: WorkplaceInteraction) => Promise<unknown>)
+    | undefined;
+  pending: boolean;
+}) {
+  const sources = view.artifacts.filter((source) =>
+    source.eventIds.includes(eventId),
+  );
+  const [selected, setSelected] = useTabDraft(
+    `evidence:${view.sessionId}:${eventId}`,
+    "",
+  );
+  const [comparison, setComparison] = useTabDraft<string[]>(
+    `compare:${view.sessionId}:${eventId}`,
+    [],
+  );
+  const inspected = view.workplace.inspectedArtifactIds ?? [];
+  const source =
+    sources.find(({ id }) => id === view.workplace.lastInspectedArtifactId) ??
+    sources.find(({ id }) => id === selected) ??
+    sources.findLast(({ id }) => inspected.includes(id));
+  const recorded = view.workplace.comparisons?.some(
+    ({ eventId: id, artifactIds }) =>
+      id === eventId &&
+      comparison.every((id) => artifactIds.includes(id)) &&
+      comparison.length === 2,
+  );
+  return (
+    <section className="case-evidence" aria-label="Case evidence">
+      {view.structuredTickets?.[`ticket-${eventId}`] ? (
+        <details>
+          <summary>Saved case ticket</summary>
+          <pre className="artifact-body">{view.ticketNotes[eventId]}</pre>
+          <p>
+            Status: {view.structuredTickets[`ticket-${eventId}`]?.status}.
+            Decision:{" "}
+            {view.structuredTickets[`ticket-${eventId}`]?.disposition ??
+              "Not yet submitted"}
+            .
+          </p>
+        </details>
+      ) : null}
+      <h4>Sources for this case</h4>
+      <p>
+        Open a source to check its details. Compare timing, route, and device
+        context before drawing a conclusion.
+      </p>
+      <div className="case-source-links">
+        {sources.slice(0, 4).map((item) => (
+          <button
+            type="button"
+            key={item.id}
+            aria-pressed={source?.id === item.id}
+            disabled={pending || !onInspect}
+            onClick={() => {
+              setSelected(item.id);
+              void onInspect?.({
+                type: "open_artifact",
+                artifactId: item.id,
+              }).catch(() => {});
+            }}
+          >
+            {item.title}
+            <small>
+              {inspected.includes(item.id) ? "Opened" : "Available to inspect"}
+            </small>
+          </button>
+        ))}
+      </div>
+      {sources.length > 4 ? (
+        <details>
+          <summary>Related sources and follow-up checks</summary>{" "}
+          <div className="case-source-links">
+            {sources.slice(4).map((item) => (
+              <button
+                type="button"
+                key={item.id}
+                aria-pressed={source?.id === item.id}
+                disabled={pending || !onInspect}
+                onClick={() => {
+                  setSelected(item.id);
+                  void onInspect?.({
+                    type: "open_artifact",
+                    artifactId: item.id,
+                  }).catch(() => {});
+                }}
+              >
+                {item.title}
+                <small>
+                  {inspected.includes(item.id)
+                    ? "Opened"
+                    : "Available to inspect"}
+                </small>
+              </button>
+            ))}
+          </div>
+        </details>
+      ) : null}
+      {source?.observed && source.body ? (
+        <article aria-label={`Inspected source: ${source.title}`}>
+          <h5>{source.title}</h5>
+          <pre className="artifact-body">{source.body}</pre>
+        </article>
+      ) : null}
+      {inspected.filter((id) => sources.some((item) => item.id === id))
+        .length >= 2 ? (
+        <details>
+          <summary>Compare two opened sources</summary>
+          <fieldset>
+            <legend>Choose two records to keep side by side</legend>
+            {sources
+              .filter(({ id }) => inspected.includes(id))
+              .map((item) => (
+                <label key={item.id}>
+                  <input
+                    type="checkbox"
+                    checked={comparison.includes(item.id)}
+                    disabled={
+                      !comparison.includes(item.id) && comparison.length === 2
+                    }
+                    onChange={() => {
+                      setComparison((ids) =>
+                        ids.includes(item.id)
+                          ? ids.filter((id) => id !== item.id)
+                          : [...ids, item.id],
+                      );
+                    }}
+                  />
+                  {item.title}
+                </label>
+              ))}
+          </fieldset>
+          <div className="case-comparison">
+            {sources
+              .filter(({ id }) => comparison.includes(id))
+              .map((item) => (
+                <article key={item.id}>
+                  <h5>{item.title}</h5>
+                  <pre className="artifact-body">{item.body}</pre>
+                </article>
+              ))}
+          </div>
+          <button
+            type="button"
+            disabled={
+              pending || comparison.length !== 2 || !onInspect || recorded
+            }
+            onClick={() => {
+              void onInspect?.({
+                type: "compare_artifacts",
+                eventId,
+                artifactIds: comparison,
+              }).catch(() => {});
+            }}
+          >
+            {recorded ? "Comparison recorded" : "Record this comparison"}
+          </button>
+          <p>
+            Records being compared is recorded; your conclusion belongs in the
+            ticket.
+          </p>
+        </details>
+      ) : null}
+    </section>
+  );
+}

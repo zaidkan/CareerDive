@@ -1,5 +1,6 @@
 import type { AvailableAction, ClientView } from "@sim/schemas";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { useTabDraft } from "../../useTabDraft.js";
 import { getShiftGuidance } from "../../guidance.js";
 import { CalendarPanel, DashboardHome } from "./DashboardHome.js";
 import { SystemApp } from "./SystemApp.js";
@@ -48,7 +49,9 @@ export function OpsConsole({
     (view.events.some(({ systemId }) => systemId === "email")
       ? "email"
       : "home");
-  const tab = state.opsTabByWindow[windowId] ?? (phase === "desk_login" ? "home" : initialTab);
+  const tab =
+    state.opsTabByWindow[windowId] ??
+    (phase === "desk_login" ? "home" : initialTab);
   const setTab = (nextTab: DeskOsTab) => {
     dispatch({ type: "set_ops_tab", windowId, tab: nextTab });
   };
@@ -57,15 +60,20 @@ export function OpsConsole({
       dispatch({ type: "set_ops_tab", windowId, tab });
     }
   }, [dispatch, state.opsTabByWindow, tab, windowId]);
-  const [focusTarget, setFocusTarget] = useState<{
-    eventId?: string;
-    requestId: number;
-  }>();
+  const [focusTarget, setFocusTarget] = useTabDraft<
+    | {
+        eventId?: string;
+        requestId: number;
+      }
+    | undefined
+  >(`case-focus:${view.sessionId}:${windowId}`, undefined);
 
   const openTab = (nextTab: DeskOsTab, eventId?: string) => {
     setTab(nextTab);
     setFocusTarget((current) => ({
-      ...(eventId ? { eventId } : {}),
+      ...((eventId ?? current?.eventId)
+        ? { eventId: eventId ?? current?.eventId ?? "" }
+        : {}),
       requestId: (current?.requestId ?? 0) + 1,
     }));
   };
@@ -77,7 +85,10 @@ export function OpsConsole({
       eventId: target.eventId,
       requestId: (current?.requestId ?? 0) + 1,
     }));
-    dispatch({ type: "clear_notification_target", requestId: target.requestId });
+    dispatch({
+      type: "clear_notification_target",
+      requestId: target.requestId,
+    });
   }, [dispatch, state.notificationTarget, windowId]);
 
   const locked = phase === "desk_login";
@@ -157,11 +168,7 @@ export function OpsConsole({
           </>
         ) : null}
         {tab === "home" ? (
-          <DashboardHome
-            guidance={guidance}
-            onOpenTab={openTab}
-            view={view}
-          />
+          <DashboardHome guidance={guidance} onOpenTab={openTab} view={view} />
         ) : tab === "calendar" ? (
           <CalendarPanel
             view={view}
@@ -172,6 +179,12 @@ export function OpsConsole({
         ) : (
           <SystemApp
             guidance={guidance}
+            onSelectCase={(eventId) => {
+              setFocusTarget((current) => ({
+                eventId,
+                requestId: (current?.requestId ?? 0) + 1,
+              }));
+            }}
             onAction={onAction}
             mutationState={mutationState}
             {...(onTaskAttempt ? { onTaskAttempt } : {})}

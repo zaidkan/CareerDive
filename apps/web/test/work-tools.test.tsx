@@ -12,6 +12,7 @@ import type { WorldState } from "@sim/schemas";
 const openArtifact = vi.fn();
 afterEach(() => {
     cleanup();
+  sessionStorage.clear();
     vi.clearAllMocks();
 });
 function emailView(): ClientView {

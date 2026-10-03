@@ -16,7 +16,7 @@ import type { NotificationHandler } from "../src/components/shared.js";
 import { BreakRoomPanel, CarriedSnackControl, } from "../src/world/BreakRoomPanel.js";
 import { actionMutationKey, notificationMutationKey, taskMutationKey, useMutationCoordinator, workplaceMutationKey, } from "../src/useMutationCoordinator.js";
 import { JulesDialogue } from "../src/world/JulesDialogue.js";
-afterEach(cleanup);
+afterEach(() => { cleanup(); sessionStorage.clear(); });
 const pack = loadDefaultCybersecurityPack();
 type Mode = "os";
 const outcomes = new Map<Mode, StoredSession>();
@@ -108,6 +108,7 @@ describe("rendered workplace golden path", () => {
                     ...(action.decisionOptionId
                         ? { decisionOptionId: action.decisionOptionId }
                         : {}),
+                    ...(action.handoffPayload ? { handoffPayload: action.handoffPayload } : {}),
                 });
                 return { result: undefined, view: await update() };
             })
@@ -269,7 +270,7 @@ describe("rendered workplace golden path", () => {
             expect([...foundTasks].sort()).toEqual(view.tasks
                 // document_ticket uses TicketComposer; every other task kind,
                 // including authored build summaries, must render a task panel.
-                .filter(({ actionId }) => actionId !== "document_ticket")
+                .filter(({ actionId }) => actionId !== "document_ticket" && actionId !== "submit_shift_handoff")
                 .map(({ id, eventId, stepIndex }) => `${id}:${eventId}:${String(stepIndex)}`)
                 .sort());
         }
@@ -289,6 +290,14 @@ describe("rendered workplace golden path", () => {
                 await activate(required(container.querySelector<HTMLElement>(`button[data-record-id="${recordId}"]`), `${recordId} alert record`));
                 expect(state.workplace.selectedAlertIdsByEvent?.[eventId]).toBe(recordId);
             }
+            if (id === "submit_shift_handoff") {
+                const builder = screen.getByRole("region", { name: "Build shift handoff" });
+                const sources = within(builder).getAllByRole("checkbox");
+                for (const source of sources) await user.click(source);
+                await activate(within(builder).getByRole("button", { name: "Send handoff to next analyst" }));
+                expect(state.teamMessages?.some(({ actionId, body }) => actionId === "submit_shift_handoff" && body.includes("STILL NEEDS FOLLOW-UP"))).toBe(true);
+                return;
+            }
             if (!action.taskId || id === "document_ticket") {
                 if (id === "document_ticket") {
                     const button = required(container.querySelector<HTMLButtonElement>(`button[data-action-id="${id}"][data-event-id="${eventId}"]`), `${id} submit button`);
@@ -306,7 +315,7 @@ describe("rendered workplace golden path", () => {
                     const sources = within(form).getAllByRole("checkbox");
                     expect(sources.length).toBeGreaterThan(0);
                     for (const source of sources)
-                        await user.click(source);
+                        if (!(source as HTMLInputElement).checked) await user.click(source);
                     const firstDecision = within(form).queryAllByRole("radio")[0];
                     if (firstDecision) await user.click(firstDecision);
                     const saveDraft = required(within(form).queryByRole("button", { name: "Save draft" }), "ticket draft button");
@@ -360,7 +369,7 @@ describe("rendered workplace golden path", () => {
                 for (const optionId of step.requiredOptionIds)
                     await activate(required(panel().querySelector<HTMLElement>(`[data-option-id="${optionId}"]`), `${optionId} task option`));
                 await activate(within(panel()).getByRole("button", {
-                    name: /Submit findings|Check my work/,
+                    name: /Submit findings|Check my work|Send selected response/,
                 }));
             }
         }
@@ -373,11 +382,12 @@ describe("rendered workplace golden path", () => {
                 await user.click(item);
             const button = required(container.querySelector<HTMLButtonElement>(`button[data-action-id="update_ticket_notes"][data-event-id="${eventId}"]`), `${eventId} save note button`);
             const editor = required(button.closest("form"), `${eventId} note editor`);
-            const field = within(editor).getByRole("textbox");
+            const field = within(editor).getByRole("textbox", { name: "Verified evidence" });
             await user.clear(field);
             await user.type(field, note);
+            for (const source of within(editor).getAllByRole("checkbox")) if (!(source as HTMLInputElement).checked) await user.click(source);
             await activate(button);
-            expect(state.ticketNotes[eventId]).toBe(note);
+            expect(state.ticketNotes[eventId]).toContain(note);
         }
         await verifyAvailableTargets();
         await perform("read_handoff", "handoff-1");

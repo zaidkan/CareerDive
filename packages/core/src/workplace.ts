@@ -53,7 +53,8 @@ export function alertRecordSource(state: WorldState, recordId: string) {
   const record = state.rules.datasets.alerts?.records.find(
     (item) => item.datasetId === "alerts" && item.id === recordId,
   );
-  if (!record || record.datasetId !== "alerts" || !record.linkedWorkItemId) return;
+  if (!record || record.datasetId !== "alerts" || !record.linkedWorkItemId)
+    return;
   const event = state.events.find(
     ({ id, systemId, status }) =>
       id === record.linkedWorkItemId &&
@@ -76,6 +77,10 @@ function observeArtifact(state: WorldState, artifactId: string): void {
   if (!state.observedArtifactIds.includes(artifactId)) {
     state.observedArtifactIds.push(artifactId);
   }
+  state.workplace.lastInspectedArtifactId = artifactId;
+  state.workplace.inspectedArtifactIds ??= [];
+  if (!state.workplace.inspectedArtifactIds.includes(artifactId))
+    state.workplace.inspectedArtifactIds.push(artifactId);
   const artifact = state.artifacts[artifactId];
   if (!artifact) return;
   for (const eventId of artifact.eventIds) {
@@ -192,8 +197,47 @@ export function applyWorkplaceInteraction(
       if (!source) reject("Alert record is not available in the current state");
       observeArtifact(state, source.artifact.id);
       state.workplace.selectedAlertIdsByEvent ??= {};
-      state.workplace.selectedAlertIdsByEvent[source.event.id] = source.record.id;
+      state.workplace.selectedAlertIdsByEvent[source.event.id] =
+        source.record.id;
       feedbackCode = "alert_record_opened";
+      break;
+    }
+    case "inspect_query_record": {
+      const query = state.queryHistory.find(
+        ({ queryId }) => queryId === interaction.queryId,
+      );
+      if (!query?.resultIds.includes(interaction.recordId))
+        reject("Record is not in this search result");
+      state.workplace.inspectedRecordIds ??= [];
+      if (!state.workplace.inspectedRecordIds.includes(interaction.recordId))
+        state.workplace.inspectedRecordIds.push(interaction.recordId);
+      feedbackCode = "query_record_inspected";
+      break;
+    }
+    case "compare_artifacts": {
+      const ids = interaction.artifactIds;
+      if (
+        new Set(ids).size !== 2 ||
+        !ids.every(
+          (id) =>
+            state.workplace.inspectedArtifactIds?.includes(id) &&
+            state.artifacts[id]?.eventIds.includes(interaction.eventId),
+        )
+      )
+        reject("Open both case sources before comparing them");
+      state.workplace.comparisons ??= [];
+      if (
+        !state.workplace.comparisons.some(
+          (comparison) =>
+            comparison.eventId === interaction.eventId &&
+            ids.every((id) => comparison.artifactIds.includes(id)),
+        )
+      )
+        state.workplace.comparisons.push({
+          eventId: interaction.eventId,
+          artifactIds: [...ids],
+        });
+      feedbackCode = "records_compared";
       break;
     }
     case "emergency_recovery": {

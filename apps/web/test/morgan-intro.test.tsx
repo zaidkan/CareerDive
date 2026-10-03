@@ -44,6 +44,7 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
 
 afterEach(() => {
   cleanup();
+  sessionStorage.clear();
   vi.restoreAllMocks();
 });
 
@@ -239,7 +240,7 @@ describe("once-per-session Morgan introduction", () => {
     expect(introNodes()).toHaveLength(1);
     first.unmount();
 
-    render(<SpatialShell view={makeView()} onAction={vi.fn()} />);
+    render(<SpatialShell view={makeView({ sessionId: "second-session" })} onAction={vi.fn()} />);
     await enterDesk(user);
     await openTeamChat(user);
     expect(introNodes()).toHaveLength(1);
