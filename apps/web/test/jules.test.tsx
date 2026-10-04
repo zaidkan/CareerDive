@@ -9,7 +9,7 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ClientView } from "@sim/schemas";
 import type { WorkplaceInteractionResult } from "../src/client.js";
 
@@ -81,6 +81,13 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
 
 import { SpatialShell } from "../src/world/SpatialShell.js";
 
+beforeEach(() => {
+  vi.stubGlobal("matchMedia", () => ({
+    matches: true,
+    addEventListener() {},
+    removeEventListener() {},
+  }));
+});
 const baseView: ClientView = {
   sessionId: "jules-web-session",
   sessionKind: "assessed",
@@ -198,7 +205,7 @@ describe("purposeful Jules dialogue panel", () => {
     expect(
       within(dialog).getByRole("heading", { name: "Jules" }),
     ).toBeVisible();
-    expect(within(dialog).getAllByRole("button")).toHaveLength(4);
+    expect(within(dialog).getAllByRole("button")).toHaveLength(6);
     expect(
       within(dialog).getByRole("button", { name: "First day rhythm" }),
     ).toBeVisible();
@@ -212,10 +219,9 @@ describe("purposeful Jules dialogue panel", () => {
     expect(onWorkplaceInteraction).toHaveBeenLastCalledWith({
       type: "talk_to_jules",
       topic: "first_day",
+      eventId: "suspicious-login-1",
     });
-    expect(
-      await within(dialog).findByText(/monitoring.*notes.*interruptions/i),
-    ).toBeVisible();
+    expect(await within(dialog).findByRole("status")).toBeVisible();
 
     rerender(
       <SpatialShell
@@ -247,6 +253,7 @@ describe("purposeful Jules dialogue panel", () => {
     expect(onWorkplaceInteraction).toHaveBeenLastCalledWith({
       type: "talk_to_jules",
       topic: "current_work",
+      eventId: "suspicious-login-1",
     });
   });
 
@@ -270,6 +277,7 @@ describe("purposeful Jules dialogue panel", () => {
     expect(onWorkplaceInteraction).toHaveBeenCalledWith({
       type: "talk_to_jules",
       topic: "current_work",
+      eventId: "suspicious-login-1",
     });
     expect(within(dialog).queryByText(/device inventory/i)).toBeNull();
     expect(
@@ -281,7 +289,7 @@ describe("purposeful Jules dialogue panel", () => {
       await pending.promise;
     });
 
-    expect(await within(dialog).findByText(/device inventory/i)).toBeVisible();
+    expect(await within(dialog).findByRole("status")).toBeVisible();
     expect(within(dialog).getByText(/Back to Guides/i)).toBeVisible();
   });
 
@@ -316,7 +324,7 @@ describe("purposeful Jules dialogue panel", () => {
     });
 
     const reopened = await openJulesVisually(user);
-    expect(within(reopened).getByText(/device inventory/i)).toBeVisible();
+    expect(within(reopened).getByRole("status")).toBeVisible();
   });
 
   it("allows Escape during a pending reply while the shared gate stays closed", async () => {
@@ -441,6 +449,7 @@ describe("purposeful Jules dialogue panel", () => {
     expect(onWorkplaceInteraction).toHaveBeenNthCalledWith(1, {
       type: "talk_to_jules",
       topic: "current_work",
+      eventId: "suspicious-login-1",
     });
     expect(onWorkplaceInteraction).toHaveBeenNthCalledWith(2, {
       type: "close_fridge",

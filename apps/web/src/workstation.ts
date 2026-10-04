@@ -63,8 +63,14 @@ export function eventsForSystem(
   view: ClientView,
   systemId: WorkSystemId,
 ): WorkstationEvent[] {
-  return activeCases(view).filter((event) =>
-    belongsToSystem(view, event, systemId),
+  return view.events.filter(
+    (event) =>
+      (isActiveCase(event) ||
+        (systemId === "team_chat" &&
+          view.availableActions.some(
+            (a) => a.id === "ask_manager" && a.eventId === event.id,
+          ))) &&
+      belongsToSystem(view, event, systemId),
   );
 }
 

@@ -172,7 +172,7 @@ describe("current Cyber shift usability and truthful provenance", () => {
     expect(
       run.state.pendingCallbacks.find(({ id }) => id === "b1-comparison-review")
         ?.body,
-    ).toContain("comparisons are attached");
+    ).toContain("flagged-session/VPN comparison and device inventory source are attached");
   });
   it("does not describe completed review work as a future obligation in a later status update", () => {
     const run = investigate([

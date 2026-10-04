@@ -12,6 +12,7 @@ import {
   applyAction,
   createInitialWorldState,
   foldActionLog,
+  applyWorkplaceInteraction,
   toClientView,
 } from "../src/index.js";
 
@@ -117,8 +118,20 @@ describe("V1 · bounded Morgan context for A-1042", () => {
           ? investigation
           : [action("review_alert"), ...investigation],
       );
-      const response = consult(state);
-      expect(response).toMatch(/records you opened are context/i);
+      const lastQuery = state.queryHistory.at(-1);
+      const inspected = lastQuery?.resultIds[0]
+        ? applyWorkplaceInteraction(state, {
+            type: "inspect_query_record",
+            queryId: lastQuery.queryId,
+            recordId: lastQuery.resultIds[0],
+          }).state
+        : state;
+      const response = consult(inspected);
+      expect(response).toMatch(
+        lastQuery && !lastQuery.resultIds.length
+          ? /not enough context/i
+          : /records you opened are context/i,
+      );
       assertNoRestrictedContext(response);
       expect(response.length).toBeLessThan(400);
       assertNoOracleOrGrading(response);
@@ -172,7 +185,7 @@ describe("V1 · bounded Morgan context for A-1042", () => {
     );
   });
 
-  it("replays identical state and keeps consultation single-shot", () => {
+  it("replays identical state and keeps consultation available", () => {
     const actions = [
       action("review_alert"),
       query("auth", { user: "j.patel@example.com" }),
@@ -189,8 +202,6 @@ describe("V1 · bounded Morgan context for A-1042", () => {
     expect(
       replayed.ledger.filter(({ actionId }) => actionId === "ask_manager"),
     ).toHaveLength(1);
-    expect(() => applyAction(replayed, action("ask_manager"))).toThrow(
-      /not available/i,
-    );
+    expect(() => applyAction(replayed, action("ask_manager"))).not.toThrow();
   });
 });

@@ -162,6 +162,7 @@ export function OpsConsole({
             </span>
           ) : null}
           <MutationStatus
+            focusSuccess={tab !== "team_chat"}
             state={mutationState}
             {...(onRetryMutation ? { onRetry: onRetryMutation } : {})}
           />

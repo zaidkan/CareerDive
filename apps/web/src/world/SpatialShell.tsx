@@ -31,6 +31,9 @@ import { LaptopOverlay } from "./deskOs/LaptopOverlay.js";
 import { writeTabValue } from "../useTabDraft.js";
 import { OsSessionProvider, useOsSession } from "./deskOs/osSession.js";
 import { FloorMap } from "./FloorMap.js";
+import { MorganDialogue } from "./dialogue/MorganDialogue.js";
+import { ShiftHints } from "./dialogue/ShiftHints.js";
+import { unlockDialogueAudio } from "./dialogue/audio.js";
 import { JulesDialogue } from "./JulesDialogue.js";
 import { getJourneyStep } from "../journey.js";
 import { INITIAL_SPATIAL, reduceSpatialEvent } from "./presentation.js";
@@ -75,6 +78,7 @@ const INTERACT_LABEL: Partial<Record<HotspotId, string>> = {
   break_door: "Use door",
   door_exit: "Exit to map",
   jules: "Talk to Jules",
+  morgan_station: "Talk to Morgan",
   storage: "Open cabinets",
 };
 
@@ -115,6 +119,7 @@ function SpatialShellStage({
   const [mouseSensitivity, setMouseSensitivity] =
     useState(loadMouseSensitivity);
   const [workplacePending, setWorkplacePending] = useState(false);
+  const [morganOpen, setMorganOpen] = useState(false);
   const [julesOpen, setJulesOpen] = useState(false);
   const [julesReply, setJulesReply] = useState<JulesDialogueReply>();
   const [walkBlocked, setWalkBlocked] = useState(false);
@@ -218,11 +223,27 @@ function SpatialShellStage({
 
   const handleJulesTopic = useCallback(
     (topic: JulesTopic) => {
+      unlockDialogueAudio();
       const reply = julesDialogueFromClientView(view, topic);
+      const source = view.artifacts.find(
+        (a) => a.id === view.workplace.lastInspectedArtifactId,
+      );
+      const eventId =
+        view.events.find(
+          (e) => source?.eventIds.includes(e.id) && e.status === "active",
+        )?.id ??
+        view.events.find(
+          (e) => e.id === "suspicious-login-1" && e.status === "active",
+        )?.id ??
+        view.events.find(
+          (e) => e.status === "active" && e.category !== "handoff",
+        )?.id ??
+        view.events.find((e) => e.status === "active")?.id;
       void (async () => {
         const result = await submitWorkplaceInteraction({
           type: "talk_to_jules",
           topic,
+          ...(eventId ? { eventId } : {}),
         });
         if (result) setJulesReply(reply);
       })();
@@ -254,6 +275,7 @@ function SpatialShellStage({
 
   const handleInteract = useCallback(
     (id: HotspotId) => {
+      unlockDialogueAudio();
       switch (id) {
         case "desk_player":
           setJulesOpen(false);
@@ -272,6 +294,12 @@ function SpatialShellStage({
           }
           break;
         case "jules": {
+          if (
+            julesReply ||
+            view.workplace.julesTopicsSeen.includes("current_work")
+          )
+            setJulesReply(julesDialogueFromClientView(view, "current_work"));
+          setMorganOpen(false);
           setJulesOpen(true);
           break;
         }
@@ -289,8 +317,11 @@ function SpatialShellStage({
         case "storage":
           window.dispatchEvent(new Event("soc-storage"));
           break;
-        case "alert_wall":
-        case "morgan_station": {
+        case "morgan_station":
+          setJulesOpen(false);
+          setMorganOpen(true);
+          break;
+        case "alert_wall": {
           const message = FLAVOR[id];
           if (message) dispatch({ type: "set_flavor", message });
           break;
@@ -299,7 +330,7 @@ function SpatialShellStage({
           break;
       }
     },
-    [requestFridgeCloseOnExit, requestWorkplaceInteraction, view.workplace],
+    [julesReply, requestFridgeCloseOnExit, requestWorkplaceInteraction, view],
   );
 
   const journey = getJourneyStep({
@@ -378,7 +409,10 @@ function SpatialShellStage({
     mutationState.pendingKey ===
     workplaceMutationKey({ type: "movement_exertion", distanceMeters: 5 });
   const playerMovementBlocked =
-    workplacePending || (canonicalMutationPending && !movementMutationPending);
+    julesOpen ||
+    morganOpen ||
+    workplacePending ||
+    (canonicalMutationPending && !movementMutationPending);
 
   return (
     <section
@@ -389,6 +423,11 @@ function SpatialShellStage({
         className={`room-stage${atDesk ? " room-stage-desk" : ""}${maximized ? " room-stage-desk-max" : ""}${fullscreen ? " room-stage-fs" : ""}`}
         ref={stageRef}
       >
+        <ShiftHints
+          view={view}
+          phase={spatial.phase}
+          paused={julesOpen || morganOpen}
+        />
         <Suspense
           fallback={<p className="room-loading">Entering {roomLabel}…</p>}
         >
@@ -433,6 +472,19 @@ function SpatialShellStage({
         {walking && !pointerLocked ? (
           <p className="room-look-hint">Click to look around</p>
         ) : null}
+        {walking && morganOpen ? (
+          <MorganDialogue
+            view={view}
+            actions={view.availableActions.filter(
+              (a) => a.id === "ask_manager",
+            )}
+            onAction={onAction}
+            pending={resourcePending}
+            onClose={() => {
+              setMorganOpen(false);
+            }}
+          />
+        ) : null}
         {walking && julesOpen ? (
           <JulesDialogue
             onClose={() => {
@@ -455,6 +507,7 @@ function SpatialShellStage({
               mutationState.pendingKey ||
               mutationState.success ? (
                 <MutationStatus
+                  focusSuccess={!julesOpen && !morganOpen}
                   state={mutationState}
                   {...(onRetryMutation ? { onRetry: onRetryMutation } : {})}
                 />
@@ -463,6 +516,16 @@ function SpatialShellStage({
                 <span className="room-hud-count">{stepLabel}</span>
                 {journey.title}
               </p>
+              {nearbyHotspotId ? (
+                <p className="room-context-action">
+                  <kbd>E</kbd>{" "}
+                  {nearbyHotspotId === "fridge"
+                    ? fridgeControl(view.workplace).label
+                    : nearbyHotspotId === "coffee"
+                      ? coffeeControl(view.workplace).label
+                      : (INTERACT_LABEL[nearbyHotspotId] ?? "Interact")}
+                </p>
+              ) : null}
               <p className="room-hud-line">
                 {nearbyIsTarget && nearbyPrompt ? nearbyPrompt : journey.body}
               </p>

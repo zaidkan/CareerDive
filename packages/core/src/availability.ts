@@ -39,9 +39,15 @@ function target(
     simulatedMinutes: definition.simulatedMinutes,
     ...(gated ? { taskId: task.id } : {}),
     ...(definition.id === "document_ticket" && finalStep?.outcomes.length
-      ? { decisionOptions: finalStep.options
-          .filter(({ id }) => finalStep.outcomes.some((outcome) => outcome.selectedOptionIds.includes(id)))
-          .map(({ id, label }) => ({ id, label })) }
+      ? {
+          decisionOptions: finalStep.options
+            .filter(({ id }) =>
+              finalStep.outcomes.some((outcome) =>
+                outcome.selectedOptionIds.includes(id),
+              ),
+            )
+            .map(({ id, label }) => ({ id, label })),
+        }
       : {}),
   };
 }
@@ -59,7 +65,7 @@ function withManagerAndUtility(
       next.push(target(rules, event, actionId));
     }
   }
-  if (allowManager && !event.managerConsulted) {
+  if (allowManager) {
     next.push(target(rules, event, "ask_manager"));
   }
   return next;
@@ -91,7 +97,9 @@ function actionsForEvent(
       nextLinearAction(rules, event, progression.sequence),
       progression.allowManager,
       progression.utilityActions,
-    ).filter(({ id }) => conditionsMet(state, template.actionConditions[id] ?? []));
+    ).filter(({ id }) =>
+      conditionsMet(state, template.actionConditions[id] ?? []),
+    );
   }
 
   for (const stage of progression.stages) {
@@ -123,7 +131,9 @@ function actionsForEvent(
       [...offered, ...also],
       progression.allowManager,
       progression.utilityActions,
-    ).filter(({ id }) => conditionsMet(state, template.actionConditions[id] ?? []));
+    ).filter(({ id }) =>
+      conditionsMet(state, template.actionConditions[id] ?? []),
+    );
   }
 
   return withManagerAndUtility(
@@ -132,17 +142,20 @@ function actionsForEvent(
     [],
     progression.allowManager,
     progression.utilityActions,
-  ).filter(({ id }) => conditionsMet(state, template.actionConditions[id] ?? []));
+  ).filter(({ id }) =>
+    conditionsMet(state, template.actionConditions[id] ?? []),
+  );
 }
 
 export function availableActions(state: WorldState): AvailableAction[] {
   const activeEvents = state.events.filter(({ status }) => status === "active");
   if (
     state.events.length > 0 &&
-    state.events.every((event) =>
-      ["resolved", "escalated", "expired"].includes(event.status) ||
-      (state.rules.eventTemplates[event.templateId]?.nonBlockingFollowUp &&
-        ["pending", "waiting", "active"].includes(event.status)),
+    state.events.every(
+      (event) =>
+        ["resolved", "escalated", "expired"].includes(event.status) ||
+        (state.rules.eventTemplates[event.templateId]?.nonBlockingFollowUp &&
+          ["pending", "waiting", "active"].includes(event.status)),
     )
   ) {
     const complete = state.rules.actions.complete_shift;
@@ -163,6 +176,13 @@ export function availableActions(state: WorldState): AvailableAction[] {
   const eventActions = activeEvents.flatMap((event) =>
     actionsForEvent(state, event),
   );
+  // A saved disposition can still have questions while the rest of the shift continues.
+  for (const event of state.events.filter((e) =>
+    ["resolved", "escalated"].includes(e.status),
+  )) {
+    if (state.rules.eventTemplates[event.templateId]?.progression.allowManager)
+      eventActions.push(target(state.rules, event, "ask_manager"));
+  }
   const notebook = state.rules.actions.update_notebook;
   if (notebook && activeEvents[0]) {
     eventActions.push({

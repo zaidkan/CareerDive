@@ -190,7 +190,7 @@ describe("deterministic simulation core", () => {
     );
   });
 
-  it("allows manager consultation only once per event", () => {
+  it("allows follow-up manager consultation for the same event", () => {
     const initial = world("session-1", 42);
     const consulted = applyAction(initial, {
       id: "ask_manager",
@@ -202,14 +202,14 @@ describe("deterministic simulation core", () => {
       availableActions(consulted)
         .filter(({ eventId }) => eventId === "suspicious-login-1")
         .map(({ id }) => id),
-    ).not.toContain("ask_manager");
+    ).toContain("ask_manager");
     expect(() =>
       applyAction(consulted, {
         id: "ask_manager",
         eventId: "suspicious-login-1",
         actorId: "user",
       }),
-    ).toThrow(ActionUnavailableError);
+    ).not.toThrow();
   });
 
   it("targets every available action to a workplace event and system", () => {

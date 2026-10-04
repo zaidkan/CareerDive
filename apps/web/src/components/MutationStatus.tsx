@@ -4,15 +4,18 @@ import type { MutationState } from "../useMutationCoordinator.js";
 export function MutationStatus({
   state,
   onRetry,
+  focusSuccess = true,
 }: {
   state: MutationState;
   onRetry?: () => void;
+  focusSuccess?: boolean;
 }) {
   const messageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (state.error || state.success) messageRef.current?.focus();
-  }, [state.error, state.requestSequence, state.success]);
+    if (state.error || (state.success && focusSuccess))
+      messageRef.current?.focus();
+  }, [focusSuccess, state.error, state.requestSequence, state.success]);
 
   if (state.error) {
     return (

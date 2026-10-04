@@ -1,3 +1,11 @@
+import { useRef } from "react";
+import {
+  DialogueLine,
+  type DialogueController,
+} from "../../world/dialogue/DialogueLine.js";
+import { AudioToggle } from "../../world/dialogue/AudioToggle.js";
+import { MORGAN_CHOICES } from "../../world/dialogue/MorganDialogue.js";
+import { unlockDialogueAudio } from "../../world/dialogue/audio.js";
 import { useTabDraft } from "../../useTabDraft.js";
 import type { AvailableAction, ClientView } from "@sim/schemas";
 import { useOptionalOsSession } from "../../world/deskOs/osSession.js";
@@ -34,41 +42,11 @@ export function TeamChatTool({
   const messages = view.artifacts.filter(
     ({ systemId }) => systemId === "team_chat",
   );
-  const guidance = view.operationalMessages.filter((message) =>
-    message.startsWith("Morgan "),
+  const latestReply = view.teamMessages?.findLast(
+    (message) => message.author !== "player",
   );
-  const reminders = messages.some(({ observed }) => observed)
-    ? view.events.flatMap((event) => {
-        const task = view.tasks.find(({ eventId }) => eventId === event.id);
-        if (task)
-          return [
-            {
-              eventId: event.id,
-              title: event.title,
-              text:
-                task.kind === "build_summary"
-                  ? "Keep verified observations, uncertainty, and the next step separate. Use the records beside your note to show what you checked, what remains unclear, and what should happen next."
-                  : task.kind === "compare_records"
-                    ? "Check where each record came from and when it was recorded. Describe what differs before explaining why; more than one explanation may fit."
-                    : "Read the record before drawing a conclusion. Before switching work, save what you still need to check and the question it should answer.",
-            },
-          ];
-        const decision = view.availableActions.some(
-          ({ eventId, id }) =>
-            eventId === event.id &&
-            (id === "escalate_alert" || id === "dismiss_alert"),
-        );
-        return decision
-          ? [
-              {
-                eventId: event.id,
-                title: event.title,
-                text: "Review your saved note before deciding. Asking a senior analyst to review the case does not confirm who signed in, and closing it needs a written reason supported by records. If evidence is missing, save the open question and ask Morgan which check to make next.",
-              },
-            ]
-          : [];
-      })
-    : [];
+  const dialogueRef = useRef<DialogueController>(null);
+  const mountedReplyId = useRef(latestReply?.id);
   return (
     <>
       <article className="team-chat-thread" aria-label="Morgan message thread">
@@ -107,14 +85,108 @@ export function TeamChatTool({
                   message.eventId}
                 :
               </strong>{" "}
-              {message.body}
+              {message.id === latestReply?.id ? (
+                <DialogueLine
+                  controller={dialogueRef}
+                  key={message.id}
+                  text={message.body}
+                  animate={message.id !== mountedReplyId.current}
+                  onAdvance={() => {
+                    document
+                      .querySelector<HTMLButtonElement>("[data-morgan-choice]")
+                      ?.focus();
+                  }}
+                />
+              ) : (
+                message.body
+              )}
             </li>
           ))}
         </ol>
       ) : null}
+      {latestReply || chatActions.some((a) => a.id === "ask_manager") ? (
+        <AudioToggle />
+      ) : null}
       {chatActions.map((action) => {
         const key = `${action.id}:${action.eventId}`;
         const draft = drafts[key] ?? "";
+        if (action.id === "ask_manager")
+          return (
+            <section
+              key={key}
+              className="morgan-case-consultation"
+              aria-label={`Discuss ${view.events.find((e) => e.id === action.eventId)?.title ?? action.eventId} with Morgan`}
+            >
+              <h4>
+                Morgan ·{" "}
+                {view.events.find((e) => e.id === action.eventId)?.title ??
+                  action.eventId}
+              </h4>
+              <div className="jules-dialogue-topics">
+                {MORGAN_CHOICES.map((choice) => (
+                  <button
+                    data-morgan-choice
+                    data-action-id={action.id}
+                    data-event-id={action.eventId}
+                    type="button"
+                    key={choice}
+                    disabled={Boolean(mutationState?.pendingKey) || !onAction}
+                    onClick={() => {
+                      if (dialogueRef.current?.isRevealing()) {
+                        dialogueRef.current.finish();
+                        return;
+                      }
+                      unlockDialogueAudio();
+                      onAction?.(action, choice);
+                    }}
+                  >
+                    {choice}
+                  </button>
+                ))}
+              </div>
+              <details>
+                <summary>Ask a specific case question</summary>
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    if (draft.trim()) {
+                      if (dialogueRef.current?.isRevealing()) {
+                        dialogueRef.current.finish();
+                        return;
+                      }
+                      unlockDialogueAudio();
+                      onAction?.(action, draft.trim());
+                      setDrafts((current) => ({ ...current, [key]: "" }));
+                    }
+                  }}
+                >
+                  <label>
+                    Question for Morgan
+                    <textarea
+                      maxLength={2000}
+                      value={draft}
+                      onChange={(event) => {
+                        setDrafts((current) => ({
+                          ...current,
+                          [key]: event.target.value,
+                        }));
+                      }}
+                    />
+                  </label>
+                  <button
+                    type="submit"
+                    disabled={
+                      !draft.trim() ||
+                      Boolean(mutationState?.pendingKey) ||
+                      !onAction
+                    }
+                  >
+                    Send case question
+                  </button>
+                </form>
+              </details>
+            </section>
+          );
         return (
           <form
             key={key}
@@ -125,9 +197,7 @@ export function TeamChatTool({
             }}
           >
             <label>
-              {action.id === "ask_manager"
-                ? "Ask Morgan about case procedure"
-                : "Handoff to Morgan"}
+              Handoff to Morgan
               <textarea
                 maxLength={2000}
                 value={draft}
@@ -152,25 +222,6 @@ export function TeamChatTool({
           </form>
         );
       })}
-      {reminders.length > 0 ? (
-        <aside aria-label="Morgan procedure reminders">
-          <h4>From Morgan’s procedure notes</h4>
-          {reminders.map(({ eventId, title, text }) => (
-            <p key={eventId}>
-              <strong>{title}: </strong>
-              {text}
-            </p>
-          ))}
-        </aside>
-      ) : null}
-      {guidance.length > 0 ? (
-        <aside className="manager-guidance" aria-label="Morgan guidance">
-          <h4>Morgan’s guidance</h4>
-          {guidance.map((message) => (
-            <p key={message}>{message}</p>
-          ))}
-        </aside>
-      ) : null}
     </>
   );
 }

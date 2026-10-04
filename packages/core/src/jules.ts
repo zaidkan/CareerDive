@@ -14,7 +14,12 @@ export type JulesDialogueReply = {
 
 type JulesDialoguePublicState = Pick<
   ClientView,
-  "events" | "availableActions" | "artifacts" | "workplace"
+  | "events"
+  | "availableActions"
+  | "artifacts"
+  | "workplace"
+  | "structuredTickets"
+  | "teamMessages"
 >;
 
 function publicDialogueState(view: ClientView): JulesDialoguePublicState {
@@ -23,6 +28,8 @@ function publicDialogueState(view: ClientView): JulesDialoguePublicState {
     availableActions: view.availableActions,
     artifacts: view.artifacts,
     workplace: view.workplace,
+    structuredTickets: view.structuredTickets,
+    teamMessages: view.teamMessages,
   };
 }
 
@@ -30,13 +37,64 @@ function currentWorkReply(
   state: JulesDialoguePublicState,
   repeated: boolean,
 ): JulesDialogueReply {
-  const available = new Set(state.availableActions.map(({ id }) => id));
+  const lastSource = state.artifacts.find(
+    (a) => a.id === state.workplace.lastInspectedArtifactId,
+  );
+  const contextEvent =
+    state.events.find(
+      (e) => lastSource?.eventIds.includes(e.id) && e.status === "active",
+    ) ??
+    state.events.find(
+      (e) => e.id === "suspicious-login-1" && e.status === "active",
+    ) ??
+    state.events.find(
+      (e) => e.status === "active" && e.category !== "handoff",
+    ) ??
+    state.events.find((e) => e.status === "active");
+  const available = new Set(
+    state.availableActions
+      .filter((a) => !contextEvent || a.eventId === contextEvent.id)
+      .map(({ id }) => id),
+  );
+  const ticket =
+    contextEvent && state.structuredTickets?.[`ticket-${contextEvent.id}`];
+  if (ticket)
+    return {
+      speaker: "Jules",
+      text: `You saved a note for ${contextEvent.title}. ${ticket.uncertainty ? `The question you left open is: ${ticket.uncertainty}` : "There is no open question written there yet."} I need that uncertainty alongside the decision when I pick up the ticket.`,
+      nextSystemId: "ticket_queue",
+    };
+  if (
+    contextEvent &&
+    state.workplace.comparisons?.some(
+      (c) =>
+        c.eventId === contextEvent.id &&
+        ["login-session-timeline", "vpn-context-1"].every((id) =>
+          c.artifactIds.includes(id),
+        ),
+    )
+  )
+    return {
+      speaker: "Jules",
+      text: "You recorded a source comparison. What differs between the sessions matters more than whether the city sounds familiar. Keep the comparison with the case note so I can follow your reasoning.",
+      nextSystemId: "ticket_queue",
+    };
+  if (
+    contextEvent &&
+    !["suspicious-login-1", "handoff-1"].includes(contextEvent.id)
+  )
+    return {
+      speaker: "Jules",
+      text: `${contextEvent.title} is on your desk now. ${lastSource?.eventIds.includes(contextEvent.id) ? `You opened ${lastSource.title}.` : "I haven't seen a source opened for it yet."} Before returning to the login investigation, leave the request's unresolved question with its owner.`,
+      nextSystemId: contextEvent.systemId,
+    };
+
   const prefix = repeated ? "Quick follow-up: " : "From what we can see, ";
 
   if (available.has("check_device_inventory")) {
     return {
       speaker: "Jules",
-      text: `${prefix}the device inventory is the useful public reference now. Open Guides and compare the exact device name, not just the account owner. Keep the record reference and what it actually says in your notes; a missing entry is not a person's identity.`,
+      text: `${prefix}the device inventory is still an open question. A device label is not a person. I need the exact reference before I can pick this up from you.`,
       nextSystemId: "knowledge_base",
     };
   }
@@ -44,7 +102,7 @@ function currentWorkReply(
   if (available.has("search_knowledge_base")) {
     return {
       speaker: "Jules",
-      text: `${prefix}the next safe step is to compare the visible alert with the approved reference in Guides. Check source, event time, and scope together, then record what matched in your notes. A familiar-looking alert still needs its own reference.`,
+      text: `${prefix}the scanner alert needs its own approved reference. Yesterday’s familiar alert is not evidence about today’s source or time window.`,
       nextSystemId: "knowledge_base",
     };
   }
@@ -52,7 +110,7 @@ function currentWorkReply(
   if (available.has("document_ticket")) {
     return {
       speaker: "Jules",
-      text: `${prefix}a documentation step is available. Open Tickets and separate what you observed from what is still uncertain. Imagine the next analyst reading your note without you beside them: name the source and leave a concrete next step, not just "looked into it".`,
+      text: `${prefix}the case is ready for your ticket notes. I can continue from a named source and an open question; “looked into it” leaves me starting over.`,
       nextSystemId: "ticket_queue",
     };
   }
@@ -60,7 +118,7 @@ function currentWorkReply(
   if (available.has("inspect_login_context")) {
     return {
       speaker: "Jules",
-      text: `${prefix}the login context in Alerts is the next useful record. Compare the visible device, network, and account context, then note what still needs checking. I leave a short question beside the record reference so an interruption does not turn an unfinished check into an assumed fact.`,
+      text: `${prefix}the login context is still unfinished. When Finance interrupts us, I leave a question beside the source so an unfinished check does not become an assumed fact.`,
       nextSystemId: "alert_dashboard",
     };
   }
@@ -68,7 +126,7 @@ function currentWorkReply(
   if (available.has("inspect_account_history")) {
     return {
       speaker: "Jules",
-      text: `${prefix}the account history in Alerts is still available. Compare the usual pattern with the visible login context and record the difference without choosing an outcome yet. An earlier pattern is a comparison point, not proof about this session.`,
+      text: `${prefix}the account history still needs context. An earlier pattern gives us a comparison point, not proof about this session.`,
       nextSystemId: "alert_dashboard",
     };
   }
@@ -76,7 +134,7 @@ function currentWorkReply(
   if (available.has("review_alert")) {
     return {
       speaker: "Jules",
-      text: `${prefix}Alerts has the next visible record. Read the alert, note what needs checking, and avoid treating one clue as the whole answer.`,
+      text: `${prefix}the alert is waiting. I would rather hear what does not line up than a confident answer from one clue.`,
       nextSystemId: "alert_dashboard",
     };
   }
@@ -84,7 +142,7 @@ function currentWorkReply(
   if (available.has("read_handoff")) {
     return {
       speaker: "Jules",
-      text: `${prefix}open Email and read the shift handoff. Note the unfinished work so it stays visible while you decide what to pick up next.`,
+      text: `${prefix}read the shift handoff when you get in. The previous analyst left unfinished work; I need to know what you are taking over.`,
       nextSystemId: "email",
     };
   }
@@ -92,7 +150,7 @@ function currentWorkReply(
   if (available.has("escalate_alert") || available.has("dismiss_alert")) {
     return {
       speaker: "Jules",
-      text: `${prefix}the case is at a decision point. Review your saved notes in Tickets before choosing an available action. A review request, a closure, and an unfinished check mean different things to the next analyst. If you need procedural guidance, ask Morgan; I cannot confirm who signed in or choose the outcome for you.`,
+      text: `${prefix}the case is at a decision point. A review request and a closure leave different work for me. Keep what you checked and what remains unresolved together.`,
       nextSystemId: "ticket_queue",
     };
   }
@@ -120,8 +178,8 @@ function resolveDialogue(
       return {
         speaker: "Jules",
         text: repeated
-          ? "Quick recap: monitor the queue, keep short notes, and expect interruptions. Before switching items, write what you checked and what remains open. Asking Morgan a specific procedure question is part of owning the work, not giving up on it."
-          : "The first-day rhythm is monitoring the queue, keeping short notes, and handling interruptions without losing your next step. Much of the job is careful comparison and communication, not dramatic discoveries. You do not need to know every term already; open the record, use its explanations, and ask Morgan when the procedure is unclear.",
+          ? "Same rhythm: monitor, leave short notes, handle interruptions. The useful question is what the next person will need from you."
+          : "Morning. We monitor, compare records, and leave notes another person can use. Interruptions are normal. If you take the login alert, leave me the question you have not answered yet.",
       };
     case "current_work":
       return currentWorkReply(state, repeated);
@@ -137,13 +195,32 @@ function resolveDialogue(
             : "A short break works best when you write one next step first. Step away briefly, then return to that specific step instead of restarting the whole case. Leave the record reference with the note so the next check is easy to find.",
       };
     }
-    case "team_context":
+    case "team_context": {
+      const receipt = state.teamMessages?.findLast(
+        (m) => m.actionId === "submit_shift_handoff" && m.author !== "player",
+      );
+      if (receipt)
+        return {
+          speaker: "Jules",
+          text: `The next shift replied: ${receipt.body}`,
+        };
+      const consultation = state.workplace.julesConsultations?.at(-1);
+      const ticket =
+        consultation &&
+        state.structuredTickets?.[`ticket-${consultation.eventId}`];
+      if (ticket)
+        return {
+          speaker: "Jules",
+          text: `Following up on the case we discussed: your saved ticket has ${String(ticket.sourceArtifactIds?.length ?? 0)} source references. ${ticket.uncertainty ? `I will carry this question forward: ${ticket.uncertainty}` : "I still need the unresolved question to carry forward."}`,
+          nextSystemId: "ticket_queue",
+        };
       return {
         speaker: "Jules",
         text: repeated
-          ? "Peer view only: I can help you frame what you noticed, but send procedural decisions to Morgan. Try a short handoff: the record you checked, the detail that needs context, and the question you want reviewed. Leave room for another explanation."
-          : "I can offer a peer perspective on the work you can see, but Morgan owns procedural guidance. Send decision questions to Morgan in Team Chat. The team needs both careful investigation and clear handoffs; sounding certain is less useful than explaining what you know and what you still need to check.",
+          ? "Peer view: I can pick up a named source and an unresolved question. Morgan owns routing decisions. If your note changes after review, leave the correction alongside the original."
+          : "Morgan handles routing; I help carry unfinished work between shifts. Tell me which source you compared and what still needs an owner. Sounding certain does not make a handoff usable.",
       };
+    }
   }
 }
 

@@ -327,12 +327,26 @@ describe("rendered workplace golden path", () => {
                     expect(state.structuredTickets[`ticket-${eventId}`]?.sourceArtifactIds).toContain(eventId === routine ? "scanner-window" : "device-inventory-1");
                     return;
                 }
-                if (id === "ask_manager" || id === "acknowledge_handoff") {
+                if (id === "ask_manager" ) {
+            const button = required(
+              container.querySelector<HTMLButtonElement>(
+                `button[data-action-id="${id}"][data-event-id="${eventId}"]`,
+              ),
+              "bounded Morgan question",
+            );
+            await activate(button);
+            expect(
+              state.teamMessages?.some(
+                (message) =>
+                  message.eventId === eventId && message.author === "morgan",
+              ),
+            ).toBe(true);
+            return;
+          }
+          if ( id === "acknowledge_handoff") {
                     const button = required(container.querySelector<HTMLButtonElement>(`button[data-action-id="${id}"][data-event-id="${eventId}"]`), `${id} chat button`);
                     const form = required(button.closest("form"), `${id} chat form`);
-                    await user.type(within(form).getByRole("textbox"), id === "ask_manager"
-                        ? "I checked the alert and device record. What should the reviewer check next?"
-                        : "I read the handoff and will review the open sign-in alert first.");
+                    await user.type(within(form).getByRole("textbox"),  "I read the handoff and will review the open sign-in alert first.");
                     await activate(button);
                     expect(state.teamMessages?.some((message) => message.eventId === eventId && message.author === "player")).toBe(true);
                     return;
@@ -427,11 +441,11 @@ describe("rendered workplace golden path", () => {
             "Close fridge",
         ])
             await activate(screen.getByRole("button", { name: label }));
-        ;
+
         await activate(screen.getByRole("button", { name: "Current work" }));
-        ;
+
         await perform("ask_manager", suspicious);
-        expect(screen.getByRole("complementary", { name: "Morgan guidance" })).toBeVisible();
+        expect(screen.getByRole("list", { name: "Team conversation" })).toBeVisible();
         await perform("document_ticket", suspicious);
         expect(state.ticketNotes[suspicious]).toContain("unknown-laptop-17 is not enrolled");
         expect(state.ticketNotes[suspicious]).toContain("suspected, not yet proven");
