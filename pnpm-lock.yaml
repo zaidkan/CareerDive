@@ -114,6 +114,9 @@ importers:
       '@sim/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
+      '@supabase/supabase-js':
+        specifier: ^2.50.0
+        version: 2.108.2
       '@trpc/client':
         specifier: ^11.4.3
         version: 11.18.0(@trpc/server@11.18.0(typescript@5.9.3))(typescript@5.9.3)

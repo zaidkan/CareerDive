@@ -1,4 +1,6 @@
+import { readFile, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
+import { SupabasePublicKeySchema } from "@sim/schemas/public-key";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
@@ -12,12 +14,48 @@ export const devServer = {
   strictPort: true,
 } as const;
 
+function buildSha(): string {
+  const configured = process.env.BUILD_SHA ?? process.env.RENDER_GIT_COMMIT;
+  if (configured) return configured;
+  try {
+    return execFileSync("git", ["rev-parse", "HEAD"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+  } catch {
+    return "unknown";
+  }
+}
+if (process.env.VITE_SUPABASE_ANON_KEY)
+  SupabasePublicKeySchema.parse(process.env.VITE_SUPABASE_ANON_KEY);
+const siteOrigin = process.env.SITE_ORIGIN ?? "https://careerexpo.example.com";
+if (new URL(siteOrigin).origin !== siteOrigin)
+  throw new Error(
+    "SITE_ORIGIN must be an origin without path or trailing slash",
+  );
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    {
+      name: "public-site-origin",
+      apply: "build",
+      transformIndexHtml: (html) =>
+        html.replaceAll("https://careerexpo.example.com", siteOrigin),
+      async closeBundle() {
+        for (const file of ["robots.txt", "sitemap.xml"]) {
+          const target = new URL(`./dist/${file}`, import.meta.url);
+          const content = await readFile(target, "utf8");
+          await writeFile(
+            target,
+            content.replaceAll("https://careerexpo.example.com", siteOrigin),
+          );
+        }
+      },
+    },
+  ],
   define: {
-    __BUILD_SHA__: JSON.stringify(
-      execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim(),
-    ),
+    __BUILD_SHA__: JSON.stringify(buildSha()),
+    "import.meta.env.VITE_SITE_ORIGIN": JSON.stringify(siteOrigin),
   },
   server: devServer,
   test: {

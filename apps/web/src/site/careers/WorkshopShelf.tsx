@@ -26,9 +26,8 @@ export function WorkshopShelf({
           one click — no account, no email.
         </p>
         <p className="career-request-honesty">
-          Preview only: requests stay on this page and aren't collected yet.
-          When we start collecting, they'll guide what we prioritize — they
-          won't guarantee build order.
+          Requests are saved when confirmed. They guide what we prioritize and
+          do not guarantee build order. No public request counts.
         </p>
       </div>
       <ul className="career-workshop-grid">

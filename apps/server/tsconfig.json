@@ -4,5 +4,10 @@
     "outDir": "dist",
     "rootDir": "."
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "drizzle.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "drizzle.config.ts",
+    "scripts/**/*.ts"
+  ]
 }

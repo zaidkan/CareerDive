@@ -3,7 +3,9 @@ import { getCareerBySlug } from "../careers/careers.js";
 import type { SiteRoute } from "./routes.js";
 
 const SITE_NAME = "First Shift";
-const BASE_URL = "https://careerexpo.example.com";
+const BASE_URL =
+  (import.meta.env.VITE_SITE_ORIGIN as string | undefined) ??
+  "https://careerexpo.example.com";
 
 type RouteMeta = {
   title: string;

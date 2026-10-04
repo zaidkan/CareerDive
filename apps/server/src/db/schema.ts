@@ -19,6 +19,7 @@ import {
   text,
   timestamp,
   uuid,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 const createdAt = () =>
@@ -49,10 +50,12 @@ export const simulationSessions = pgTable("simulation_sessions", {
   sessionKind: text("session_kind").notNull(),
   pacingMode: text("pacing_mode").notNull(),
   seed: integer("seed").notNull(),
+  createRequestId: uuid("create_request_id"),
+  revision: integer("revision").notNull().default(0),
   currentState: jsonb("current_state").notNull(),
   createdAt: createdAt(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
-});
+}, (table) => [uniqueIndex("simulation_sessions_owner_create_request_idx").on(table.ownerId, table.createRequestId)]);
 export const decisionReviews = pgTable("decision_reviews", {
   sessionId: uuid("session_id").notNull().references(() => simulationSessions.id, { onDelete: "cascade" }),
   careerId: text("career_id").notNull(),
@@ -179,4 +182,39 @@ export const deletionJobs = pgTable("deletion_jobs", {
   status: text("status").notNull(),
   createdAt: createdAt(),
   completedAt: timestamp("completed_at", { withTimezone: true }),
+});
+
+export const supportReports = pgTable(
+  "support_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    ownerId: uuid("owner_id").notNull(),
+    createRequestId: uuid("create_request_id").notNull(),
+    category: text("category").notNull(),
+    description: text("description").notNull(),
+    contact: text("contact").notNull().default(""),
+    diagnostics: jsonb("diagnostics"),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("support_reports_owner_id_create_request_id_key").on(
+      table.ownerId,
+      table.createRequestId,
+    ),
+    index("support_reports_owner_time_idx").on(table.ownerId, table.createdAt),
+  ],
+);
+export const launchEvents = pgTable("launch_events", {
+  eventId: uuid("event_id").primaryKey(),
+  eventName: text("event_name").notNull(),
+  careerId: text("career_id"),
+  createdAt: createdAt(),
+});
+
+export const launchEventLimits = pgTable("launch_event_limits", {
+  ownerId: uuid("owner_id").primaryKey(),
+  windowStartedAt: timestamp("window_started_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  eventCount: integer("event_count").notNull().default(0),
 });

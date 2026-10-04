@@ -1,3 +1,4 @@
+import { launchEvent } from "../analytics.js";
 import { useEffect, useRef, useState } from "react";
 import { getCareerBySlug } from "../careers/careers.js";
 import { SiteChrome } from "./SiteChrome.js";
@@ -72,7 +73,11 @@ export function SiteApp({ initialRoute }: { initialRoute?: SitePath }) {
     const focusHeading = () => {
       const heading = main.querySelector<HTMLElement>("h1");
       if (!heading) return false;
-      if (document.activeElement !== initialFocus && document.activeElement !== document.body) return true;
+      if (
+        document.activeElement !== initialFocus &&
+        document.activeElement !== document.body
+      )
+        return true;
       heading.tabIndex = -1;
       heading.focus({ preventScroll: true });
       return true;
@@ -82,19 +87,31 @@ export function SiteApp({ initialRoute }: { initialRoute?: SitePath }) {
       if (focusHeading()) observer.disconnect();
     });
     observer.observe(main, { childList: true, subtree: true });
-    const timeout = window.setTimeout(() => { observer.disconnect(); }, 10000);
-    return () => { observer.disconnect(); window.clearTimeout(timeout); };
+    const timeout = window.setTimeout(() => {
+      observer.disconnect();
+    }, 10000);
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(timeout);
+    };
   }, [route, initialRoute]);
 
+  useEffect(() => {
+    if (route.kind === "home") launchEvent("landing");
+    if (route.kind === "career")
+      launchEvent("career_viewed", getCareerBySlug(route.slug)?.id);
+  }, [route]);
   useRouteMeta(route);
-  const selectedCareer = route.kind === "career" ? getCareerBySlug(route.slug) : undefined;
+  const selectedCareer =
+    route.kind === "career" ? getCareerBySlug(route.slug) : undefined;
 
   return (
     <SiteChrome route={route}>
       {route.kind === "home" ? <LandingPage /> : null}
       {route.kind === "careers" ? <CareersPage /> : null}
       {selectedCareer ? <CareerDetailPage career={selectedCareer} /> : null}
-      {route.kind === "not-found" || (route.kind === "career" && !selectedCareer) ? (
+      {route.kind === "not-found" ||
+      (route.kind === "career" && !selectedCareer) ? (
         <NotFoundPage />
       ) : null}
       {route.kind === "trust" ? <TrustPage /> : null}

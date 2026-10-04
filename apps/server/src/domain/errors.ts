@@ -28,3 +28,9 @@ export class EvidenceNotFoundError extends NotFoundError {
     this.name = "EvidenceNotFoundError";
   }
 }
+
+export class SessionConflictError extends Error {
+  constructor() {
+    super("Shift changed in another request. Reload and retry.");
+  }
+}

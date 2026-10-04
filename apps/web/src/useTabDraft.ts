@@ -2,7 +2,7 @@ import { useState, type SetStateAction } from "react";
 
 export function readTabValue<T>(key: string, fallback: T): T {
   try {
-    const value = sessionStorage.getItem(key);
+    const value = window.sessionStorage.getItem(key);
     return value ? (JSON.parse(value) as T) : fallback;
   } catch {
     return fallback;
@@ -10,7 +10,7 @@ export function readTabValue<T>(key: string, fallback: T): T {
 }
 export function writeTabValue(key: string, value: unknown) {
   try {
-    sessionStorage.setItem(key, JSON.stringify(value));
+    window.sessionStorage.setItem(key, JSON.stringify(value));
   } catch {
     /* Draft remains usable in memory when storage is unavailable. */
   }

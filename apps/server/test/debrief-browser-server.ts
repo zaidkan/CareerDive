@@ -8,9 +8,9 @@ import { createAppRouter } from "../src/trpc/router.js";
 // Browser fixture starts at the final decision. Completion and debrief still
 // run through the real tRPC router and repository.
 class BrowserReviewRepository extends InMemoryRepository {
-  override async createSession(ownerId: string, state: WorldState): Promise<void> {
+  override async createSession(ownerId: string, state: WorldState, createRequestId?: string) {
     state.events.forEach((event) => { event.status = "resolved"; });
-    await super.createSession(ownerId, state);
+    await super.createSession(ownerId, state, createRequestId);
     const session = await super.getSession(ownerId, state.sessionId);
     session.state.flags.b1_choice = "escalate-with-comparisons";
     session.state.flags.b2_choice = "route-to-owner";
@@ -30,6 +30,7 @@ class BrowserReviewRepository extends InMemoryRepository {
     ];
     session.actionLog = actions.map((interaction, index) => ({ sequence: index + 1, interaction }));
     await super.saveSession(session);
+    return session;
   }
 }
 

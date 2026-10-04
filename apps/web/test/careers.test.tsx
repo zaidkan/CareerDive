@@ -211,9 +211,7 @@ describe("Career Explorer interaction", () => {
     expect(
       await screen.findByRole("heading", { name: "Playable now" }),
     ).toBeVisible();
-    expect(
-      screen.getByRole("heading", { name: "Taking shape" }),
-    ).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Taking shape" })).toBeVisible();
     expect(screen.getByText(careerAt(0).shortSummary)).toBeVisible();
     expect(screen.getByText(careerAt(1).shortSummary)).toBeVisible();
     expect(
@@ -257,7 +255,7 @@ describe("Career Explorer interaction", () => {
       name: "Request Registered Nurse",
     });
     expect(button).toHaveAttribute("aria-pressed", "false");
-    expect(button).toHaveTextContent("Request Registered Nurse");
+    expect(button).toHaveTextContent("Request this career");
     await user.click(button);
     expect(button).toHaveAttribute("aria-pressed", "true");
     expect(button).toHaveAccessibleName("Request Registered Nurse");
@@ -275,18 +273,42 @@ describe("Career Explorer interaction", () => {
     expect(screen.queryByText(/\b\d+ requests\b/i)).toBeNull();
   });
 
-  it("keeps local demo state visibly marked as uncollected", async () => {
+  it("hydrates server state and persists request changes", async () => {
     const user = userEvent.setup();
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ requestedCareerIds: ["registered-nurse"] }),
+          { headers: { "content-type": "application/json" } },
+        ),
+      );
+    vi.stubGlobal("fetch", fetch);
     render(<WorkshopShelf careers={[careerAt(1)]} />);
-    await user.click(
-      screen.getByRole("button", { name: "Request Registered Nurse" }),
+    const button = screen.getByRole("button", {
+      name: "Request Registered Nurse",
+    });
+    await waitFor(() => {
+      expect(button).toBeEnabled();
+    });
+    expect(button).toHaveAttribute("aria-pressed", "true");
+    fetch.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          careerId: "registered-nurse",
+          requested: false,
+          saved: true,
+        }),
+        { headers: { "content-type": "application/json" } },
+      ),
     );
-    expect(
-      screen.getByText(/requests stay on this page and aren't collected yet/i),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("button", { name: "Request Registered Nurse" }),
-    ).toHaveAttribute("aria-pressed", "true");
+    await user.click(button);
+    await waitFor(() => {
+      expect(button).toBeEnabled();
+    });
+    expect(button).toHaveAttribute("aria-pressed", "false");
+    expect(screen.queryByText(/aren't collected yet/i)).toBeNull();
+    vi.unstubAllGlobals();
   });
 
   it("shows Workshop safety and authenticity notes in the Preview", async () => {
@@ -376,7 +398,12 @@ describe("public routes", () => {
         level: 1,
       }),
     ).toHaveFocus();
-    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(
+      fetchSpy.mock.calls.every(
+        ([url]) =>
+          typeof url === "string" && url.endsWith("/api/career-requests/state"),
+      ),
+    ).toBe(true);
   });
 
   it("published detail uses canonical data and its explicit simulation route", async () => {
@@ -388,7 +415,9 @@ describe("public routes", () => {
       within(detailHeader()).getByText(careerAt(0).workplaceSummary),
     ).toBeVisible();
     expect(
-      within(detailHeader()).getByRole("link", { name: "Start your first day" }),
+      within(detailHeader()).getByRole("link", {
+        name: "Start your first day",
+      }),
     ).toHaveAttribute("href", "/start");
     expect(
       screen.queryByRole("button", { name: /preview cybersecurity analyst/i }),
@@ -480,7 +509,9 @@ describe("public routes", () => {
       }),
     ).toBeVisible();
     expect(
-      within(screen.getByRole("main")).queryByRole("link", { name: "Start your first day" }),
+      within(screen.getByRole("main")).queryByRole("link", {
+        name: "Start your first day",
+      }),
     ).toBeNull();
     expect(document.querySelector('meta[name="robots"]')).toHaveAttribute(
       "content",

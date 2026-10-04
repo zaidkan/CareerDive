@@ -101,9 +101,12 @@ it.skipIf(!databaseUrl)("uses migrated Postgres schema for isolated, unique comp
       } } }],
     });
     const caller = createAppRouter(repository).createCaller({ userId: owner });
-    await Promise.all(Array.from({ length: 3 }, () => caller.simulation.performAction({
+    const completionResults = await Promise.allSettled(Array.from({ length: 3 }, () => caller.simulation.performAction({
       sessionId: concurrent, actionId: "complete_shift", eventId: "shift",
     })));
+    expect(completionResults.some((result) => result.status === "fulfilled")).toBe(true);
+    // Stale concurrent writes retry after reload; completed shifts are idempotent.
+    await caller.simulation.performAction({ sessionId: concurrent, actionId: "complete_shift", eventId: "shift" });
     const completedLog = await sql<{ count: string }[]>`
       SELECT count(*)::text AS count FROM action_log WHERE session_id = ${concurrent}::uuid
         AND action->'action'->>'id' = 'complete_shift'

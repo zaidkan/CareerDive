@@ -1,0 +1,13 @@
+.git
+**/node_modules
+**/dist
+**/.turbo
+**/coverage
+**/test-results
+**/playwright-report
+**/.env*
+.env*
+brag-output
+launch-film-assets
+qa-*
+.worktrees

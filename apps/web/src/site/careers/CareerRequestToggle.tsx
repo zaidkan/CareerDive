@@ -1,11 +1,15 @@
-import { useState } from "react";
+import {
+  careerRequestState,
+  setCareerRequested,
+} from "../../careerRequests.js";
+import { useEffect, useState } from "react";
 
 export type SetCareerRequest = (desired: {
   careerId: string;
   requested: boolean;
 }) => Promise<void> | void;
 
-/** Local interaction only until a consented persistence endpoint exists. */
+/** Success reflects server-confirmed state; hydration restores after reload. */
 export function CareerRequestToggle({
   careerId,
   careerTitle,
@@ -18,15 +22,38 @@ export function CareerRequestToggle({
   const [requested, setRequested] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
+  const [loaded, setLoaded] = useState(Boolean(setCareerRequest));
+  const [reload, setReload] = useState(0);
+  useEffect(() => {
+    if (setCareerRequest) return;
+    let active = true;
+    void careerRequestState()
+      .then((ids) => {
+        if (active) {
+          setRequested(ids.includes(careerId));
+          setLoaded(true);
+          setError(false);
+        }
+      })
+      .catch(() => {
+        if (active) setError(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [careerId, setCareerRequest, reload]);
 
   async function update() {
     const desired = !requested;
     setRequested(desired);
     setError(false);
-    if (!setCareerRequest) return;
+
     setPending(true);
     try {
-      await setCareerRequest({ careerId, requested: desired });
+      await (setCareerRequest ?? setCareerRequested)({
+        careerId,
+        requested: desired,
+      });
     } catch {
       setRequested(!desired);
       setError(true);
@@ -42,16 +69,30 @@ export function CareerRequestToggle({
         className="button-secondary"
         aria-label={`Request ${careerTitle}`}
         aria-pressed={requested}
-        disabled={pending}
+        disabled={pending || !loaded}
         onClick={() => {
           void update();
         }}
       >
-        {requested ? "Requested ✓ · click to undo" : `Request ${careerTitle}`}
+        {pending
+          ? "Saving request…"
+          : requested
+            ? "Requested ✓ · click to undo"
+            : "Request this career"}
       </button>
       {error ? (
         <p className="career-request-note" role="alert">
-          Request change failed. Try again.
+          Request unavailable. Your choice has not been confirmed.
+          {!loaded ? (
+            <button
+              type="button"
+              onClick={() => {
+                setReload((value) => value + 1);
+              }}
+            >
+              Retry connection
+            </button>
+          ) : null}
         </p>
       ) : null}
     </div>

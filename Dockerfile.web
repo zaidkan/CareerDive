@@ -2,16 +2,23 @@ FROM node:24.14.0-alpine AS build
 WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json ./
-COPY apps/web/package.json apps/web/package.json
-COPY packages/schemas/package.json packages/schemas/package.json
-RUN pnpm install --frozen-lockfile
+COPY packages packages
 COPY apps/web apps/web
-COPY packages/schemas packages/schemas
+COPY content content
+RUN pnpm install --frozen-lockfile --filter @sim/web...
 ARG VITE_SERVER_URL
-ENV VITE_SERVER_URL=$VITE_SERVER_URL
-RUN pnpm --filter @sim/web build
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_ANON_KEY
+ARG VITE_LAUNCH_ANALYTICS_ENABLED=false
+ARG SITE_ORIGIN
+ARG BUILD_SHA=unknown
+ENV VITE_SERVER_URL=$VITE_SERVER_URL VITE_SUPABASE_URL=$VITE_SUPABASE_URL VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY VITE_LAUNCH_ANALYTICS_ENABLED=$VITE_LAUNCH_ANALYTICS_ENABLED SITE_ORIGIN=$SITE_ORIGIN BUILD_SHA=$BUILD_SHA
+RUN test -n "$VITE_SERVER_URL" && test -n "$VITE_SUPABASE_URL" && test -n "$VITE_SUPABASE_ANON_KEY" && test -n "$SITE_ORIGIN"
+WORKDIR /app/apps/web
+RUN node ../../node_modules/typescript/bin/tsc -p tsconfig.build.json && node node_modules/vite/bin/vite.js build
 
 FROM nginx:1.29-alpine
+ENV PORT=8080
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
-COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
+COPY apps/web/nginx.conf /etc/nginx/templates/default.conf.template
+EXPOSE 8080

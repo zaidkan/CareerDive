@@ -22,6 +22,7 @@ export const SHARING_CATEGORIES = [
 export type SharingCategory = (typeof SHARING_CATEGORIES)[number];
 
 export type StoredSession = {
+  revision?: number;
   ownerId: string;
   state: WorldState;
   actionLog: ActionLogEntry[];

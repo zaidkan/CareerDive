@@ -92,7 +92,7 @@ it("does not POST when health check fails", async () => {
     }),
   ).rejects.toMatchObject({ safeToRetry: true });
   expect(fetch).toHaveBeenCalledTimes(1);
-  expect(fetch.mock.calls[0]?.[0]).toMatch(/\/health$/);
+  expect(fetch.mock.calls[0]?.[0]).toMatch(/\/ready$/);
 });
 it("checks compatibility after one workplace retry and keeps the same workstation data", async () => {
   scene.failed = true;
@@ -207,16 +207,25 @@ it("keeps keyboard focus in the workstation when canonical view updates", async 
   const props = { view, onAction: vi.fn() };
   const ui = render(<ExperienceShell {...props} />);
   await userEvent.click(await screen.findByText("Accessibility recovery"));
-  await userEvent.click(screen.getByRole("button", { name: "Recover workstation access" }));
+  await userEvent.click(
+    screen.getByRole("button", { name: "Recover workstation access" }),
+  );
   await screen.findByRole("heading", { name: "Your workstation" });
   const report = screen.getByRole("button", { name: "Report a problem" });
   report.focus();
-  ui.rerender(<ExperienceShell {...props} view={{ ...view, simClock: view.simClock + 1 }} />);
+  ui.rerender(
+    <ExperienceShell
+      {...props}
+      view={{ ...view, simClock: view.simClock + 1 }}
+    />,
+  );
   expect(report).toHaveFocus();
 });
 
 it("cancels the automatic startup retry after leaving the page", async () => {
-  const create = vi.fn().mockRejectedValue(new StartupFailure(true, "service-unavailable"));
+  const create = vi
+    .fn()
+    .mockRejectedValue(new StartupFailure(true, "service-unavailable"));
   const ui = render(<App client={client(create)} />);
   await screen.findByText("Connection interrupted. Trying once more…");
   ui.unmount();

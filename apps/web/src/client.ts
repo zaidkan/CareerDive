@@ -1,3 +1,4 @@
+import { apiOrigin, authHeaders } from "./transport.js";
 import { createTRPCUntypedClient, httpLink } from "@trpc/client";
 import {
   ClientViewSchema,
@@ -19,6 +20,7 @@ import { z } from "zod";
 
 export interface SimulationClient {
   createSession(input: {
+    createRequestId?: string;
     seed: number;
     sessionKind: "assessed";
     pacingMode: "standard" | "extended" | "pause_compatible" | "no_hard_timer";
@@ -104,7 +106,7 @@ export class HttpSimulationClient implements SimulationClient {
         // which StrictMode + Retry clicks can produce for session.create.
         httpLink({
           url: `${baseUrl}/trpc`,
-          headers: { "x-user-id": "local-user" },
+          headers: authHeaders,
         }),
       ],
     });
@@ -113,9 +115,19 @@ export class HttpSimulationClient implements SimulationClient {
   async createSession(
     input: Parameters<SimulationClient["createSession"]>[0],
   ): Promise<{ sessionId: string; view: ClientView }> {
-    // Only a failed read is safe to repeat; session.create has no idempotency contract.
+    if (input.createRequestId) {
+      try {
+        const key = `career-expo-create:${input.createRequestId}`;
+        window.sessionStorage.setItem(key, JSON.stringify(input));
+        if (window.sessionStorage.getItem(key) !== JSON.stringify(input))
+          throw new Error("Storage unavailable");
+      } catch {
+        throw new StartupFailure(false, "storage-unavailable");
+      }
+    }
+    // Stable createRequestId makes unknown outcomes safe to retry.
     try {
-      const response = await fetch(`${this.#baseUrl}/health`, {
+      const response = await fetch(`${this.#baseUrl}/ready`, {
         signal: AbortSignal.timeout(5000),
       });
       if (!response.ok) throw new Error("Unavailable");
@@ -129,7 +141,10 @@ export class HttpSimulationClient implements SimulationClient {
         }),
       );
     } catch {
-      throw new StartupFailure(false, "creation-unconfirmed");
+      throw new StartupFailure(
+        Boolean(input.createRequestId),
+        "creation-unconfirmed",
+      );
     }
   }
 
@@ -214,9 +229,4 @@ export class HttpSimulationClient implements SimulationClient {
   }
 }
 
-const configuredServerUrl: unknown = import.meta.env.VITE_SERVER_URL;
-export const defaultClient = new HttpSimulationClient(
-  typeof configuredServerUrl === "string"
-    ? configuredServerUrl
-    : "http://localhost:3001",
-);
+export const defaultClient = new HttpSimulationClient(apiOrigin);

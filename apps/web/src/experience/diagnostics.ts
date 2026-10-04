@@ -17,7 +17,9 @@ export function graphicsAvailable(kind: "webgl" | "webgl2") {
 }
 /** Feature checks only: no pixel reads, renderer strings, hardware or tracking identifiers. */
 export function compatibilityDetails(context: RecoveryContext) {
-  const match = navigator.userAgent.match(/(Edg|OPR)\/([\d.]+)/) ?? navigator.userAgent.match(/(Firefox|Chrome|Version)\/([\d.]+)/);
+  const match =
+    navigator.userAgent.match(/(Edg|OPR)\/([\d.]+)/) ??
+    navigator.userAgent.match(/(Firefox|Chrome|Version)\/([\d.]+)/);
   return {
     webgl: graphicsAvailable("webgl"),
     webgl2: graphicsAvailable("webgl2"),
@@ -29,7 +31,16 @@ export function compatibilityDetails(context: RecoveryContext) {
       typeof window.matchMedia === "function" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     build: typeof __BUILD_SHA__ === "string" ? __BUILD_SHA__ : "unknown",
-    route: window.location.pathname,
+    route: [
+      "/",
+      "/careers",
+      "/start",
+      "/trust",
+      "/faq",
+      "/simulation",
+    ].includes(window.location.pathname)
+      ? window.location.pathname
+      : "/careers",
     apiFailure: context.apiFailure ?? "none",
     assetFailure: context.assetFailure ?? "none",
     phase: context.phase,
