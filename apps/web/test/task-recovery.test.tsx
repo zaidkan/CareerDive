@@ -46,7 +46,7 @@ it("clears selections when the same task is shown for another event", async () =
     />,
   );
   expect(screen.getByRole("radio")).not.toBeChecked();
-  expect(screen.getByRole("button", { name: "Check my work" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "Save findings" })).toBeDisabled();
 });
 
 it("does not carry a pending request or late feedback into another event", async () => {
@@ -68,7 +68,7 @@ it("does not carry a pending request or late feedback into another event", async
     <WorkTaskPanel task={task} onTaskAttempt={onTaskAttempt} />,
   );
   await user.click(screen.getByRole("radio"));
-  await user.click(screen.getByRole("button", { name: "Check my work" }));
+  await user.click(screen.getByRole("button", { name: "Save findings" }));
   rerender(
     <WorkTaskPanel
       task={{ ...task, eventId: "case-b" }}
@@ -95,13 +95,15 @@ it("uses structured controls for a task without a specialized tool and retries u
     });
   render(<WorkTaskPanel task={task} onTaskAttempt={onTaskAttempt} />);
   await user.click(screen.getByRole("radio"));
-  await user.click(screen.getByRole("button", { name: "Check my work" }));
+  await user.click(screen.getByRole("button", { name: "Save findings" }));
   expect(
     await screen.findByText("Could not submit findings. Try again."),
   ).toHaveFocus();
   expect(screen.getByRole("radio")).toBeChecked();
-  await user.click(screen.getByRole("button", { name: "Check my work" }));
-  expect(await screen.findByText("Reference recorded")).toHaveFocus();
+  await user.click(screen.getByRole("button", { name: "Save findings" }));
+  expect(await screen.findByText("Findings saved.")).toHaveFocus();
+  await user.click(screen.getByText("Result details"));
+  expect(screen.getByText("Reference recorded")).toBeVisible();
   expect(onTaskAttempt.mock.calls).toEqual([
     [task, ["finding"]],
     [task, ["finding"]],

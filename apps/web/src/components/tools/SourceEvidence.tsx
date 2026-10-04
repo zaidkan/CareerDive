@@ -26,30 +26,29 @@ export function SourceEvidence({
           ({ id }) => id === option.source?.artifactId,
         );
         return (
-          <label key={option.id} className="work-task-choice">
-            <input
-              type={task.maxSelections === 1 ? "radio" : "checkbox"}
-              name={`choice-${task.id}-${String(task.stepIndex)}`}
-              checked={selected.includes(option.id)}
-              data-option-id={option.id}
-              onChange={() => {
-                onToggle(option.id);
-              }}
-            />
-            <span>
-              <strong>{option.label}</strong>
-              <small>
-                {option.detail ??
-                  (task.kind === "choose_response"
-                    ? "Submitting applies this response to the case."
-                    : "Include this statement in your findings.")}
-              </small>
-              {source ? <small>Source: {source.title}</small> : null}
-              {option.source?.quote ? (
+          <div key={option.id} className="work-task-choice">
+            <label>
+              <input
+                type={task.maxSelections === 1 ? "radio" : "checkbox"}
+                name={`choice-${task.id}-${String(task.stepIndex)}`}
+                checked={selected.includes(option.id)}
+                data-option-id={option.id}
+                onChange={() => {
+                  onToggle(option.id);
+                }}
+              />
+              <span>
+                <strong>{option.label}</strong>
+                {option.detail ? <small>{option.detail}</small> : null}
+              </span>
+            </label>
+            {option.source?.quote && source?.observed ? (
+              <details>
+                <summary>Source excerpt · {source.title}</summary>
                 <blockquote>{option.source.quote}</blockquote>
-              ) : null}
-            </span>
-          </label>
+              </details>
+            ) : null}
+          </div>
         );
       })}
     </fieldset>

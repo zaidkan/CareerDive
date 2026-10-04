@@ -33,14 +33,9 @@ export function RecordComparison({
   const terms = task.options.filter(({ term, termHelp }) => term && termHelp);
   return (
     <section className="record-comparison" aria-label="Compare source records">
-      <p>
-        Compare the records to see what matches and what needs another check.
-        Note where each detail came from; a difference alone does not prove an attack.
-      </p>
+      <p>Compare sources. Mark supported findings.</p>
       {records.length < task.relatedArtifactIds.length ? (
-        <p role="status">
-          Open the remaining records using the buttons above, then compare their details.
-        </p>
+        <p role="status">Open the remaining sources to compare.</p>
       ) : null}
       {sourced ? (
         <SourceEvidence
@@ -101,10 +96,7 @@ export function RecordComparison({
               ))}
             </ul>
           ) : (
-            <p>
-              No passages marked yet. Read the records, then select the highlighted
-              text that supports your comparison.
-            </p>
+            <p>No findings selected.</p>
           )}
         </section>
       ) : null}

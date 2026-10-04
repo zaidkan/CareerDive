@@ -11,7 +11,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { SystemToolPanel } from "../src/components/SystemToolPanel.js";
 import { RecordQueryTool } from "../src/components/tools/RecordQueryTool.js";
 
-afterEach(() => { cleanup(); sessionStorage.clear(); });
+afterEach(() => {
+  cleanup();
+  sessionStorage.clear();
+});
 
 const queryAction: AvailableAction = {
   id: "query_records",
@@ -106,18 +109,19 @@ describe("RecordQueryTool", () => {
       />,
     );
 
+    expect(screen.getByLabelText("Session ID")).not.toBeVisible();
+    await user.click(screen.getByText("More filters"));
     expect(screen.getByLabelText("Session ID")).toBeVisible();
     expect(screen.queryByLabelText("Assigned user")).toBeNull();
 
-    await user.selectOptions(
-      screen.getByLabelText("Dataset"),
-      "devices",
-    );
+    await user.selectOptions(screen.getByLabelText("Record type"), "devices");
     expect(screen.getByLabelText("Assigned user")).toBeVisible();
     expect(screen.getByLabelText("Device")).toBeVisible();
     expect(screen.queryByLabelText("Session ID")).toBeNull();
 
-    expect(screen.queryByRole("option", { name: "Phishing reports" })).toBeNull();
+    expect(
+      screen.queryByRole("option", { name: "Phishing reports" }),
+    ).toBeNull();
   });
 
   it("submits structured filters and a time window as a query payload", async () => {
@@ -132,12 +136,16 @@ describe("RecordQueryTool", () => {
     );
 
     await user.type(screen.getByLabelText("User"), "j.patel@example.com");
+    await user.click(screen.getByText(/^More filters/));
     await user.type(screen.getByLabelText("Session ID"), "S-0741");
     await user.type(
       screen.getByLabelText("Time from (minute since midnight)"),
       "441",
     );
-    await user.type(screen.getByLabelText("Time to (minute since midnight)"), "465");
+    await user.type(
+      screen.getByLabelText("Time to (minute since midnight)"),
+      "465",
+    );
     await user.click(screen.getByRole("button", { name: "Search records" }));
 
     expect(onQueryRecords).toHaveBeenCalledTimes(1);
@@ -159,6 +167,7 @@ describe("RecordQueryTool", () => {
     view.availableActions = [queryAction];
     render(<RecordQueryTool view={view} onQueryRecords={onQueryRecords} />);
 
+    await user.click(screen.getByText(/^More filters/));
     await user.type(screen.getByLabelText("Source IP"), "203.0.113.44");
     await user.click(screen.getByRole("button", { name: "Search records" }));
 
@@ -179,8 +188,15 @@ describe("RecordQueryTool", () => {
       />,
     );
 
-    await user.type(screen.getByLabelText("Time from (minute since midnight)"), "465");
-    await user.type(screen.getByLabelText("Time to (minute since midnight)"), "441");
+    await user.click(screen.getByText(/^More filters/));
+    await user.type(
+      screen.getByLabelText("Time from (minute since midnight)"),
+      "465",
+    );
+    await user.type(
+      screen.getByLabelText("Time to (minute since midnight)"),
+      "441",
+    );
     await user.click(screen.getByRole("button", { name: "Search records" }));
 
     expect(onQueryRecords).not.toHaveBeenCalled();
@@ -189,14 +205,19 @@ describe("RecordQueryTool", () => {
     );
 
     await user.clear(screen.getByLabelText("Time to (minute since midnight)"));
-    await user.type(screen.getByLabelText("Time to (minute since midnight)"), "later");
+    await user.type(
+      screen.getByLabelText("Time to (minute since midnight)"),
+      "later",
+    );
     await user.click(screen.getByRole("button", { name: "Search records" }));
     expect(onQueryRecords).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Time window bounds must be whole numbers zero or above.",
     );
 
-    await user.clear(screen.getByLabelText("Time from (minute since midnight)"));
+    await user.clear(
+      screen.getByLabelText("Time from (minute since midnight)"),
+    );
     await user.clear(screen.getByLabelText("Time to (minute since midnight)"));
     await user.click(screen.getByRole("button", { name: "Search records" }));
     expect(onQueryRecords).toHaveBeenCalledTimes(1);
@@ -228,6 +249,38 @@ describe("RecordQueryTool", () => {
     expect(
       screen.queryByText(/correct|incorrect|clue|answer|score|templateId/i),
     ).toBeNull();
+  });
+
+  it("reveals technical fields only after canonical record inspection", async () => {
+    const user = userEvent.setup();
+    const onInspectRecord = vi.fn().mockResolvedValue(undefined);
+    const view = { ...baseView(), queryResults: [authResult()] };
+    const props = { queryAction, onQueryRecords: vi.fn(), onInspectRecord };
+    const { rerender } = render(<RecordQueryTool view={view} {...props} />);
+    expect(
+      screen.queryByText("Extra check result not present in export."),
+    ).toBeNull();
+    await user.click(screen.getByRole("button", { name: /Inspect AUTH-0741/ }));
+    expect(onInspectRecord).toHaveBeenCalledWith({
+      type: "inspect_query_record",
+      queryId: "session-1-q1",
+      recordId: "AUTH-0741",
+    });
+    expect(
+      screen.queryByText("Extra check result not present in export."),
+    ).toBeNull();
+    rerender(
+      <RecordQueryTool
+        view={{
+          ...view,
+          workplace: { ...view.workplace, inspectedRecordIds: ["AUTH-0741"] },
+        }}
+        {...props}
+      />,
+    );
+    expect(
+      screen.getByText("Extra check result not present in export."),
+    ).toBeVisible();
   });
 
   it("presents zero results as a legitimate outcome, not an error", () => {
@@ -283,6 +336,7 @@ describe("RecordQueryTool", () => {
       />,
     );
 
+    await user.click(screen.getByText(/^More filters/));
     await user.type(screen.getByLabelText("Session ID"), "S-0741");
     await user.click(screen.getByRole("button", { name: "Search records" }));
     await user.click(screen.getByRole("button", { name: "Search records" }));
@@ -323,7 +377,9 @@ describe("RecordQueryTool", () => {
       screen.getByRole("button", { name: "Search records" }),
     ).toBeDisabled();
     expect(
-      screen.getByText("Record search is not offered for the current work item."),
+      screen.getByText(
+        "Record search is not offered for the current work item.",
+      ),
     ).toBeVisible();
     expect(
       screen.getByRole("article", { name: "Record AUTH-0741" }),

@@ -64,6 +64,7 @@ it("marks the current rail case and preserves its resume destination", () => {
       onResume={onResume}
     />,
   );
+  fireEvent.click(screen.getByText("Current shift"));
   const selected = screen.getByRole("button", { pressed: true });
   expect(selected).toHaveTextContent("Unfamiliar successful login");
   expect(selected).toHaveTextContent("high priority");

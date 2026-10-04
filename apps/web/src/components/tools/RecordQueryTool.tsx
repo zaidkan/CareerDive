@@ -234,6 +234,31 @@ export function RecordQueryTool({
     });
   }
 
+  function renderFilter(field: string) {
+    const hasValue = Boolean((stringFilters[field] ?? "").trim());
+    return (
+      <div
+        key={field}
+        className={hasValue ? "rq-field rq-field--active" : "rq-field"}
+      >
+        <label htmlFor={`record-query-${datasetId}-${field}`}>
+          {FILTER_LABELS[field] ?? field}
+        </label>
+        <input
+          id={`record-query-${datasetId}-${field}`}
+          type="text"
+          autoComplete="off"
+          spellCheck={false}
+          value={stringFilters[field] ?? ""}
+          onChange={(event) => {
+            setStringFilter(field, event.target.value);
+          }}
+          placeholder="Leave blank to include all"
+        />
+      </div>
+    );
+  }
+
   const results = view.queryResults;
   const windowRangeInvalid =
     validationError ===
@@ -262,7 +287,7 @@ export function RecordQueryTool({
       >
         <div className="rq-dataset-row">
           <label htmlFor="record-query-dataset">
-            Dataset
+            Record type
             {activeFilterCount > 0
               ? ` · ${String(activeFilterCount)} active filter${activeFilterCount === 1 ? "" : "s"}`
               : ""}
@@ -288,79 +313,77 @@ export function RecordQueryTool({
           role="group"
           aria-label="Filters for selected dataset"
         >
-          {allowedFields.map((field) => {
-            const hasValue = Boolean((stringFilters[field] ?? "").trim());
-            return (
-              <div
-                key={field}
-                className={hasValue ? "rq-field rq-field--active" : "rq-field"}
-              >
-                <label htmlFor={`record-query-${datasetId}-${field}`}>
-                  {FILTER_LABELS[field] ?? field}
-                </label>
-                <input
-                  id={`record-query-${datasetId}-${field}`}
-                  type="text"
-                  autoComplete="off"
-                  spellCheck={false}
-                  value={stringFilters[field] ?? ""}
-                  onChange={(event) => {
-                    setStringFilter(field, event.target.value);
-                  }}
-                  placeholder="Leave blank to include all"
-                />
-              </div>
-            );
-          })}
+          {allowedFields.slice(0, 1).map(renderFilter)}
         </div>
 
-        <div className="rq-time-row" role="group" aria-label="Time window">
-          <div className="rq-time-grid">
-            <div>
-              <label htmlFor={`record-query-${datasetId}-window-start`}>
-                Time from (minute since midnight)
-              </label>
-              <input
-                id={`record-query-${datasetId}-window-start`}
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                value={windowStart}
-                aria-invalid={
-                  windowNumberInvalid || windowRangeInvalid ? "true" : undefined
-                }
-                onChange={(event) => {
-                  setWindowStart(event.target.value);
-                }}
-                placeholder="Leave blank for no lower bound"
-              />
-            </div>
-            <div>
-              <label htmlFor={`record-query-${datasetId}-window-end`}>
-                Time to (minute since midnight)
-              </label>
-              <input
-                id={`record-query-${datasetId}-window-end`}
-                type="text"
-                inputMode="numeric"
-                autoComplete="off"
-                value={windowEnd}
-                aria-invalid={
-                  windowNumberInvalid || windowRangeInvalid ? "true" : undefined
-                }
-                onChange={(event) => {
-                  setWindowEnd(event.target.value);
-                }}
-                placeholder="Leave blank for no upper bound"
-              />
-            </div>
+        <details
+          className="rq-advanced"
+          open={validationError ? true : undefined}
+        >
+          <summary>
+            More filters
+            {activeFilterCount > 0
+              ? ` · ${String(activeFilterCount)} active`
+              : ""}
+          </summary>
+          <div
+            className="rq-filters"
+            role="group"
+            aria-label="Additional record filters"
+          >
+            {allowedFields.slice(1).map(renderFilter)}
           </div>
-          <p className="rq-time-help">
-            Office-local minutes since midnight: 07:30 = 450; 08:00 = 480. Leave
-            blank for open-ended. A bounded search reflects the interval you
-            choose.
-          </p>
-        </div>
+          <div className="rq-time-row" role="group" aria-label="Time window">
+            <div className="rq-time-grid">
+              <div>
+                <label htmlFor={`record-query-${datasetId}-window-start`}>
+                  Time from (minute since midnight)
+                </label>
+                <input
+                  id={`record-query-${datasetId}-window-start`}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={windowStart}
+                  aria-invalid={
+                    windowNumberInvalid || windowRangeInvalid
+                      ? "true"
+                      : undefined
+                  }
+                  onChange={(event) => {
+                    setWindowStart(event.target.value);
+                  }}
+                  placeholder="Leave blank for no lower bound"
+                />
+              </div>
+              <div>
+                <label htmlFor={`record-query-${datasetId}-window-end`}>
+                  Time to (minute since midnight)
+                </label>
+                <input
+                  id={`record-query-${datasetId}-window-end`}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={windowEnd}
+                  aria-invalid={
+                    windowNumberInvalid || windowRangeInvalid
+                      ? "true"
+                      : undefined
+                  }
+                  onChange={(event) => {
+                    setWindowEnd(event.target.value);
+                  }}
+                  placeholder="Leave blank for no upper bound"
+                />
+              </div>
+            </div>
+            <p className="rq-time-help">
+              Office-local time: 07:30 = 450; 08:00 = 480. Blank means no time
+              limit.
+            </p>
+          </div>
+        </details>
 
         {validationError ? (
           <p className="rq-validation" role="alert">
@@ -399,8 +422,7 @@ export function RecordQueryTool({
       <div className="rq-results" aria-label="Search results" aria-live="off">
         {results.length === 0 ? (
           <p className="rq-empty">
-            No searches run yet. Results will appear here without changing
-            anything already on file.
+            Choose a record type and search. Blank filters include all records.
           </p>
         ) : (
           <>
@@ -409,13 +431,11 @@ export function RecordQueryTool({
                 Recent results · {String(results.length)} quer
                 {results.length === 1 ? "y" : "ies"}
               </p>
-              <span className="rq-results-meta">
-                Newest last · adjust filters and search again any time
-              </span>
+              <span className="rq-results-meta">Newest first</span>
             </div>
             <div className="rq-stack">
-              {results.map((result, index) => {
-                const isLatest = index === results.length - 1;
+              {results.toReversed().map((result, index) => {
+                const isLatest = index === 0;
                 return (
                   <article
                     key={result.queryId}
@@ -462,6 +482,28 @@ export function RecordQueryTool({
                               aria-label={`Record ${record.id}`}
                             >
                               <h5>{record.id}</h5>
+                              <p className="rq-subtle">
+                                {displayEntries(record)
+                                  .filter(([key]) =>
+                                    [
+                                      "user",
+                                      "assignedUser",
+                                      "account",
+                                      "deviceLabel",
+                                      "alertId",
+                                      "runId",
+                                      "result",
+                                      "status",
+                                      "state",
+                                    ].includes(key),
+                                  )
+                                  .slice(0, 2)
+                                  .map(
+                                    ([key, value]) =>
+                                      `${fieldLabel(key)}: ${formatFieldValue(value)}`,
+                                  )
+                                  .join(" · ")}
+                              </p>
                               {onInspectRecord ? (
                                 <button
                                   type="button"
@@ -481,55 +523,67 @@ export function RecordQueryTool({
                                     : `Inspect ${record.id}`}
                                 </button>
                               ) : null}
-                              <details
-                                open={
-                                  view.workplace.inspectedRecordIds?.includes(
-                                    record.id,
-                                  ) || !onInspectRecord
-                                }
-                              >
-                                <summary>Record details</summary>
-                                <dl className="rq-fields">
-                                  {displayEntries(record)
-                                    .filter(([key]) => key !== "id")
-                                    .map(([key, value]) => (
-                                      <div key={key}>
-                                        <dt data-field={key}>
-                                          {fieldLabel(key)}
-                                        </dt>
-                                        <dd>{formatFieldValue(value)}</dd>
-                                      </div>
-                                    ))}
-                                </dl>
-                                {onInspectRecord
-                                  ? view.artifacts
-                                      .filter(
-                                        (artifact) =>
-                                          artifact.body?.includes(record.id) ||
-                                          ("sessionId" in record &&
-                                            typeof record.sessionId ===
-                                              "string" &&
+                              {onInspectRecord &&
+                              !view.workplace.inspectedRecordIds?.includes(
+                                record.id,
+                              ) ? (
+                                <p className="rq-subtle">
+                                  Inspect to open this record.
+                                </p>
+                              ) : (
+                                <details
+                                  open={
+                                    view.workplace.inspectedRecordIds?.includes(
+                                      record.id,
+                                    ) || !onInspectRecord
+                                  }
+                                >
+                                  <summary>Record details</summary>
+                                  <dl className="rq-fields">
+                                    {displayEntries(record)
+                                      .filter(([key]) => key !== "id")
+                                      .map(([key, value]) => (
+                                        <div key={key}>
+                                          <dt data-field={key}>
+                                            {fieldLabel(key)}
+                                          </dt>
+                                          <dd>{formatFieldValue(value)}</dd>
+                                        </div>
+                                      ))}
+                                  </dl>
+                                  {onInspectRecord
+                                    ? view.artifacts
+                                        .filter(
+                                          (artifact) =>
                                             artifact.body?.includes(
-                                              record.sessionId,
-                                            )),
-                                      )
-                                      .map((artifact) => (
-                                        <button
-                                          key={artifact.id}
-                                          type="button"
-                                          disabled={pending}
-                                          onClick={() => {
-                                            void onInspectRecord({
-                                              type: "open_artifact",
-                                              artifactId: artifact.id,
-                                            }).catch(() => {});
-                                          }}
-                                        >
-                                          Open related source: {artifact.title}
-                                        </button>
-                                      ))
-                                  : null}
-                              </details>
+                                              record.id,
+                                            ) ||
+                                            ("sessionId" in record &&
+                                              typeof record.sessionId ===
+                                                "string" &&
+                                              artifact.body?.includes(
+                                                record.sessionId,
+                                              )),
+                                        )
+                                        .map((artifact) => (
+                                          <button
+                                            key={artifact.id}
+                                            type="button"
+                                            disabled={pending}
+                                            onClick={() => {
+                                              void onInspectRecord({
+                                                type: "open_artifact",
+                                                artifactId: artifact.id,
+                                              }).catch(() => {});
+                                            }}
+                                          >
+                                            Open related source:{" "}
+                                            {artifact.title}
+                                          </button>
+                                        ))
+                                    : null}
+                                </details>
+                              )}
                             </article>
                           </li>
                         ))}

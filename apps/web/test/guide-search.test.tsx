@@ -111,7 +111,7 @@ describe("Guide search", () => {
       />,
     );
     await user.type(
-      screen.getByRole("searchbox", { name: "Filter guides locally" }),
+      screen.getByRole("searchbox", { name: "Find a guide" }),
       "account history",
     );
     expect(
@@ -154,7 +154,7 @@ describe("Guide search", () => {
     ).toBeNull();
 
     const input = screen.getByRole("searchbox", {
-      name: "Filter guides locally",
+      name: "Find a guide",
     });
     await user.type(input, "phishing");
 
@@ -194,7 +194,7 @@ describe("Guide search", () => {
     );
 
     const input = screen.getByRole("searchbox", {
-      name: "Filter guides locally",
+      name: "Find a guide",
     });
     await user.type(input, "does-not-exist");
     expect(screen.getByRole("status")).toHaveTextContent(
@@ -246,7 +246,7 @@ describe("Guide search", () => {
       />,
     );
     expect(
-      screen.getByRole("searchbox", { name: "Filter guides locally" }),
+      screen.getByRole("searchbox", { name: "Find a guide" }),
     ).toHaveValue("phishing");
     expect(
       screen.queryByRole("button", { name: /Login alert guide kb document/ }),
@@ -263,7 +263,7 @@ describe("Guide search", () => {
       screen.getByRole("searchbox", { name: "Search guides" }),
     ).toHaveValue("login");
     expect(
-      screen.getByRole("searchbox", { name: "Filter guides locally" }),
+      screen.getByRole("searchbox", { name: "Find a guide" }),
     ).toHaveValue("login");
   });
 });

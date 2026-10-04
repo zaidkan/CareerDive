@@ -59,13 +59,20 @@ it("keeps small cohorts private and offers a keyboard-readable personal review",
     screen.getByRole("heading", { name: "Your shift in review" }),
   ).toBeVisible();
   expect(screen.getByText("Requested senior review")).toBeVisible();
-  expect(screen.queryByRole("heading", { name: "How other completed shifts handled this" })).toBeNull();
+  expect(
+    screen.queryByRole("heading", {
+      name: "How other completed shifts handled this",
+    }),
+  ).toBeNull();
   expect(container.textContent).not.toMatch(/29%|56%/);
-  expect(container.textContent).not.toMatch(/career.fit score|pass\/fail|ranking|performance grade|\bscore\b/i);
+  expect(container.textContent).not.toMatch(
+    /career.fit score|pass\/fail|ranking|performance grade|\bscore\b/i,
+  );
   await user.tab();
   expect(
     screen.getByRole("link", { name: /The unfamiliar sign-in/ }),
   ).toHaveFocus();
+  await user.click(screen.getByText("Evidence and reasoning"));
   await user.click(screen.getByText("Consider another path"));
   expect(
     screen.getByText(/which independent record would you need/i),
@@ -94,7 +101,11 @@ it("shows server-derived percentages only for a ready cohort and handles service
   ).toBeVisible();
   decision.cohort = { status: "unavailable" };
   rerender(<DebriefView debrief={ready} />);
-  expect(screen.queryByRole("heading", { name: "How other completed shifts handled this" })).toBeNull();
+  expect(
+    screen.queryByRole("heading", {
+      name: "How other completed shifts handled this",
+    }),
+  ).toBeNull();
   expect(screen.getByText("Requested senior review")).toBeVisible();
 });
 
@@ -106,9 +117,17 @@ it("suppresses community comparison for a single completion route", () => {
   decision.userChoiceId = "route_access_request";
   decision.availableChoiceIds = ["route_access_request"];
   decision.comparisonEligible = false;
-  decision.cohort = { status: "ready", sampleSize: 30,
-    counts: { route_access_request: 30 }, percentages: { route_access_request: 100 } };
+  decision.cohort = {
+    status: "ready",
+    sampleSize: 30,
+    counts: { route_access_request: 30 },
+    percentages: { route_access_request: 100 },
+  };
   render(<DebriefView debrief={single} />);
-  expect(screen.queryByRole("heading", { name: "How other completed shifts handled this" })).toBeNull();
+  expect(
+    screen.queryByRole("heading", {
+      name: "How other completed shifts handled this",
+    }),
+  ).toBeNull();
   expect(screen.queryByText("100%")).toBeNull();
 });

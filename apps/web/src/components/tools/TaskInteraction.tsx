@@ -43,7 +43,8 @@ export function TaskInteraction({
         ))}
       {openedRelated.length > 0 ? (
         <p className="task-evidence-status">
-          Sources available for this step: {openedRelated.map(({ title }) => title).join(", ")}.
+          {openedRelated.length} source{openedRelated.length === 1 ? "" : "s"}{" "}
+          inspected for this case.
         </p>
       ) : null}
       <WorkTaskPanel

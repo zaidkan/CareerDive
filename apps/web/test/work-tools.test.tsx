@@ -118,7 +118,8 @@ describe("work tools", () => {
         expect(screen.queryByText(/Six failed extra checks 07:38-07:40/)).toBeNull();
         await user.click(screen.getByRole("button", { name: /A-1042 · sign-in monitoring/i }));
         expect(onInteraction).toHaveBeenCalledWith({ type: "open_alert_record", recordId: "A-1042" });
-        expect(await screen.findByText(/Six failed extra checks 07:38-07:40/)).toBeVisible();
+        await user.click(screen.getByText("Technical alert fields"));
+      expect(await screen.findByText(/Six failed extra checks 07:38-07:40/)).toBeVisible();
         await user.click(screen.getByRole("button", { name: /Review alert/i }));
         expect(onAction).toHaveBeenCalledWith(expect.objectContaining({
             id: "review_alert",
@@ -238,7 +239,7 @@ describe("work tools", () => {
                 },
             ]} onAction={() => undefined} onTaskAttempt={onTaskAttempt} selectedEventId="alert-1" systemId="alert_dashboard" view={{ ...view, tasks: [task] }}/>);
         await user.click(screen.getByLabelText("Six failed checks, then a success"));
-        await user.click(screen.getByRole("button", { name: /check my work/i }));
+        await user.click(screen.getByRole("button", { name: /save findings/i }));
         expect(onTaskAttempt).toHaveBeenCalledWith(task, ["timeline-failures"]);
     });
 });

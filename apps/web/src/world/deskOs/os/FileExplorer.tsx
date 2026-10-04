@@ -71,7 +71,7 @@ export function FileExplorer({
     const name = findFile(fs, fileId)?.name ?? fileId;
     dispatch({ type: "set_fake_fs", fs: moveFile(fs, fileId, toFolder) });
     if (fileId === "field-notes-draft.txt" && toFolder === "desktop") {
-      setNotice(`Moved ${name} to Desktop. Nice — a tidy desktop.`);
+      setNotice(`Moved ${name} to Desktop.`);
     } else {
       setNotice(
         `Moved ${name} from ${labelOf(fs, fromFolder)} to ${labelOf(fs, toFolder)}.`,

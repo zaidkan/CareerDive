@@ -37,10 +37,7 @@ export function HandoffBuilder({
   return (
     <section aria-label="Build shift handoff" className="handoff-builder">
       <h4>Hand your work forward</h4>
-      <p>
-        Choose the sources you actually opened. Decisions and open work come
-        from your shift record.
-      </p>
+      <p>Select references and the next check. Review before sending.</p>
       <fieldset>
         <legend>What I checked</legend>
         {sources.length ? (
@@ -66,10 +63,7 @@ export function HandoffBuilder({
             </label>
           ))
         ) : (
-          <p>
-            No sources inspected yet. You can truthfully hand off the checks
-            still outstanding.
-          </p>
+          <p>No inspected sources. Outstanding checks remain in the preview.</p>
         )}
       </fieldset>
       <h5>What I decided</h5>
@@ -79,9 +73,14 @@ export function HandoffBuilder({
             <strong>
               {event.title}: {event.status}
             </strong>
-            <p>
-              {event.resolution ?? "No final decision recorded; remains open."}
-            </p>
+            {event.resolution ? (
+              <details>
+                <summary>Decision details</summary>
+                <p>{event.resolution}</p>
+              </details>
+            ) : (
+              <p>No final decision recorded; remains open.</p>
+            )}
           </li>
         ))}
       </ul>

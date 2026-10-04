@@ -50,7 +50,7 @@ export function GuideSearch({
             event.preventDefault();
           }}
         >
-          <label htmlFor="guide-local-query">Filter guides locally</label>
+          <label htmlFor="guide-local-query">Find a guide</label>
           <input
             id="guide-local-query"
             onChange={(event) => {
@@ -104,11 +104,7 @@ export function GuideSearch({
                 : canonicalSearchAction.label}
             </button>
             {isLoginFollowUp ? (
-              <p>
-                Find your next check in the follow-up guide, then save the
-                unanswered question in Tickets. Reading the guide leaves the
-                case open; it does not contact a reviewer or restrict account access.
-              </p>
+              <p>Follow-up checks; the case stays open.</p>
             ) : null}
           </form>
         ) : null}

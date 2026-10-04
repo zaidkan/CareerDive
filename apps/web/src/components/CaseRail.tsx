@@ -26,7 +26,7 @@ export function CaseRail({
   const closed = closedCases(view);
   return (
     <aside aria-label="Current shift" className="case-rail">
-      <details className="case-rail-active" open>
+      <details className="case-rail-active" open={!selectedEventId}>
         <summary className="case-rail-title">
           <span className="eyebrow">Current shift</span>
           <strong>{active.length} open</strong>

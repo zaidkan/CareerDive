@@ -99,7 +99,7 @@ it.each(["desk"] as const)("carries only opened case evidence and saved notes in
     expect(review).toHaveTextContent("Previously opened comparison passage.");
     expect(review).toHaveTextContent(current.ticketNotes[event.id] ?? "");
     expect(review).not.toHaveTextContent("UNOPENED BODY MUST NOT APPEAR");
-    expect(review).toHaveTextContent(/more evidence/i);
+    expect(review).toHaveTextContent(/another check/i);
 });
 it("keeps Morgan procedure reminders behind opening the thread and the public decision stage", () => {
     const current = view();
