@@ -163,6 +163,7 @@ export function OpsConsole({
           ) : null}
           <MutationStatus
             compact
+            focusSuccess={tab !== "team_chat"}
             state={mutationState}
             {...(onRetryMutation ? { onRetry: onRetryMutation } : {})}
           />

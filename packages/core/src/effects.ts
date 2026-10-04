@@ -105,27 +105,55 @@ function managerGuidanceForA1042(
   if (event.templateId !== "suspicious_login") return authoredGuidance;
 
   const completed = new Set<string>(event.completedActionIds);
+  const inspected = new Set(state.workplace.inspectedArtifactIds ?? []);
   if (event.status !== "active")
     return "This case has a recorded disposition. Keep the saved ticket and any remaining questions available for the next analyst.";
   if (
     completed.has("inspect_login_context") &&
-    !completed.has("check_device_inventory")
+    !(
+      completed.has("check_device_inventory") ||
+      inspected.has("device-inventory-1")
+    ) &&
+    !inspected.has("device-inventory-1")
   )
     return "The records you opened are context, not proof of who used the flagged device. The device record has not been checked yet; it may help separate managed equipment from an unfamiliar label.";
   if (
-    completed.has("check_device_inventory") &&
-    !state.workplace.comparisons?.some(({ eventId }) => eventId === event.id)
+    (completed.has("check_device_inventory") ||
+      inspected.has("device-inventory-1")) &&
+    !state.workplace.comparisons?.some(
+      ({ eventId, artifactIds }) =>
+        eventId === event.id &&
+        ["login-session-timeline", "vpn-context-1"].every((id) =>
+          artifactIds.includes(id),
+        ),
+    )
   )
     return "The records you opened are context, not proof of who used the flagged device. The device check is recorded; the session timeline and VPN record can help test whether the two sign-ins followed the same route.";
-  if (!completed.has("review_alert")) return authoredGuidance;
+  if (
+    !completed.has("review_alert") &&
+    !inspected.has("suspicious-login-alert")
+  )
+    return authoredGuidance;
 
-  const inspectedRelevantRecord = [
-    "inspect_login_context",
-    "inspect_account_history",
-    "check_device_inventory",
-  ].some((actionId) => completed.has(actionId));
+  const inspectedRelevantRecord =
+    [
+      "login-context-1",
+      "account-history-1",
+      "device-inventory-1",
+      "login-session-timeline",
+      "vpn-context-1",
+    ].some((id) => inspected.has(id)) ||
+    [
+      "inspect_login_context",
+      "inspect_account_history",
+      "check_device_inventory",
+    ].some((actionId) => completed.has(actionId));
   const queriedRelevantRecords = state.queryHistory.some(
-    (entry) => entry.actorEventId === event.id,
+    (entry) =>
+      entry.actorEventId === event.id &&
+      entry.resultIds.some((id) =>
+        state.workplace.inspectedRecordIds?.includes(id),
+      ),
   );
   if (!inspectedRelevantRecord && !queriedRelevantRecords) {
     return "I have seen the alert, but not enough context to add much yet. Tell me which record you checked and what still does not line up; I will help with the process, not choose the outcome.";
@@ -214,23 +242,52 @@ export function applyResolvedEffect(input: {
   }
 
   if (action.id === "ask_manager") {
+    const question = action.freeText?.trim() ?? "";
+    const bounded = [
+      "What case context do we have?",
+      "What remains uncertain?",
+      "What should the next analyst know?",
+    ].includes(question);
     const relevant =
-      !action.freeText ||
+      bounded ||
+      !question ||
       /\b(login|alert|case|record|device|vpn|session|account|ticket|handoff|review|scanner|approval|access|evidence|check|priority|patel|rivera|finance|investigat\w*)\b/i.test(
-        action.freeText,
+        question,
       );
-    event.managerConsulted = relevant;
+    event.managerConsulted ||= relevant;
     const template = state.rules.eventTemplates[event.templateId];
-    const guidance = !relevant
-      ? "I can help with this shift’s cases and procedure. Which case or record are you asking about?"
-      : managerGuidanceForA1042(
-          state,
-          event,
-          (
-            template?.managerGuidance ??
-            "Morgan has no additional operational context for this work."
-          ).trim(),
-        );
+    const wrongCase =
+      (event.id !== "routine-alert-1" && /scanner|A-1180/i.test(question)) ||
+      (event.id !== "suspicious-login-1" && /Patel|A-1042/i.test(question)) ||
+      (event.id !== "login-help-1" && /Rivera/i.test(question)) ||
+      (event.id !== "access-request-1" && /finance/i.test(question));
+    let guidance = wrongCase
+      ? `We are discussing the selected case: ${event.title}. Choose the work you mean before asking about another case.`
+      : !relevant
+        ? "I can help with this shift’s cases and procedure. Which case or record are you asking about?"
+        : managerGuidanceForA1042(
+            state,
+            event,
+            (
+              template?.managerGuidance ??
+              "Morgan has no additional operational context for this work."
+            ).trim(),
+          );
+    if (bounded && !wrongCase) {
+      const inspected = state.workplace.inspectedArtifactIds ?? [];
+      const sources = inspected.filter((id) =>
+        state.artifacts[id]?.eventIds.includes(event.id),
+      );
+      const ticket = state.structuredTickets[`ticket-${event.id}`];
+      if (question === "What remains uncertain?") {
+        guidance =
+          event.id === "suspicious-login-1"
+            ? `${sources.length ? "We have opened context" : "We have only the alert to go on"}, not an independent account of who used the flagged session. ${inspected.includes("device-inventory-1") ? "The device source is opened; a device label alone still cannot identify a person." : "The device source has not been opened yet."}${ticket?.uncertainty ? ` Your saved question is: ${ticket.uncertainty}` : " Keep session ownership separate from location."}`
+            : `${event.title}: ${String(sources.length)} source reference${sources.length === 1 ? " is" : "s are"} opened. ${ticket?.uncertainty ?? "The request itself is not verification. We still need the supporting record before treating its claim as established."}`;
+      } else if (question === "What should the next analyst know?") {
+        guidance = `${event.title}: ${ticket ? "there is a saved ticket" : "no saved case ticket yet"}. ${state.workplace.comparisons?.some((c) => c.eventId === event.id) ? "A source comparison is recorded." : "No source comparison is recorded."} Pass on the sources you actually opened and the unresolved question, with an owner for the follow-up.`;
+      }
+    }
     const entry = consequence(state, event.id, action.id, guidance);
     state.ledger.push(entry);
     effects.push({ type: "consequence_recorded", consequenceId: entry.id });
@@ -294,9 +351,11 @@ export function applyResolvedEffect(input: {
       );
     state.pendingCallbacks.push({
       ...callback,
-      ...(callback.id === "b1-comparison-review" && !comparisonSupported
+      ...(callback.id === "b1-comparison-review"
         ? {
-            body: "I received your review request. The flagged-session/VPN comparison or required source attachments are missing from the saved review request. I will recover the missing record before deciding next steps.",
+            body: comparisonSupported
+              ? "Your flagged-session/VPN comparison and device inventory source are attached. I will verify the unresolved session ownership before deciding next steps."
+              : "I received your review request. The flagged-session/VPN comparison or required source attachments are missing from the saved review request. I will recover the missing record before deciding next steps.",
           }
         : {}),
       eventId: event.id,

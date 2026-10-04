@@ -22,6 +22,10 @@ export const WorkplaceStateSchema = z.object({
   coffeeServings: z.number().int().min(0),
   coffeeStage: CoffeeStageSchema,
   julesTopicsSeen: z.array(JulesTopicSchema),
+  julesConsultations: z
+    .array(z.object({ eventId: z.string(), topic: JulesTopicSchema }))
+    .optional(),
+  handoffSourceArtifactIds: z.array(z.string()).optional(),
   emergencyRecoveryUsed: z.boolean(),
   lastInspectedArtifactId: z.string().optional(),
   inspectedArtifactIds: z.array(z.string()).optional(),
@@ -51,7 +55,11 @@ export const WorkplaceInteractionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("finish_coffee") }),
   z.object({ type: z.literal("pour_coffee") }),
   z.object({ type: z.literal("drink_coffee") }),
-  z.object({ type: z.literal("talk_to_jules"), topic: JulesTopicSchema }),
+  z.object({
+    type: z.literal("talk_to_jules"),
+    topic: JulesTopicSchema,
+    eventId: z.string().optional(),
+  }),
   z.object({ type: z.literal("open_artifact"), artifactId: z.string().min(1) }),
   z.object({
     type: z.literal("open_alert_record"),

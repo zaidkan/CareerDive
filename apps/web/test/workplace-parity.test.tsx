@@ -67,16 +67,23 @@ describe("structured workplace acceptance", () => {
             }} onAction={vi.fn()} onWorkplaceInteraction={onWorkplaceInteraction}/>);
         expect(screen.queryByRole("button", { name: "Use emergency recovery" })).toBeNull();
     });
-    it("keeps Morgan's thread and guidance available after manager actions disappear", async () => {
+    it("keeps canonical Morgan messages available after work is settled", async () => {
         const current = view();
         current.availableActions = [];
-        current.operationalMessages = [
-            "Morgan recommends checking the opened records.",
+        current.teamMessages = [
+            {
+                id: "morgan-reply",
+                eventId: "suspicious-login-1",
+                author: "morgan",
+                actionId: "ask_manager",
+                simMinutes: 5,
+                body: "The session owner remains unverified.",
+            },
         ];
         render(<WorkSurface view={current} onAction={vi.fn()}/>);
         await userEvent.setup().click(screen.getByRole("button", { name: /^Team chat/ }));
         expect(screen.getByRole("article", { name: "Morgan message thread" })).toBeVisible();
-        expect(screen.getByRole("complementary", { name: "Morgan guidance" })).toHaveTextContent(required(current.operationalMessages[0]));
+        expect(screen.getByRole("status")).toHaveTextContent("The session owner remains unverified.");
     });
     it("announces and focuses mutation failures inline with a keyboard retry", async () => {
         const user = userEvent.setup();

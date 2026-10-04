@@ -209,6 +209,7 @@ export function applyAction(
     { type: "action_applied", actionId: action.id },
   ];
   if (handoff) {
+    state.workplace.handoffSourceArtifactIds = [...handoff.sourceArtifactIds];
     if (!state.flags.b3_choice)
       state.flags.b3_choice = handoff.sourceArtifactIds.length
         ? "complete"
@@ -338,6 +339,26 @@ export function applyAction(
     if (action.decisionOptionId && savedTicket)
       savedTicket.disposition = action.decisionOptionId;
   }
+  const dialogueTicket = state.structuredTickets[`ticket-${targetEventId}`];
+  if (action.id === "document_ticket" && dialogueTicket) {
+    const ticket = dialogueTicket;
+    const previouslyAsked = state.teamMessages?.some(
+      (m) =>
+        m.eventId === targetEventId &&
+        m.author === "player" &&
+        m.body === "What should the next analyst know?",
+    );
+    state.teamMessages ??= [];
+    state.teamMessages.push({
+      id: `${state.sessionId}-chat-${String(state.teamMessages.length + 1)}`,
+      eventId: targetEventId,
+      author: "morgan",
+      actionId: action.id,
+      simMinutes: state.simClock,
+      body: `${previouslyAsked ? "Following up on your handoff question: " : "I have your saved case note. "}${String(ticket.sourceArtifactIds?.length ?? 0)} source ${ticket.sourceArtifactIds?.length === 1 ? "reference is" : "references are"} attached. ${ticket.uncertainty ? `The open question remains: ${ticket.uncertainty}` : "No uncertainty is written in this note; silence is not confirmation."} I will use the recorded decision when routing the follow-up.`,
+    });
+  }
+
   const finalTicket = state.structuredTickets[`ticket-${targetEventId}`];
   if (finalTicket && ["dismiss_alert", "escalate_alert"].includes(action.id)) {
     finalTicket.status =

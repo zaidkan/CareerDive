@@ -94,37 +94,23 @@ it.each(["desk"] as const)("carries only opened case evidence and saved notes in
             body: "UNOPENED BODY MUST NOT APPEAR",
         },
     ];
-    const { container } = render((<SystemToolPanel view={current} systemId="alert_dashboard" selectedEventId={event.id} actions={current.availableActions} onAction={vi.fn()}/>));
+    const { container } = render(<SystemToolPanel view={current} systemId="alert_dashboard" selectedEventId={event.id} actions={current.availableActions} onAction={vi.fn()}/>);
     const review = container.querySelector('[aria-label="Case review before decision"]');
     expect(review).toHaveTextContent("Previously opened comparison passage.");
     expect(review).toHaveTextContent(current.ticketNotes[event.id] ?? "");
     expect(review).not.toHaveTextContent("UNOPENED BODY MUST NOT APPEAR");
     expect(review).toHaveTextContent(/another check/i);
 });
-it("keeps Morgan procedure reminders behind opening the thread and the public decision stage", () => {
+it("offers bounded consultation for the selected work without repeated procedure paragraphs", () => {
     const current = view();
-    const { rerender } = render(<TeamChatTool view={current}/>);
+    const onAction = vi.fn();
+    const action = current.availableActions.find(
+        (a) => a.id === "ask_manager" && a.eventId === "suspicious-login-1",
+    );
+    if (!action) throw new Error("Missing consultation fixture");
+    render(<TeamChatTool view={current} actions={[action]} onAction={onAction}/>);
     expect(screen.queryByLabelText("Morgan procedure reminders")).toBeNull();
-    current.artifacts = current.artifacts.map((artifact) => artifact.systemId === "team_chat"
-        ? { ...artifact, observed: true }
-        : artifact);
-    rerender(<TeamChatTool view={current}/>);
-    expect(screen.queryByLabelText("Morgan procedure reminders")).toBeNull();
-    const event = current.events.find(({ id }) => id === "suspicious-login-1");
-    if (!event)
-        throw new Error("Missing login case");
-    current.availableActions = [
-        {
-            id: "escalate_alert",
-            eventId: event.id,
-            systemId: "alert_dashboard",
-            label: "Escalate with evidence",
-            description: "Request senior review with the saved evidence and uncertainty.",
-            simulatedMinutes: 5,
-        },
-    ];
-    rerender(<TeamChatTool view={current}/>);
-    const reminders = screen.getByLabelText("Morgan procedure reminders");
-    expect(reminders).toHaveTextContent(/Review your saved note before deciding/i);
-    expect(reminders).not.toHaveTextContent(/unknown-laptop|J. Patel|escalate-evidence/);
+    expect(screen.getByRole("button", { name: "What case context do we have?" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "What remains uncertain?" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "What should the next analyst know?" })).toBeVisible();
 });

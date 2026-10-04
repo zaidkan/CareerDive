@@ -5752,3 +5752,89 @@ section[aria-labelledby="structured-title"],
 .case-ticket-composer textarea, .handoff-builder textarea { box-sizing: border-box; width: 100%; min-height: 5rem; padding: .75rem; font: inherit; line-height: 1.5; color: inherit; background: var(--surface, transparent); border: 1px solid currentColor; border-radius: .4rem; }
 .case-ticket-composer fieldset label { display: flex; align-items: flex-start; gap: .6rem; padding-block: .5rem; }
 .case-ticket-composer small { display: block; margin-top: .25rem; }
+
+/* Simulation dialogue and orientation only; no Desk OS application redesign. */
+.coworker-dialogue,
+.jules-dialogue {
+  animation: coworker-enter 140ms ease-out;
+  padding: 1.25rem;
+  max-height: calc(100% - 2rem);
+  overflow-y: auto;
+  line-height: 1.5;
+}
+.dialogue-line { margin-block: 0.8rem; }
+.dialogue-text { position: relative; margin: 0 0 0.75rem; line-height: 1.55; }
+.dialogue-text-layout { visibility: hidden; }
+.dialogue-text-reveal { position: absolute; inset: 0; }
+.dialogue-advance { margin-bottom: 0.7rem; font-size: 0.85rem; }
+.jules-dialogue-topics { gap: 0.6rem; display: grid; }
+.jules-dialogue-topics button { padding: 0.65rem 0.85rem; text-align: left; line-height: 1.4; }
+.coworker-dialogue label { display: grid; gap: 0.4rem; margin-top: 0.8rem; }
+.morgan-case-consultation { margin-block: 1rem; padding-block: 0.8rem; border-top: 1px solid var(--line); }
+.morgan-case-consultation h4 { margin: 0 0 0.65rem; }
+.morgan-case-consultation details { margin-top: 0.65rem; }
+.shift-title-hint {
+  position: absolute; z-index: 40; top: 17%; left: 50%; transform: translateX(-50%);
+  width: max-content; max-width: calc(100% - 2rem); padding: 0.85rem 1.3rem;
+  display: grid; gap: 0.35rem; text-align: center; pointer-events: none;
+  border-radius: 0.5rem; background: rgb(12 21 29 / 94%); color: #f8fafc;
+  border: 1px solid rgb(148 163 184 / 35%); box-shadow: 0 4px 20px rgb(0 0 0 / 15%);
+  animation: shift-title 2600ms ease both;
+}
+.shift-title-hint strong { font-size: clamp(1.05rem, 2vw, 1.6rem); letter-spacing: 0.055em; line-height: 1.2; }
+.shift-title-hint span { font-size: 0.95rem; line-height: 1.4; color: #dbe4ed; }
+.room-hud-brief { gap: 0.35rem; }
+.room-hud-step { font-size: 1.1rem; line-height: 1.4; }
+.room-hud-line { font-size: 0.95rem; line-height: 1.45; color: #e2e8f0; }
+.room-hud-count { font-size: 0.75rem; padding: 0.15rem 0.4rem; }
+.room-context-action { display: flex; align-items: center; gap: 0.6rem; width: fit-content; margin: 0.25rem 0; padding: 0.55rem 0.8rem; border-radius: 0.4rem; color: #fff; background: rgb(12 21 29 / 94%); font-size: 1.15rem; font-weight: 650; line-height: 1.35; }
+.room-context-action kbd { font: 700 0.95rem var(--font-mono); color: #c1fff2; border: 1px solid #78958f; border-radius: 0.25rem; padding: 0.15rem 0.4rem; }
+.room-hud-actions .start-shift { padding: 0.65rem 1rem; font-size: 1rem; }
+.coworker-dialogue button:focus-visible, .jules-dialogue button:focus-visible, .dialogue-line button:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }
+@keyframes coworker-enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes shift-title { 0% { opacity: 0; translate: 0 4px; } 6%, 90% { opacity: 1; translate: 0 0; } 100% { opacity: 0; translate: 0 -2px; } }
+@media (max-width: 600px) {
+  .room-hud-brief { max-width: 100%; }
+  .jules-dialogue { right: 0.65rem; bottom: 1rem; width: calc(100% - 1.3rem); padding: 1rem; }
+  .shift-title-hint { top: 10%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .jules-dialogue, .coworker-dialogue, .shift-title-hint { animation: none; }
+}
+/* World-space HTML labels sit at z=12; conversation and readable controls stay above them. */
+.room-hud { z-index: 15; }
+.jules-dialogue {
+  z-index: 20;
+  color: #e2e8f0;
+  background: #111d28;
+  --paper: #f8fafc;
+  --fog: #dbe4ed;
+  --signal: #aeeedb;
+  --line: #526578;
+}
+.jules-dialogue button {
+  color: #f8fafc;
+  background: #233447;
+  border: 1px solid #718399;
+  border-radius: 0.35rem;
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+}
+.jules-dialogue button:hover { background: #30465b; }
+.jules-dialogue button:disabled { opacity: 0.65; cursor: wait; }
+.jules-dialogue select { color: #f8fafc; background: #233447; border: 1px solid #718399; padding: 0.55rem; border-radius: 0.3rem; width: 100%; }
+.room-desk-hud .guidance-secondary { font-size: 1rem; padding: 0.55rem 0.8rem; }
+.room-hud .room-hud-brief {
+  background: #111d28;
+  color: #f8fafc;
+  border: 1px solid #526578;
+  --paper: #f8fafc;
+  --fog: #dbe4ed;
+  --signal: #aeeedb;
+}
+.room-hud .room-hud-brief .room-hud-step { color: #f8fafc; }
+.room-hud .room-hud-brief .room-hud-line { color: #dbe4ed; }
+.room-hud .room-hud-brief .room-hud-compass,
+.room-hud .room-hud-brief .room-flavor { color: #aeeedb; }
+.jules-dialogue { max-height: min(calc(100% - 9rem), calc(100dvh - 8rem)); }
+@media (max-width: 600px) { .jules-dialogue { max-height: min(calc(100% - 2rem), calc(100dvh - 8rem)); } }

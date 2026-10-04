@@ -1,4 +1,8 @@
-import type { DomainEffect, SimulationActionId, WorldState } from "@sim/schemas";
+import type {
+  DomainEffect,
+  SimulationActionId,
+  WorldState,
+} from "@sim/schemas";
 import { consequence } from "./effects.js";
 import { resolveActionEffect } from "./effects.js";
 import {
@@ -18,7 +22,8 @@ export function activatePendingEvents(
     ) {
       pendingEvent.status = "active";
       ensureNotificationsForEvent(state, pendingEvent.id);
-      for (const message of state.rules.eventTemplates[pendingEvent.templateId]?.activationMessages ?? []) {
+      for (const message of state.rules.eventTemplates[pendingEvent.templateId]
+        ?.activationMessages ?? []) {
         const note = consequence(state, pendingEvent.id, actionId, message);
         state.ledger.push(note);
         effects.push({ type: "consequence_recorded", consequenceId: note.id });
@@ -65,15 +70,25 @@ export function applyDueConsequences(
     if (
       !entry.applied &&
       entry.dueAt !== undefined &&
-      (state.simClock >= entry.dueAt || (settleRequired && effectSpec?.requiredAtCompletion))
+      (state.simClock >= entry.dueAt ||
+        (settleRequired && effectSpec?.requiredAtCompletion))
     ) {
       entry.applied = true;
-      if (affectedEvent?.status === "resolved" && effectSpec?.escalateOnApply === true) {
+      if (
+        affectedEvent?.status === "resolved" &&
+        effectSpec?.escalateOnApply === true
+      ) {
         affectedEvent.status = "escalated";
-        if (effectSpec.escalateResolution &&
-          !affectedEvent.resolution?.includes(effectSpec.escalateResolution)) {
-          affectedEvent.resolution = [affectedEvent.resolution, effectSpec.escalateResolution]
-            .filter(Boolean).join("\n");
+        if (
+          effectSpec.escalateResolution &&
+          !affectedEvent.resolution?.includes(effectSpec.escalateResolution)
+        ) {
+          affectedEvent.resolution = [
+            affectedEvent.resolution,
+            effectSpec.escalateResolution,
+          ]
+            .filter(Boolean)
+            .join("\n");
         }
         effects.push({
           type: "event_escalated",
@@ -85,27 +100,59 @@ export function applyDueConsequences(
 }
 
 /** Runs only authored callbacks. Settlement forces required callbacks, not time. */
-export function applyDueCallbacks(state: WorldState, effects: DomainEffect[], settleRequired = false): void {
-  for (const callback of [...state.pendingCallbacks].sort((a, b) => a.dueAt - b.dueAt)) {
-    if (callback.applied || (state.simClock < callback.dueAt && !(settleRequired && callback.requiredAtCompletion))) continue;
+export function applyDueCallbacks(
+  state: WorldState,
+  effects: DomainEffect[],
+  settleRequired = false,
+): void {
+  for (const callback of [...state.pendingCallbacks].sort(
+    (a, b) => a.dueAt - b.dueAt,
+  )) {
+    if (
+      callback.applied ||
+      (state.simClock < callback.dueAt &&
+        !(settleRequired && callback.requiredAtCompletion))
+    )
+      continue;
     callback.applied = true;
     const source = state.events.find(({ id }) => id === callback.eventId);
     if (!source || source.status === "expired") continue;
+    let body = callback.body;
+    if (
+      callback.id.startsWith("b3-") &&
+      state.workplace.handoffSourceArtifactIds
+    ) {
+      const ids = state.workplace.handoffSourceArtifactIds;
+      const inspected = state.workplace.inspectedArtifactIds ?? [];
+      const required = [
+        "login-session-timeline",
+        "vpn-context-1",
+        "device-inventory-1",
+      ];
+      const missing = required.filter((id) => !ids.includes(id));
+      body = `I received ${String(ids.length)} selected source reference${ids.length === 1 ? "" : "s"}. ${missing.length ? `The handoff does not include ${missing.map((id) => state.artifacts[id]?.title ?? id).join(", ")}; ${missing.some((id) => !inspected.includes(id)) ? "some of those sources were not opened during this shift" : "those sources were opened but not attached"}.` : "The timeline, VPN context, and device source are attached."} The saved disposition and follow-up request are available; session ownership still needs independent verification.`;
+    }
+    // The applied record also feeds the debrief; keep it identical to the received message.
+    callback.body = body;
     state.teamMessages ??= [];
     state.teamMessages.push({
       id: `${state.sessionId}-chat-${String(state.teamMessages.length + 1)}`,
       eventId: source.id,
       author: callback.author,
-      body: callback.body,
+      body,
       actionId: callback.actionId,
       simMinutes: state.simClock,
     });
-    const note = consequence(state, source.id, callback.actionId, callback.body);
+    const note = consequence(state, source.id, callback.actionId, body);
     state.ledger.push(note);
     effects.push({ type: "consequence_recorded", consequenceId: note.id });
     if (!callback.emitEvent) continue;
     const template = state.rules.eventTemplates[callback.emitEvent];
-    if (!template || state.events.some(({ templateId }) => templateId === callback.emitEvent)) continue;
+    if (
+      !template ||
+      state.events.some(({ templateId }) => templateId === callback.emitEvent)
+    )
+      continue;
     const spawned = {
       id: template.instanceId,
       templateId: callback.emitEvent,
@@ -113,7 +160,9 @@ export function applyDueCallbacks(state: WorldState, effects: DomainEffect[], se
       summary: template.summary,
       priority: template.priority,
       systemId: template.systemId,
-      status: template.nonBlockingFollowUp ? "waiting" as const : "active" as const,
+      status: template.nonBlockingFollowUp
+        ? ("waiting" as const)
+        : ("active" as const),
       triggeredAt: state.simClock,
       deadlineAt: state.simClock + template.deadlineMinutes,
       managerConsulted: false,
@@ -123,12 +172,24 @@ export function applyDueCallbacks(state: WorldState, effects: DomainEffect[], se
     };
     state.events.push(spawned);
     source.followUpRefs.push(spawned.id);
-    for (const message of [...template.activationMessages, ...callback.activationMessages]) {
-      const activation = consequence(state, spawned.id, callback.actionId, message);
+    for (const message of [
+      ...template.activationMessages,
+      ...callback.activationMessages,
+    ]) {
+      const activation = consequence(
+        state,
+        spawned.id,
+        callback.actionId,
+        message,
+      );
       state.ledger.push(activation);
-      effects.push({ type: "consequence_recorded", consequenceId: activation.id });
+      effects.push({
+        type: "consequence_recorded",
+        consequenceId: activation.id,
+      });
     }
-    if (!template.nonBlockingFollowUp) ensureNotificationsForEvent(state, spawned.id);
+    if (!template.nonBlockingFollowUp)
+      ensureNotificationsForEvent(state, spawned.id);
   }
 }
 

@@ -180,6 +180,22 @@ export function applyWorkplaceInteraction(
       feedbackCode = "coffee_drunk";
       break;
     case "talk_to_jules":
+      if (interaction.eventId) {
+        if (!visibleEventIds(state).has(interaction.eventId))
+          reject("Coworker context must refer to visible work");
+        state.workplace.julesConsultations ??= [];
+        if (
+          !state.workplace.julesConsultations.some(
+            (c) =>
+              c.eventId === interaction.eventId &&
+              c.topic === interaction.topic,
+          )
+        )
+          state.workplace.julesConsultations.push({
+            eventId: interaction.eventId,
+            topic: interaction.topic,
+          });
+      }
       if (!state.workplace.julesTopicsSeen.includes(interaction.topic)) {
         state.workplace.julesTopicsSeen.push(interaction.topic);
       }

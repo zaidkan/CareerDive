@@ -625,6 +625,9 @@
 .desk-os .desk-os-guidance {
   padding: 1rem;
 }
+.desk-os .desk-os-guidance > .eyebrow {
+  color: var(--text-secondary);
+}
 .desk-os .os-taskbar {
   padding: 0.5rem 0.75rem;
   gap: 0.625rem;
@@ -992,4 +995,24 @@ body:has(.site-main-start .desk-os) :is(.site-nav, .site-footer),
 
 .desk-os .os-status-note {
   color: var(--text-secondary);
+}
+
+/* Dialogue HUD keeps the shared surface and its matching semantic text. */
+.simulation-main .room-hud .room-hud-brief .room-hud-step {
+  color: var(--text-primary);
+}
+.simulation-main .room-hud .room-hud-brief .room-hud-line {
+  color: var(--text-secondary);
+}
+.simulation-main .room-hud .room-hud-brief .room-hud-compass,
+.simulation-main .room-hud .room-hud-brief .room-flavor {
+  color: var(--status-info-fg);
+}
+
+.simulation-main .room-hud-actions .start-shift {
+  color: var(--action-on-primary);
+}
+.simulation-main .room-hud-details > summary {
+  color: var(--text-secondary);
+  background: var(--surface-base);
 }

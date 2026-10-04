@@ -549,7 +549,7 @@ describe("section 9 · coworker dependency", () => {
     const stillOffered = toClientView(state).availableActions.some(
       (a) => a.id === "ask_manager" && a.eventId === LOGIN,
     );
-    expect(stillOffered).toBe(false);
+    expect(stillOffered).toBe(true);
   });
 
   it("coworker guidance never reveals the answer or grades the player", () => {

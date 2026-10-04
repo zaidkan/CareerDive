@@ -1,5 +1,7 @@
 import type { JulesTopic, WorkSystemId } from "@sim/schemas";
 import { useEffect, useRef } from "react";
+import { DialogueLine } from "./dialogue/DialogueLine.js";
+import { AudioToggle } from "./dialogue/AudioToggle.js";
 import type { JulesDialogueReply } from "@sim/core";
 
 const TOPICS: ReadonlyArray<{ id: JulesTopic; label: string }> = [
@@ -13,6 +15,7 @@ const DESTINATION_LABELS: Partial<Record<WorkSystemId, string>> = {
   alert_dashboard: "Alerts",
   knowledge_base: "Guides",
   ticket_queue: "Tickets",
+  email: "Email",
 };
 
 function topicChoices(seen: JulesTopic[]) {
@@ -35,9 +38,16 @@ export function JulesDialogue({
   seenTopics: JulesTopic[];
 }) {
   const returnFocus = useRef(document.activeElement);
-  useEffect(() => () => {
-    if (returnFocus.current instanceof HTMLElement && returnFocus.current.isConnected) returnFocus.current.focus();
-  }, []);
+  useEffect(
+    () => () => {
+      if (
+        returnFocus.current instanceof HTMLElement &&
+        returnFocus.current.isConnected
+      )
+        returnFocus.current.focus();
+    },
+    [],
+  );
   const destination = reply?.nextSystemId
     ? DESTINATION_LABELS[reply.nextSystemId]
     : undefined;
@@ -59,6 +69,7 @@ export function JulesDialogue({
           <h2 id="jules-dialogue-title">Jules</h2>
         </div>
         <button
+          data-dialogue-immediate="true"
           aria-label="Close"
           className="jules-dialogue-close"
           onClick={onClose}
@@ -68,34 +79,36 @@ export function JulesDialogue({
         </button>
       </div>
 
-      <p aria-live="polite" className="jules-dialogue-reply">
-        {reply?.text ??
-          "Pick a topic. I’ll stick to the work and public context we can both see."}
-      </p>
+      <AudioToggle />
+      <DialogueLine
+        key={reply?.text ?? "greeting"}
+        text={reply?.text ?? "Morning. What are you carrying back to the desk?"}
+        onAdvance={onClose}
+      >
+        <fieldset className="jules-dialogue-topics" disabled={pending}>
+          <legend className="visually-hidden">Topics</legend>
+          {topicChoices(seenTopics).map(({ id, label }, index) => (
+            <button
+              autoFocus={index === 0}
+              disabled={pending}
+              key={id}
+              data-interaction-id="talk_to_jules"
+              data-topic-id={id}
+              onClick={() => {
+                onTopic(id);
+              }}
+              type="button"
+            >
+              {label}
+            </button>
+          ))}
+        </fieldset>
+      </DialogueLine>
       {destination ? (
         <p className="jules-dialogue-destination">
           Back to {destination} at your desk
         </p>
       ) : null}
-
-      <fieldset className="jules-dialogue-topics" disabled={pending}>
-        <legend className="visually-hidden">Topics</legend>
-        {topicChoices(seenTopics).map(({ id, label }, index) => (
-          <button
-            autoFocus={index === 0}
-            disabled={pending}
-            key={id}
-            data-interaction-id="talk_to_jules"
-            data-topic-id={id}
-            onClick={() => {
-              onTopic(id);
-            }}
-            type="button"
-          >
-            {label}
-          </button>
-        ))}
-      </fieldset>
 
       {discussed.length > 0 ? (
         <div className="jules-dialogue-discussed">
