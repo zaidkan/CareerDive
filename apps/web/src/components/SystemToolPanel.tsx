@@ -154,7 +154,6 @@ function WorkInteraction({
   const ordinary = actions.filter(({ taskId }) => taskId === undefined);
   return (
     <>
-      <CaseReview view={view} actions={actions} />
       {uniqueTasks.map((task) => (
         <TaskInteraction
           key={`${task.eventId}:${task.id}`}
@@ -181,6 +180,7 @@ function WorkInteraction({
           mutationState={mutationState}
         />
       ) : null}
+      <CaseReview view={view} actions={actions} />
     </>
   );
 }
@@ -301,15 +301,6 @@ export function SystemToolPanel({
     return (
       <div className="tool-panel" data-system={systemId}>
         <ToolChrome systemId={systemId} />
-        {selectedEventId && onWorkplaceInteraction ? (
-          <CaseEvidence
-            key={selectedEventId}
-            view={view}
-            eventId={selectedEventId}
-            onInspect={onWorkplaceInteraction}
-            pending={Boolean(mutationState.pendingKey)}
-          />
-        ) : null}
         {records.length > 0 ? (
           <AlertRecords
             view={view}
@@ -334,22 +325,8 @@ export function SystemToolPanel({
             mutationState={mutationState}
           />
         )}
-        <RecordQueryTool
-          view={view}
-          queryAction={view.availableActions.find(
-            ({ id, eventId }) =>
-              id === "query_records" && eventId === selectedEventId,
-          )}
-          onQueryRecords={(action, payload) => {
-            onAction({ ...action, queryPayload: payload });
-          }}
-          onInspectRecord={onWorkplaceInteraction}
-          mutationState={mutationState}
-        />
         {records.length > 0 && !source ? (
-          <p role="status">
-            Open alert record before taking an investigation action.
-          </p>
+          <p role="status">Open the alert to begin.</p>
         ) : null}
         <WorkInteraction
           onOpenArtifact={openArtifact}
@@ -362,6 +339,27 @@ export function SystemToolPanel({
           mutationState={mutationState}
           {...(onTaskAttempt ? { onTaskAttempt } : {})}
           view={view}
+        />
+        {selectedEventId && onWorkplaceInteraction ? (
+          <CaseEvidence
+            key={selectedEventId}
+            view={view}
+            eventId={selectedEventId}
+            onInspect={onWorkplaceInteraction}
+            pending={Boolean(mutationState.pendingKey)}
+          />
+        ) : null}
+        <RecordQueryTool
+          view={view}
+          queryAction={view.availableActions.find(
+            ({ id, eventId }) =>
+              id === "query_records" && eventId === selectedEventId,
+          )}
+          onQueryRecords={(action, payload) => {
+            onAction({ ...action, queryPayload: payload });
+          }}
+          onInspectRecord={onWorkplaceInteraction}
+          mutationState={mutationState}
         />
       </div>
     );
@@ -380,6 +378,18 @@ export function SystemToolPanel({
             Open case sources and record search in Alerts
           </button>
         ) : null}
+        <WorkInteraction
+          onOpenArtifact={openArtifact}
+          actions={workInteractionActions(actions).filter(
+            ({ id, taskId }) =>
+              id !== "search_knowledge_base" || Boolean(taskId),
+          )}
+          {...(highlightActionId ? { highlightActionId } : {})}
+          onAction={onAction}
+          mutationState={mutationState}
+          {...(onTaskAttempt ? { onTaskAttempt } : {})}
+          view={view}
+        />
         <GuideSearch
           canonicalSearchAction={
             searchAction && !searchAction.taskId ? searchAction : undefined
@@ -394,23 +404,12 @@ export function SystemToolPanel({
         />
         {openArtifact ? (
           <InventoryLookup
+            eventId={selectedEventId}
             view={view}
             onOpenArtifact={openArtifact}
             mutationState={mutationState}
           />
         ) : null}
-        <WorkInteraction
-          onOpenArtifact={openArtifact}
-          actions={workInteractionActions(actions).filter(
-            ({ id, taskId }) =>
-              id !== "search_knowledge_base" || Boolean(taskId),
-          )}
-          {...(highlightActionId ? { highlightActionId } : {})}
-          onAction={onAction}
-          mutationState={mutationState}
-          {...(onTaskAttempt ? { onTaskAttempt } : {})}
-          view={view}
-        />
       </div>
     );
   }
@@ -419,15 +418,6 @@ export function SystemToolPanel({
     return (
       <div className="tool-panel" data-system={systemId}>
         <ToolChrome systemId={systemId} />
-        {selectedEventId && onWorkplaceInteraction ? (
-          <CaseEvidence
-            key={selectedEventId}
-            view={view}
-            eventId={selectedEventId}
-            onInspect={onWorkplaceInteraction}
-            pending={Boolean(mutationState.pendingKey)}
-          />
-        ) : null}
         {actions
           .filter(({ id }) => id === "submit_shift_handoff")
           .map((action) => (
@@ -439,13 +429,6 @@ export function SystemToolPanel({
               pending={Boolean(mutationState.pendingKey)}
             />
           ))}
-        <TeamChatTool
-          view={view}
-          onOpenArtifact={openArtifact}
-          mutationState={mutationState}
-          actions={actions}
-          onAction={onAction}
-        />
         <WorkInteraction
           onOpenArtifact={openArtifact}
           actions={workInteractionActions(actions).filter(
@@ -459,6 +442,22 @@ export function SystemToolPanel({
           {...(onTaskAttempt ? { onTaskAttempt } : {})}
           view={view}
         />
+        {selectedEventId && onWorkplaceInteraction ? (
+          <CaseEvidence
+            key={selectedEventId}
+            view={view}
+            eventId={selectedEventId}
+            onInspect={onWorkplaceInteraction}
+            pending={Boolean(mutationState.pendingKey)}
+          />
+        ) : null}
+        <TeamChatTool
+          view={view}
+          onOpenArtifact={openArtifact}
+          mutationState={mutationState}
+          actions={actions}
+          onAction={onAction}
+        />
       </div>
     );
   }
@@ -471,52 +470,6 @@ export function SystemToolPanel({
     return (
       <div className="tool-panel" data-system={systemId}>
         <ToolChrome systemId={systemId} />
-        {selectedEventId && onWorkplaceInteraction ? (
-          <CaseEvidence
-            key={selectedEventId}
-            view={view}
-            eventId={selectedEventId}
-            onInspect={onWorkplaceInteraction}
-            pending={Boolean(mutationState.pendingKey)}
-          />
-        ) : null}
-        <div className="tool-split">
-          <div>
-            <ArtifactList
-              artifacts={eventArtifacts}
-              selectedId={selected?.id}
-              onSelect={selectArtifact}
-            />
-          </div>
-          <div>
-            <ArtifactDetail
-              artifact={selected}
-              focus={selected?.id === focusArtifactId}
-              onOpenArtifact={openArtifact}
-              mutationState={mutationState}
-            />
-            <NotesEditor
-              action={
-                actions.some(({ id }) => id === "document_ticket")
-                  ? undefined
-                  : ticketNotesAction
-              }
-              label="Investigation notes"
-              onSave={onAction}
-              mutationState={mutationState}
-              value={
-                selectedEventId ? (view.ticketNotes[selectedEventId] ?? "") : ""
-              }
-            />
-            <NotesEditor
-              action={notebookAction}
-              label="Personal notebook (optional)"
-              onSave={onAction}
-              mutationState={mutationState}
-              value={view.notebook}
-            />
-          </div>
-        </div>
         {actions
           .filter(({ id }) => id === "document_ticket")
           .map((action) => (
@@ -543,6 +496,57 @@ export function SystemToolPanel({
           {...(onTaskAttempt ? { onTaskAttempt } : {})}
           view={view}
         />
+        {selectedEventId && onWorkplaceInteraction ? (
+          <CaseEvidence
+            key={selectedEventId}
+            view={view}
+            eventId={selectedEventId}
+            onInspect={onWorkplaceInteraction}
+            pending={Boolean(mutationState.pendingKey)}
+          />
+        ) : null}
+        <details className="case-files-disclosure">
+          <summary>Case files and notes</summary>
+          <div className="tool-split">
+            <div>
+              <ArtifactList
+                artifacts={eventArtifacts}
+                selectedId={selected?.id}
+                onSelect={selectArtifact}
+              />
+            </div>
+            <div>
+              <ArtifactDetail
+                artifact={selected}
+                focus={selected?.id === focusArtifactId}
+                onOpenArtifact={openArtifact}
+                mutationState={mutationState}
+              />
+              <NotesEditor
+                action={
+                  actions.some(({ id }) => id === "document_ticket")
+                    ? undefined
+                    : ticketNotesAction
+                }
+                label="Investigation notes"
+                onSave={onAction}
+                mutationState={mutationState}
+                value={
+                  selectedEventId
+                    ? (view.ticketNotes[selectedEventId] ?? "")
+                    : ""
+                }
+              />
+              <NotesEditor
+                action={notebookAction}
+                label="Personal notebook (optional)"
+                onSave={onAction}
+                mutationState={mutationState}
+                value={view.notebook}
+              />
+            </div>
+          </div>
+        </details>
       </div>
     );
   }

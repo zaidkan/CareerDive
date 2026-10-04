@@ -16,7 +16,9 @@ export function Notes({ openFile }: { openFile: OpenableFile | null }) {
         >
           <p className="os-open-file-name">
             {openFile.name}
-            <span className="os-open-file-kind">{fileKindLabel(openFile.kind)}</span>
+            <span className="os-open-file-kind">
+              {fileKindLabel(openFile.kind)}
+            </span>
           </p>
           <p className="os-open-file-body">{openFile.body}</p>
         </article>
@@ -35,7 +37,7 @@ export function Notes({ openFile }: { openFile: OpenableFile | null }) {
         value={text}
       />
       <p className="os-status-note">
-        Private scratch — not case evidence. Only you can see this.
+        Scratch notes, separate from the case ticket.
       </p>
     </section>
   );

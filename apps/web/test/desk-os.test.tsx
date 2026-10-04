@@ -953,20 +953,22 @@ describe("Desk OS canonical state rendering", () => {
     await enterDesk(user);
     await user.click(screen.getByRole("tab", { name: /^Alerts/ }));
     await user.click(screen.getByLabelText("Device identity"));
-    await user.click(screen.getByRole("button", { name: "Check my work" }));
+    await user.click(screen.getByRole("button", { name: "Save findings" }));
 
-    await screen.findByText("Step 1 complete. Evidence selected.");
-    const stepFeedback = screen.getByText("Evidence selected.");
-    expect(screen.getByText("Work step 2 of 2")).toBeVisible();
+    await screen.findByText("Case update saved.");
+    const stepFeedback = screen.getByText("Findings saved.");
+    expect(screen.getByText("Part 2 of 2")).toBeVisible();
     expect(stepFeedback).toHaveFocus();
 
     await user.click(screen.getByLabelText("Document the evidence"));
-    await user.click(screen.getByRole("button", { name: "Check my work" }));
+    await user.click(screen.getByRole("button", { name: "Save findings" }));
 
-    const finalFeedback = await screen.findByText(
-      "Task complete. Evidence documented.",
-    );
-    expect(finalFeedback).toHaveFocus();
+    const finalFeedback = await screen.findByText("Case update saved.");
+    const feedbackPanel = finalFeedback.closest(".mutation-status");
+    if (!(feedbackPanel instanceof HTMLElement)) throw new Error("Missing feedback panel");
+    expect(feedbackPanel).toHaveFocus();
+    await user.click(screen.getByText("Update details"));
+    expect(within(feedbackPanel).getByText("Evidence documented.")).toBeVisible();
   });
 });
 

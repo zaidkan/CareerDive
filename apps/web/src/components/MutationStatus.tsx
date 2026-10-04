@@ -4,8 +4,10 @@ import type { MutationState } from "../useMutationCoordinator.js";
 export function MutationStatus({
   state,
   onRetry,
+  compact = false,
 }: {
   state: MutationState;
+  compact?: boolean;
   onRetry?: () => void;
 }) {
   const messageRef = useRef<HTMLDivElement>(null);
@@ -57,7 +59,22 @@ export function MutationStatus({
         ref={messageRef}
         tabIndex={-1}
       >
-        {state.success}
+        {compact &&
+        /^(Task complete\.|Step \d+ complete\.)/.test(state.success) ? (
+          <>
+            <span>Case update saved.</span>
+            <details>
+              <summary>Update details</summary>
+              <p>
+                {state.success
+                  .replace(/^(Task complete\.|Step \d+ complete\.)\s*/, "")
+                  .replace(" without revealing an answer", "")}
+              </p>
+            </details>
+          </>
+        ) : (
+          state.success
+        )}
       </div>
     );
   }

@@ -164,10 +164,10 @@ describe("workstation recovery", () => {
         };
         render(<WorkSurface onAction={() => undefined} onTaskAttempt={onTaskAttempt} view={taskView}/>);
         expect(screen.getByRole("heading", { name: "Find the strongest context clues" })).toBeVisible();
-        expect(screen.getByText(/why this matters/i)).toBeVisible();
+        expect(screen.getByText(/case context/i)).toBeVisible();
         await user.click(screen.getByLabelText("Unknown Windows device"));
         await user.click(screen.getByLabelText("Chrome browser"));
-        await user.click(screen.getByRole("button", { name: /check my work/i }));
+        await user.click(screen.getByRole("button", { name: /save findings/i }));
         expect(onTaskAttempt).toHaveBeenCalledWith(expect.objectContaining({ id: "login-context-clues" }), ["unknown-device", "chrome"]);
         expect(await screen.findByText(/Compare what is new/i)).toBeVisible();
     });

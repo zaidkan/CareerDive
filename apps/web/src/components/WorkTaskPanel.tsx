@@ -101,14 +101,26 @@ function EventTaskPanel({
       <header className="work-task-header">
         <div>
           <p className="eyebrow">
-            Work step {task.stepIndex + 1} of {task.stepCount}
+            Part {task.stepIndex + 1} of {task.stepCount}
           </p>
           <h4 id={`task-${task.eventId}-${task.id}-title`}>{task.title}</h4>
         </div>
-        <span className="work-task-kind">{task.kind.replaceAll("_", " ")}</span>
+        <span className="work-task-kind">
+          {task.kind === "compare_records"
+            ? "Compare"
+            : task.kind === "choose_response"
+              ? "Response"
+              : "Findings"}
+        </span>
       </header>
       <p className="work-task-prompt">{task.prompt}</p>
-      <p className="work-task-instruction">{task.instruction}</p>
+      <p className="work-task-instruction">
+        {single
+          ? "Choose one response."
+          : task.minSelections === task.maxSelections
+            ? `Select ${String(task.minSelections)} findings.`
+            : `Select ${String(task.minSelections)}–${String(task.maxSelections)} findings.`}
+      </p>
       {summaryGroup ? (
         <h5 className="ticket-composer-group">{summaryGroup}</h5>
       ) : null}
@@ -122,7 +134,7 @@ function EventTaskPanel({
         />
       ) : null}
       {!comparison && !sourceBased && relatedArtifacts.length > 0 ? (
-        <details className="work-task-sources" open>
+        <details className="work-task-sources">
           <summary>Evidence available for this step</summary>
           {relatedArtifacts.map((artifact) => (
             <article key={artifact.id}>
@@ -209,7 +221,8 @@ function EventTaskPanel({
           </section>
         ) : null}
         <details className="work-detail-help">
-          <summary>Why this matters</summary>
+          <summary>Case context</summary>
+          <p>{task.instruction}</p>
           <p>{task.whyItMatters}</p>
         </details>
         <button
@@ -249,12 +262,12 @@ function EventTaskPanel({
           type="button"
         >
           {submittingThisTask
-            ? "Checking…"
+            ? "Saving…"
             : sourceBased
               ? task.kind === "choose_response"
                 ? "Send selected response"
                 : "Submit findings"
-              : "Check my work"}
+              : "Save findings"}
         </button>
       </div>
       {feedback?.taskId === task.id &&
@@ -266,8 +279,18 @@ function EventTaskPanel({
           aria-live="polite"
           key={feedback.key}
         >
-          {feedback.message}
+          {feedback.accepted
+            ? task.kind === "choose_response"
+              ? "Response sent."
+              : "Findings saved."
+            : feedback.message}
         </p>
+      ) : null}
+      {feedback?.taskId === task.id && feedback.accepted ? (
+        <details className="work-detail-help">
+          <summary>Result details</summary>
+          <p>{feedback.message.replace(" without revealing an answer", "")}</p>
+        </details>
       ) : null}
     </section>
   );

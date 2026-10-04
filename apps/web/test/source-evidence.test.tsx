@@ -13,7 +13,10 @@ import {
 } from "@sim/core";
 import { TaskInteraction } from "../src/components/tools/TaskInteraction.js";
 
-afterEach(() => { cleanup(); sessionStorage.clear(); });
+afterEach(() => {
+  cleanup();
+  sessionStorage.clear();
+});
 function gatedSourcePack() {
   const pack = structuredClone(loadDefaultCybersecurityPack());
   for (const id of [
@@ -98,8 +101,16 @@ it("marks baseline evidence in two records, keeps citations, then submits a caut
       name: "Open source: Account history · j.patel",
     }),
   );
-  await user.click(document.querySelector<HTMLInputElement>('[data-option-id="hq-wifi"]') as HTMLInputElement);
-  await user.click(document.querySelector<HTMLInputElement>('[data-option-id="enrolled-macbook"]') as HTMLInputElement);
+  await user.click(
+    document.querySelector<HTMLInputElement>(
+      '[data-option-id="hq-wifi"]',
+    ) as HTMLInputElement,
+  );
+  await user.click(
+    document.querySelector<HTMLInputElement>(
+      '[data-option-id="enrolled-macbook"]',
+    ) as HTMLInputElement,
+  );
   const tray = screen.getByRole("region", { name: "Selected findings" });
   expect(within(tray).getAllByText("Account history · j.patel")).toHaveLength(
     2,
@@ -113,7 +124,7 @@ it("marks baseline evidence in two records, keeps citations, then submits a caut
       "Both the device and network differ from the usual pattern.",
     ),
   );
-  await user.click(screen.getByRole("button", { name: "Check my work" }));
+  await user.click(screen.getByRole("button", { name: "Save findings" }));
   expect(
     screen.getByRole("button", { name: "Submit findings" }),
   ).toBeDisabled();
@@ -130,8 +141,17 @@ it("marks baseline evidence in two records, keeps citations, then submits a caut
     "S-0731 used corp-macbook-patel through VPN connection V-218, exiting at 198.51.100.20.",
     "V-218 maps to exit 198.51.100.20; this office's only approved VPN exit in this snapshot.",
     "S-0741: source 203.0.113.44; VPN connection ID absent; device label unknown-laptop-17.",
-  ])
-    await user.click(screen.getByText(name).closest("label")?.querySelector("input") as HTMLInputElement);
+  ]) {
+    const excerpt = screen.getByText(name).closest("details");
+    if (!excerpt) throw new Error("Missing source excerpt");
+    const input = excerpt.parentElement?.querySelector("input");
+    if (!(input instanceof HTMLInputElement)) throw new Error("Missing source selection");
+    expect(input).not.toBeChecked();
+    await user.click(excerpt.querySelector("summary") as HTMLElement);
+    expect(input).not.toBeChecked();
+    expect(screen.getByText(name)).toBeVisible();
+    await user.click(input);
+  }
   await user.click(screen.getByRole("button", { name: "Submit findings" }));
   expect(screen.getByText("Comparison recorded")).toBeInTheDocument();
 });
@@ -150,17 +170,21 @@ it("opens a real handoff, marks passages, and completes both work steps", async 
     }),
   );
   await user.click(
-    screen.getByText("Did not finish device inventory check.").closest("label")?.querySelector("input") as HTMLInputElement,
+    screen.getByRole("radio", {
+      name: "The unfamiliar device was not checked in inventory",
+    }),
   );
   expect(
-    screen.getByText("Did not finish device inventory check.").closest("label")?.querySelector("input") as HTMLInputElement,
+    screen.getByRole("radio", {
+      name: "The unfamiliar device was not checked in inventory",
+    }),
   ).toBeChecked();
   await user.click(screen.getByRole("button", { name: "Submit findings" }));
   expect(
     screen.getByRole("button", { name: "Submit findings" }),
   ).toBeDisabled();
   await user.click(
-    screen.getByText("A routine scanner alert may appear, but I forgot to include the approved schedule reference.").closest("label")?.querySelector("input") as HTMLInputElement,
+    screen.getByRole("radio", { name: "The approved scanner schedule" }),
   );
   await user.click(screen.getByRole("button", { name: "Submit findings" }));
   expect(screen.getByText("Handoff reviewed")).toBeInTheDocument();

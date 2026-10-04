@@ -120,6 +120,9 @@ test("completion opens five-decision debrief across themes and viewports", async
   await page.locator(".decision-review-intro a").first().focus();
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/#decision-suspicious_login$/);
+  await page.locator(".decision-review-reasoning > summary").first().focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".decision-review-reasoning").first()).toHaveAttribute("open", "");
   await page.locator(".decision-review-other-path summary").first().focus();
   await page.keyboard.press("Enter");
   await expect(page.locator(".decision-review-other-path").first()).toHaveAttribute("open", "");

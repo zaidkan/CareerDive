@@ -162,6 +162,7 @@ export function OpsConsole({
             </span>
           ) : null}
           <MutationStatus
+            compact
             state={mutationState}
             {...(onRetryMutation ? { onRetry: onRetryMutation } : {})}
           />

@@ -124,8 +124,7 @@ export function BrowserApp({ opsConsole, windowId = "window-1" }: { opsConsole: 
           />
         </div>
         <span className="visually-hidden" id={addressHintId}>
-          Press Enter to open an approved address. Other addresses are blocked by
-          organization policy.
+          Approved workplace sites only.
         </span>
       </div>
       <nav aria-label="Bookmarks" className="os-bookmarks">

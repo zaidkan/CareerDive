@@ -174,10 +174,8 @@ export function DebriefView({
         <span className="decision-review-stamp">Shift complete · Verdaly</span>
         <h2 id="debrief-title">Your shift in review</h2>
         <p>
-          Five moments from your Cybersecurity Analyst shift. This record shows
-          what you chose, what the saved evidence supports, and where a
-          different path was possible. It is a review of this shift, not a grade
-          or career verdict.
+          Your decisions, inspected records, and open questions. A record of
+          this shift.
         </p>
         <nav aria-label="Decisions in this review">
           <ol>
@@ -236,8 +234,8 @@ export function DebriefView({
                     {OUTCOMES[item.outcomeLabel]}
                   </span>
                 </div>
-                <div className="decision-review-reasoning">
-                  <h4>Reasoning review</h4>
+                <details className="decision-review-reasoning">
+                  <summary>Evidence and reasoning</summary>
                   <p>{item.explanation}</p>
                   <ul>
                     {item.rubricSignals.map(({ id, supported }) => (
@@ -282,7 +280,7 @@ export function DebriefView({
                     <summary>Consider another path</summary>
                     <p>{meta.reflection}</p>
                   </details>
-                </div>
+                </details>
                 {item.comparisonEligible && item.cohort.status === "ready" ? (
                   <div className="decision-review-community">
                     <h4>How other completed shifts handled this</h4>
@@ -349,10 +347,7 @@ export function DebriefView({
       >
         <h3 id="reflect-heading">Reflect</h3>
         <p>Would you want to do work like this again?</p>
-        <span>
-          Your answer belongs in the separate career feedback step, where you
-          can describe interest and realism in your own words.
-        </span>
+        <span>Think about the investigation, decisions, and handoff.</span>
       </section>
       <details className="decision-review-record">
         <summary>Read the full shift record</summary>

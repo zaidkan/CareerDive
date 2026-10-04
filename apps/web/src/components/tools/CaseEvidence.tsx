@@ -52,9 +52,9 @@ export function CaseEvidence({
         </details>
       ) : null}
       <h4>Sources for this case</h4>
-      <p>
-        Open a source to check its details. Compare timing, route, and device
-        context before drawing a conclusion.
+      <p className="source-count">
+        {sources.filter(({ id }) => inspected.includes(id)).length} of{" "}
+        {sources.length} inspected
       </p>
       <div className="case-source-links">
         {sources.slice(0, 4).map((item) => (
@@ -72,7 +72,15 @@ export function CaseEvidence({
             }}
           >
             {item.title}
-            {inspected.includes(item.id) ? <small>Opened</small> : null}
+            <small>
+              {view.structuredTickets?.[
+                `ticket-${eventId}`
+              ]?.sourceArtifactIds?.includes(item.id)
+                ? "Attached to ticket"
+                : inspected.includes(item.id)
+                  ? "Inspected"
+                  : "Inspect"}
+            </small>
           </button>
         ))}
       </div>
@@ -95,7 +103,15 @@ export function CaseEvidence({
                 }}
               >
                 {item.title}
-                {inspected.includes(item.id) ? <small>Opened</small> : null}
+                <small>
+                  {view.structuredTickets?.[
+                    `ticket-${eventId}`
+                  ]?.sourceArtifactIds?.includes(item.id)
+                    ? "Attached to ticket"
+                    : inspected.includes(item.id)
+                      ? "Inspected"
+                      : "Inspect"}
+                </small>
               </button>
             ))}
           </div>
@@ -112,7 +128,7 @@ export function CaseEvidence({
         <details>
           <summary>Compare two opened sources</summary>
           <fieldset>
-            <legend>Choose two records to keep side by side</legend>
+            <legend>Choose two inspected sources</legend>
             {sources
               .filter(({ id }) => inspected.includes(id))
               .map((item) => (
@@ -160,10 +176,6 @@ export function CaseEvidence({
           >
             {recorded ? "Comparison recorded" : "Record this comparison"}
           </button>
-          <p>
-            Records being compared is recorded; your conclusion belongs in the
-            ticket.
-          </p>
         </details>
       ) : null}
     </section>

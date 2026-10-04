@@ -55,14 +55,23 @@ export function ArtifactDetail({
   mutationState?: MutationState | undefined;
 }) {
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const previousArtifact = useRef({ id: artifact?.id, observed: artifact?.observed });
+  const previousArtifact = useRef({
+    id: artifact?.id,
+    observed: artifact?.observed,
+  });
   useEffect(() => {
-    const justOpened = previousArtifact.current.id === artifact?.id && !previousArtifact.current.observed && artifact?.observed;
+    const justOpened =
+      previousArtifact.current.id === artifact?.id &&
+      !previousArtifact.current.observed &&
+      artifact?.observed;
     if (focus || justOpened) headingRef.current?.focus();
-    previousArtifact.current = { id: artifact?.id, observed: artifact?.observed };
+    previousArtifact.current = {
+      id: artifact?.id,
+      observed: artifact?.observed,
+    };
   }, [artifact?.id, artifact?.observed, focus]);
   if (!artifact) {
-    return <p>Select an artifact to inspect its contents.</p>;
+    return <p>Select a record.</p>;
   }
   return (
     <article className="artifact-detail">
@@ -81,7 +90,14 @@ export function ArtifactDetail({
         />
       ) : null}
       {artifact.observed && artifact.body ? (
-        <pre className="artifact-body">{artifact.body}</pre>
+        artifact.kind === "kb_document" ? (
+          <details className="guide-reference">
+            <summary>Full reference</summary>
+            <pre className="artifact-body">{artifact.body}</pre>
+          </details>
+        ) : (
+          <pre className="artifact-body">{artifact.body}</pre>
+        )
       ) : (
         <p className="artifact-unopened">Open record to inspect.</p>
       )}

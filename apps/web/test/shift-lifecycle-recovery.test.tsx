@@ -152,7 +152,7 @@ it("preserves selected findings when the App task request fails", async () => {
     await user.click(await screen.findByText("Accessibility recovery"));
     await user.click(await screen.findByRole("button", { name: "Recover workstation access" }, { timeout: 6000 }));
     await user.click(await screen.findByRole("radio", { name: "Keep this finding" }, { timeout: 6000 }));
-    await user.click(await screen.findByRole("button", { name: "Check my work" }, { timeout: 6000 }));
+    await user.click(await screen.findByRole("button", { name: "Save findings" }, { timeout: 6000 }));
     expect(await screen.findByRole("button", { name: "Retry" })).toBeEnabled();
     expect(screen.getByRole("radio", { name: "Keep this finding" })).toBeChecked();
 });

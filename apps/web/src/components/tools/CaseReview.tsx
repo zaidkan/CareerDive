@@ -34,13 +34,12 @@ export function CaseReview({
               aria-label="Case review before decision"
               className="work-task-sources"
             >
-              <h4>Your notes and records · {event.title}</h4>
+              <h4>Case record</h4>
               <details className="work-detail-help">
                 <summary>Need another check?</summary>
                 <p>
-                  If you need more evidence, use the available checks and save
-                  the question you still need to answer in Tickets. A saved note
-                  does not close the case or request a review.
+                  Keep unanswered questions in Tickets. Saving a note leaves the
+                  case open.
                 </p>
                 {view.availableActions.some(
                   (action) =>
@@ -49,31 +48,26 @@ export function CaseReview({
                     !action.taskId,
                 ) ? (
                   <p>
-                    Need more evidence? In Guides, use Check response procedure
-                    to review the available follow-up checks while leaving the
-                    case open. Your saved comparison stays here to help with
-                    your decision.
+                    Guides → Check response procedure lists follow-up checks.
                   </p>
                 ) : null}
               </details>
-              <details open>
+              <details>
                 <summary>Saved investigation note</summary>
                 {note ? (
                   <pre className="artifact-body">{note}</pre>
                 ) : (
                   <p>
-                    No investigation note saved for this case yet. In Tickets,
-                    write what you checked and what you need to check next, then
-                    save it.
+                    No saved ticket yet. Add findings and the next check in
+                    Tickets.
                   </p>
                 )}
               </details>
               <details>
                 <summary>Earlier opened records ({opened.length})</summary>
                 <p>
-                  Reading a record does not confirm every claim it contains.
-                  Check that your note says what the record supports and leaves
-                  room for what is still unknown.
+                  Separate observations from claims that still need
+                  verification.
                 </p>
                 {opened.map((artifact) => (
                   <article key={artifact.id}>

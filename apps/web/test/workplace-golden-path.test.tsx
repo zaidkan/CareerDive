@@ -369,7 +369,7 @@ describe("rendered workplace golden path", () => {
                 for (const optionId of step.requiredOptionIds)
                     await activate(required(panel().querySelector<HTMLElement>(`[data-option-id="${optionId}"]`), `${optionId} task option`));
                 await activate(within(panel()).getByRole("button", {
-                    name: /Submit findings|Check my work|Send selected response/,
+                    name: /Submit findings|Save findings|Send selected response/,
                 }));
             }
         }
@@ -402,7 +402,7 @@ describe("rendered workplace golden path", () => {
         await activate(screen.getByRole("button", { name: "Handle now" }));
         await perform("review_alert", routine);
         await openSystem("knowledge_base");
-        await user.type(screen.getByRole("searchbox", { name: "Filter guides locally" }), "scanner");
+        await user.type(screen.getByRole("searchbox", { name: "Find a guide" }), "scanner");
         await activate(required(container.querySelector<HTMLElement>('[data-interaction-id="open_artifact"][data-artifact-id="scanner-window"]'), "scanner guide"));
         expect(state.observedArtifactIds).toContain("scanner-window");
         await perform("search_knowledge_base", routine);

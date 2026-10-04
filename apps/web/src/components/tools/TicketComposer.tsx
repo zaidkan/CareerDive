@@ -70,14 +70,13 @@ export function TicketComposer({
       }}
     >
       <h4>Case ticket</h4>
-      <p>
-        Write what records show, what remains unclear, and the next check. Open
-        records in Alerts, Guides, or Inventory before attaching them.
-      </p>
+      <p>Findings, uncertainty, next step.</p>
       <label>
         Verified evidence
         <textarea
           aria-label="Verified evidence"
+          placeholder="Records and identifiers supporting your decision"
+          rows={3}
           maxLength={2000}
           value={verifiedEvidence}
           onChange={(event) => {
@@ -89,6 +88,8 @@ export function TicketComposer({
         Uncertainty
         <textarea
           aria-label="Uncertainty"
+          placeholder="What the records still cannot establish"
+          rows={3}
           maxLength={2000}
           value={uncertainty}
           onChange={(event) => {
@@ -100,6 +101,8 @@ export function TicketComposer({
         Next step
         <textarea
           aria-label="Next step"
+          placeholder="Who should check what next"
+          rows={2}
           maxLength={500}
           value={followUp}
           onChange={(event) => {
@@ -148,8 +151,8 @@ export function TicketComposer({
                 <strong>{label}</strong>
                 <small>
                   {id.startsWith("escalate")
-                    ? "Save this review request; send it from Alerts after saving the ticket."
-                    : "Save this proposed closure; close the alert from Alerts after saving the ticket."}
+                    ? "Propose senior review. Send from Alerts after saving."
+                    : "Propose closure. Close from Alerts after saving."}
                 </small>
               </span>
             </label>
