@@ -10,6 +10,7 @@ import type {
 } from "@sim/schemas";
 import {
   StartupFailure,
+  PENDING_SESSION_KEY,
   defaultClient,
   type SimulationClient,
 } from "./client.js";
@@ -139,8 +140,10 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
           });
         }
         const created = await creationRef.current.promise;
-        if (client === defaultClient)
+        if (client === defaultClient) {
           writeTabValue(SESSION_KEY, created.sessionId);
+          writeTabValue(PENDING_SESSION_KEY, false);
+        }
         if (!isCurrent()) return;
         currentSessionRef.current = {
           generation,

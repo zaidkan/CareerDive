@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import type { SimulationClient } from "../../client.js";
-import { defaultClient } from "../../client.js";
 import { ArrivalFilm } from "../ArrivalFilm.js";
 import { ThresholdBrief } from "../ThresholdBrief.js";
 import { navigate } from "../routes.js";
@@ -34,7 +33,7 @@ function writeGate(g: Gate): void {
 
 type Phase = "arrive" | "brief" | "sim";
 
-export function StartPage({ client = defaultClient }: { client?: SimulationClient }) {
+export function StartPage({ client }: { client?: SimulationClient }) {
   const [phase, setPhase] = useState<Phase>(() => (readGate() === "sim" ? "sim" : "arrive"));
 
   useEffect(() => {
@@ -84,7 +83,7 @@ export function StartPage({ client = defaultClient }: { client?: SimulationClien
         </div>
       </ThresholdShell>
     }>
-      <App client={client} />
+      <App {...(client ? { client } : {})} />
     </Suspense>
   );
 }

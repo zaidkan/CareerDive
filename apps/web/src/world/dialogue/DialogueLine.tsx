@@ -48,10 +48,12 @@ export function DialogueLine({
   const instant = reduced || !animate;
   const [progress, setProgress] = useState(instant ? parts.length : 0);
   const finished = useRef(instant);
+  const frame = useRef(0);
   const lastAdvance = useRef(-Infinity);
   const revealing = !instant && progress < parts.length;
   const finish = () => {
     finished.current = true;
+    cancelAnimationFrame(frame.current);
     setProgress(parts.length);
     stopDialogueAudio();
   };
@@ -62,7 +64,7 @@ export function DialogueLine({
   useEffect(() => {
     finished.current = instant || document.hidden;
     setProgress(finished.current ? parts.length : 0);
-    let frame = 0;
+    frame.current = 0;
     let start: number | undefined;
     let lastSoundCount = 0;
     const tick = (now: number) => {
@@ -80,7 +82,7 @@ export function DialogueLine({
         dialogueTick(now);
         lastSoundCount = count;
       }
-      if (count < parts.length) frame = requestAnimationFrame(tick);
+      if (count < parts.length) frame.current = requestAnimationFrame(tick);
       else {
         finished.current = true;
         stopDialogueAudio();
@@ -90,7 +92,7 @@ export function DialogueLine({
       if (document.hidden) {
         finished.current = true;
         setProgress(parts.length);
-        cancelAnimationFrame(frame);
+        cancelAnimationFrame(frame.current);
         stopDialogueAudio();
       }
     };
@@ -100,9 +102,9 @@ export function DialogueLine({
     document.addEventListener("visibilitychange", onVisibility);
     document.addEventListener("pointerdown", unlock);
     document.addEventListener("keydown", unlock);
-    if (!finished.current) frame = requestAnimationFrame(tick);
+    if (!finished.current) frame.current = requestAnimationFrame(tick);
     return () => {
-      cancelAnimationFrame(frame);
+      cancelAnimationFrame(frame.current);
       stopDialogueAudio();
       document.removeEventListener("visibilitychange", onVisibility);
       document.removeEventListener("pointerdown", unlock);

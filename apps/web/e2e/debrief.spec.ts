@@ -50,7 +50,7 @@ test("completion opens five-decision debrief across themes and viewports", async
       await page.keyboard.down("w");
       return movementCalls;
     }, { timeout: 45_000, intervals: [100] }).toBeGreaterThan(0);
-    await page.waitForTimeout(450);
+    await page.waitForTimeout(150);
   } finally { await page.keyboard.up("w"); }
   await page.keyboard.down("d");
   try {

@@ -93,3 +93,21 @@ it("finishes when hidden and does not restart on returning to the tab", () => {
     screen.queryByRole("button", { name: "Show full message" }),
   ).toBeNull();
 });
+it("cancels the scheduled reveal frame immediately on skip and close", () => {
+  let nextId = 0;
+  const pending = new Set<number>();
+  vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => {
+    const id = ++nextId;
+    pending.add(id);
+    return id;
+  });
+  vi.spyOn(window, "cancelAnimationFrame").mockImplementation((id) => {
+    pending.delete(id);
+  });
+  const { unmount } = render(<DialogueLine text="Skip this animated message." />);
+  expect(pending.size).toBe(1);
+  fireEvent.click(screen.getByRole("button", { name: "Show full message" }));
+  expect(pending.size).toBe(0);
+  unmount();
+  expect(pending.size).toBe(0);
+});

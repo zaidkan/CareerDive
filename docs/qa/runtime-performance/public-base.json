@@ -1,0 +1,101 @@
+[
+  {
+    "cls": 0.0004878488059069025,
+    "lcp": 660,
+    "load": 1168.5,
+    "resources": [
+      {
+        "name": "index-BFnQyhD1.js",
+        "type": "script",
+        "bytes": 400944
+      },
+      {
+        "name": "css2?family=Plus+Jakarta+Sans:wght@400..800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&display=swap",
+        "type": "link",
+        "bytes": 1079
+      },
+      {
+        "name": "index-ORJKuJXV.css",
+        "type": "link",
+        "bytes": 100322
+      },
+      {
+        "name": "a-11-desktop-dark.webp",
+        "type": "img",
+        "bytes": 44110
+      },
+      {
+        "name": "a-01-desktop-light.webp",
+        "type": "img",
+        "bytes": 42178
+      }
+    ],
+    "startToFilmMs": 69
+  },
+  {
+    "cls": 0.0004878488059069025,
+    "lcp": 592,
+    "load": 527.1000000238419,
+    "resources": [
+      {
+        "name": "css2?family=Plus+Jakarta+Sans:wght@400..800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&display=swap",
+        "type": "link",
+        "bytes": 1079
+      },
+      {
+        "name": "index-ORJKuJXV.css",
+        "type": "link",
+        "bytes": 100322
+      },
+      {
+        "name": "index-BFnQyhD1.js",
+        "type": "script",
+        "bytes": 400944
+      },
+      {
+        "name": "a-11-desktop-dark.webp",
+        "type": "img",
+        "bytes": 44110
+      },
+      {
+        "name": "a-01-desktop-light.webp",
+        "type": "img",
+        "bytes": 42178
+      }
+    ],
+    "startToFilmMs": 51
+  },
+  {
+    "cls": 0.0004878488059069025,
+    "lcp": 572,
+    "load": 1038.7000000476837,
+    "resources": [
+      {
+        "name": "css2?family=Plus+Jakarta+Sans:wght@400..800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&display=swap",
+        "type": "link",
+        "bytes": 1079
+      },
+      {
+        "name": "index-ORJKuJXV.css",
+        "type": "link",
+        "bytes": 100322
+      },
+      {
+        "name": "index-BFnQyhD1.js",
+        "type": "script",
+        "bytes": 400944
+      },
+      {
+        "name": "a-11-desktop-dark.webp",
+        "type": "img",
+        "bytes": 44110
+      },
+      {
+        "name": "a-01-desktop-light.webp",
+        "type": "img",
+        "bytes": 42178
+      }
+    ],
+    "startToFilmMs": 68
+  }
+]

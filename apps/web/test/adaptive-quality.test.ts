@@ -89,6 +89,27 @@ describe("quality machine", () => {
     expect(machine.tier).toBe(0);
   });
 
+  it("degrades even when every visible frame is below 10 fps", () => {
+    const machine = createQualityMachine({ startTier: 2, allowRestore: true });
+    drive(machine, 0.2, 5);
+    expect(machine.tier).toBe(0);
+    expect(machine.sampler.count).toBe(0);
+    drive(machine, FPS_60, 10);
+    expect(machine.tier).toBe(2);
+  });
+
+  it("does not degrade for a single long suspension or accumulate hidden stalls", () => {
+    const machine = createQualityMachine({ startTier: 2, allowRestore: true });
+    drive(machine, FPS_60, 1);
+    expect(stepQuality(machine, 10, false)).toBe(false);
+    expect(machine.tier).toBe(2);
+    drive(machine, 0.2, 0.8);
+    drive(machine, 0.2, 20, true);
+    expect(machine.stalledSeconds).toBe(0);
+    drive(machine, 0.2, 0.8);
+    expect(machine.tier).toBe(2);
+  });
+
   it("does not count a single long hitch", () => {
     const machine = createQualityMachine({ startTier: 2, allowRestore: true });
     drive(machine, FPS_60, QUALITY.warmupSeconds + 0.3);

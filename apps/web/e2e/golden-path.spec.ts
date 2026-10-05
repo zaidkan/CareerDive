@@ -281,14 +281,18 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
         { timeout: 45_000, intervals: [100] },
       ).toBeGreaterThan(0);
       // First 5m bucket fires before the chair's south approach. Continue
-      // roughly one meter, then turn east; waiting for API response here can
-      // overshoot the chair under variable headless frame rates.
-      await page.waitForTimeout(450);
+      // a short distance, then turn east. A 450ms hold overshoots the clear
+      // south approach on a hardware renderer before the eastward walk.
+      await page.waitForTimeout(150);
     } finally { await page.keyboard.up("w"); }
     await expect.poll(() => movementCalls[0]?.status, { timeout: 10_000 }).toBe(200);
     await page.keyboard.down("d");
     try {
-      await expect(page.getByRole("button", { name: "Sit at computer" })).toBeVisible({ timeout: 20_000 });
+      await expect.poll(async () => {
+        // Match real held-key repeat, just as the northward walk does above.
+        await page.keyboard.down("d");
+        return page.getByRole("button", { name: "Sit at computer" }).isVisible();
+      }, { timeout: 20_000, intervals: [100] }).toBe(true);
     } finally { await page.keyboard.up("d"); }
   });
 

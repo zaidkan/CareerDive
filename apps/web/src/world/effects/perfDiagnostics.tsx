@@ -130,9 +130,11 @@ export function PerfOverlay({ quality }: { quality: AdaptiveQuality }) {
   qualityRef.current = quality;
 
   useEffect(() => {
-    const host = hostRef.current;
-    if (!host) return undefined;
-    const previous = host.style.cssText;
+    // DOM belongs to the document, not R3F's THREE reconciler.
+    const host = document.createElement("div");
+    host.dataset.testid = "perf-overlay";
+    host.setAttribute("aria-hidden", "true");
+    hostRef.current = host;
     host.style.cssText = [
       "position:fixed",
       "left:8px",
@@ -148,8 +150,10 @@ export function PerfOverlay({ quality }: { quality: AdaptiveQuality }) {
       "border:1px solid rgba(79,208,200,0.35)",
       "border-radius:6px",
     ].join(";");
+    document.body.appendChild(host);
     return () => {
-      host.style.cssText = previous;
+      hostRef.current = null;
+      host.remove();
     };
   }, []);
 
@@ -168,12 +172,5 @@ export function PerfOverlay({ quality }: { quality: AdaptiveQuality }) {
     });
   });
 
-  return (
-    <div
-      ref={hostRef}
-      data-testid="perf-overlay"
-      aria-hidden="true"
-      style={{ display: "none" }}
-    />
-  );
+  return null;
 }
