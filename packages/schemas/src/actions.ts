@@ -76,6 +76,7 @@ export const AvailableActionSchema = z.object({
   queryPayload: QueryRecordsPayloadSchema.optional(),
   handoffPayload: HandoffPayloadSchema.optional(),
   ticketPayload: TicketUpdatePayloadSchema.optional(),
+  stateNote: z.string().min(1).optional(),
   decisionOptions: z
     .array(z.object({ id: z.string(), label: z.string() }))
     .optional(),
@@ -91,11 +92,24 @@ export const HiddenDeltaSchema = z.object({
 });
 export type HiddenDelta = z.infer<typeof HiddenDeltaSchema>;
 
-/** Small, server-only pack predicate. Multiple conditions are an AND. */
-export const ConditionSchema = z.object({
-  flag: z.string().min(1),
-  equals: z.string().min(1),
-});
+/**
+ * Small, server-only pack predicate. Multiple conditions are an AND.
+ * `equals` and `notEquals` are mutually exclusive; exactly one is required.
+ */
+export const ConditionSchema = z
+  .object({
+    flag: z.string().min(1),
+    equals: z.string().min(1).optional(),
+    notEquals: z.string().min(1).optional(),
+  })
+  .refine(
+    (condition) =>
+      Object.hasOwn(condition, "equals") !==
+      Object.hasOwn(condition, "notEquals"),
+    {
+      message: "Condition requires exactly one of `equals` or `notEquals`",
+    },
+  );
 export type Condition = z.infer<typeof ConditionSchema>;
 
 export const PackCallbackSchema = z.object({

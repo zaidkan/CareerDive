@@ -10,6 +10,7 @@ import { TeamChatTool } from "../src/components/tools/TeamChatTool.js";
 import { DeskOs } from "../src/world/deskOs/DeskOs.js";
 import { OsSessionProvider } from "../src/world/deskOs/osSession.js";
 import { RoomCanvas } from "../src/world/RoomCanvas.js";
+import "../src/foundation.css";
 import "../src/styles.css";
 import "./product-media.css";
 
@@ -50,7 +51,7 @@ declare global {
 }
 window.renderProductMedia = (scene, view, theme, debrief) => {
   document.documentElement.dataset.theme = theme;
-  root.render(<main className={`capture capture-${scene}`} data-scene={scene}>
+  root.render(<main className={`simulation-main capture capture-${scene}`} data-scene={scene}>
     <header className="capture-heading"><span>VERDALY · SOC OPS</span><strong>{labels[scene]}</strong></header>
     <div className="capture-content"><ProductScene scene={scene} view={view} {...(debrief ? { debrief } : {})} /></div>
     <footer className="capture-footer">Career Expo · Cybersecurity Analyst · Simulated workplace</footer>

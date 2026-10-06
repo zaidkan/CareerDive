@@ -56,12 +56,17 @@ function exactRequiredSelection(
   selectedOptionIds: string[],
 ): boolean {
   const selected = new Set(selectedOptionIds);
+  const offered = new Set(
+    step.options
+      .filter((option) => conditionsMet(state, option.when ?? []))
+      .map(({ id }) => id),
+  );
   const required = [
     ...step.requiredOptionIds,
     ...step.conditionalRequiredOptionIds
       .filter(({ when }) => conditionsMet(state, when))
       .flatMap(({ optionIds }) => optionIds),
-  ];
+  ].filter((id) => offered.has(id));
   if (selected.size !== selectedOptionIds.length) return false;
   if (
     selected.size < step.minSelections ||
@@ -78,8 +83,13 @@ export function applyTaskAttempt(
   attempt: TaskAttempt,
 ): TaskAttemptTurn {
   const { task, step } = findAvailableTask(currentState, attempt);
+  // Options gated off by recorded state are not presented, so they must not
+  // gate the submission either.
+  const offeredOptions = step.options.filter((option) =>
+    conditionsMet(currentState, option.when ?? []),
+  );
   if (
-    step.options.some(
+    offeredOptions.some(
       ({ source }) =>
         source && !currentState.observedArtifactIds.includes(source.artifactId),
     )

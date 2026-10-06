@@ -945,19 +945,36 @@ scenario:
           minSelections: 1
           maxSelections: 1
           options:
+            # Recorded state decides what "next" honestly is: once the ticket
+            # is documented and the escalation sent, the note/review options
+            # would demand work that is already done.
             - id: document-and-review
               label: Finish the evidence/uncertainty note, then request bounded senior review.
+              when:
+                - flag: b1_choice
+                  notEquals: escalate-with-comparisons
               source:
                 artifactId: ticket-suspicious-login
                 quote: "Next step: name the review you are requesting and the question it should resolve."
+            - id: review-in-progress
+              label: Senior review of the escalated session is in progress; ownership stays unverified.
+              when:
+                - flag: b1_choice
+                  equals: escalate-with-comparisons
+              source:
+                artifactId: ticket-suspicious-login
+                quote: "Case references to preserve after comparison: A-1042, the two session identifiers, the exact inventory label, and the route-catalogue and work-travel coverage limits."
             - id: close-on-location
               label: Close the case because the displayed city explains the session.
               source:
                 artifactId: ticket-suspicious-login
                 quote: "Uncertainty: distinguish the location estimate and working explanation from what is independently supported."
           requiredOptionIds: [document-and-review]
+          conditionalRequiredOptionIds:
+            - when: [{ flag: b1_choice, equals: escalate-with-comparisons }]
+              optionIds: [review-in-progress]
           coachOnFailure: Name a reversible next step that uses the records and preserves the open question.
-          successText: Morgan has a status update that supports the next handoff without revealing an answer.
+          successText: Morgan has a status update that supports the next handoff.
 
     - id: end-shift-continuity
       eventTemplateId: end_shift_handoff
@@ -1233,8 +1250,8 @@ scenario:
         setKbQueryFromFreeText: true
     - id: dismiss_alert
       systemId: alert_dashboard
-      label: Dismiss as false positive
-      description: Close the queue item using your documented reason; closure alone does not verify who signed in.
+      label: Close as expected activity
+      description: Close the queue item using your documented match; closing records what was checked and does not verify any person.
       simulatedMinutes: 15
       energyCost: 2
     - id: escalate_alert
@@ -1569,8 +1586,8 @@ scenario:
 
     routine_alert_review:
       instanceId: routine-alert-1
-      title: Expected scanner activity
-      summary: A vulnerability scanner generated a routine connection alert during a possible approved window.
+      title: Scanner connection alert review
+      summary: A vulnerability scanner generated a connection alert during a possible approved window; the match is not yet checked.
       priority: low
       systemId: alert_dashboard
       triggerAt: 25
@@ -1768,8 +1785,6 @@ scenario:
       title: Sign-in timeline · A-1042
       summary: Session sequence and collection limits · office-local times
       body: |
-        Purpose: separate the earlier session from the one that triggered A-1042. Session identifiers distinguish connections even when the account or displayed city is the same.
-
         07:31 · S-0731 · successful sign-in through V-218; source 198.51.100.20; corp-macbook-patel. See the prior-session record for the route and extra identity check.
         07:38:02–07:40:51 · six failed extra identity checks associated with source 203.0.113.44. The summary groups attempts by account and source; it does not identify a person.
         07:41:09 · S-0741 · password accepted; successful session created. Extra-check result: not present in this export. Do not translate password success into successful MFA.
@@ -1778,6 +1793,8 @@ scenario:
 
         Collection ends at 07:45. This export has no file-access or mailbox activity and cannot establish what was accessed. Missing fields may require a fuller record from the reviewer.
         A-1042 and login-context-1 summarize this same source; counting them separately does not create independent corroboration.
+
+        Why session identifiers matter: they distinguish connections even when the account or displayed city is the same.
       eventIds: [suspicious-login-1, status-check-1, shift-handoff-1]
       relatedArtifactIds:
         [suspicious-login-alert, prior-session-1, vpn-context-1]
@@ -1788,14 +1805,12 @@ scenario:
       title: Earlier session · S-0731
       summary: A prior sign-in for comparison · 07:31 office local
       body: |
-        Purpose: test an ordinary explanation for a surprising location estimate against a known connection.
-
         Account: j.patel@example.com · session S-0731 · 07:31 office local.
         S-0731 used corp-macbook-patel through VPN connection V-218, exiting at 198.51.100.20.
         Password accepted; extra identity check completed. Managed-device certificate matched the inventory record at sign-in.
         Displayed city: Montreal (network estimate).
 
-        The route record, not the city label, links this session to the approved private connection. This is one comparison session; it does not certify other sessions on the account.
+        Why this record is here: it is a known connection to test against a surprising location estimate. The route record, not the city label, links this session to the approved private connection.
         Match V-218 against the route catalogue, then compare S-0741 in the timeline. A shared browser, account, or city does not make the session identifiers interchangeable.
       eventIds: [suspicious-login-1]
       relatedArtifactIds:
@@ -1812,8 +1827,6 @@ scenario:
       title: Office VPN route catalogue
       summary: Approved private connection reference · current morning snapshot
       body: |
-        Purpose: check whether a sign-in used the organization's private connection. A VPN routes traffic through an exit address, so a location estimate may describe that exit rather than the employee.
-
         Route catalogue NET-VPN-04 · snapshot 07:45 office local.
         V-218 maps to exit 198.51.100.20; this office's only approved VPN exit in this snapshot.
         Exit hosting location: Montreal. Assigned office: Toronto. The earlier S-0731 session carries V-218 in its connection record.
@@ -1821,6 +1834,8 @@ scenario:
 
         Coverage: organization-provided VPN only. This catalogue does not enumerate personal connections or prove where a person was physically located.
         If a session cannot be matched, preserve the mismatch and request route verification through the case review. Do not invent a VPN match to reconcile two city labels.
+
+        What a VPN exit address means: traffic routes through the exit, so a location estimate may describe that exit rather than the employee.
       eventIds: [suspicious-login-1]
       relatedArtifactIds: [prior-session-1, login-session-timeline]
       searchableText: VPN private connection route exit location estimate
@@ -1830,8 +1845,6 @@ scenario:
       title: Work-travel register · case reference
       summary: HR administrative extract · 08:00 · office local
       body: |
-        Purpose: clarify what the work-travel register can contribute to this investigation. This is an administrative extract, not a live location check.
-
         Reference HR-TR-08 · account j.patel@example.com · current shift date · extract 08:00 office local.
         Assigned office: Toronto.
         Approved work trips for this date: no entry found.

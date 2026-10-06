@@ -19,6 +19,11 @@ export {
   validateStructuredTicket,
 } from "./structured-ticket.js";
 export { toClientView } from "./serializer.js";
+export {
+  caseDispositionLabel,
+  handoffCaseLines,
+  handoffFollowUps,
+} from "./handoff-summary.js";
 export { julesDialogue, julesDialogueFromClientView } from "./jules.js";
 export type { JulesDialogueReply } from "./jules.js";
 export {

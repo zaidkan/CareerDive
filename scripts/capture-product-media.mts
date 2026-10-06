@@ -111,6 +111,7 @@ try {
         await page.evaluate(({ scene, view, theme, debrief }) => window.renderProductMedia(scene, view, theme, debrief), { scene, view, theme: variant.theme, debrief });
         await page.locator(`main[data-scene="${scene}"]`).waitFor();
         await page.locator(".capture-content").waitFor();
+        if (scene === "a-06") await page.getByText("Saved investigation note", { exact: true }).click();
         if (scene === "a-06" && !await page.getByText("Verified evidence: A-1042 and S-0741", { exact: false }).count()) throw new Error("A-06 rendered without submitted ticket evidence");
         if (scene === "a-10" && !await page.getByRole("heading", { name: "Your shift in review" }).count()) throw new Error("A-10 rendered without completed decision review");
         const fields: Partial<Record<Scene, { dataset: string; filter: string; value: string }>> = {
@@ -122,7 +123,9 @@ try {
         const field = fields[scene];
         if (field) {
           await page.locator("#record-query-dataset").selectOption(field.dataset);
-          await page.locator(`#record-query-${field.dataset}-${field.filter}`).fill(field.value);
+          const input = page.locator(`#record-query-${field.dataset}-${field.filter}`);
+          if (!await input.isVisible()) await page.locator(".rq-advanced > summary").click();
+          await input.fill(field.value);
         }
         if (scene === "a-11") { await page.locator("canvas").waitFor(); await page.waitForTimeout(1500); }
         await page.evaluate(() => document.fonts.ready);

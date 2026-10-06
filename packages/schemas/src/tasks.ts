@@ -18,6 +18,11 @@ export const PackTaskOptionSchema = z.object({
   detail: z.string().min(1).optional(),
   term: z.string().min(1).optional(),
   termHelp: z.string().min(1).optional(),
+  /**
+   * State gate: the option is only presented (and selectable) when every
+   * condition matches recorded shift state. Unset means always offered.
+   */
+  when: z.array(ConditionSchema).optional(),
   source: z
     .object({ artifactId: z.string().min(1), quote: z.string().min(1) })
     .optional(),

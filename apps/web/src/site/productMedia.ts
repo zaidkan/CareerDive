@@ -17,26 +17,26 @@ const provenance = `${base}provenance.json`;
 
 export const productMedia = {
   "a-01": { id: "a-01", career: "cybersecurity_analyst", authenticity: "real", provenance, variants: {
-    dark: { desktop: variant("a-01-desktop-dark", "1366 / 990"), mobile: variant("a-01-mobile-dark", "390 / 1167") },
-    light: { desktop: variant("a-01-desktop-light", "1366 / 990"), mobile: variant("a-01-mobile-light", "390 / 1167") },
+    dark: { desktop: variant("a-01-desktop-dark", "1366 / 900"), mobile: variant("a-01-mobile-dark", "390 / 844") },
+    light: { desktop: variant("a-01-desktop-light", "1366 / 900"), mobile: variant("a-01-mobile-light", "390 / 844") },
   } },
-  "a-02": { id: "a-02", career: "cybersecurity_analyst", authenticity: "real", provenance, variants: { dark: { desktop: variant("a-02-desktop-dark", "1366 / 1357") } } },
-  "a-03": { id: "a-03", career: "cybersecurity_analyst", authenticity: "real", provenance, variants: { dark: { desktop: variant("a-03-desktop-dark", "1366 / 1051") } } },
+  "a-02": { id: "a-02", career: "cybersecurity_analyst", authenticity: "real", provenance, variants: { dark: { desktop: variant("a-02-desktop-dark", "1366 / 1525") } } },
+  "a-03": { id: "a-03", career: "cybersecurity_analyst", authenticity: "real", provenance, variants: { dark: { desktop: variant("a-03-desktop-dark", "1366 / 934") } } },
   "a-04": { id: "a-04", career: "cybersecurity_analyst", authenticity: "real", provenance, variants: { dark: { desktop: variant("a-04-desktop-dark", "1366 / 900") } } },
-  "a-05": { id: "a-05", career: "cybersecurity_analyst", authenticity: "real", provenance, variants: { dark: { desktop: variant("a-05-desktop-dark", "1366 / 1236") } } },
+  "a-05": { id: "a-05", career: "cybersecurity_analyst", authenticity: "real", provenance, variants: { dark: { desktop: variant("a-05-desktop-dark", "1366 / 1275") } } },
   "a-06": { id: "a-06", career: "cybersecurity_analyst", authenticity: "real", provenance, variants: {
-    dark: { desktop: variant("a-06-desktop-dark", "1366 / 509"), mobile: variant("a-06-mobile-dark", "390 / 720") },
-    light: { desktop: variant("a-06-desktop-light", "1366 / 509"), mobile: variant("a-06-mobile-light", "390 / 720") },
+    dark: { desktop: variant("a-06-desktop-dark", "1366 / 467"), mobile: variant("a-06-mobile-dark", "390 / 584") },
+    light: { desktop: variant("a-06-desktop-light", "1366 / 467"), mobile: variant("a-06-mobile-light", "390 / 584") },
   } },
-  "a-07": { id: "a-07", career: "cybersecurity_analyst", authenticity: "real", provenance, variants: { dark: { desktop: variant("a-07-desktop-dark", "1366 / 981") } } },
+  "a-07": { id: "a-07", career: "cybersecurity_analyst", authenticity: "real", provenance, variants: { dark: { desktop: variant("a-07-desktop-dark", "1366 / 914") } } },
   "a-08": { id: "a-08", career: "cybersecurity_analyst", authenticity: "real", provenance, variants: {
     dark: { desktop: variant("a-08-desktop-dark", "1366 / 900"), mobile: variant("a-08-mobile-dark", "390 / 907") },
     light: { desktop: variant("a-08-desktop-light", "1366 / 900"), mobile: variant("a-08-mobile-light", "390 / 907") },
   } },
   "a-09": { id: "a-09", career: "cybersecurity_analyst", authenticity: "real", provenance, variants: { dark: { desktop: variant("a-09-desktop-dark", "1366 / 1871") } } },
   "a-10": { id: "a-10", career: "cybersecurity_analyst", authenticity: "real", provenance, variants: {
-    dark: { desktop: variant("a-10-desktop-dark", "1366 / 6423"), mobile: variant("a-10-mobile-dark", "390 / 7629") },
-    light: { desktop: variant("a-10-desktop-light", "1366 / 6423"), mobile: variant("a-10-mobile-light", "390 / 7629") },
+    dark: { desktop: variant("a-10-desktop-dark", "1366 / 4353"), mobile: variant("a-10-mobile-dark", "390 / 4912") },
+    light: { desktop: variant("a-10-desktop-light", "1366 / 4353"), mobile: variant("a-10-mobile-light", "390 / 4912") },
   } },
   "a-11": { id: "a-11", career: "cybersecurity_analyst", authenticity: "real", provenance, variants: { dark: { desktop: variant("a-11-desktop-dark", "1366 / 900") } } },
   "a-12": { id: "a-12", career: "cybersecurity_analyst", authenticity: "real", provenance, variants: {

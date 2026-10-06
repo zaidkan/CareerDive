@@ -206,6 +206,47 @@ describe("current Cyber shift usability and truthful provenance", () => {
     );
     expect(state.ledger.at(-1)?.description).not.toContain("finish the ticket");
   });
+  it("offers only the recorded next step after escalation and rejects its obsolete option", () => {
+    const run = investigate([
+      "inspect_account_history",
+      "check_device_inventory",
+    ]);
+    run.action("document_ticket", undefined, {
+      ticketPayload: ticket,
+      decisionOptionId: "escalate-with-comparisons",
+    });
+    run.action("escalate_alert");
+    let state = run.state;
+    const task = state.rules.tasks["morgan-midshift-update"];
+    if (!task) throw new Error("Missing status task");
+    for (const step of task.steps) {
+      for (const source of step.options.flatMap(({ source }) => source ? [source] : []))
+        state = applyWorkplaceInteraction(state, {
+          type: "open_artifact",
+          artifactId: source.artifactId,
+        }).state;
+      const visible = toClientView(state).tasks.find(({ id }) => id === task.id);
+      if (step.options.some(({ id }) => id === "review-in-progress")) {
+        expect(visible?.options.map(({ id }) => id)).toEqual([
+          "review-in-progress", "close-on-location",
+        ]);
+        expect(JSON.stringify(visible?.options)).not.toMatch(/notEquals|escalate-with-comparisons/);
+        expect(visible?.options.every((option) => !("when" in option))).toBe(true);
+        expect(applyTaskAttempt(state, {
+          eventId: "status-check-1", taskId: task.id,
+          selectedOptionIds: ["document-and-review"],
+        }).accepted).toBe(false);
+      }
+      const turn = applyTaskAttempt(state, {
+        eventId: "status-check-1", taskId: task.id,
+        selectedOptionIds: step.options.some(({ id }) => id === "review-in-progress")
+          ? ["review-in-progress"] : step.requiredOptionIds,
+      });
+      expect(turn.accepted).toBe(true);
+      state = turn.state;
+    }
+    expect(state.taskProgress[`status-check-1:${task.id}`]?.completed).toBe(true);
+  });
   it("rejects uninspected handoff references and leaves uncompleted scanner work open", () => {
     const run = investigate([
       "inspect_account_history",
@@ -244,7 +285,7 @@ describe("current Cyber shift usability and truthful provenance", () => {
       id.endsWith("-handoff"),
     )?.body;
     expect(body).toContain(
-      "Expected scanner activity still needs a final decision",
+      "Scanner connection alert review still needs a final decision",
     );
     expect(body).not.toContain("scanner run and approved window matched");
     expect(body).toContain("Additional note (your words)");

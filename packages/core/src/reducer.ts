@@ -12,6 +12,7 @@ import {
 } from "@sim/schemas";
 import { availableActions } from "./availability.js";
 import { applyResolvedEffect, resolveActionEffect } from "./effects.js";
+import { handoffCaseLines, handoffFollowUps } from "./handoff-summary.js";
 import { runQuery } from "./query.js";
 import { alertRecordSource } from "./workplace.js";
 import {
@@ -217,16 +218,13 @@ export function applyAction(
     const findings = handoff.sourceArtifactIds.map(
       (id) => state.artifacts[id]?.title ?? id,
     );
-    const cases = state.events.filter(({ id }) =>
-      ["suspicious-login-1", "routine-alert-1"].includes(id),
+    const dispositions = handoffCaseLines(
+      state.events,
+      state.structuredTickets,
+    ).map(({ title, label, detail }) =>
+      detail ? `${title}: ${label}. ${detail}` : `${title}: ${label}.`,
     );
-    const dispositions = cases.map(
-      (event) =>
-        `${event.title}: ${event.status}. ${event.resolution ?? "No final disposition recorded."}`,
-    );
-    const open = cases
-      .filter(({ status }) => status === "active")
-      .map(({ title }) => `${title} still needs a final decision.`);
+    const open = handoffFollowUps(state.events, state.teamMessages ?? []);
     const caseTicket = state.structuredTickets["ticket-suspicious-login-1"];
     const followUp = {
       "senior-review":

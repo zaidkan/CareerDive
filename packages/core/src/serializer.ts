@@ -6,6 +6,7 @@ import type {
 } from "@sim/schemas";
 import { DatasetRecordSchema, InventoryLookupKeysSchema } from "@sim/schemas";
 import { availableActions } from "./availability.js";
+import { conditionsMet } from "./conditions.js";
 import { taskProgressKey } from "./tasks.js";
 import { alertRecordSource, canOpenArtifact } from "./workplace.js";
 
@@ -66,20 +67,26 @@ export function toClientView(state: WorldState): ClientView {
         relatedArtifactIds: taskStep.relatedArtifactIds,
         stepIndex: progress.currentStep,
         stepCount: task.steps.length,
-        options: taskStep.options.map(({ source, ...option }) => ({
-          ...option,
-          ...(source
-            ? {
-                source: {
-                  artifactId: source.artifactId,
-                  ...(observed.has(source.artifactId) &&
-                  canOpenArtifact(state, source.artifactId)
-                    ? { quote: source.quote }
-                    : {}),
-                },
-              }
-            : {}),
-        })),
+        options: taskStep.options
+          .filter((option) => conditionsMet(state, option.when ?? []))
+          .map(({ source, when, ...option }) => {
+            // Pack gates are server-only; omit them from the public option.
+            void when;
+            return {
+              ...option,
+              ...(source
+                ? {
+                    source: {
+                      artifactId: source.artifactId,
+                      ...(observed.has(source.artifactId) &&
+                      canOpenArtifact(state, source.artifactId)
+                        ? { quote: source.quote }
+                        : {}),
+                    },
+                  }
+                : {}),
+            };
+          }),
         minSelections: taskStep.minSelections,
         maxSelections: taskStep.maxSelections,
       },
