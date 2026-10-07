@@ -70,9 +70,8 @@ export const ALERT_POS: [number, number, number] = [COL.west, 0, -6.2];
 export const CUBICLE = { width: 2.95, depth: 2.55, offsetZ: 0.1 } as const;
 
 /**
- * Whole cubicle footprint, not just the desk. A desk-only box left the side
- * walls uncovered in front of the desk, so the player could stride through
- * the fabric.
+ * Cubicle footprint for lane and anchor measurements. Movement uses the
+ * separate wall and desk colliders below, so the open front stays walkable.
  */
 export function cubicleCollider(origin: [number, number, number]): Aabb {
   const halfW = CUBICLE.width / 2 + 0.045;
@@ -85,12 +84,28 @@ export function cubicleCollider(origin: [number, number, number]): Aabb {
   };
 }
 
+/** Collision follows the U-shaped fabric walls and desk, leaving the front open. */
+export function cubicleColliders(origin: [number, number, number]): Aabb[] {
+  const bounds = cubicleCollider(origin);
+  return [
+    { ...bounds, maxZ: bounds.minZ + 0.09 },
+    { ...bounds, maxX: bounds.minX + 0.09 },
+    { ...bounds, minX: bounds.maxX - 0.09 },
+    {
+      minX: origin[0] - 1.125,
+      maxX: origin[0] + 1.125,
+      minZ: origin[2] - 0.75,
+      maxZ: origin[2] + 0.35,
+    },
+  ];
+}
+
 export const BASE_HOTSPOTS: HotspotDef[] = [
   {
     id: "desk_player",
     label: "Your chair",
     position: [PLAYER_DESK[0], 0, PLAYER_DESK[2] + SEAT],
-    radius: 1.7,
+    radius: 2.2,
   },
   {
     id: "alert_wall",
@@ -148,9 +163,9 @@ export function hotspotAnchor(
 }
 
 export const ROOM_COLLIDERS: Aabb[] = [
-  cubicleCollider(PLAYER_DESK),
-  cubicleCollider(MORGAN_DESK),
-  cubicleCollider(HOT_DESK),
+  ...cubicleColliders(PLAYER_DESK),
+  ...cubicleColliders(MORGAN_DESK),
+  ...cubicleColliders(HOT_DESK),
   /** Samir's wall desk. */
   {
     minX: SAMIR_DESK[0] - 0.6,

@@ -78,6 +78,31 @@ function reachablePointsWithin(
 }
 
 describe("SOC layout reachability", () => {
+  it("keeps E on Jules across tiny movements in the shared coffee area", () => {
+    expect(
+      nearestHotspot([7.5, 1.6, -6.3], BREAK_INTERIOR_HOTSPOTS, "jules")?.id,
+    ).toBe("jules");
+    expect(
+      nearestHotspot([7.5, 1.6, -6.3], BREAK_INTERIOR_HOTSPOTS, "fridge")?.id,
+    ).toBe("coffee");
+  });
+
+  it("lets a newcomer enter the open cubicle front without crossing desk or fabric", () => {
+    const boxes = socColliders(false);
+    expect(isStandable(3.8, -1.0, boxes)).toBe(true);
+    expect(isStandable(3.8, -2.2, boxes)).toBe(false);
+    expect(isStandable(2.325, -1.0, boxes)).toBe(false);
+  });
+
+  it.each([
+    [1.8, 0.2],
+    [5.8, 0.2],
+    [3.8, 1.7],
+  ])("offers sitting from the reachable chair approach (%s, %s)", (x, z) => {
+    expect(isStandable(x, z, socColliders(false))).toBe(true);
+    expect(nearestHotspot([x, 1.6, z], BASE_HOTSPOTS)?.id).toBe("desk_player");
+  });
+
   it("keeps finite resources in the break room", () => {
     const baseIds: readonly string[] = BASE_HOTSPOTS.map(({ id }) => id);
     expect(baseIds).not.toContain("snack");
@@ -140,7 +165,7 @@ describe("SOC layout reachability", () => {
     expect(laneMax - laneMin).toBeGreaterThan(0.6);
   });
 
-  it("never lets the player stand inside a cubicle", () => {
+  it("keeps the desk interior solid", () => {
     const boxes = socColliders(true);
     for (const origin of [PLAYER_DESK]) {
       const cubicle = cubicleCollider(origin);

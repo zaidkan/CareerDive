@@ -182,7 +182,7 @@ export function FloorMap({
         </div>
 
         {highlightRoomId ? (
-          <p className="floor-guide-callout">Go here next — gold door on the plan</p>
+          <p className="floor-guide-callout">Go here next — highlighted Security Operations door on the plan</p>
         ) : null}
 
         <ul className="floor-legend floor-legend-compact" aria-label="Map legend">

@@ -10,6 +10,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { HotspotId } from "../src/world/worldTypes.js";
 import type { ClientView } from "@sim/schemas";
 import type { WorkplaceInteractionResult } from "../src/client.js";
 
@@ -34,9 +35,29 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
   }: {
     onBreakRoomExit?: () => void;
     onInteract: (id: string) => void;
-    onNearbyChange: (id?: string, label?: string) => void;
+    onNearbyChange: (
+      id?: HotspotId,
+      label?: string,
+      choices?: HotspotId[],
+    ) => void;
   }) => (
     <div>
+      <button
+        onClick={() => {
+          onNearbyChange("jules", "Jules", ["jules", "coffee"]);
+        }}
+        type="button"
+      >
+        Approach shared area
+      </button>
+      <button
+        onClick={() => {
+          onNearbyChange();
+        }}
+        type="button"
+      >
+        Leave interaction range
+      </button>
       <button
         onClick={() => {
           onNearbyChange("jules", "Jules");
@@ -520,4 +541,44 @@ describe("purposeful Jules dialogue panel", () => {
       ).toBeEnabled();
     });
   });
+});
+
+it("shows explicit alternatives without changing the displayed E action", async () => {
+  const user = userEvent.setup();
+  const onWorkplaceInteraction = vi.fn().mockResolvedValue(result(baseView));
+  render(
+    <SpatialShell
+      view={baseView}
+      onAction={vi.fn()}
+      onWorkplaceInteraction={onWorkplaceInteraction}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: "Security Operations" }));
+  await user.click(
+    await screen.findByRole("button", { name: "Approach shared area" }),
+  );
+  expect(screen.getByText(/Ready · Near: Jules/)).toBeVisible();
+  const choices = screen.getByLabelText("Nearby actions");
+  await user.click(
+    within(choices).getByRole("button", { name: /Start coffee/ }),
+  );
+  await waitFor(() => {
+    expect(onWorkplaceInteraction).toHaveBeenCalledWith({
+      type: "start_coffee",
+    });
+  });
+  expect(screen.getByText(/Ready · Near: Jules/)).toBeVisible();
+  await user.click(
+    screen.getByRole("button", { name: "Leave interaction range" }),
+  );
+  expect(screen.getByText(/Out of reach/)).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: "Talk to Jules" }),
+  ).not.toBeInTheDocument();
+  act(() => {
+    window.dispatchEvent(new Event("soc-interaction-miss"));
+  });
+  expect(screen.getByText(/Nothing in reach yet/)).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Approach shared area" }));
+  expect(screen.queryByText(/Nothing in reach yet/)).not.toBeInTheDocument();
 });
