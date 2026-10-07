@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./public-key": "./src/public-key.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

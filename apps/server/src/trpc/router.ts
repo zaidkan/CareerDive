@@ -54,6 +54,7 @@ export function createAppRouter(
     llmProvider?: LlmProvider;
     aiBudgetUsd?: number;
     careerPack?: CareerPack;
+    requireCreateRequestId?: boolean;
   } = {},
 ) {
   const careerPack = options.careerPack ?? getDefaultCareerPack();
@@ -77,6 +78,11 @@ export function createAppRouter(
         .input(SessionInputSchema)
         .output(SessionResultSchema)
         .mutation(async ({ ctx, input }) => {
+          if (options.requireCreateRequestId && !input.createRequestId)
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "createRequestId is required",
+            });
           const sessionId = randomUUID();
           const state = createInitialWorldState(
             sessionId,
@@ -84,8 +90,24 @@ export function createAppRouter(
             input,
             careerPack,
           );
-          await repository.createSession(ctx.userId, state);
-          return { sessionId, view: toClientView(state) };
+          const saved = await repository.createSession(
+            ctx.userId,
+            state,
+            input.createRequestId,
+          );
+          if (
+            saved.state.seed !== input.seed ||
+            saved.state.pacingMode !== input.pacingMode
+          ) {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: "Create request already used with different inputs",
+            });
+          }
+          return {
+            sessionId: saved.state.sessionId,
+            view: toClientView(saved.state),
+          };
         }),
       get: authenticatedProcedure
         .input(SessionIdSchema)

@@ -7,6 +7,7 @@ import { z } from "zod";
 import { SHARING_CATEGORIES } from "../domain/session.js";
 
 export const SessionInputSchema = z.object({
+  createRequestId: z.string().uuid().optional(),
   seed: z.number().int(),
   sessionKind: SessionKindSchema,
   pacingMode: PacingModeSchema,

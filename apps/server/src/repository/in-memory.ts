@@ -2,7 +2,10 @@ import { randomUUID } from "node:crypto";
 import type { EvidenceSignal, WorldState } from "@sim/schemas";
 import { GrantNotFoundError, SessionNotFoundError } from "../domain/errors.js";
 import type { SharingGrant, StoredSession } from "../domain/session.js";
-import type { CohortCount, CompletedDecision } from "../domain/decision-review.js";
+import type {
+  CohortCount,
+  CompletedDecision,
+} from "../domain/decision-review.js";
 import type { SimulationRepository } from "./types.js";
 
 export function toPublicGrant(grant: SharingGrant) {
@@ -17,9 +20,19 @@ export function toPublicGrant(grant: SharingGrant) {
 export class InMemoryRepository implements SimulationRepository {
   readonly #sessions = new Map<string, StoredSession>();
   readonly #grants = new Map<string, SharingGrant>();
+  readonly #createRequests = new Map<string, string>();
   readonly #decisions = new Map<string, CompletedDecision>();
 
-  async createSession(ownerId: string, state: WorldState): Promise<void> {
+  async createSession(
+    ownerId: string,
+    state: WorldState,
+    createRequestId?: string,
+  ): Promise<StoredSession> {
+    const key = `${ownerId}:${createRequestId ?? state.sessionId}`;
+    const existing = this.#createRequests.get(key);
+    if (existing && this.#sessions.has(existing))
+      return this.getSession(ownerId, existing);
+    this.#createRequests.set(key, state.sessionId);
     this.#sessions.set(state.sessionId, {
       ownerId,
       state,
@@ -27,6 +40,7 @@ export class InMemoryRepository implements SimulationRepository {
       evidence: [],
       reflections: [],
     });
+    return this.getSession(ownerId, state.sessionId);
   }
 
   async getSession(ownerId: string, sessionId: string): Promise<StoredSession> {
@@ -48,23 +62,43 @@ export class InMemoryRepository implements SimulationRepository {
     }
   }
 
-  async getRecordedDecisionIds(sessionId: string, careerId: string, careerVersion: string): Promise<string[]> {
+  async getRecordedDecisionIds(
+    sessionId: string,
+    careerId: string,
+    careerVersion: string,
+  ): Promise<string[]> {
     return [...this.#decisions.values()]
-      .filter((decision) => decision.sessionId === sessionId &&
-        decision.careerId === careerId && decision.careerVersion === careerVersion)
+      .filter(
+        (decision) =>
+          decision.sessionId === sessionId &&
+          decision.careerId === careerId &&
+          decision.careerVersion === careerVersion,
+      )
       .map((decision) => decision.decisionId);
   }
 
-  async getCohortCounts(careerId: string, careerVersion: string): Promise<CohortCount[]> {
+  async getCohortCounts(
+    careerId: string,
+    careerVersion: string,
+  ): Promise<CohortCount[]> {
     const counts = new Map<string, CohortCount>();
     for (const decision of this.#decisions.values()) {
       const session = this.#sessions.get(decision.sessionId);
       const sessionKind: string | undefined = session?.state.sessionKind;
-      if (decision.careerId !== careerId || decision.careerVersion !== careerVersion ||
+      if (
+        decision.careerId !== careerId ||
+        decision.careerVersion !== careerVersion ||
         sessionKind !== "assessed" ||
-        !session?.state.completedActionIds.includes("complete_shift")) continue;
+        !session?.state.completedActionIds.includes("complete_shift")
+      )
+        continue;
       const key = `${decision.decisionId}:${decision.choiceId}:${decision.optionSetKey ?? ""}`;
-      const row = counts.get(key) ?? { decisionId: decision.decisionId, choiceId: decision.choiceId, optionSetKey: decision.optionSetKey ?? "", count: 0 };
+      const row = counts.get(key) ?? {
+        decisionId: decision.decisionId,
+        choiceId: decision.choiceId,
+        optionSetKey: decision.optionSetKey ?? "",
+        count: 0,
+      };
       row.count += 1;
       counts.set(key, row);
     }
@@ -74,14 +108,16 @@ export class InMemoryRepository implements SimulationRepository {
   async deleteSession(ownerId: string, sessionId: string): Promise<void> {
     await this.getSession(ownerId, sessionId);
     this.#sessions.delete(sessionId);
-    for (const [key, decision] of this.#decisions) if (decision.sessionId === sessionId) this.#decisions.delete(key);
+    for (const [key, decision] of this.#decisions)
+      if (decision.sessionId === sessionId) this.#decisions.delete(key);
   }
 
   async deleteAccount(ownerId: string): Promise<void> {
     for (const [sessionId, session] of this.#sessions) {
       if (session.ownerId === ownerId) {
         this.#sessions.delete(sessionId);
-        for (const [key, decision] of this.#decisions) if (decision.sessionId === sessionId) this.#decisions.delete(key);
+        for (const [key, decision] of this.#decisions)
+          if (decision.sessionId === sessionId) this.#decisions.delete(key);
       }
     }
     for (const [grantId, grant] of this.#grants) {

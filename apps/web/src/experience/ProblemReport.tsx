@@ -1,3 +1,6 @@
+import { apiPost } from "../transport.js";
+import { launchEvent } from "../analytics.js";
+import { z } from "zod";
 import { useEffect, useRef, useState } from "react";
 import { compatibilityDetails, type RecoveryContext } from "./diagnostics.js";
 const KEY = "career-expo-support-draft";
@@ -10,7 +13,9 @@ const empty = {
 let memoryDraft = empty;
 function readDraft() {
   try {
-    const saved: unknown = JSON.parse(sessionStorage.getItem(KEY) ?? "{}");
+    const saved: unknown = JSON.parse(
+      window.sessionStorage.getItem(KEY) ?? "{}",
+    );
     if (!saved || typeof saved !== "object") return empty;
     const data = saved as Record<string, unknown>;
     return {
@@ -38,6 +43,9 @@ export function ProblemReport({ context }: { context: RecoveryContext }) {
   const [draft, setDraft] = useState(readDraft);
   const [status, setStatus] = useState("");
   const [sending, setSending] = useState(false);
+  const requestRef = useRef<{ payload: string; id: string } | undefined>(
+    undefined,
+  );
   const trigger = useRef<HTMLButtonElement>(null);
   const field = useRef<HTMLSelectElement>(null);
   const copyText = useRef<HTMLTextAreaElement>(null);
@@ -48,7 +56,7 @@ export function ProblemReport({ context }: { context: RecoveryContext }) {
   useEffect(() => {
     memoryDraft = draft;
     try {
-      sessionStorage.setItem(KEY, JSON.stringify(draft));
+      window.sessionStorage.setItem(KEY, JSON.stringify(draft));
     } catch {
       /* Memory retains draft if storage is blocked. */
     }
@@ -69,18 +77,43 @@ export function ProblemReport({ context }: { context: RecoveryContext }) {
     setSending(true);
     setStatus("Sending your report…");
     try {
-      const response = await fetch("/api/support-reports", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(report()),
-        signal: AbortSignal.timeout(8000),
-      });
-      if (
-        !response.ok ||
-        !response.headers.get("content-type")?.includes("application/json")
-      )
-        throw new Error("Unavailable");
-      await response.json();
+      const payload = report();
+      const serialized = JSON.stringify(payload);
+      try {
+        const saved: unknown = JSON.parse(
+          window.sessionStorage.getItem(`${KEY}-request`) ?? "null",
+        );
+        if (
+          saved &&
+          typeof saved === "object" &&
+          "payload" in saved &&
+          "id" in saved &&
+          saved.payload === serialized &&
+          typeof saved.id === "string"
+        )
+          requestRef.current = { payload: serialized, id: saved.id };
+      } catch {
+        /* Retain the same request in memory when tab storage is blocked. */
+      }
+      if (requestRef.current?.payload !== serialized)
+        requestRef.current = { payload: serialized, id: crypto.randomUUID() };
+      try {
+        window.sessionStorage.setItem(
+          `${KEY}-request`,
+          JSON.stringify(requestRef.current),
+        );
+      } catch {
+        /* Memory retains retry identity. */
+      }
+      const confirmed = z
+        .object({ saved: z.literal(true), reportId: z.string().uuid() })
+        .parse(
+          await apiPost("/api/support-reports", {
+            ...payload,
+            createRequestId: requestRef.current.id,
+          }),
+        );
+      launchEvent("feedback_report", undefined, confirmed.reportId);
       setStatus("Report sent. Your text stays here for this tab session.");
     } catch {
       setStatus(

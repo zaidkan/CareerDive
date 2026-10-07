@@ -5,14 +5,22 @@ import {
   ReflectionSchema,
   WorldStateSchema,
 } from "@sim/schemas";
-import { GrantNotFoundError, SessionNotFoundError } from "../domain/errors.js";
+import {
+  GrantNotFoundError,
+  SessionNotFoundError,
+  SessionConflictError,
+} from "../domain/errors.js";
 import type { SharingGrant, StoredSession } from "../domain/session.js";
-import type { CohortCount, CompletedDecision } from "../domain/decision-review.js";
+import type {
+  CohortCount,
+  CompletedDecision,
+} from "../domain/decision-review.js";
 import type { SimulationRepository } from "../repository/types.js";
 
 type SqlClient = ReturnType<typeof postgres>;
 
 type SessionRow = {
+  revision: number;
   owner_id: string;
   current_state: unknown;
 };
@@ -24,10 +32,14 @@ export class PostgresRepository implements SimulationRepository {
     this.#sql = sql;
   }
 
-  async createSession(ownerId: string, state: StoredSession["state"]) {
+  async createSession(
+    ownerId: string,
+    state: StoredSession["state"],
+    createRequestId?: string,
+  ): Promise<StoredSession> {
     await this.#sql`
       INSERT INTO simulation_sessions (
-        id, owner_id, career_id, session_kind, pacing_mode, seed, current_state
+        id, owner_id, career_id, session_kind, pacing_mode, seed, current_state, create_request_id
       ) VALUES (
         ${state.sessionId}::uuid,
         ${ownerId}::uuid,
@@ -35,29 +47,40 @@ export class PostgresRepository implements SimulationRepository {
         ${state.sessionKind},
         ${state.pacingMode},
         ${state.seed},
-        ${this.#sql.json(state)}
+        ${this.#sql.json(state)},
+        ${createRequestId ?? state.sessionId}::uuid
       )
+      ON CONFLICT (owner_id, create_request_id) DO NOTHING
     `;
+    const rows = await this.#sql<{ id: string }[]>`
+      SELECT id FROM simulation_sessions WHERE owner_id = ${ownerId}::uuid
+        AND create_request_id = ${createRequestId ?? state.sessionId}::uuid
+    `;
+    if (!rows[0]) throw new SessionNotFoundError();
+    return this.getSession(ownerId, rows[0].id);
   }
 
   async getSession(ownerId: string, sessionId: string): Promise<StoredSession> {
-    const rows = await this.#sql<SessionRow[]>`
-      SELECT owner_id, current_state
+    return this.#sql.begin(
+      "isolation level repeatable read read only",
+      async (transaction) => {
+        const rows = await transaction<SessionRow[]>`
+      SELECT owner_id, current_state, revision
       FROM simulation_sessions
       WHERE id = ${sessionId}::uuid AND owner_id = ${ownerId}::uuid
       LIMIT 1
     `;
-    const row = rows[0];
-    if (!row) {
-      throw new SessionNotFoundError();
-    }
-    const [actionRows, evidenceRows, reflectionRows] = await Promise.all([
-      this.#sql<{ sequence: number; action: unknown }[]>`
+        const row = rows[0];
+        if (!row) {
+          throw new SessionNotFoundError();
+        }
+        const [actionRows, evidenceRows, reflectionRows] = await Promise.all([
+          transaction<{ sequence: number; action: unknown }[]>`
         SELECT sequence, action FROM action_log
         WHERE session_id = ${sessionId}::uuid AND owner_id = ${ownerId}::uuid
         ORDER BY sequence
       `,
-      this.#sql<{ payload: unknown }[]>`
+          transaction<{ payload: unknown }[]>`
         SELECT jsonb_strip_nulls(jsonb_build_object(
           'id', id,
           'sessionId', session_id,
@@ -74,7 +97,7 @@ export class PostgresRepository implements SimulationRepository {
         FROM evidence_signals
         WHERE session_id = ${sessionId}::uuid AND owner_id = ${ownerId}::uuid
       `,
-      this.#sql<{ payload: unknown }[]>`
+          transaction<{ payload: unknown }[]>`
         SELECT jsonb_strip_nulls(jsonb_build_object(
           'id', id,
           'sessionId', session_id,
@@ -87,35 +110,41 @@ export class PostgresRepository implements SimulationRepository {
         FROM reflections
         WHERE session_id = ${sessionId}::uuid AND owner_id = ${ownerId}::uuid
       `,
-    ]);
-    return {
-      ownerId: row.owner_id,
-      state: WorldStateSchema.parse(row.current_state),
-      actionLog: actionRows.map((entry) =>
-        ActionLogEntrySchema.parse({
-          sequence: entry.sequence,
-          interaction: entry.action,
-        }),
-      ),
-      evidence: evidenceRows.map(({ payload }) =>
-        EvidenceSignalSchema.parse(payload),
-      ),
-      reflections: reflectionRows.map(({ payload }) =>
-        ReflectionSchema.parse(payload),
-      ),
-    };
+        ]);
+        return {
+          revision: row.revision,
+          ownerId: row.owner_id,
+          state: WorldStateSchema.parse(row.current_state),
+          actionLog: actionRows.map((entry) =>
+            ActionLogEntrySchema.parse({
+              sequence: entry.sequence,
+              interaction: entry.action,
+            }),
+          ),
+          evidence: evidenceRows.map(({ payload }) =>
+            EvidenceSignalSchema.parse(payload),
+          ),
+          reflections: reflectionRows.map(({ payload }) =>
+            ReflectionSchema.parse(payload),
+          ),
+        };
+      },
+    );
   }
 
   async saveSession(session: StoredSession): Promise<void> {
     await this.#sql.begin(async (transaction) => {
-      await transaction`
+      const updated = await transaction`
         UPDATE simulation_sessions
-        SET current_state = ${transaction.json(session.state)},
+        SET revision = revision + 1, current_state = ${transaction.json(session.state)},
             completed_at = CASE WHEN ${session.state.completedActionIds.includes("complete_shift")}
               THEN COALESCE(completed_at, now()) ELSE completed_at END
         WHERE id = ${session.state.sessionId}::uuid
           AND owner_id = ${session.ownerId}::uuid
+          AND revision = ${session.revision ?? 0}
+        RETURNING id
       `;
+      if (updated.length === 0) throw new SessionConflictError();
       await transaction`
         DELETE FROM action_log
         WHERE session_id = ${session.state.sessionId}::uuid
@@ -185,6 +214,7 @@ export class PostgresRepository implements SimulationRepository {
         `;
       }
     });
+    session.revision = (session.revision ?? 0) + 1;
   }
 
   async saveCompletedDecisions(decisions: CompletedDecision[]): Promise<void> {
@@ -200,7 +230,11 @@ export class PostgresRepository implements SimulationRepository {
     });
   }
 
-  async getRecordedDecisionIds(sessionId: string, careerId: string, careerVersion: string): Promise<string[]> {
+  async getRecordedDecisionIds(
+    sessionId: string,
+    careerId: string,
+    careerVersion: string,
+  ): Promise<string[]> {
     const rows = await this.#sql<{ decision_id: string }[]>`
       SELECT decision_id FROM decision_reviews
       WHERE session_id = ${sessionId}::uuid
@@ -209,8 +243,18 @@ export class PostgresRepository implements SimulationRepository {
     return rows.map(({ decision_id }) => decision_id);
   }
 
-  async getCohortCounts(careerId: string, careerVersion: string): Promise<CohortCount[]> {
-    const rows = await this.#sql<{ decision_id: string; choice_id: string; option_set_key: string; count: string }[]>`
+  async getCohortCounts(
+    careerId: string,
+    careerVersion: string,
+  ): Promise<CohortCount[]> {
+    const rows = await this.#sql<
+      {
+        decision_id: string;
+        choice_id: string;
+        option_set_key: string;
+        count: string;
+      }[]
+    >`
       SELECT d.decision_id, d.choice_id, d.option_set_key, count(*)::text AS count
       FROM decision_reviews d
       JOIN simulation_sessions s ON s.id = d.session_id
@@ -218,7 +262,12 @@ export class PostgresRepository implements SimulationRepository {
         AND s.completed_at IS NOT NULL AND s.session_kind = 'assessed'
       GROUP BY d.decision_id, d.choice_id, d.option_set_key
     `;
-    return rows.map((row) => ({ decisionId: row.decision_id, choiceId: row.choice_id, optionSetKey: row.option_set_key, count: Number(row.count) }));
+    return rows.map((row) => ({
+      decisionId: row.decision_id,
+      choiceId: row.choice_id,
+      optionSetKey: row.option_set_key,
+      count: Number(row.count),
+    }));
   }
 
   async deleteSession(ownerId: string, sessionId: string): Promise<void> {
@@ -237,6 +286,9 @@ export class PostgresRepository implements SimulationRepository {
       await transaction`DELETE FROM sharing_grants WHERE owner_id = ${ownerId}::uuid`;
       await transaction`DELETE FROM simulation_sessions WHERE owner_id = ${ownerId}::uuid`;
       await transaction`DELETE FROM profiles WHERE user_id = ${ownerId}::uuid`;
+      await transaction`DELETE FROM career_requests WHERE requester_key = ${ownerId}::uuid`;
+      await transaction`DELETE FROM support_reports WHERE owner_id = ${ownerId}::uuid`;
+      await transaction`DELETE FROM launch_event_limits WHERE owner_id = ${ownerId}::uuid`;
     });
   }
 

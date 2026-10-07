@@ -1,9 +1,11 @@
+# Template only. Creating/applying this blueprint starts external deployment;
+# owner must complete the activation runbook and explicitly approve deployment.
 services:
   - type: web
     name: career-sim-api
     runtime: docker
     dockerfilePath: ./Dockerfile.server
-    healthCheckPath: /health
+    healthCheckPath: /ready
     autoDeploy: false
     envVars:
       - key: NODE_ENV
@@ -14,18 +16,28 @@ services:
         sync: false
       - key: SUPABASE_ANON_KEY
         sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
       - key: WEB_ORIGIN
         sync: false
       - key: INSTITUTIONAL_DEPLOYMENT_ENABLED
         value: "false"
-
   - type: web
     name: career-sim-web
     runtime: docker
     dockerfilePath: ./Dockerfile.web
+    healthCheckPath: /health
     autoDeploy: false
     envVars:
+      - key: PORT
+        value: "8080"
       - key: VITE_SERVER_URL
         sync: false
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: SITE_ORIGIN
+        sync: false
+      - key: BUILD_SHA
+        sync: false
+      - key: VITE_LAUNCH_ANALYTICS_ENABLED
+        value: "true"

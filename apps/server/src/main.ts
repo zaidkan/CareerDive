@@ -1,6 +1,17 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { MessageCreateParamsNonStreaming } from "@anthropic-ai/sdk/resources/messages";
+import { SupabasePublicKeySchema } from "@sim/schemas";
 import { AnthropicLlmProvider } from "@sim/ai";
+import { createOwnerResolver } from "./auth.js";
+import { verifyMigrations } from "./db/migrations.js";
+import { healthRoutes } from "./routes/health.js";
+import { supportRoutes } from "./routes/support.js";
+import { launchRoutes } from "./routes/launch.js";
+import { PostgresLaunchStore } from "./repository/launch.js";
+import {
+  InMemorySupportStore,
+  PostgresSupportStore,
+} from "./repository/support.js";
 import { createClient } from "@supabase/supabase-js";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
@@ -9,15 +20,19 @@ import {
   type CreateFastifyContextOptions,
 } from "@trpc/server/adapters/fastify";
 import Fastify from "fastify";
-import { InMemoryRepository, createAppRouter, type AppContext } from "./index.js";
-import { createPostgresRepository } from "./db/repository.js";
-import { InMemoryCareerRequestStore, PostgresCareerRequestStore } from "./repository/career-requests.js";
+import {
+  InMemoryRepository,
+  createAppRouter,
+  type AppContext,
+} from "./index.js";
+import { PostgresRepository } from "./db/repository.js";
+import {
+  InMemoryCareerRequestStore,
+  PostgresCareerRequestStore,
+} from "./repository/career-requests.js";
 import { careerRequestRoutes } from "./routes/career-requests.js";
 import postgres from "postgres";
-import {
-  allowedWebOrigins,
-  describeListenFailure,
-} from "./config.js";
+import { allowedWebOrigins, describeListenFailure } from "./config.js";
 
 const port = Number(process.env.PORT ?? 3001);
 const isProduction = process.env.NODE_ENV === "production";
@@ -25,20 +40,39 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
 if (isProduction && (!supabaseUrl || !supabaseAnonKey)) {
-  throw new Error("SUPABASE_URL and SUPABASE_ANON_KEY are required in production");
+  throw new Error(
+    "SUPABASE_URL and SUPABASE_ANON_KEY are required in production",
+  );
 }
 if (isProduction && !process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL is required in production for durable assessed shifts");
+  throw new Error(
+    "DATABASE_URL is required in production for durable assessed shifts",
+  );
 }
+
+if (supabaseAnonKey) SupabasePublicKeySchema.parse(supabaseAnonKey);
 
 const supabase =
   supabaseUrl && supabaseAnonKey
     ? createClient(supabaseUrl, supabaseAnonKey, {
-        auth: { persistSession: false },
+        auth: { persistSession: false, autoRefreshToken: false },
+        global: {
+          fetch: (input, init) =>
+            fetch(input, { ...init, signal: AbortSignal.timeout(5000) }),
+        },
       })
     : undefined;
 
+const resolveOwner = createOwnerResolver(isProduction, supabase);
+const sql = process.env.DATABASE_URL
+  ? postgres(process.env.DATABASE_URL, {
+      connect_timeout: 5,
+      max: 10,
+      connection: { statement_timeout: 5000 },
+    })
+  : undefined;
 const server = Fastify({
+  trustProxy: isProduction ? 1 : false,
   logger: {
     redact: [
       "req.headers.authorization",
@@ -58,15 +92,54 @@ await server.register(rateLimit, {
   timeWindow: "1 minute",
 });
 
-server.get("/health", async () => ({ status: "ok" }));
+await server.register(healthRoutes, {
+  checkReady: async () => {
+    if (sql) {
+      await verifyMigrations(sql);
+      await sql`SELECT create_request_id, revision, current_state FROM simulation_sessions LIMIT 0`;
+      await sql`SELECT option_set_key FROM decision_reviews LIMIT 0`;
+      await sql`SELECT requester_key FROM career_requests LIMIT 0`;
+      await sql`SELECT owner_id, diagnostics FROM support_reports LIMIT 0`;
+      await sql`SELECT event_name FROM launch_events LIMIT 0`;
+      await sql`SELECT owner_id, event_count FROM launch_event_limits LIMIT 0`;
+    } else if (isProduction) {
+      throw new Error("Database unavailable");
+    }
+    if (isProduction) {
+      if (!supabaseUrl || !supabaseAnonKey)
+        throw new Error("Authentication configuration unavailable");
+      const response = await fetch(`${supabaseUrl}/auth/v1/health`, {
+        headers: { apikey: supabaseAnonKey },
+        signal: AbortSignal.timeout(3000),
+      });
+      if (!response.ok) throw new Error("Authentication unavailable");
+    }
+  },
+});
 
-const repository = process.env.DATABASE_URL
-  ? createPostgresRepository(process.env.DATABASE_URL)
-  : new InMemoryRepository();
-const careerRequestStore = process.env.DATABASE_URL
-  ? new PostgresCareerRequestStore(postgres(process.env.DATABASE_URL))
+const repository = sql ? new PostgresRepository(sql) : new InMemoryRepository();
+const careerRequestStore = sql
+  ? new PostgresCareerRequestStore(sql)
   : new InMemoryCareerRequestStore();
-await server.register(careerRequestRoutes, { store: careerRequestStore });
+await server.register(careerRequestRoutes, {
+  store: careerRequestStore,
+  resolveOwner,
+});
+await server.register(supportRoutes, {
+  store: sql ? new PostgresSupportStore(sql) : new InMemorySupportStore(),
+  resolveOwner,
+});
+const launchStore = sql ? new PostgresLaunchStore(sql) : undefined;
+await server.register(launchRoutes, {
+  resolveOwner,
+  save: async (event, ownerId) => {
+    if (launchStore) await launchStore.save(event, ownerId);
+    else if (isProduction) throw new Error("Database unavailable");
+  },
+});
+server.addHook("onClose", async () => {
+  await sql?.end({ timeout: 5 });
+});
 const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
 const llmProvider = anthropicApiKey
   ? new AnthropicLlmProvider(
@@ -103,6 +176,7 @@ const llmProvider = anthropicApiKey
   : undefined;
 const appRouter = createAppRouter(repository, {
   ...(llmProvider ? { llmProvider } : {}),
+  requireCreateRequestId: isProduction,
   aiBudgetUsd: Number(process.env.AI_SESSION_BUDGET_USD ?? 0.05),
 });
 
@@ -113,20 +187,7 @@ await server.register(fastifyTRPCPlugin, {
     createContext: async ({
       req,
     }: CreateFastifyContextOptions): Promise<AppContext> => {
-      const authorization = req.headers.authorization;
-      if (supabase && authorization?.startsWith("Bearer ")) {
-        const token = authorization.slice("Bearer ".length);
-        const { data, error } = await supabase.auth.getUser(token);
-        if (error) {
-          return { userId: "" };
-        }
-        return { userId: data.user.id };
-      }
-      if (!isProduction) {
-        const header = req.headers["x-user-id"];
-        return { userId: typeof header === "string" ? header : "local-user" };
-      }
-      return { userId: "" };
+      return { userId: await resolveOwner(req) };
     },
   },
 });
@@ -136,4 +197,10 @@ try {
 } catch (error) {
   server.log.error(describeListenFailure(port, error));
   process.exit(1);
+}
+
+for (const signal of ["SIGTERM", "SIGINT"] as const) {
+  process.once(signal, () => {
+    void server.close();
+  });
 }

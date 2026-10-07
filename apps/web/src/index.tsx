@@ -1,3 +1,4 @@
+import { launchEvent } from "./analytics.js";
 import { useEffect, useRef, useState } from "react";
 import type {
   AvailableAction,
@@ -72,11 +73,21 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
     setView(undefined);
     setDebrief(undefined);
     setDebriefStatus(undefined);
-    const input = {
+    const freshInput = {
+      createRequestId: crypto.randomUUID(),
       seed: Date.now() & 0x7fffffff,
       sessionKind: "assessed",
       pacingMode: "standard",
     } as const;
+    const input =
+      client === defaultClient
+        ? readTabValue<typeof freshInput>(
+            "career-expo-create-request",
+            freshInput,
+          )
+        : freshInput;
+    if (client === defaultClient)
+      writeTabValue("career-expo-create-request", input);
     const isCurrent = () => generation === sessionGenerationRef.current;
     void (async () => {
       try {
@@ -111,6 +122,11 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
                 }
               }
               try {
+                launchEvent(
+                  "start_initiated",
+                  "cybersecurity-analyst",
+                  input.createRequestId,
+                );
                 return await client.createSession(input);
               } catch (cause) {
                 if (!(cause instanceof StartupFailure) || !cause.safeToRetry)
@@ -146,6 +162,11 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
           generation,
           sessionId: created.sessionId,
         };
+        launchEvent(
+          "shift_started",
+          "cybersecurity-analyst",
+          created.sessionId,
+        );
         setSessionId(created.sessionId);
         setView(created.view);
         if (created.view.completed) {
@@ -212,6 +233,7 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
     try {
       const result = await client.getDebrief(session.sessionId);
       assertCurrentSession(session);
+      launchEvent("debrief_viewed", "cybersecurity-analyst", session.sessionId);
       setDebrief(result);
       setDebriefStatus(undefined);
     } catch {
@@ -247,6 +269,26 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
         } catch (cause) {
           throw new Error("That action could not be completed.", { cause });
         }
+        if (action.decisionOptionId)
+          launchEvent(
+            "decision",
+            "cybersecurity-analyst",
+            `${session.sessionId}:${action.eventId}:${action.decisionOptionId}`,
+          );
+        if (action.handoffPayload)
+          launchEvent("handoff", "cybersecurity-analyst", session.sessionId);
+        if (action.id === "complete_shift")
+          launchEvent(
+            "shift_completed",
+            "cybersecurity-analyst",
+            session.sessionId,
+          );
+        if (action.queryPayload || action.sourceRecordId)
+          launchEvent(
+            "meaningful_investigation",
+            "cybersecurity-analyst",
+            session.sessionId,
+          );
         const success =
           action.id === "update_ticket_notes"
             ? "Investigation notes saved."
@@ -373,6 +415,15 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
           session.sessionId,
           interaction,
         );
+        if (
+          interaction.type === "open_artifact" &&
+          result.feedback === "artifact_opened"
+        )
+          launchEvent(
+            "meaningful_investigation",
+            "cybersecurity-analyst",
+            session.sessionId,
+          );
         return {
           result,
           view: result.view,

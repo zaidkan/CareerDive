@@ -2,18 +2,12 @@ FROM node:24.14.0-alpine AS runtime
 WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json tsconfig.base.json ./
-COPY apps/server/package.json apps/server/package.json
-COPY packages/ai/package.json packages/ai/package.json
-COPY packages/core/package.json packages/core/package.json
-COPY packages/evidence/package.json packages/evidence/package.json
-COPY packages/safety/package.json packages/safety/package.json
-COPY packages/schemas/package.json packages/schemas/package.json
-RUN pnpm install --frozen-lockfile
+# Keep the workspace graph complete; runtime imports source exports via tsx.
+COPY packages packages
 COPY apps/server apps/server
-COPY packages/ai packages/ai
-COPY packages/core packages/core
-COPY packages/evidence packages/evidence
-COPY packages/safety packages/safety
-COPY packages/schemas packages/schemas
+COPY content content
+RUN pnpm install --frozen-lockfile --filter @sim/server...
+RUN node node_modules/typescript/bin/tsc -p apps/server/tsconfig.json
+ENV NODE_ENV=production
 EXPOSE 3001
-CMD ["pnpm", "--filter", "@sim/server", "start"]
+CMD ["node", "--import", "tsx", "apps/server/src/main.ts"]

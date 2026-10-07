@@ -9,6 +9,10 @@ export function allowedWebOrigins(
     if (!configuredOrigin) {
       throw new Error("WEB_ORIGIN is required in production");
     }
+    if (new URL(configuredOrigin).origin !== configuredOrigin)
+      throw new Error(
+        "WEB_ORIGIN must be an origin without path or trailing slash",
+      );
     return [configuredOrigin];
   }
   // Narrow local CORS: only the fixed Vite port. Do not widen to arbitrary
