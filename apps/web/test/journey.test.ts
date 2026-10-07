@@ -73,7 +73,7 @@ describe("day-one journey", () => {
 
     expect(step.id).toBe("find_desk");
     expect(step.title).toMatch(/find your desk/i);
-    expect(step.body).toMatch(/gold floor marker/i);
+    expect(step.body).toMatch(/blue floor marker/i);
     expect(step.target).toEqual({ kind: "hotspot", hotspotId: "desk_player" });
   });
 

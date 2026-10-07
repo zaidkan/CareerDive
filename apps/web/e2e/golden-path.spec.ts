@@ -128,7 +128,8 @@ async function workstationFitsViewport(page: Page): Promise<boolean> {
 test("entry → walk → sit → login → Desk OS continuity", async ({
   page,
 }) => {
-  test.setTimeout(150_000);
+  // Includes HUD help clicks before walking; allow slow software-rendered 3D input.
+  test.setTimeout(360_000);
 
   const sessionCreates: SessionCreateCall[] = [];
   const movementCalls: MovementCall[] = [];
@@ -268,6 +269,9 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
 
   await test.step("7 · walk with WASD to the workstation", async () => {
     await page.locator('section[aria-label="Workplace space"] .room-canvas canvas').click({ position: { x: 100, y: 100 } });
+    await page.getByRole("button", { name: "Show controls" }).click();
+    await page.getByRole("button", { name: "Close", exact: true }).click();
+    // Closing help leaves a HUD button focused. Movement must work immediately.
     expect(await page.evaluate(() => document.hasFocus()), "browser receives keyboard input").toBe(true);
     await page.keyboard.down("w");
     try {
@@ -293,7 +297,9 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
   });
 
   await test.step("8 · sit and sign in", async () => {
-    await page.getByRole("button", { name: "Sit at computer" }).click();
+    // E must perform the same action promised by the ready prompt, even with
+    // HUD focus retained from the controls click.
+    await page.keyboard.press("e");
     await expect(page.getByTestId("login-curtain")).toBeVisible();
     await expect(page.locator(".site-nav")).toBeHidden();
     await expect(page.locator(".site-footer")).toBeHidden();

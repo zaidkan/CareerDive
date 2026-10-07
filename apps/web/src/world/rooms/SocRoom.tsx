@@ -1,3 +1,4 @@
+import { coffeeControl, fridgeControl } from "../breakRoom.js";
 import { ContactShadows } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -36,7 +37,12 @@ import {
   TrashBin,
 } from "../props/furniture.js";
 import { CeilingFixture } from "../props/lighting.js";
-import { MeshLabel, StationPlate, WallCalendar, Whiteboard } from "../props/signage.js";
+import {
+  MeshLabel,
+  StationPlate,
+  WallCalendar,
+  Whiteboard,
+} from "../props/signage.js";
 import { DocumentShredder, SecurityCamera, ServerRack } from "../props/tech.js";
 import { DeskSurfaceDetails } from "../props/WorkplaceDetails.js";
 import { Workstation } from "../Workstation.js";
@@ -183,7 +189,11 @@ export function SocRoom({
   onRecover,
   onAcceptedDistance,
 }: {
-  onNearbyChange: (id?: HotspotId, label?: string) => void;
+  onNearbyChange: (
+    id?: HotspotId,
+    label?: string,
+    choices?: HotspotId[],
+  ) => void;
   onInteract: (id: HotspotId) => void;
   enabled: boolean;
   seated?: boolean;
@@ -213,9 +223,13 @@ export function SocRoom({
             ...h,
             label: doorOpen ? "Close break door" : "Open break door",
           }
-        : h,
+        : h.id === "coffee"
+          ? { ...h, label: coffeeControl(workplace).label }
+          : h.id === "fridge"
+            ? { ...h, label: fridgeControl(workplace).label }
+            : h,
     );
-  }, [doorOpen]);
+  }, [doorOpen, workplace]);
 
   const colliders = useMemo(() => socColliders(doorOpen), [doorOpen]);
 
@@ -226,9 +240,21 @@ export function SocRoom({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (!enabled || event.code !== "KeyE") return;
-      const near = nearestHotspot(playerPos.current, hotspots);
+      if (!enabled || event.code !== "KeyE" || event.repeat) return;
+      if (
+        event.target instanceof HTMLElement &&
+        (event.target.isContentEditable ||
+          /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName))
+      )
+        return;
+      event.preventDefault();
+      const near = nearestHotspot(
+        playerPos.current,
+        hotspots,
+        nearbyId.current,
+      );
       if (near) onInteract(near.id);
+      else window.dispatchEvent(new Event("soc-interaction-miss"));
     };
     const onToggle = () => {
       setDoorOpen((v) => !v);
@@ -247,11 +273,25 @@ export function SocRoom({
   }, [enabled, hotspots, onInteract]);
 
   useEffect(() => {
-    const near = nearestHotspot(playerPos.current, hotspots);
+    const near = nearestHotspot(playerPos.current, hotspots, nearbyId.current);
     nearbyId.current = near?.id;
     setActiveHotspot(near?.id);
-    onNearbyChange(near?.id, near?.label);
+    onNearbyChange(near?.id, near?.label, nearbyChoices(playerPos.current));
   }, [doorOpen, hotspots, onNearbyChange]);
+
+  function nearbyChoices(position: [number, number, number]): HotspotId[] {
+    return hotspots
+      .filter(
+        (h) =>
+          Math.hypot(
+            position[0] - h.position[0],
+            position[2] - h.position[2],
+          ) <= h.radius,
+      )
+      .map((h) => h.id);
+  }
+
+  const choicesKey = useRef("");
 
   function handlePosition(next: [number, number, number]) {
     playerPos.current = next;
@@ -261,11 +301,14 @@ export function SocRoom({
       next[2] > BREAK_NOOK.wallZ;
     if (insideBreakRoom.current && !isInside) onBreakRoomExit();
     insideBreakRoom.current = isInside;
-    const near = nearestHotspot(next, hotspots);
-    if (near?.id !== nearbyId.current) {
+    const near = nearestHotspot(next, hotspots, nearbyId.current);
+    const choices = nearbyChoices(next);
+    const key = choices.join(",");
+    if (near?.id !== nearbyId.current || key !== choicesKey.current) {
+      choicesKey.current = key;
       nearbyId.current = near?.id;
       setActiveHotspot(near?.id);
-      onNearbyChange(near?.id, near?.label);
+      onNearbyChange(near?.id, near?.label, choices);
     }
     lookAtRef.current = next;
   }
@@ -699,6 +742,7 @@ export function SocRoom({
       {!seated
         ? hotspots.map((def) => (
             <Hotspot
+              interactionEnabled={enabled}
               active={activeHotspot === def.id}
               def={def}
               key={def.id}

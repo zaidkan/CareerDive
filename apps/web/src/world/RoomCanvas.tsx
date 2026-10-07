@@ -61,7 +61,11 @@ export const RoomCanvas = memo(function RoomCanvas({
   onRecover,
   onAcceptedDistance,
 }: {
-  onNearbyChange: (id?: HotspotId, label?: string) => void;
+  onNearbyChange: (
+    id?: HotspotId,
+    label?: string,
+    choices?: HotspotId[],
+  ) => void;
   onInteract: (id: HotspotId) => void;
   enabled: boolean;
   seated?: boolean;

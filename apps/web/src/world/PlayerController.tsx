@@ -219,10 +219,11 @@ export function PlayerController({
       if (
         event.target instanceof HTMLElement &&
         (event.target.isContentEditable ||
-          /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(event.target.tagName))
+          /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName))
       )
         return;
-      if (event.code.startsWith("Arrow")) event.preventDefault();
+      if (!/^(Key[WASD]|Arrow(Up|Down|Left|Right))$/.test(event.code)) return;
+      event.preventDefault();
       keys.current.add(event.code);
     };
     const onKeyUp = (event: KeyboardEvent) => {
@@ -422,7 +423,9 @@ export function PlayerController({
       onRecover([pos.current.x, pos.current.y, pos.current.z]);
     };
     window.addEventListener("soc-recover-aisle", recover);
-    return () => { window.removeEventListener("soc-recover-aisle", recover); };
+    return () => {
+      window.removeEventListener("soc-recover-aisle", recover);
+    };
   }, [colliders, onRecover, spawn]);
 
   return (

@@ -80,6 +80,7 @@ const INTERACT_LABEL: Partial<Record<HotspotId, string>> = {
   jules: "Talk to Jules",
   morgan_station: "Talk to Morgan",
   storage: "Open cabinets",
+  alert_wall: "Review alert wall",
 };
 
 function SpatialShellStage({
@@ -115,6 +116,8 @@ function SpatialShellStage({
   }, [recoveryPresentation, spatial, view.sessionId]);
   const { dispatch: osDispatch } = useOsSession();
   const [nearbyLabel, setNearbyLabel] = useState<string>();
+  const [nearbyChoices, setNearbyChoices] = useState<HotspotId[]>([]);
+  const [interactionMiss, setInteractionMiss] = useState(false);
   const [pointerLocked, setPointerLocked] = useState(false);
   const [mouseSensitivity, setMouseSensitivity] =
     useState(loadMouseSensitivity);
@@ -166,13 +169,28 @@ function SpatialShellStage({
     };
   }, [spatial.phase, toggleFullscreen]);
 
-  const onNearbyChange = useCallback((id?: HotspotId, label?: string) => {
-    if (id === undefined) {
-      dispatch({ type: "set_nearby" });
-    } else {
-      dispatch({ type: "set_nearby", hotspotId: id });
-    }
-    setNearbyLabel(label);
+  const onNearbyChange = useCallback(
+    (id?: HotspotId, label?: string, choices?: HotspotId[]) => {
+      setNearbyChoices(choices ?? (id ? [id] : []));
+      if (id) setInteractionMiss(false);
+      if (id === undefined) {
+        dispatch({ type: "set_nearby" });
+      } else {
+        dispatch({ type: "set_nearby", hotspotId: id });
+      }
+      setNearbyLabel(label);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const miss = () => {
+      setInteractionMiss(true);
+    };
+    window.addEventListener("soc-interaction-miss", miss);
+    return () => {
+      window.removeEventListener("soc-interaction-miss", miss);
+    };
   }, []);
 
   const submitWorkplaceInteraction = useCallback(
@@ -368,10 +386,20 @@ function SpatialShellStage({
   }
 
   const nearbyHotspotId = spatial.nearbyHotspotId;
+  const labelFor = (id: HotspotId): string =>
+    id === "coffee"
+      ? coffeeControl(view.workplace).label
+      : id === "fridge"
+        ? fridgeControl(view.workplace).label
+        : id === "break_door"
+          ? id === nearbyHotspotId
+            ? (nearbyLabel ?? "Use door")
+            : "Use door"
+          : (INTERACT_LABEL[id] ?? "Interact");
   const nearbyPrompt = nearbyLabel
     ? nearbyLabel === "Your chair"
       ? "At your chair — press E or Sit to use the computer"
-      : `Near: ${nearbyLabel} · press E or Interact`
+      : `Near: ${nearbyLabel} · press E to ${nearbyHotspotId ? labelFor(nearbyHotspotId) : "interact"}`
     : undefined;
   const energyLow =
     view.workplace.energy.current / view.workplace.energy.max <= 0.28;
@@ -397,7 +425,7 @@ function SpatialShellStage({
     : energyLow
       ? "Energy getting low · carry a snack or use the coffee maker in the break room"
       : highlightHotspotId === "desk_player"
-        ? "Your desk · follow the gold marker"
+        ? "Your desk · follow the blue marker · approach the open front of the cubicle"
         : undefined;
   const breakStation =
     nearbyHotspotId === "fridge" || nearbyHotspotId === "coffee"
@@ -516,27 +544,52 @@ function SpatialShellStage({
                 <span className="room-hud-count">{stepLabel}</span>
                 {journey.title}
               </p>
-              {nearbyHotspotId ? (
+              {nearbyHotspotId && !playerMovementBlocked ? (
                 <p className="room-context-action">
-                  <kbd>E</kbd>{" "}
-                  {nearbyHotspotId === "fridge"
-                    ? fridgeControl(view.workplace).label
-                    : nearbyHotspotId === "coffee"
-                      ? coffeeControl(view.workplace).label
-                      : (INTERACT_LABEL[nearbyHotspotId] ?? "Interact")}
+                  <kbd>E</kbd> {labelFor(nearbyHotspotId)}
                 </p>
               ) : null}
               <p className="room-hud-line">
                 {nearbyIsTarget && nearbyPrompt ? nearbyPrompt : journey.body}
               </p>
               {compass ? <p className="room-hud-compass">{compass}</p> : null}
-              {!nearbyIsTarget && nearbyPrompt ? (
-                <details className="room-hud-route">
-                  <summary>Nearby context</summary>
-                  <p className="room-hud-nearby">{nearbyPrompt}</p>
-                </details>
+              <p className="room-hud-nearby" role="status">
+                {playerMovementBlocked
+                  ? "Interaction paused · finish the current action or close the conversation to move and use E"
+                  : nearbyPrompt
+                    ? `Ready · ${nearbyPrompt}`
+                    : "Out of reach · move closer to a floor marker to use E"}
+              </p>
+              {nearbyChoices.length > 1 ? (
+                <div className="room-hud-choices" aria-label="Nearby actions">
+                  <p>
+                    More than one action in reach — choose below. E uses the
+                    action shown above.
+                  </p>
+                  {nearbyChoices
+                    .filter((id) => id !== nearbyHotspotId)
+                    .map((id) => (
+                      <button
+                        key={id}
+                        type="button"
+                        className="guidance-secondary"
+                        disabled={playerMovementBlocked}
+                        onClick={() => {
+                          handleInteract(id);
+                        }}
+                      >
+                        {labelFor(id)}
+                      </button>
+                    ))}
+                </div>
               ) : null}
 
+              {interactionMiss ? (
+                <p className="room-flavor" role="status">
+                  Nothing in reach yet — move closer to a floor marker. When
+                  ready, the prompt shows E and the action.
+                </p>
+              ) : null}
               {spatial.flavorMessage ? (
                 <p className="room-flavor">{spatial.flavorMessage}</p>
               ) : null}
@@ -603,12 +656,13 @@ function SpatialShellStage({
               {nearbyHotspotId && !breakStation ? (
                 <button
                   className="start-shift"
+                  disabled={playerMovementBlocked}
                   onClick={() => {
                     handleInteract(nearbyHotspotId);
                   }}
                   type="button"
                 >
-                  {INTERACT_LABEL[nearbyHotspotId] ?? "Interact"}
+                  {labelFor(nearbyHotspotId)}
                 </button>
               ) : null}
               <button

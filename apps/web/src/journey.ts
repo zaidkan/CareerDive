@@ -98,7 +98,7 @@ export function getJourneyStep({
           }
         : {
             title: "Find your desk",
-            body: "Follow the gold floor marker to the starred name tag, then press E to sit.",
+            body: "Follow the blue floor marker to the starred name tag. Approach the open front of the cubicle; when the prompt says Ready, press E to sit.",
             target: { kind: "hotspot", hotspotId: "desk_player" },
           },
     );

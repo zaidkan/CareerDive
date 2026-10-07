@@ -52,6 +52,43 @@ function tick() {
   for (let i = 0; i < 60; i++) harness.frames[0]?.({}, 1 / 60);
 }
 describe("office movement", () => {
+  it("accepts WASD and arrows after a HUD button click without stealing button activation", () => {
+    const camera = setup();
+    const button = document.createElement("button");
+    document.body.append(button);
+    button.focus();
+    button.dispatchEvent(
+      new KeyboardEvent("keydown", { code: "KeyW", bubbles: true }),
+    );
+    tick();
+    expect(camera.position.z).toBeLessThan(2);
+    button.dispatchEvent(
+      new KeyboardEvent("keyup", { code: "KeyW", bubbles: true }),
+    );
+    const arrow = new KeyboardEvent("keydown", {
+      code: "ArrowRight",
+      bubbles: true,
+      cancelable: true,
+    });
+    button.dispatchEvent(arrow);
+    tick();
+    expect(camera.position.x).toBeGreaterThan(2.5);
+    expect(arrow.defaultPrevented).toBe(true);
+    button.remove();
+  });
+
+  it("keeps movement keys inert while editing a HUD form field", () => {
+    const camera = setup();
+    const input = document.createElement("input");
+    document.body.append(input);
+    input.dispatchEvent(
+      new KeyboardEvent("keydown", { code: "KeyW", bubbles: true }),
+    );
+    tick();
+    expect(camera.position.z).toBe(4.2);
+    input.remove();
+  });
+
   it("reports actual accepted displacement, not blocked effort, bobbing or idle time", () => {
     let meters = 0;
     const onPosition = vi.fn();

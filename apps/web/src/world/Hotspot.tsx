@@ -40,9 +40,9 @@ function promptFor(def: HotspotDef): string {
     case "jules":
       return "Talk to Jules";
     case "coffee":
-      return "Brew coffee";
+      return def.label;
     case "fridge":
-      return "Check the fridge";
+      return def.label;
     default:
       return def.label;
   }
@@ -52,17 +52,23 @@ export function Hotspot({
   def,
   active,
   target = false,
+  interactionEnabled = true,
 }: {
   def: HotspotDef;
   active: boolean;
   target?: boolean;
+  interactionEnabled?: boolean;
 }) {
   const live = useAmbientMotion(true);
   const puck = useRef<Mesh>(null);
   const puckMat = useRef<MeshStandardMaterial>(null);
   const ringMat = useRef<MeshBasicMaterial>(null);
 
-  const color = target ? OBJECTIVE_BLUE : active ? IN_RANGE_TEAL : IDLE_GRAPHITE;
+  const color = active
+    ? IN_RANGE_TEAL
+    : target
+      ? OBJECTIVE_BLUE
+      : IDLE_GRAPHITE;
   const restGlow = target ? 1.6 : active ? 1.1 : 0.35;
 
   useFrame(({ clock }) => {
@@ -82,7 +88,8 @@ export function Hotspot({
       puckMat.current.emissiveIntensity = restGlow + Math.sin(t * rate) * 0.25;
     }
     if (ringMat.current) {
-      ringMat.current.opacity = (target ? 0.95 : 0.85) + Math.sin(t * rate) * 0.08;
+      ringMat.current.opacity =
+        (target ? 0.95 : 0.85) + Math.sin(t * rate) * 0.08;
     }
   });
 
@@ -170,7 +177,11 @@ export function Hotspot({
                 fontFamily: "inherit",
               }}
             >
-              E
+              {active
+                ? interactionEnabled
+                  ? "E · Ready"
+                  : "Paused"
+                : "Move closer"}
             </kbd>
           </div>
         </Html>
@@ -182,6 +193,7 @@ export function Hotspot({
 export function nearestHotspot(
   player: [number, number, number],
   hotspots: HotspotDef[],
+  previousId?: HotspotId,
 ): HotspotDef | undefined {
   let best: HotspotDef | undefined;
   let bestDist = Number.POSITIVE_INFINITY;
@@ -194,6 +206,17 @@ export function nearestHotspot(
       best = hotspot;
       bestDist = dist;
     }
+  }
+  // Keep the displayed E action steady across small position changes. Never
+  // retain a selection after it leaves its interaction radius.
+  const previous = hotspots.find((h) => h.id === previousId);
+  if (previous) {
+    const distance = Math.hypot(
+      player[0] - previous.position[0],
+      player[2] - previous.position[2],
+    );
+    if (distance <= previous.radius && distance <= bestDist + 0.35)
+      return previous;
   }
   return best;
 }

@@ -194,7 +194,7 @@ describe("spatial presentation", () => {
     });
     expect(socRoom).toHaveTextContent(/go here next/i);
     expect(screen.getByText(/Head to Security Operations/i)).toBeVisible();
-    expect(screen.getByText(/gold door on the plan/i)).toBeVisible();
+    expect(screen.getByText(/highlighted Security Operations door on the plan/i)).toBeVisible();
 
     await user.click(socRoom);
     await screen.findByRole(
@@ -203,7 +203,7 @@ describe("spatial presentation", () => {
       { timeout: 6000 },
     );
     expect(screen.getByText(/Find your desk/i)).toBeVisible();
-    expect(screen.getByText(/follow the gold marker/i)).toBeVisible();
+    expect(screen.getByText(/follow the blue marker/i)).toBeVisible();
     expect(screen.getByTestId("energy-meter")).toBeVisible();
     expect(screen.getByText(/Click to look around/i)).toBeVisible();
     expect(screen.getByRole("button", { name: /^Fullscreen$/i })).toBeVisible();
