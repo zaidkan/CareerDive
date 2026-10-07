@@ -11,7 +11,7 @@ export function TrustPage() {
       <header className="trust-hero">
         <h1>Collect less. Explain exactly what remains.</h1>
         <p className="trust-hero-lede">
-          Career Expo is the platform. Verdaly is just a fictional workplace inside the Cybersecurity Analyst simulation—it does not collect any data. Here is what Career Expo currently saves, what it checks, and where its limits are.
+          CareerDive is the platform. Verdaly is just a fictional workplace inside the Cybersecurity Analyst simulation—it does not collect any data. Here is what CareerDive currently saves, what it checks, and where its limits are.
         </p>
         <p className="trust-hero-note">
           This is a product summary from current code, not a legal policy or a
@@ -24,7 +24,7 @@ export function TrustPage() {
         <div className="trust-section-head">
           <h2 id="trust-kept">What we keep</h2>
           <p>
-            Career Expo needs a record of the shift to resume work and explain
+            CareerDive needs a record of the shift to resume work and explain
             the debrief. Optional reflections are saved only when submitted.
           </p>
         </div>
@@ -38,7 +38,7 @@ export function TrustPage() {
                 <p>Plus a reflection if you submit one.</p>
               </li>
               <li>
-                <span>Career Expo boundary</span>
+                <span>CareerDive boundary</span>
                 <strong>Identity and owner checks</strong>
                 <p>
                   Server stores the session in its configured database or in
@@ -57,7 +57,7 @@ export function TrustPage() {
           caption="The server stores current state as well as an action log; it does not rebuild the shift from clicks alone."
         />
         <p className="trust-quiet-note">
-          There is no single fixed retention period. Depending on how Career Expo is currently running, your data may only last until the system restarts, or it may be saved so you can resume your shift later.
+          There is no single fixed retention period. Depending on how CareerDive is currently running, your data may only last until the system restarts, or it may be saved so you can resume your shift later.
         </p>
       </PublicChapter>
 
@@ -72,7 +72,7 @@ export function TrustPage() {
             <h2 id="trust-controls">Your controls</h2>
             <p>
               The server supports exporting stored shift data, deleting one
-              shift, or deleting Career Expo session and profile records.
+              shift, or deleting CareerDive session and profile records.
             </p>
           </div>
           <div className="trust-control-proof">
@@ -86,7 +86,7 @@ export function TrustPage() {
               <strong>Current limit</strong>
               <span>
                 These are not yet self-service controls on this public page.
-                Deleting Career Expo data does not prove deletion of an
+                Deleting CareerDive data does not prove deletion of an
                 identity-provider account.
               </span>
             </p>
@@ -102,7 +102,7 @@ export function TrustPage() {
       >
         <h2 id="trust-access">How access is protected</h2>
         <p className="trust-lead">
-          Career Expo does not currently require an account to start the first shift. Requests and session data are checked so one shift cannot simply request another shift's protected data.
+          CareerDive does not currently require an account to start the first shift. Requests and session data are checked so one shift cannot simply request another shift's protected data.
         </p>
         <div className="trust-access-lines">
           <div>
@@ -134,7 +134,7 @@ export function TrustPage() {
           <div>
             <h2 id="trust-ai">What AI can and cannot do</h2>
             <p>
-              AI can help phrase Morgan&apos;s answer. Career Expo limits which scenario facts the dialogue can use. Without an AI connection, it uses a prepared line.
+              AI can help phrase Morgan&apos;s answer. CareerDive limits which scenario facts the dialogue can use. Without an AI connection, it uses a prepared line.
             </p>
             <p>
               If the generated reply tries to break the rules, the game falls back to a prepared line. These checks help keep the simulation on track.
@@ -176,7 +176,7 @@ export function TrustPage() {
       >
         <h2 id="trust-school">Current school-use status</h2>
         <p>
-          Career Expo is presented for individual exploration, not as a school
+          CareerDive is presented for individual exploration, not as a school
           assessment. The platform is not currently built for institutional enrollment
           or classroom management. We make no school approval or legal-compliance claim.
         </p>

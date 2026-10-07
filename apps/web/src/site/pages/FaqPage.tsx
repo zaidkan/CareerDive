@@ -19,7 +19,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "What if something doesn’t load, or I get stuck?",
-    a: "If something doesn't load, Career Expo can retry the shift, check compatibility, offer a fallback recovery path, and let you report the problem directly. Keyboard support and reduced motion are available. On the shift screen, use Retry starting shift when offered, or Report a problem. If the office cannot open, a compatibility check can offer the recovery workstation. If report delivery is unavailable, your draft stays during this tab session; use Copy report details or retry delivery later.",
+    a: "If something doesn't load, CareerDive can retry the shift, check compatibility, offer a fallback recovery path, and let you report the problem directly. Keyboard support and reduced motion are available. On the shift screen, use Retry starting shift when offered, or Report a problem. If the office cannot open, a compatibility check can offer the recovery workstation. If report delivery is unavailable, your draft stays during this tab session; use Copy report details or retry delivery later.",
   },
   {
     q: "If I write about how I felt, who sees it?",
@@ -27,7 +27,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "Does AI decide what happens in the simulation?",
-    a: "No. Career Expo defines the scenario, allowed information, and outcomes. Where AI-assisted dialogue is used, it works inside those strict constraints. It does not get to invent scenario facts or independently change the simulation outcome.",
+    a: "No. CareerDive defines the scenario, allowed information, and outcomes. Where AI-assisted dialogue is used, it works inside those strict constraints. It does not get to invent scenario facts or independently change the simulation outcome.",
   },
   {
     q: "What does “Taking shape” mean?",

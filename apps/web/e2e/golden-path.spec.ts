@@ -2,7 +2,7 @@ import { expect, test, type Page, type Request } from "@playwright/test";
 import { DESK_LOGIN } from "../src/world/deskLogin.js";
 
 /**
- * Career Expo golden-path smoke test — the permanent product experience.
+ * CareerDive golden-path smoke test — the permanent product experience.
  *
  * Landing → arrival film → Begin your first day → exactly ONE assessed session
  * → 3D workplace → walk → sit → login → Desk OS → leave/return.
@@ -362,7 +362,7 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
   });
 
   await test.step("11 · runtime product-contract and session integrity hold", async () => {
-    await expect(page.locator("body")).toContainText("Career Expo");
+    await expect(page.locator("body")).toContainText("CareerDive");
     await expect(page.locator("body")).not.toContainText(
       "That workplace interaction could not be completed.",
     );

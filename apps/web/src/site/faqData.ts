@@ -5,7 +5,7 @@ export const HOME_FAQ = [
   },
   {
     q: "Is this a career test?",
-    a: "No. You try selected tasks and reflect on the experience. Career Expo never tells you which career to choose.",
+    a: "No. You try selected tasks and reflect on the experience. CareerDive never tells you which career to choose.",
   },
   {
     q: "Are all these careers playable?",

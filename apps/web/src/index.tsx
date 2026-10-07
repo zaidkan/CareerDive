@@ -448,7 +448,7 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
     <main className="simulation-main">
       <header className="site-header">
         <div className="site-brand">
-          <p className="brand-mark">Career Expo</p>
+          <p className="brand-mark">CareerDive</p>
           <h1>Junior Cybersecurity Analyst</h1>
           <p className="site-lede">
             Day one at {COMPANY.name} — try the job for a shift. Read, decide,
@@ -552,7 +552,7 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
       )}
 
       <aside className="privacy-note">
-        Submitted reflections become part of your Career Expo session. See
+        Submitted reflections become part of your CareerDive session. See
         Privacy and safety for access limits.
       </aside>
     </main>

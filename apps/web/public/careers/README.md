@@ -1,6 +1,6 @@
 # Cybersecurity work captures
 
-Captured from Career Expo at base `8af4a80200ce1479943e9f6c84a79ba7dd8f0b48`.
+Captured from CareerDive at base `8af4a80200ce1479943e9f6c84a79ba7dd8f0b48`.
 
 - Desktop: existing `DeskOs`, `BrowserApp`, and `OpsConsole`, with A-1042 opened.
 - Narrow crop: existing `AlertTool`, showing that same observed alert artifact.

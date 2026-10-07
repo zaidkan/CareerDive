@@ -382,7 +382,7 @@ export function CyberDetail({ career }: { career: PublicCareer }) {
         <details className="cyber-how-we-know">
           <summary>How we know</summary>
           <p>
-            These images come from a Career Expo first shift at Verdaly.
+            These images come from a CareerDive first shift at Verdaly.
             The ticket and debrief show one completed path through the current
             experience with synthetic records.
           </p>

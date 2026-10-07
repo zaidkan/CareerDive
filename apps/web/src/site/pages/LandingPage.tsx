@@ -425,7 +425,7 @@ export function LandingPage() {
               <div
                 className="home-hero-cards"
                 role="group"
-                aria-label="Careers at Career Expo"
+                aria-label="Careers at CareerDive"
                 onPointerDown={() => {
                   setHeroAuto(false);
                 }}

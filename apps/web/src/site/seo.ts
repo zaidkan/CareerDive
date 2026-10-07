@@ -2,10 +2,10 @@ import { useEffect } from "react";
 import { getCareerBySlug } from "../careers/careers.js";
 import type { SiteRoute } from "./routes.js";
 
-const SITE_NAME = "First Shift";
+const SITE_NAME = "CareerDive";
 const BASE_URL =
   (import.meta.env.VITE_SITE_ORIGIN as string | undefined) ??
-  "https://careerexpo.example.com";
+  "https://careerdive.example.com";
 
 type RouteMeta = {
   title: string;
@@ -19,42 +19,42 @@ export const ROUTE_META: Record<
   RouteMeta
 > = {
   home: {
-    title: "Experience the work before choosing a career · Career Expo",
+    title: "Experience the work before choosing a career · CareerDive",
     description:
       "Explore careers through realistic first-day work. Try a playable simulation, inspect work previews, and reflect on how the job feels.",
     path: "/",
     index: true,
   },
   "how-it-works": {
-    title: "How the First Shift workday works · Career Expo",
+    title: "How the First Shift workday works · CareerDive",
     description:
       "Handoff, suspicious-login investigation, routine monitoring, phishing report and false-positive review across email, alerts, tickets, knowledge base and team chat.",
     path: "/how-it-works",
     index: true,
   },
   trust: {
-    title: "Privacy and safety · Career Expo",
+    title: "Privacy and safety · CareerDive",
     description:
-      "What Career Expo stores during a first shift, how access checks work, current AI limits, and why the debrief has no career-fit score.",
+      "What CareerDive stores during a first shift, how access checks work, current AI limits, and why the debrief has no career-fit score.",
     path: "/trust",
     index: true,
   },
   faq: {
-    title: "FAQ: scope, access, assessment limits · First Shift",
+    title: "FAQ: scope, access, assessment limits · CareerDive",
     description:
       "How long is the shift, do you need gaming skill, what does AI do, are reflections shared, is 3D required, is this a real job assessment?",
     path: "/faq",
     index: true,
   },
   start: {
-    title: "Start your First Shift workday · Career Expo",
+    title: "Start your First Shift workday · CareerDive",
     description:
       "Watch the short preview film, then work the Verdaly SOC the way you prefer.",
     path: "/start",
     index: false,
   },
   careers: {
-    title: "Explore careers · Career Expo",
+    title: "Explore careers · CareerDive",
     description:
       "Explore playable career simulations and previews of careers in the workshop.",
     path: "/careers",
@@ -65,8 +65,8 @@ export const ROUTE_META: Record<
 function metaForRoute(route: SiteRoute): RouteMeta {
   if (route.kind === "not-found") {
     return {
-      title: "Page not found · Career Expo",
-      description: "This Career Expo page could not be found.",
+      title: "Page not found · CareerDive",
+      description: "This CareerDive page could not be found.",
       path: route.pathname,
       index: false,
     };
@@ -79,7 +79,7 @@ function metaForRoute(route: SiteRoute): RouteMeta {
         pathname: `/careers/${route.slug}`,
       });
     return {
-      title: `${career.title} · Career Expo`,
+      title: `${career.title} · CareerDive`,
       description: career.shortSummary,
       path: `/careers/${career.slug}`,
       index: true,

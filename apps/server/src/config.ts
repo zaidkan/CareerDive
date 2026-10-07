@@ -37,7 +37,7 @@ export function describeListenFailure(port: number, error: unknown): string {
     const webPortText = String(DEV_WEB_PORT);
     return [
       `API port ${portText} is already in use (EADDRINUSE).`,
-      `Career Expo expects the API on port ${portText}.`,
+      `CareerDive expects the API on port ${portText}.`,
       "Another process is holding the port — stop it or run only one `pnpm dev`.",
       `Inspect holders: lsof -nP -iTCP:${portText} -sTCP:LISTEN`,
       `Do not start a second stack against a different web port; dev CORS only allows http://localhost:${webPortText}.`,

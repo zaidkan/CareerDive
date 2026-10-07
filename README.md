@@ -1,4 +1,4 @@
-# Career Simulation Platform
+# CareerDive
 
 Bounded career-exploration beta centered on ordinary Junior Cybersecurity Analyst work. Deterministic TypeScript core owns state, time, rules, consequences, evidence, and NPC knowledge. AI may generate validated dialogue only.
 
@@ -28,7 +28,7 @@ pnpm check:dev
 
 ### Port collisions (fail fast)
 
-Career Expo local dev is intentionally **strict** about ports:
+CareerDive local dev is intentionally **strict** about ports:
 
 - Web must bind **5173** (`strictPort`). Vite will **not** silently fall back to 5174/5175.
 - API must bind **3001**. A second stack or stale process fails with `EADDRINUSE` and a recovery hint.
@@ -51,7 +51,7 @@ Stop only the process you recognize (stale Vite/tsx from a previous session).
 
 ## Current playable shift
 
-**Career Expo simulates actually doing ordinary career work, not answering questions about work.**
+**CareerDive simulates actually doing ordinary career work, not answering questions about work.**
 
 One assessed session per run: landing → arrival film → **Begin your first day** → 3D workplace → walk to your workstation → Desk OS. There are no practice/tutorial shifts and no user-facing product modes; an in-experience accessibility recovery path exists only for navigation/WebGL failure.
 
@@ -104,3 +104,20 @@ pnpm vitest run --config vitest.ai.config.ts
 - Render blueprint lives in `render.yaml`.
 
 See `docs/validation-gate.md` before any 3D or second-career work.
+
+## Brand and repository activation
+
+The platform is **CareerDive**. **Verdaly** remains the fictional workplace
+inside the Cybersecurity Analyst simulation.
+
+The GitHub repository is `https://github.com/zaidkan/CareerDive`.
+The local checkout directory and registered git remote still use `Career-Expo`.
+The owner can update the remote URL and rename the local checkout separately,
+after accounting for its registered worktrees. This change does not rename
+GitHub repositories, rewrite git remotes, or move any local directories.
+
+`https://careerdive.example.com` is a placeholder, not a production domain.
+Set `SITE_ORIGIN` to the real origin when building for deployment.
+Existing `career-expo-*`, `career-expo.*`, and `career-expo:*` browser-storage
+keys remain stable so saved shifts, pending requests, preferences, and support
+drafts survive the rebrand. Package namespaces (`@sim/*`) also remain stable.

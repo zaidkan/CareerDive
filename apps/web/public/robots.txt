@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /start
 
-Sitemap: https://careerexpo.example.com/sitemap.xml
+Sitemap: https://careerdive.example.com/sitemap.xml

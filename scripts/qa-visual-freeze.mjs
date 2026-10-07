@@ -454,7 +454,7 @@ function summarise(records) {
 function renderReport(records, meta) {
   const failures = summarise(records);
   const lines = [];
-  lines.push("# Career Expo public UI visual freeze — run report");
+  lines.push("# CareerDive public UI visual freeze — run report");
   lines.push("");
   lines.push(`- Captured: ${meta.capturedAt}`);
   lines.push(`- Origin: ${meta.origin}`);

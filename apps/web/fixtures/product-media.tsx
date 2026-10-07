@@ -54,6 +54,6 @@ window.renderProductMedia = (scene, view, theme, debrief) => {
   root.render(<main className={`simulation-main capture capture-${scene}`} data-scene={scene}>
     <header className="capture-heading"><span>VERDALY · SOC OPS</span><strong>{labels[scene]}</strong></header>
     <div className="capture-content"><ProductScene scene={scene} view={view} {...(debrief ? { debrief } : {})} /></div>
-    <footer className="capture-footer">Career Expo · Cybersecurity Analyst · Simulated workplace</footer>
+    <footer className="capture-footer">CareerDive · Cybersecurity Analyst · Simulated workplace</footer>
   </main>);
 };

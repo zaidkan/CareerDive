@@ -2,7 +2,7 @@
 # owner must complete the activation runbook and explicitly approve deployment.
 services:
   - type: web
-    name: career-sim-api
+    name: careerdive-api
     runtime: docker
     dockerfilePath: ./Dockerfile.server
     healthCheckPath: /ready
@@ -21,7 +21,7 @@ services:
       - key: INSTITUTIONAL_DEPLOYMENT_ENABLED
         value: "false"
   - type: web
-    name: career-sim-web
+    name: careerdive-web
     runtime: docker
     dockerfilePath: ./Dockerfile.web
     healthCheckPath: /health

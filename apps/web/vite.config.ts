@@ -4,7 +4,7 @@ import { SupabasePublicKeySchema } from "@sim/schemas/public-key";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
-/** Local Career Expo web port. Must stay in sync with server dev CORS. */
+/** Local CareerDive web port. Must stay in sync with server dev CORS. */
 export const DEV_WEB_PORT = 5173;
 
 export const devServer = {
@@ -28,7 +28,7 @@ function buildSha(): string {
 }
 if (process.env.VITE_SUPABASE_ANON_KEY)
   SupabasePublicKeySchema.parse(process.env.VITE_SUPABASE_ANON_KEY);
-const siteOrigin = process.env.SITE_ORIGIN ?? "https://careerexpo.example.com";
+const siteOrigin = process.env.SITE_ORIGIN ?? "https://careerdive.example.com";
 if (new URL(siteOrigin).origin !== siteOrigin)
   throw new Error(
     "SITE_ORIGIN must be an origin without path or trailing slash",
@@ -40,14 +40,14 @@ export default defineConfig({
       name: "public-site-origin",
       apply: "build",
       transformIndexHtml: (html) =>
-        html.replaceAll("https://careerexpo.example.com", siteOrigin),
+        html.replaceAll("https://careerdive.example.com", siteOrigin),
       async closeBundle() {
         for (const file of ["robots.txt", "sitemap.xml"]) {
           const target = new URL(`./dist/${file}`, import.meta.url);
           const content = await readFile(target, "utf8");
           await writeFile(
             target,
-            content.replaceAll("https://careerexpo.example.com", siteOrigin),
+            content.replaceAll("https://careerdive.example.com", siteOrigin),
           );
         }
       },
