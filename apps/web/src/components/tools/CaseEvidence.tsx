@@ -36,6 +36,12 @@ export function CaseEvidence({
       comparison.every((id) => artifactIds.includes(id)) &&
       comparison.length === 2,
   );
+  const routePair = ["login-session-timeline", "vpn-context-1"];
+  const routeRecorded = view.workplace.comparisons?.some(
+    (item) =>
+      item.eventId === eventId &&
+      routePair.every((id) => item.artifactIds.includes(id)),
+  );
   return (
     <section className="case-evidence" aria-label="Case evidence">
       {view.structuredTickets?.[`ticket-${eventId}`] ? (
@@ -50,6 +56,45 @@ export function CaseEvidence({
             .
           </p>
         </details>
+      ) : null}
+      {eventId === "suspicious-login-1" ? (
+        <section aria-label="Required route comparison">
+          <h4>Record the session route comparison</h4>
+          <p>
+            Reading or attaching sources does not record a comparison. Open the
+            session timeline (S-0741 and S-0731) and VPN catalogue NET-VPN-04,
+            compare their routes, then record this pair before sending a review
+            request with comparisons.
+          </p>
+          <p role="status">
+            {routeRecorded
+              ? "Required route comparison saved."
+              : "Required route comparison not recorded."}
+          </p>
+          <button
+            type="button"
+            disabled={
+              pending ||
+              !onInspect ||
+              routeRecorded ||
+              !routePair.every((id) => inspected.includes(id))
+            }
+            onClick={() => {
+              void onInspect?.({
+                type: "compare_artifacts",
+                eventId,
+                artifactIds: routePair,
+              }).catch(() => {});
+            }}
+          >
+            {routeRecorded
+              ? "Comparison recorded"
+              : "Record this comparison: session timeline + VPN catalogue"}
+          </button>
+          {!routePair.every((id) => inspected.includes(id)) ? (
+            <p>Open both named sources below to enable recording.</p>
+          ) : null}
+        </section>
       ) : null}
       <h4>Sources for this case</h4>
       <p className="source-count">

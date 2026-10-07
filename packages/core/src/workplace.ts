@@ -253,6 +253,15 @@ export function applyWorkplaceInteraction(
           eventId: interaction.eventId,
           artifactIds: [...ids],
         });
+      if (
+        interaction.eventId === "suspicious-login-1" &&
+        ["login-session-timeline", "vpn-context-1"].every((id) =>
+          ids.includes(id),
+        ) &&
+        state.flags.d3_vpn === "not-recorded"
+      ) {
+        state.flags.d3_vpn = "route-compared";
+      }
       feedbackCode = "records_compared";
       break;
     }

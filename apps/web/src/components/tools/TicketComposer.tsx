@@ -71,6 +71,19 @@ export function TicketComposer({
     >
       <h4>Case ticket</h4>
       <p>Findings, uncertainty, next step.</p>
+      {action.eventId === "suspicious-login-1" ? (
+        <p role="status">
+          {view.workplace.comparisons?.some(
+            (item) =>
+              item.eventId === action.eventId &&
+              ["login-session-timeline", "vpn-context-1"].every((id) =>
+                item.artifactIds.includes(id),
+              ),
+          )
+            ? "Required session timeline / VPN catalogue comparison saved. Attach these sources and the device inventory for a review request with comparisons."
+            : "Required session timeline / VPN catalogue comparison not recorded. Use Record this comparison in Sources for this case before requesting review with comparisons. Attaching sources alone does not record it."}
+        </p>
+      ) : null}
       <label>
         Verified evidence
         <textarea

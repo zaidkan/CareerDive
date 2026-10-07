@@ -7,6 +7,7 @@ import type {
   SimulationActionId,
   WorldState,
 } from "@sim/schemas";
+import { missingLoginComparisonSteps } from "./login-comparison.js";
 import { conditionsMet } from "./conditions.js";
 
 export function resolveActionEffect(
@@ -355,7 +356,7 @@ export function applyResolvedEffect(input: {
         ? {
             body: comparisonSupported
               ? "Your flagged-session/VPN comparison and device inventory source are attached. I will verify the unresolved session ownership before deciding next steps."
-              : "I received your review request. The flagged-session/VPN comparison or required source attachments are missing from the saved review request. I will recover the missing record before deciding next steps.",
+              : `I received your review request. Missing saved steps: ${missingLoginComparisonSteps(state, event.id).join(" ")} These omissions do not establish what you believed about the city or route. Senior review remains pending.`,
           }
         : {}),
       eventId: event.id,

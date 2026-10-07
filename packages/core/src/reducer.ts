@@ -309,7 +309,7 @@ export function applyAction(
           ),
       )
         ? "route-compared"
-        : "city-led";
+        : "not-recorded";
     }
   }
   if (action.id === "complete_shift") {
