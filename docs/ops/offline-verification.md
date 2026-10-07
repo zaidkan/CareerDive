@@ -21,18 +21,18 @@ Historical SQL `0001`–`0004` remains unchanged. The base used `drizzle-kit mig
 Use an already-cached PostgreSQL image. These commands deliberately target a disposable local container; the password is a throwaway local test value, not a production credential.
 
 ```sh
-docker run --pull=never --detach --name career-expo-db-test \
+docker run --pull=never --detach --name careerdive-db-test \
   -e POSTGRES_PASSWORD=offline-test -p 127.0.0.1:55432:5432 postgres:17-alpine
 ```
 
 After `pg_isready` succeeds, create two disposable databases and load the auth fixture into each:
 
 ```sh
-docker exec career-expo-db-test psql -U postgres -c 'CREATE DATABASE career_sim'
-docker exec career-expo-db-test psql -U postgres -c 'CREATE DATABASE migration_test'
-docker exec -i career-expo-db-test psql -U postgres -d career_sim \
+docker exec careerdive-db-test psql -U postgres -c 'CREATE DATABASE career_sim'
+docker exec careerdive-db-test psql -U postgres -c 'CREATE DATABASE migration_test'
+docker exec -i careerdive-db-test psql -U postgres -d career_sim \
   < apps/server/test/fixtures/supabase-auth.sql
-docker exec -i career-expo-db-test psql -U postgres -d migration_test \
+docker exec -i careerdive-db-test psql -U postgres -d migration_test \
   < apps/server/test/fixtures/supabase-auth.sql
 DATABASE_URL=postgres://postgres:offline-test@127.0.0.1:55432/career_sim \
   pnpm --filter @sim/server db:migrate

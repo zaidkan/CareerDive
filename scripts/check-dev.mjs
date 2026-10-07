@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * check-dev — verify the local Career Expo dev stack is healthy.
+ * check-dev — verify the local CareerDive dev stack is healthy.
  *
  * Confirms:
  *   - web answers expected at http://localhost:5173 (not a jumped port)
@@ -114,7 +114,7 @@ async function main() {
   // Extra diagnostic when web is up but on a non-canonical situation.
   if (webListening && WEB_PORT !== 5173) {
     notes.push(
-      `WARNING: checking non-default web port ${WEB_PORT}; Career Expo dev CORS only allows 5173.`,
+      `WARNING: checking non-default web port ${WEB_PORT}; CareerDive dev CORS only allows 5173.`,
     );
   }
 

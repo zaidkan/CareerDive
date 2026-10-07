@@ -105,7 +105,7 @@ function pageHtml({ records, meta }) {
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Career Expo visual freeze contact sheet</title>
+<title>CareerDive visual freeze contact sheet</title>
 <style>
   :root { color-scheme: light; }
   body { margin: 0; padding: 24px; background: #f4f2ee; color: #171a1f; font: 14px/1.45 "Helvetica Neue", Arial, sans-serif; }
@@ -131,7 +131,7 @@ function pageHtml({ records, meta }) {
 </style>
 </head>
 <body>
-<h1>Career Expo · public UI visual freeze contact sheet</h1>
+<h1>CareerDive · public UI visual freeze contact sheet</h1>
 <p class="meta">Captured ${escapeHtml(meta.capturedAt)} · ${escapeHtml(meta.origin)} · base ${escapeHtml(meta.base)} · ${String(records.length)} captures · ${String(failed.length)} with failing checks</p>
 ${buildNormalSheet(records, meta)}
 ${buildReducedSheet(records)}

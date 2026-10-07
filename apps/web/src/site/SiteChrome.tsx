@@ -67,9 +67,9 @@ export function SiteChrome({
             className="site-nav-brand"
             href="/"
             onClick={go("/")}
-            aria-label="Career Expo home"
+            aria-label="CareerDive home"
           >
-            Career Expo <span className="brand-beta">Beta</span>
+            CareerDive <span className="brand-beta">Beta</span>
           </a>
           <nav aria-label="Primary">
             <ul className="site-nav-links">
@@ -123,7 +123,7 @@ export function SiteChrome({
             </li>
             <li>
               <a
-                href="https://github.com/zaidkan/Career-Expo"
+                href="https://github.com/zaidkan/CareerDive"
                 target="_blank"
                 rel="noreferrer"
               >

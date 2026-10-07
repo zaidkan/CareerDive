@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * dev-banner — print exactly which Career Expo checkout `pnpm dev` is running.
+ * dev-banner — print exactly which CareerDive checkout `pnpm dev` is running.
  *
  * Shown before turbo starts the web (5173) and API (3001) processes so a
  * stale or wrong worktree is obvious at a glance.
@@ -28,7 +28,7 @@ const dirty = trackedChanges ? " (dirty)" : untrackedOnly ? " (untracked files)"
 
 const lines = [
   "",
-  "Career Expo dev",
+  "CareerDive dev",
   `  worktree: ${worktree}`,
   `  branch:   ${branch}`,
   `  commit:   ${sha}${dirty} ${subject}`,

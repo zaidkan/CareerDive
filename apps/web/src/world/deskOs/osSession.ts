@@ -430,7 +430,7 @@ const OsSessionContext = createContext<OsSessionContextValue | null>(null);
 
 import { readTabValue, writeTabValue } from "../../useTabDraft.js";
 
-/** One provider per Career Expo session — no global singleton. */
+/** One provider per CareerDive session — no global singleton. */
 export function OsSessionProvider({
   children,
   sessionId,

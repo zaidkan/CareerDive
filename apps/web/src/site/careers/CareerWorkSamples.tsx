@@ -31,7 +31,7 @@ export function ShiftDeskPreview() {
         />
         <img
           src="/careers/verdaly-alert-dark.webp"
-          alt="Career Expo’s A-1042 record: repeated identity-check failures followed by a successful sign-in from an unfamiliar device."
+          alt="CareerDive’s A-1042 record: repeated identity-check failures followed by a successful sign-in from an unfamiliar device."
           width="1440"
           height="1000"
         />
@@ -45,7 +45,7 @@ export function ShiftDeskPreview() {
         />
         <img
           src="/careers/verdaly-alert-light.webp"
-          alt="Career Expo’s A-1042 record: repeated identity-check failures followed by a successful sign-in from an unfamiliar device."
+          alt="CareerDive’s A-1042 record: repeated identity-check failures followed by a successful sign-in from an unfamiliar device."
           width="1440"
           height="1000"
         />

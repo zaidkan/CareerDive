@@ -360,7 +360,7 @@ describe("site routes", () => {
 
   it("sets per-route document title", () => {
     render(<SiteApp initialRoute="/trust" />);
-    expect(document.title).toMatch(/privacy and safety/i);
+    expect(document.title).toBe("Privacy and safety · CareerDive");
   });
 
   it("resumes at sim after film seen (legacy briefing key maps to sim)", async () => {

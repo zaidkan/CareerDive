@@ -1,7 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
 /**
- * Career Expo golden-path browser smoke test.
+ * CareerDive golden-path browser smoke test.
  *
  * scripts/qa-golden-path.mjs owns the dev stack and its process group.
  */

@@ -1,4 +1,4 @@
-# Career Expo — repository status (public handoff)
+# CareerDive — repository status (public handoff)
 
 Last reconciliation: **2026-09-22** (experimental consolidation f5d2bff) · **Cleanup pass 2026-09-22 on `zaidkan/product-experimental` (`b71a78c` → post-cleanup)**.
 
@@ -91,7 +91,7 @@ Do **not** treat these as parallel active development lanes. Do not delete yet.
 ## To run experimental on Windows
 
 ```bash
-git clone https://github.com/zaidkan/Career-Expo.git
+git clone https://github.com/zaidkan/CareerDive.git
 git checkout zaidkan/product-experimental
 pnpm install
 pnpm build   # or pnpm dev (web 5173, server 3001)

@@ -4,7 +4,7 @@ This file is tomorrow's controlled runbook. Preparation was offline: no final Su
 
 ## STEP 1 — Owner creates the project
 
-**Owner clicks/types:** Sign in to Supabase, choose the intended organization, click **New project**, enter `Career Expo` (or your chosen production name), and generate a strong database password in your password manager. Keep the password there. Do not paste it into chat or commit it.
+**Owner clicks/types:** Sign in to Supabase, choose the intended organization, click **New project**, enter `CareerDive` (or your chosen production name), and generate a strong database password in your password manager. Keep the password there. Do not paste it into chat or commit it.
 
 **Worker can do:** Review this branch and migration plan offline. The worker must not create or connect to a project without a new owner instruction.
 

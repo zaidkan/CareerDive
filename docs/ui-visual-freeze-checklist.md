@@ -1,6 +1,6 @@
 # Public UI visual freeze checklist
 
-Manual acceptance for the Career Expo public site, paired with the automated gate in `scripts/qa-visual-freeze.mjs`. This document is review infrastructure only. It does not change production UI.
+Manual acceptance for the CareerDive public site, paired with the automated gate in `scripts/qa-visual-freeze.mjs`. This document is review infrastructure only. It does not change production UI.
 
 ## Scope
 
