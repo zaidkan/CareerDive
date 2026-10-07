@@ -95,7 +95,7 @@ export const RoomCanvas = memo(function RoomCanvas({
           stencil: false,
           depth: true,
         }}
-        shadows={!seated}
+        shadows={seated ? false : "percentage"}
         performance={{ min: 0.5 }}
       >
         <WorldQualityProvider seated={seated}>

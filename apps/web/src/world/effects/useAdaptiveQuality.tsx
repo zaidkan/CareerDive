@@ -45,6 +45,8 @@ export type QualityMachine = {
   warmed: number;
   lowHold: number;
   highHold: number;
+  /** Consecutive visible slow-frame time, bounded against isolated hitches. */
+  stalledSeconds: number;
 };
 
 export type AdaptiveQuality = {
@@ -116,6 +118,7 @@ export function createQualityMachine(opts: {
     warmed: 0,
     lowHold: 0,
     highHold: 0,
+    stalledSeconds: 0,
   };
 }
 
@@ -141,16 +144,45 @@ export function smoothedFps(sampler: FpsSampler): number {
  *
  * Hysteresis: sustained <55 fps for 1.5s drops one tier; sustained ≥58 fps
  * for 4s raises one tier (never skips). Large deltas and hidden documents
- * are ignored so alt-tab does not count as a GPU failure. Low-end devices
- * start at LOW with restore disabled, so they never pay for bloom.
+ * are ignored so alt-tab does not count as a GPU failure — but a *run* of
+ * large deltas is: below ~10 fps the sampler is blind (every delta exceeds
+ * the cap and is discarded), so consecutive stalls use the same degrade hold.
+ * Each stall contributes at most 250 ms. Low-end devices start at
+ * LOW with restore disabled, so they never pay for bloom.
  */
 export function stepQuality(
   machine: QualityMachine,
   delta: number,
   hidden: boolean,
 ): boolean {
-  if (hidden || delta <= 0 || delta > QUALITY.maxDeltaSeconds) return false;
+  if (hidden || !Number.isFinite(delta) || delta <= 0) {
+    machine.stalledSeconds = 0;
+    return false;
+  }
   if (!machine.allowRestore && machine.tier === 0) return false;
+
+  // Watchdog: count sustained visible frames too slow for the FPS sampler.
+  if (delta > QUALITY.maxDeltaSeconds) {
+    const elapsed = Math.min(delta, 0.25);
+    machine.warmed = Math.min(QUALITY.warmupSeconds, machine.warmed + elapsed);
+    if (machine.warmed >= QUALITY.warmupSeconds) {
+      // Bound isolated shader/tab-resume hitches; only sustained stalls degrade.
+      machine.stalledSeconds += elapsed;
+      if (
+        machine.stalledSeconds >= QUALITY.degradeHoldSeconds &&
+        machine.tier > 0
+      ) {
+        machine.tier = (machine.tier - 1) as QualityTier;
+        machine.lowHold = 0;
+        machine.highHold = 0;
+        machine.stalledSeconds = 0;
+        return true;
+      }
+    }
+    return false;
+  }
+  // Countable frame: the sampler owns the decision again.
+  machine.stalledSeconds = 0;
   pushDelta(machine.sampler, delta);
   if (machine.warmed < QUALITY.warmupSeconds) {
     machine.warmed += delta;
@@ -294,6 +326,18 @@ export function useAdaptiveQuality(seated: boolean): AdaptiveQuality {
       allowRestore: !lowEnd,
     });
   }
+
+  useEffect(() => {
+    const resetHolds = () => {
+      const machine = machineRef.current;
+      if (!machine) return;
+      machine.lowHold = 0;
+      machine.highHold = 0;
+      machine.stalledSeconds = 0;
+    };
+    document.addEventListener("visibilitychange", resetHolds);
+    return () => { document.removeEventListener("visibilitychange", resetHolds); };
+  }, []);
 
   useFrame((_, delta) => {
     // Seated quality is already resolved by resolveEffects; skip the sampler

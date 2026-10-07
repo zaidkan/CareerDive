@@ -17,6 +17,9 @@ import {
   type WorkplaceInteraction,
 } from "@sim/schemas";
 import { z } from "zod";
+import { readTabValue, writeTabValue } from "./useTabDraft.js";
+
+export const PENDING_SESSION_KEY = "career-expo-start-pending";
 
 export interface SimulationClient {
   createSession(input: {
@@ -125,7 +128,12 @@ export class HttpSimulationClient implements SimulationClient {
         throw new StartupFailure(false, "storage-unavailable");
       }
     }
+    // The default app preserves an ambiguous start across remounts/reloads.
+    if (this === defaultClient && readTabValue<boolean>(PENDING_SESSION_KEY, false)) {
+      throw new StartupFailure(false, "creation-unconfirmed");
+    }
     // Stable createRequestId makes unknown outcomes safe to retry.
+    // Only a failed read is safe to repeat; session.create has no idempotency contract.
     try {
       const response = await fetch(`${this.#baseUrl}/ready`, {
         signal: AbortSignal.timeout(5000),
@@ -134,6 +142,7 @@ export class HttpSimulationClient implements SimulationClient {
     } catch {
       throw new StartupFailure(true, "service-unavailable");
     }
+    if (this === defaultClient) writeTabValue(PENDING_SESSION_KEY, true);
     try {
       return SessionResultSchema.parse(
         await this.#client.mutation("session.create", input, {

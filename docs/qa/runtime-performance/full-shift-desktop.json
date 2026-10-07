@@ -1,0 +1,258 @@
+{
+  "creates": 1,
+  "errors": [],
+  "actions": [
+    {
+      "label": "Read shift handoffReview the previous analyst's incomplete handoff notes.Takes about 5 minutes",
+      "ms": 152
+    },
+    {
+      "label": "Confirm the handoff",
+      "ms": 171
+    },
+    {
+      "label": "A-1042 · sign-in monitoringhigh · openOpen record",
+      "ms": 146
+    },
+    {
+      "label": "Review alertRead the alert details and initial indicators.Takes about 10 minutes",
+      "ms": 147
+    },
+    {
+      "label": "Inspect login contextCheck available device, location, and account context.Takes about 15 minutes",
+      "ms": 160
+    },
+    {
+      "label": "Continue current case",
+      "ms": 374
+    },
+    {
+      "label": "Sign-in timeline · A-1042Inspect",
+      "ms": 152
+    },
+    {
+      "label": "Office VPN route catalogueInspect",
+      "ms": 152
+    },
+    {
+      "label": "Earlier session · S-0731Inspect",
+      "ms": 153
+    },
+    {
+      "label": "Work-travel register · case referenceInspect",
+      "ms": 168
+    },
+    {
+      "label": "Record this comparison",
+      "ms": 140
+    },
+    {
+      "label": "Search records",
+      "ms": 156
+    },
+    {
+      "label": "Inspect AUTH-0612-PATEL-TYPO",
+      "ms": 147
+    },
+    {
+      "label": "A-1180 · connection monitoringlow · openOpen record",
+      "ms": 144
+    },
+    {
+      "label": "Review alertRead the alert details and initial indicators.Takes about 10 minutes",
+      "ms": 150
+    },
+    {
+      "label": "Open Approved scanner window",
+      "ms": 250
+    },
+    {
+      "label": "Check response procedure",
+      "ms": 145
+    },
+    {
+      "label": "Scanner run log · A-1180Inspect",
+      "ms": 147
+    },
+    {
+      "label": "Approved scanner windowInspected",
+      "ms": 157
+    },
+    {
+      "label": "Record this comparison",
+      "ms": 147
+    },
+    {
+      "label": "Save draft",
+      "ms": 142
+    },
+    {
+      "label": "Save analysis and decision",
+      "ms": 149
+    },
+    {
+      "label": "Dismiss as false positiveClose the queue item using your documented reason; closure alone does not verify who signed in.Takes about 15 minutes",
+      "ms": 152
+    },
+    {
+      "label": "Compare account historyCompare recent sign-ins, failures, and normal account patterns.Takes about 10 minutes",
+      "ms": 159
+    },
+    {
+      "label": "Open Device inventory · j.patel",
+      "ms": 149
+    },
+    {
+      "label": "Check device inventoryConfirm whether the device is enrolled and assigned to the employee.Takes about 10 minutes",
+      "ms": 148
+    },
+    {
+      "label": "Open source: Temporary finance reporting access",
+      "ms": 150
+    },
+    {
+      "label": "Open source: Finance reporting access approvals",
+      "ms": 159
+    },
+    {
+      "label": "Send selected response",
+      "ms": 154
+    },
+    {
+      "label": "Open source: Phone keeps asking for my password",
+      "ms": 146
+    },
+    {
+      "label": "Open source: Authentication summary · A. Rivera",
+      "ms": 145
+    },
+    {
+      "label": "Submit findings",
+      "ms": 142
+    },
+    {
+      "label": "Open source: Repeated prompts after a password change",
+      "ms": 151
+    },
+    {
+      "label": "Open source: Ticket · Rivera login prompts",
+      "ms": 154
+    },
+    {
+      "label": "Submit findings",
+      "ms": 156
+    },
+    {
+      "label": "Submit findings",
+      "ms": 151
+    },
+    {
+      "label": "Submit findings",
+      "ms": 160
+    },
+    {
+      "label": "Open source: Ticket · unfamiliar login",
+      "ms": 150
+    },
+    {
+      "label": "Submit findings",
+      "ms": 139
+    },
+    {
+      "label": "What case context do we have?",
+      "ms": 151
+    },
+    {
+      "label": "Save draft",
+      "ms": 138
+    },
+    {
+      "label": "Save analysis and decision",
+      "ms": 151
+    },
+    {
+      "label": "Escalate with evidenceRequest senior review with the saved evidence and uncertainty; this does not confirm account misuse.Takes about 5 minutes",
+      "ms": 151
+    },
+    {
+      "label": "Send handoff to next analyst",
+      "ms": 140
+    },
+    {
+      "label": "Complete shiftFinish the current simulation shift.Takes about 0 minutes",
+      "ms": 147
+    }
+  ],
+  "snapshots": [
+    {
+      "phase": "initial desk",
+      "Documents": 1,
+      "JSEventListeners": 258,
+      "Nodes": 586,
+      "JSHeapUsedSize": 17306488
+    },
+    {
+      "phase": "debrief",
+      "Documents": 1,
+      "JSEventListeners": 248,
+      "Nodes": 1290,
+      "JSHeapUsedSize": 13820152
+    },
+    {
+      "phase": "reloaded debrief",
+      "Documents": 1,
+      "JSEventListeners": 182,
+      "Nodes": 670,
+      "JSHeapUsedSize": 3945484
+    }
+  ],
+  "layouts": [
+    {
+      "phase": "desk",
+      "width": 1366,
+      "overflow": 0
+    },
+    {
+      "phase": "desk",
+      "width": 834,
+      "overflow": 0
+    },
+    {
+      "phase": "debrief",
+      "width": 1366,
+      "theme": "dark",
+      "overflow": 0
+    },
+    {
+      "phase": "debrief",
+      "width": 1366,
+      "theme": "light",
+      "overflow": 0
+    },
+    {
+      "phase": "debrief",
+      "width": 834,
+      "theme": "dark",
+      "overflow": 0
+    },
+    {
+      "phase": "debrief",
+      "width": 834,
+      "theme": "light",
+      "overflow": 0
+    },
+    {
+      "phase": "debrief",
+      "width": 390,
+      "theme": "dark",
+      "overflow": 0
+    },
+    {
+      "phase": "debrief",
+      "width": 390,
+      "theme": "light",
+      "overflow": 0
+    }
+  ],
+  "complete": true
+}
