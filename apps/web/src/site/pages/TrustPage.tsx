@@ -102,7 +102,7 @@ export function TrustPage() {
       >
         <h2 id="trust-access">How access is protected</h2>
         <p className="trust-lead">
-          CareerDive does not currently require an account to start the first shift. Requests and session data are checked so one shift cannot simply request another shift's protected data.
+          You do not need to enter a name or email or sign up manually. In the production setup, CareerDive automatically creates an anonymous Supabase identity and stores its authentication token in your browser. The token is refreshed so you can return to your own requests and shifts. Clearing browser storage can remove that access. Identity and owner checks protect one person's stored data from another person's requests.
         </p>
         <div className="trust-access-lines">
           <div>
@@ -118,6 +118,33 @@ export function TrustPage() {
             </p>
           </div>
         </div>
+      </PublicChapter>
+
+      <ChapterSeparator />
+      <PublicChapter surface="base" rhythm="standard" className="trust-providers">
+        <h2>Services involved</h2>
+        <ul>
+          <li>
+            Google Fonts serves the site's fonts. Loading them sends network
+            requests to Google, including your IP address.
+          </li>
+          <li>
+            Supabase provides anonymous authentication and, in the production
+            setup, the database for stored CareerDive data.
+          </li>
+          <li>
+            When AI dialogue is enabled, Anthropic receives the dialogue request
+            and the limited scenario context used to phrase Morgan's reply.
+          </li>
+          <li>
+            Render is the hosting provider in our deployment configuration and
+            handles requests to the hosted site and API.
+          </li>
+        </ul>
+        <p>
+          Which services are active depends on the deployment. Local development
+          can use server memory and prepared dialogue instead.
+        </p>
       </PublicChapter>
 
       <ChapterSeparator />

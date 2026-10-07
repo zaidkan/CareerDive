@@ -155,7 +155,8 @@ export function ProblemReport({ context }: { context: RecoveryContext }) {
         <form onSubmit={(event) => void submit(event)}>
           <h2>Report a problem</h2>
           <p>
-            No account needed. Draft stays in this tab session. Include only
+            No manual signup needed. Sending uses your anonymous browser identity.
+            Draft stays in this tab session. Include only
             what you want to share.
           </p>
           <label>
