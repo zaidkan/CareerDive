@@ -1,3 +1,4 @@
+import { missingLoginComparisonSteps } from "@sim/core";
 import type {
   ActionLogEntry,
   Debrief,
@@ -186,7 +187,8 @@ function evidenceBefore(
         if (effect?.observeArtifactIds.includes(id)) opened.add(id);
     }
     if (interaction.type === "workplace_interaction") {
-      if (interaction.interaction.type === "inspect_query_record") opened.add(interaction.interaction.recordId);
+      if (interaction.interaction.type === "inspect_query_record")
+        opened.add(interaction.interaction.recordId);
       if (interaction.interaction.type === "open_artifact")
         opened.add(interaction.interaction.artifactId);
       if (interaction.interaction.type === "open_alert_record") {
@@ -285,7 +287,9 @@ export function buildDecisionReview(
       "vpn-context-1",
       "login-session-timeline",
       "travel-status-1",
-      ...state.queryHistory.filter(({ actorEventId }) => actorEventId === CASE).flatMap(({ resultIds }) => resultIds),
+      ...state.queryHistory
+        .filter(({ actorEventId }) => actorEventId === CASE)
+        .flatMap(({ resultIds }) => resultIds),
     ],
   );
   const caseDocumented =
@@ -537,7 +541,7 @@ export function buildDecisionReview(
                   ]?.sourceArtifactIds?.includes(id),
                 )
                   ? "Your review request included opened route and device sources, a recorded comparison, and a saved uncertainty note."
-                  : "You chose to request review with comparisons. The saved record does not establish every comparison or attachment; the reviewer must recover the missing checks.",
+                  : `You chose to request review with comparisons. Missing saved steps: ${missingLoginComparisonSteps(state, CASE).join(" ")}${!caseDocumented ? " Save findings, uncertainty, and a next step in the case ticket." : ""} The reviewer must recover these checks; an absent record does not establish a misconception.`,
               "escalate-identifiers-only":
                 "You sent the identifiers for senior review. The reviewer must reconstruct the comparisons from saved records.",
               "close-location-explained":

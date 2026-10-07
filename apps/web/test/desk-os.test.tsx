@@ -760,7 +760,7 @@ describe("Desk OS canonical state rendering", () => {
     expect(
       within(rail).queryByRole("button", { name: /Expired case/i }),
     ).toBeNull();
-    expect(within(rail).getByText("Closed history (2)")).toBeVisible();
+    expect(within(rail).getByText("Recorded outcomes (2)")).toBeVisible();
     expect(screen.queryByText("Hidden pending case")).toBeNull();
 
     await user.click(
@@ -768,7 +768,7 @@ describe("Desk OS canonical state rendering", () => {
         name: /Escalated case/i,
       }),
     );
-    expect(screen.getByText("Due in 0m")).toBeVisible();
+    expect(screen.queryByText("Due in 0m")).toBeNull();
 
     const status = screen.getByLabelText("Workstation status");
     expect(status).toHaveTextContent("08:10");

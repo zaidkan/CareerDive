@@ -19,10 +19,12 @@ type HandoffEventInput = {
 /** Work-item bookkeeping events that are not case decisions. */
 const NON_CASE_EVENT_IDS = new Set(["handoff-1", "shift-handoff-1"]);
 
-type HandoffTicket = {
-  status?: string | undefined;
-  uncertainty?: string | undefined;
-} | undefined;
+type HandoffTicket =
+  | {
+      status?: string | undefined;
+      uncertainty?: string | undefined;
+    }
+  | undefined;
 
 export type HandoffCaseLine = {
   eventId: string;
@@ -53,13 +55,30 @@ export function caseDispositionLabel(
   if (event.status === "expired") {
     return "closed unhandled after its deadline";
   }
-  if (ticket?.status === "pending_review") {
+  if (ticket?.status === "pending_review" || event.status === "escalated") {
     return "escalated — senior review pending; nothing recorded confirms misuse";
   }
+  if (event.id === "routine-alert-1" && event.status === "resolved")
+    return "closed as expected — bounded to the matched run and window";
   if (ticket?.status === "closed") {
     return "closed on the documented record — bounded to what was checked";
   }
-  return event.status === "resolved" ? "resolved" : event.status;
+  if (event.status === "resolved") {
+    if (event.id === "access-request-1") {
+      if (event.resolution?.includes("without the data owner's authorization"))
+        return "approval recorded — authorization review pending";
+      if (event.resolution?.includes("rejected"))
+        return "rejected — business need unresolved";
+      return "routed — approval pending";
+    }
+    if (
+      event.id === "suspicious-login-1" &&
+      /escalat|senior review/i.test(event.resolution ?? "")
+    )
+      return "escalated — senior review pending; nothing recorded confirms misuse";
+    return "completed — see recorded outcome";
+  }
+  return event.status;
 }
 
 /** The cases a handoff must account for, in shift order, with real dispositions. */
@@ -112,7 +131,10 @@ export function handoffFollowUps(
       )
       .map(({ body }) => firstSentence(body))
       .filter((body) => body.length > 0);
-    const candidates = [...responses.reverse(), ...(event.resolution ? [firstSentence(event.resolution)] : [])];
+    const candidates = [
+      ...responses.reverse(),
+      ...(event.resolution ? [firstSentence(event.resolution)] : []),
+    ];
     const continuation = candidates.find((text) => isContinuation(text));
     if (continuation) {
       followUps.push(`${event.title}: ${continuation}`);

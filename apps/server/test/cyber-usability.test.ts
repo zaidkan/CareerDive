@@ -117,6 +117,7 @@ describe("current Cyber shift usability and truthful provenance", () => {
         "device-inventory-1",
       ]),
     );
+    expect(run.state.flags.d3_vpn).toBe("not-recorded");
     run.action("document_ticket", undefined, {
       ticketPayload: ticket,
       decisionOptionId: "escalate-with-comparisons",
@@ -132,13 +133,40 @@ describe("current Cyber shift usability and truthful provenance", () => {
         ?.supported,
     ).toBe(false);
     expect(review?.explanation).toContain(
-      "does not establish every comparison",
+      "Record the session timeline (S-0741 / S-0731) + VPN catalogue NET-VPN-04 comparison",
     );
     expect(
       run.state.pendingCallbacks.find(({ id }) => id === "b1-comparison-review")
         ?.body,
     ).not.toContain("comparisons are attached");
     expect(foldActionLog(run.initial, run.log)).toEqual(run.state);
+  });
+  it("names the unsaved comparison when every required source was opened and attached", () => {
+    const run = investigate([
+      "inspect_account_history",
+      "check_device_inventory",
+    ]);
+    const sourceArtifactIds = [
+      "login-session-timeline",
+      "vpn-context-1",
+      "device-inventory-1",
+    ];
+    for (const artifactId of sourceArtifactIds)
+      run.inspect({ type: "open_artifact", artifactId });
+    run.action("document_ticket", undefined, {
+      ticketPayload: { ...ticket, sourceArtifactIds },
+      decisionOptionId: "escalate-with-comparisons",
+    });
+    run.action("escalate_alert");
+    const review = buildDecisionReview(run.state, run.log).decisions[0];
+    expect(review?.outcomeLabel).toBe("partially_supported");
+    expect(review?.explanation).toContain("using Record this comparison");
+    expect(review?.explanation).not.toContain("Attach the");
+    expect(
+      run.state.pendingCallbacks.find(({ id }) => id === "b1-comparison-review")
+        ?.body,
+    ).toContain("reading or attaching them alone does not save that step");
+    expect(run.state.flags.d3_vpn).toBe("not-recorded");
   });
   it("opening two records alone is not a comparison; explicit comparison is preserved before decision", () => {
     const run = investigate([
@@ -152,6 +180,7 @@ describe("current Cyber shift usability and truthful provenance", () => {
       eventId: "suspicious-login-1",
       artifactIds: ["login-session-timeline", "vpn-context-1"],
     });
+    expect(run.state.flags.d3_vpn).toBe("route-compared");
     run.action("document_ticket", undefined, {
       ticketPayload: {
         ...ticket,
@@ -172,7 +201,9 @@ describe("current Cyber shift usability and truthful provenance", () => {
     expect(
       run.state.pendingCallbacks.find(({ id }) => id === "b1-comparison-review")
         ?.body,
-    ).toContain("flagged-session/VPN comparison and device inventory source are attached");
+    ).toContain(
+      "flagged-session/VPN comparison and device inventory source are attached",
+    );
   });
   it("does not describe completed review work as a future obligation in a later status update", () => {
     const run = investigate([
@@ -220,32 +251,50 @@ describe("current Cyber shift usability and truthful provenance", () => {
     const task = state.rules.tasks["morgan-midshift-update"];
     if (!task) throw new Error("Missing status task");
     for (const step of task.steps) {
-      for (const source of step.options.flatMap(({ source }) => source ? [source] : []))
+      for (const source of step.options.flatMap(({ source }) =>
+        source ? [source] : [],
+      ))
         state = applyWorkplaceInteraction(state, {
           type: "open_artifact",
           artifactId: source.artifactId,
         }).state;
-      const visible = toClientView(state).tasks.find(({ id }) => id === task.id);
+      const visible = toClientView(state).tasks.find(
+        ({ id }) => id === task.id,
+      );
       if (step.options.some(({ id }) => id === "review-in-progress")) {
         expect(visible?.options.map(({ id }) => id)).toEqual([
-          "review-in-progress", "close-on-location",
+          "review-in-progress",
+          "close-on-location",
         ]);
-        expect(JSON.stringify(visible?.options)).not.toMatch(/notEquals|escalate-with-comparisons/);
-        expect(visible?.options.every((option) => !("when" in option))).toBe(true);
-        expect(applyTaskAttempt(state, {
-          eventId: "status-check-1", taskId: task.id,
-          selectedOptionIds: ["document-and-review"],
-        }).accepted).toBe(false);
+        expect(JSON.stringify(visible?.options)).not.toMatch(
+          /notEquals|escalate-with-comparisons/,
+        );
+        expect(visible?.options.every((option) => !("when" in option))).toBe(
+          true,
+        );
+        expect(
+          applyTaskAttempt(state, {
+            eventId: "status-check-1",
+            taskId: task.id,
+            selectedOptionIds: ["document-and-review"],
+          }).accepted,
+        ).toBe(false);
       }
       const turn = applyTaskAttempt(state, {
-        eventId: "status-check-1", taskId: task.id,
-        selectedOptionIds: step.options.some(({ id }) => id === "review-in-progress")
-          ? ["review-in-progress"] : step.requiredOptionIds,
+        eventId: "status-check-1",
+        taskId: task.id,
+        selectedOptionIds: step.options.some(
+          ({ id }) => id === "review-in-progress",
+        )
+          ? ["review-in-progress"]
+          : step.requiredOptionIds,
       });
       expect(turn.accepted).toBe(true);
       state = turn.state;
     }
-    expect(state.taskProgress[`status-check-1:${task.id}`]?.completed).toBe(true);
+    expect(state.taskProgress[`status-check-1:${task.id}`]?.completed).toBe(
+      true,
+    );
   });
   it("rejects uninspected handoff references and leaves uncompleted scanner work open", () => {
     const run = investigate([

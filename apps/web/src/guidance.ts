@@ -9,7 +9,9 @@ export type ShiftGuidance = {
 };
 
 export function getShiftGuidance(view: ClientView): ShiftGuidance | null {
-  const work = shiftWorkActions(view.availableActions);
+  const work = shiftWorkActions(view.availableActions).filter(
+    ({ id }) => id !== "query_records" && id !== "ask_manager",
+  );
   const next =
     work.find(({ id }) => id === "read_handoff") ??
     work.find(({ id }) => id === "acknowledge_handoff") ??

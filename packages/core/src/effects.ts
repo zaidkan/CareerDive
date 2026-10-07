@@ -7,6 +7,7 @@ import type {
   SimulationActionId,
   WorldState,
 } from "@sim/schemas";
+import { missingLoginComparisonSteps } from "./login-comparison.js";
 import { conditionsMet } from "./conditions.js";
 
 export function resolveActionEffect(
@@ -102,6 +103,13 @@ function managerGuidanceForA1042(
   event: EventInstance,
   authoredGuidance: string,
 ): string {
+  if (
+    event.status === "resolved" ||
+    event.status === "escalated" ||
+    event.status === "expired"
+  ) {
+    return `${event.title} has a recorded outcome: ${event.resolution ?? event.status}. Keep any pending review or approval in the handoff; check the queue for remaining work.`;
+  }
   if (event.templateId !== "suspicious_login") return authoredGuidance;
 
   const completed = new Set<string>(event.completedActionIds);
@@ -273,7 +281,7 @@ export function applyResolvedEffect(input: {
               "Morgan has no additional operational context for this work."
             ).trim(),
           );
-    if (bounded && !wrongCase) {
+    if (bounded && !wrongCase && event.status === "active") {
       const inspected = state.workplace.inspectedArtifactIds ?? [];
       const sources = inspected.filter((id) =>
         state.artifacts[id]?.eventIds.includes(event.id),
@@ -355,7 +363,7 @@ export function applyResolvedEffect(input: {
         ? {
             body: comparisonSupported
               ? "Your flagged-session/VPN comparison and device inventory source are attached. I will verify the unresolved session ownership before deciding next steps."
-              : "I received your review request. The flagged-session/VPN comparison or required source attachments are missing from the saved review request. I will recover the missing record before deciding next steps.",
+              : `I received your review request. Missing saved steps: ${missingLoginComparisonSteps(state, event.id).join(" ")} These omissions do not establish what you believed about the city or route. Senior review remains pending.`,
           }
         : {}),
       eventId: event.id,

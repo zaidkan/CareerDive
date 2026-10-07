@@ -1,3 +1,4 @@
+import { handoffCaseLines, handoffFollowUps } from "@sim/core";
 import type { AvailableAction, ClientView, HandoffPayload } from "@sim/schemas";
 import { useTabDraft } from "../../useTabDraft.js";
 
@@ -23,9 +24,8 @@ export function HandoffBuilder({
         ["suspicious-login-1", "routine-alert-1"].includes(eventId),
       ),
   );
-  const cases = view.events.filter(({ id }) =>
-    ["suspicious-login-1", "routine-alert-1"].includes(id),
-  );
+  const cases = handoffCaseLines(view.events, view.structuredTickets);
+  const followUps = handoffFollowUps(view.events, view.teamMessages);
   const next = {
     "senior-review":
       "Ask senior reviewer to check session ownership and containment",
@@ -69,17 +69,17 @@ export function HandoffBuilder({
       <h5>What I decided</h5>
       <ul>
         {cases.map((event) => (
-          <li key={event.id}>
+          <li key={event.eventId}>
             <strong>
-              {event.title}: {event.status}
+              {event.title}: {event.label}
             </strong>
-            {event.resolution ? (
+            {event.detail ? (
               <details>
                 <summary>Decision details</summary>
-                <p>{event.resolution}</p>
+                <p>{event.detail}</p>
               </details>
             ) : (
-              <p>No final decision recorded; remains open.</p>
+              <p>See the recorded disposition above.</p>
             )}
           </li>
         ))}
@@ -126,13 +126,15 @@ export function HandoffBuilder({
         </p>
         <p>
           <strong>Decided:</strong>{" "}
-          {cases.map(({ title, status }) => `${title}: ${status}`).join("; ")}.
+          {cases
+            .map(
+              ({ title, label, detail }) =>
+                `${title}: ${label}.${detail ? ` ${detail}` : ""}`,
+            )
+            .join(" ")}
         </p>
         <p>
-          <strong>Still needs follow-up:</strong>{" "}
-          {cases
-            .filter(({ status }) => status === "active")
-            .map(({ title }) => `${title} needs a final decision. `)}
+          <strong>Still needs follow-up:</strong> {followUps.join(" ")}{" "}
           {view.structuredTickets?.["ticket-suspicious-login-1"]?.uncertainty ??
             "Session ownership has not been independently established."}{" "}
           {next[draft.followUp]}.

@@ -64,7 +64,7 @@ export function buildDebrief(input: {
     yourExperience:
       input.reflections.length > 0
         ? "Your optional reflection is stored separately from observed behavior."
-        : "You did not add an optional reflection for this shift.",
+        : "No reflection response is stored for this shift. The review page offers a private thinking prompt; it does not collect a response.",
     confidenceAndLimitations:
       "This is an early signal from one simulation. Interface familiarity, prior knowledge, and context may have influenced what happened.",
     careerReality:

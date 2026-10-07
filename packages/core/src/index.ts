@@ -31,3 +31,5 @@ export {
   applyWorkplaceInteraction,
   canOpenArtifact,
 } from "./workplace.js";
+
+export { missingLoginComparisonSteps } from "./login-comparison.js";

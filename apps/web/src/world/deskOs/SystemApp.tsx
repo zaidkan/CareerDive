@@ -1,3 +1,5 @@
+import { CaseNextStep } from "../../components/CaseNextStep.js";
+import { caseDispositionLabel } from "@sim/core";
 import type { AvailableAction, ClientView, WorkSystemId } from "@sim/schemas";
 import { useEffect, useRef, useState } from "react";
 import { SystemToolPanel } from "../../components/SystemToolPanel.js";
@@ -93,8 +95,13 @@ export function SystemApp({
             >
               <span>{event.title}</span>
               <small>
-                {event.priority} · due in{" "}
-                {remainingMinutes(event.deadlineAt, view.simClock)}m
+                {event.priority} ·{" "}
+                {event.status === "active"
+                  ? `due in ${String(remainingMinutes(event.deadlineAt, view.simClock))}m`
+                  : caseDispositionLabel(
+                      event,
+                      view.structuredTickets?.[`ticket-${event.id}`],
+                    )}
               </small>
             </button>
           ))
@@ -104,25 +111,38 @@ export function SystemApp({
         {selectedEvent ? (
           <>
             <div className="desk-os-meta">
-              <span>{selectedEvent.status.replaceAll("_", " ")}</span>
+              <span>
+                {caseDispositionLabel(
+                  selectedEvent,
+                  view.structuredTickets?.[`ticket-${selectedEvent.id}`],
+                )}
+              </span>
               <span
                 className="case-priority"
                 data-priority={selectedEvent.priority}
               >
                 {selectedEvent.priority} priority
               </span>
-              <span>
-                Due in{" "}
-                {remainingMinutes(selectedEvent.deadlineAt, view.simClock)}m
-              </span>
+              {selectedEvent.status === "active" ? (
+                <span>
+                  Due in{" "}
+                  {remainingMinutes(selectedEvent.deadlineAt, view.simClock)}m
+                </span>
+              ) : null}
             </div>
             <h3 ref={headingRef} tabIndex={-1}>
               {selectedEvent.title}
             </h3>
-            <p>{selectedEvent.summary}</p>
+            {!selectedEvent.resolution ? <p>{selectedEvent.summary}</p> : null}
             {selectedEvent.resolution ? (
               <p className="desk-os-resolution">{selectedEvent.resolution}</p>
             ) : null}
+            <CaseNextStep
+              view={view}
+              eventId={selectedEvent.id}
+              systemId={systemId}
+              onOpenSystem={onOpenSystem}
+            />
             <SystemToolPanel
               actions={contextualActions}
               {...(highlightActionId ? { highlightActionId } : {})}
