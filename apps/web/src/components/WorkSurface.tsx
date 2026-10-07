@@ -1,3 +1,5 @@
+import { CaseNextStep } from "./CaseNextStep.js";
+import { caseDispositionLabel } from "@sim/core";
 import { useEffect, useRef, useState } from "react";
 import type { WorkSystemId } from "@sim/schemas";
 import { SystemToolPanel } from "./SystemToolPanel.js";
@@ -39,7 +41,7 @@ export function WorkSurface({
   const [focusRequest, setFocusRequest] = useState(0);
   function openSystem(target: WorkSystemId, eventId?: string) {
     setSystemId(target);
-    setSelectedEventId(eventId);
+    if (eventId) setSelectedEventId(eventId);
     setFocusRequest((value) => value + 1);
   }
   useEffect(() => {
@@ -102,7 +104,7 @@ export function WorkSurface({
         guidance={guidance}
         onGoToSystem={openSystem}
         currentSystemId={systemId}
-        title="What to do next"
+        title="Queue objective"
       />
 
       <nav className="system-dock" aria-label="Work systems">
@@ -158,8 +160,13 @@ export function WorkSurface({
                 <span className="queue-body">
                   <span>{event.title}</span>
                   <small>
-                    {event.priority} · due in{" "}
-                    {remainingMinutes(event.deadlineAt, view.simClock)}m
+                    {event.priority} ·{" "}
+                    {event.status === "active"
+                      ? `due in ${String(remainingMinutes(event.deadlineAt, view.simClock))}m`
+                      : caseDispositionLabel(
+                          event,
+                          view.structuredTickets?.[`ticket-${event.id}`],
+                        )}
                   </small>
                 </span>
               </button>
@@ -172,21 +179,34 @@ export function WorkSurface({
             <>
               <div className="detail-meta">
                 <span className={`status status-${selectedEvent.status}`}>
-                  {selectedEvent.status.replaceAll("_", " ")}
+                  {caseDispositionLabel(
+                    selectedEvent,
+                    view.structuredTickets?.[`ticket-${selectedEvent.id}`],
+                  )}
                 </span>
-                <span>
-                  Due in{" "}
-                  {remainingMinutes(selectedEvent.deadlineAt, view.simClock)}{" "}
-                  minutes
-                </span>
+                {selectedEvent.status === "active" ? (
+                  <span>
+                    Due in{" "}
+                    {remainingMinutes(selectedEvent.deadlineAt, view.simClock)}{" "}
+                    minutes
+                  </span>
+                ) : null}
               </div>
               <h3 ref={headingRef} tabIndex={-1}>
                 {selectedEvent.title}
               </h3>
-              <p>{selectedEvent.summary}</p>
+              {!selectedEvent.resolution ? (
+                <p>{selectedEvent.summary}</p>
+              ) : null}
               {selectedEvent.resolution ? (
                 <p className="resolution-note">{selectedEvent.resolution}</p>
               ) : null}
+              <CaseNextStep
+                view={view}
+                eventId={selectedEvent.id}
+                systemId={systemId}
+                onOpenSystem={openSystem}
+              />
               <SystemToolPanel
                 actions={contextualActions}
                 {...(highlightActionId ? { highlightActionId } : {})}

@@ -103,6 +103,13 @@ function managerGuidanceForA1042(
   event: EventInstance,
   authoredGuidance: string,
 ): string {
+  if (
+    event.status === "resolved" ||
+    event.status === "escalated" ||
+    event.status === "expired"
+  ) {
+    return `${event.title} has a recorded outcome: ${event.resolution ?? event.status}. Keep any pending review or approval in the handoff; check the queue for remaining work.`;
+  }
   if (event.templateId !== "suspicious_login") return authoredGuidance;
 
   const completed = new Set<string>(event.completedActionIds);
@@ -274,7 +281,7 @@ export function applyResolvedEffect(input: {
               "Morgan has no additional operational context for this work."
             ).trim(),
           );
-    if (bounded && !wrongCase) {
+    if (bounded && !wrongCase && event.status === "active") {
       const inspected = state.workplace.inspectedArtifactIds ?? [];
       const sources = inspected.filter((id) =>
         state.artifacts[id]?.eventIds.includes(event.id),

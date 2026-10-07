@@ -719,7 +719,7 @@ scenario:
           maxSelections: 1
           options:
             - id: expected-close
-              label: Activity matches the approved scan; close as expected and return to the login case.
+              label: Activity matches the approved scan; close as expected and check the queue for remaining work.
             - id: expected-close-with-monitoring
               label: Close this expected connection alert and keep later scanner activity under routine monitoring.
             - id: attack-close
@@ -780,10 +780,12 @@ scenario:
             - id: route-to-owner
               selectedOptionIds: [route-to-owner]
               setFlags: { b2_choice: route-to-owner }
+              resolution: The request was routed to the finance data owner; approval is pending and no access has been granted.
               feedback: Request routed to the data owner.
             - id: route-with-interim
               selectedOptionIds: [route-with-interim]
               setFlags: { b2_choice: route-with-interim }
+              resolution: The request was routed to the finance data owner with an interim report offered; role approval is pending and no new access has been granted.
               feedback: Owner review is pending; an interim report can keep work moving.
             - id: self-approve
               selectedOptionIds: [self-approve]
@@ -1543,7 +1545,7 @@ scenario:
       actionEffects:
         route_access_request:
           resolve: true
-          resolution: The access decision was recorded; any owner review remains traceable.
+          resolution: The request was routed to the finance data owner; approval is pending and no access has been granted.
           emitEventResolved: true
           consequence:
             escalateOnApply: false
@@ -1635,8 +1637,8 @@ scenario:
               Alert A-1180 is linked to RUN-FIN-031 and approved reference SCAN-FIN-MON.
               Recorded Monday 10:18 activity fits the run and window; delivery to this shift
               does not change that event time. The closure concerns expected discovery
-              connections, not vulnerability findings or a claim that every system is secure. Return to the login
-              notes and continue from the next step you left there.
+              connections, not vulnerability findings or a claim that every system is secure. Check the queue
+              for remaining work; any recorded login escalation still awaits senior review.
           hidden:
             taskBacklog: -1
 

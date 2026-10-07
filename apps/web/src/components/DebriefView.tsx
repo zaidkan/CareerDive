@@ -8,7 +8,7 @@ const LEGACY_LABELS: Array<[keyof Debrief["sections"], string]> = [
   ["yourExperience", "Your experience"],
   ["confidenceAndLimitations", "Confidence and limitations"],
   ["careerReality", "Career reality"],
-  ["nextAction", "Next action"],
+  ["nextAction", "Ideas for later"],
 ];
 
 const describeHandoff = (ids: string[]) =>
@@ -347,7 +347,10 @@ export function DebriefView({
       >
         <h3 id="reflect-heading">Reflect</h3>
         <p>Would you want to do work like this again?</p>
-        <span>Think about the investigation, decisions, and handoff.</span>
+        <span>
+          Think privately about the investigation, decisions, and handoff. This
+          prompt does not collect or save a response.
+        </span>
       </section>
       <details className="decision-review-record">
         <summary>Read the full shift record</summary>

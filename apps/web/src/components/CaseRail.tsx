@@ -1,3 +1,4 @@
+import { caseDispositionLabel } from "@sim/core";
 import type { ClientView, WorkItemCategory, WorkSystemId } from "@sim/schemas";
 import { activeCases, closedCases } from "../workstation.js";
 
@@ -60,7 +61,11 @@ export function CaseRail({
                   </span>
                   <strong>{event.title}</strong>
                   <small>
-                    {task?.title ?? event.status.replaceAll("_", " ")}
+                    {task?.title ??
+                      caseDispositionLabel(
+                        event,
+                        view.structuredTickets?.[`ticket-${event.id}`],
+                      )}
                   </small>
                   {event.resolution ? <small>{event.resolution}</small> : null}
                   <span className="visually-hidden">Resume {event.title}</span>
@@ -72,12 +77,17 @@ export function CaseRail({
       </details>
       {closed.length > 0 ? (
         <details className="case-rail-history">
-          <summary>Closed history ({closed.length})</summary>
+          <summary>Recorded outcomes ({closed.length})</summary>
           <ul>
             {closed.map((event) => (
               <li key={event.id}>
                 <strong>{event.title}</strong>
-                <small>{event.status}</small>
+                <small>
+                  {caseDispositionLabel(
+                    event,
+                    view.structuredTickets?.[`ticket-${event.id}`],
+                  )}
+                </small>
                 {event.resolution ? <p>{event.resolution}</p> : null}
               </li>
             ))}

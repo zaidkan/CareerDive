@@ -51,13 +51,13 @@ function ActionButtons({
     ({ id }) => id !== "query_records" && id !== "submit_shift_handoff",
   );
   if (choices.length === 0) {
-    return <p className="empty-actions">No pending actions in this tool.</p>;
+    return null;
   }
 
   const highlighted =
     choices.find(({ id }) => id === highlightActionId) ?? choices[0];
   if (!highlighted) {
-    return <p className="empty-actions">No pending actions in this tool.</p>;
+    return null;
   }
   const others = choices.filter(({ id }) => id !== highlighted.id);
   const highlightedKey = actionMutationKey(highlighted);

@@ -1,3 +1,4 @@
+import { handoffFollowUps } from "./handoff-summary.js";
 import type {
   ClientView,
   JulesTopic,
@@ -51,13 +52,27 @@ function currentWorkReply(
       (e) => e.status === "active" && e.category !== "handoff",
     ) ??
     state.events.find((e) => e.status === "active");
+  if (!contextEvent)
+    return {
+      speaker: "Jules",
+      text: `No active case decision remains on your desk. ${handoffFollowUps(state.events, state.teamMessages).join(" ")} Keep recorded follow-ups in the handoff; check the queue for any remaining shift step.`,
+      nextSystemId: "team_chat",
+    };
   const available = new Set(
     state.availableActions
-      .filter((a) => !contextEvent || a.eventId === contextEvent.id)
+      .filter((a) => a.eventId === contextEvent.id)
       .map(({ id }) => id),
   );
-  const ticket =
-    contextEvent && state.structuredTickets?.[`ticket-${contextEvent.id}`];
+  if (
+    contextEvent.category === "handoff" &&
+    available.has("submit_shift_handoff")
+  )
+    return {
+      speaker: "Jules",
+      text: "The case decisions are recorded. Send the shift handoff with checked sources, remaining uncertainty, and an owner for any pending review or approval.",
+      nextSystemId: "team_chat",
+    };
+  const ticket = state.structuredTickets?.[`ticket-${contextEvent.id}`];
   if (ticket)
     return {
       speaker: "Jules",
@@ -65,7 +80,6 @@ function currentWorkReply(
       nextSystemId: "ticket_queue",
     };
   if (
-    contextEvent &&
     state.workplace.comparisons?.some(
       (c) =>
         c.eventId === contextEvent.id &&
@@ -79,13 +93,10 @@ function currentWorkReply(
       text: "You recorded a source comparison. What differs between the sessions matters more than whether the city sounds familiar. Keep the comparison with the case note so I can follow your reasoning.",
       nextSystemId: "ticket_queue",
     };
-  if (
-    contextEvent &&
-    !["suspicious-login-1", "handoff-1"].includes(contextEvent.id)
-  )
+  if (!["suspicious-login-1", "handoff-1"].includes(contextEvent.id))
     return {
       speaker: "Jules",
-      text: `${contextEvent.title} is on your desk now. ${lastSource?.eventIds.includes(contextEvent.id) ? `You opened ${lastSource.title}.` : "I haven't seen a source opened for it yet."} Before returning to the login investigation, leave the request's unresolved question with its owner.`,
+      text: `${contextEvent.title} is on your desk now. ${lastSource?.eventIds.includes(contextEvent.id) ? `You opened ${lastSource.title}.` : "I haven't seen a source opened for it yet."} Follow the selected item's next available step, and leave any unresolved question with its owner. Return to login work only if its decision is still open.`,
       nextSystemId: contextEvent.systemId,
     };
 

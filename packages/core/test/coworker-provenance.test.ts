@@ -172,3 +172,30 @@ it("Jules follows remaining active work without claiming an unrelated source was
   expect(reply).toContain("Urgent finance access request");
   expect(reply).not.toContain("You opened Device inventory");
 });
+
+it("Morgan and Jules acknowledge completed work instead of asking for its old checks", () => {
+  const state = initial();
+  const scanner = state.events.find(({ id }) => id === "routine-alert-1");
+  if (!scanner) throw new Error("Missing scanner fixture");
+  scanner.status = "resolved";
+  scanner.resolution = "Matched run and window; closed as expected.";
+  for (const freeText of [
+    "What case context do we have?",
+    "What remains uncertain?",
+  ]) {
+    const reply = applyAction(state, {
+      id: "ask_manager",
+      eventId: scanner.id,
+      actorId: "user",
+      freeText,
+    }).state.teamMessages?.at(-1)?.body;
+    expect(reply).toContain(scanner.resolution);
+    expect(reply).not.toContain("We still need the supporting record");
+  }
+  const view = toClientView(state);
+  view.events = view.events.map((event) => ({ ...event, status: "resolved" }));
+  const reply = julesDialogueFromClientView(view, "current_work").text;
+  expect(reply).toContain("No active case decision remains");
+  expect(reply).not.toContain("account history still needs");
+  expect(reply).not.toContain("Before returning to the login investigation");
+});
