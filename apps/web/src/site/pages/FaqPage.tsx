@@ -23,7 +23,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "If I write about how I felt, who sees it?",
-    a: "Only you — unless you make a sharing link on purpose. That link expires, and you can take it back anytime.",
+    a: "Submitted reflections are stored with your shift on the server and protected by identity and owner checks. They are not published or sent to employers. Public sharing links are not currently available.",
   },
   {
     q: "Does AI decide what happens in the simulation?",
@@ -35,7 +35,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "How do career requests work?",
-    a: "Right now, the request button is a local preview — it remembers your choice on your device but does not send data to our servers. When connected in the future, your requests will help us understand interest. They will not create a public popularity score, guarantee a release order, or guarantee a date. You can request or unrequest anytime, and no name, email, or account is required.",
+    a: "Career requests are sent to and stored on the server under your anonymous identity. We save the career you requested and whether the request is active; database records also keep request and update times. Your saved choices load again when you return with the same browser identity. Undoing a request marks it inactive rather than deleting its database record. Requests do not create a public popularity score or guarantee a release order or date. No name, email, or manual signup is required.",
   },
   {
     q: "Is there more after this first day?",

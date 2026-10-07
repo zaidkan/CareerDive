@@ -86,6 +86,7 @@ export function CareerRequestToggle({
           {!loaded ? (
             <button
               type="button"
+              className="button-secondary"
               onClick={() => {
                 setReload((value) => value + 1);
               }}
