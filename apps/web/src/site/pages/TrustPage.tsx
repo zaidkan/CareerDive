@@ -179,9 +179,10 @@ export function TrustPage() {
         <div className="trust-no-score-inner">
           <h2 id="trust-no-score">No grades. No fit score.</h2>
           <p>
-            The current debrief has eight written sections and a confidence
-            label. It does not calculate a career-fit score, grade, ranking, or job
-            recommendation.
+            The debrief reviews recorded actions and evidence from one
+            ~10–15-minute simulated shift, including what remains unknown. It has
+            eight written sections and a confidence label. It does not calculate
+            a career-fit score, grade, ranking, or job recommendation.
           </p>
           <div
             className="trust-debrief-strip"

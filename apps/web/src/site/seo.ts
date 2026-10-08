@@ -19,16 +19,16 @@ export const ROUTE_META: Record<
   RouteMeta
 > = {
   home: {
-    title: "Experience the work before choosing a career · CareerDive",
+    title: "Try a short cybersecurity shift and debrief · CareerDive",
     description:
-      "Explore careers through realistic first-day work. Try a playable simulation, inspect work previews, and reflect on how the job feels.",
+      "Try a ~10–15-minute Junior Cybersecurity Analyst first-shift simulation. Review recorded decisions, evidence and unknowns. One playable career; four previews.",
     path: "/",
     index: true,
   },
   "how-it-works": {
-    title: "How the First Shift workday works · CareerDive",
+    title: "How the short first-shift simulation works · CareerDive",
     description:
-      "Handoff, suspicious-login investigation, routine monitoring, phishing report and false-positive review across email, alerts, tickets, knowledge base and team chat.",
+      "Try selected junior cybersecurity analyst tasks in a ~10–15-minute simulated first shift, then review an evidence-based debrief of your decisions and unknowns.",
     path: "/how-it-works",
     index: true,
   },
@@ -47,16 +47,16 @@ export const ROUTE_META: Record<
     index: true,
   },
   start: {
-    title: "Start your First Shift workday · CareerDive",
+    title: "Start your short first-shift simulation · CareerDive",
     description:
-      "Watch the short preview film, then work the Verdaly SOC the way you prefer.",
+      "Watch the short arrival film, then try a ~10–15-minute cybersecurity first-shift simulation at fictional Verdaly and review your evidence-based debrief.",
     path: "/start",
     index: false,
   },
   careers: {
-    title: "Explore careers · CareerDive",
+    title: "One playable career and four previews · CareerDive",
     description:
-      "Explore playable career simulations and previews of careers in the workshop.",
+      "Start with one playable career, Junior Cybersecurity Analyst: a ~10–15-minute simulated slice and evidence-based debrief. Four other careers are previews only.",
     path: "/careers",
     index: true,
   },

@@ -54,8 +54,8 @@ export function CareersPage() {
       {/* 1. HERO */}
       <PublicChapter surface="base" rhythm="expansive" width="full" className="cp-hero">
         <div className="cp-hero-content">
-          <h1 className="ui-type-display">Explore careers through the work</h1>
-          <p className="ui-type-lede">1 playable now. 4 taking shape.</p>
+          <h1 className="ui-type-display">Start with one career. Look closely at the work.</h1>
+          <p className="ui-type-lede">1 playable now. 4 taking shape. Start with a ~10–15-minute simulated slice of a junior cybersecurity analyst’s work.</p>
         </div>
         <ArtifactStage
           emphasis="center"
@@ -91,8 +91,8 @@ export function CareersPage() {
         <div className="cp-chapter-head">
           <h2 className="ui-type-h1">Taking shape</h2>
           <p className="ui-type-body-large cp-honesty-note">
-            These roles show the kinds of decisions you'll make — previews only, for now.
-            Local requests help us understand interest, but they stay on your device and don't guarantee build order.
+            These four roles preview decisions we are considering — they are not playable yet.
+            Requests are saved on the server under your anonymous identity. They help us understand interest and do not guarantee build order.
           </p>
         </div>
 

@@ -21,7 +21,7 @@ export function ThresholdBrief({
           {COMPANY.fullName} · {COMPANY.floor}
         </p>
         <h2 id="threshold-brief-title">
-          Day one as a {COMPANY.role} at {COMPANY.name}
+          A short simulated first shift as a {COMPANY.role} at {COMPANY.name}
         </h2>
         <details className="threshold-brief-guidance">
           <summary>Before you begin</summary>
@@ -37,7 +37,7 @@ export function ThresholdBrief({
           <li>Sit at your desk and sign in</li>
           <li>Work alerts, email, and tickets one step at a time</li>
         </ol>
-        <p className="threshold-brief-note">{FIRST_SHIFT_DURATION}.</p>
+        <p className="threshold-brief-note">{FIRST_SHIFT_DURATION}. A focused slice of selected tasks, followed by an evidence-based debrief.</p>
         <div className="threshold-brief-actions">
           <button
             type="button"

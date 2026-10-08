@@ -10,8 +10,8 @@ type Faq = {
 const FAQS: Faq[] = [
   ...HOME_FAQ,
   {
-    q: "What does the first day actually involve?",
-    a: "Read the handoff, deal with what comes up, write the ticket, then write how it went. It’s practice, not an application — there’s no score and nothing goes to an employer.",
+    q: "What does the short first shift involve?",
+    a: "Read the handoff, investigate selected alerts, document your reasoning, and leave a handoff. Then review a debrief grounded in your recorded actions and evidence, including what remains unknown. This is a simulated slice of the job, not a full workday or a hiring assessment.",
   },
   {
     q: "Do I need to be good at games?",
@@ -38,8 +38,8 @@ const FAQS: Faq[] = [
     a: "Career requests are sent to and stored on the server under your anonymous identity. We save the career you requested and whether the request is active; database records also keep request and update times. Your saved choices load again when you return with the same browser identity. Undoing a request marks it inactive rather than deleting its database record. Requests do not create a public popularity score or guarantee a release order or date. No name, email, or manual signup is required.",
   },
   {
-    q: "Is there more after this first day?",
-    a: "Not yet. This first shift is day one as a junior cybersecurity analyst. We’ll add more careers only if this one actually helps people understand the work.",
+    q: "Is there more after this first shift?",
+    a: "Not yet. There is one playable, short first-shift simulation as a junior cybersecurity analyst. Four other careers have concept previews only. More depends on whether this focused experience helps people understand a slice of the work; there is no promised release date.",
   },
 ];
 
@@ -51,7 +51,7 @@ export function FaqPage() {
       <PublicChapter surface="base" rhythm="expansive" width="wide" className="faq-hero">
         <p className="ui-type-eyebrow" style={{ color: "var(--text-brand)", marginBottom: "0.5rem" }}>The plain version</p>
         <h1 id="faq-title" className="ui-type-display" style={{ marginBottom: "1.5rem" }}>Quick answers, honestly</h1>
-        <p className="ui-type-lede" style={{ maxWidth: "60ch", color: "var(--text-secondary)" }}>Before you start a shift, here’s what people want to know.</p>
+        <p className="ui-type-lede" style={{ maxWidth: "60ch", color: "var(--text-secondary)" }}>One playable career, one ~10–15-minute simulated first shift, and an evidence-based debrief. Here is what that experience can and cannot show.</p>
       </PublicChapter>
 
       <ChapterSeparator />

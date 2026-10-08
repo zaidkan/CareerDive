@@ -16,8 +16,8 @@ export function WorkshopShelf({
     <section className="career-shelf" aria-labelledby="workshop-title">
       <Heading id="workshop-title">Taking shape</Heading>
       <p>
-        Workshop roles show the kinds of decisions you’d make — previews only,
-        for now. Want one of these first? Mark it — you can undo anytime.
+        These four Workshop roles preview decisions we are considering —
+        not playable simulations yet. Want one of these first? Mark it — you can undo anytime.
       </p>
       <div className="career-request-intro">
         <h3>Which career do you want to try?</h3>
