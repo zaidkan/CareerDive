@@ -104,9 +104,9 @@ export function ArrivalFilm({ onSeen }: Props) {
     return (
       <section className="film-gate film-cinema threshold-stage" aria-labelledby="arrival-film-gate">
         <p className="eyebrow">Arrival film · Verdaly Technologies</p>
-        <h1 id="arrival-film-gate">Short preview film before your first day</h1>
+        <h1 id="arrival-film-gate">Short preview film before your first shift</h1>
         <p className="lede">
-          About six seconds at the tower — the same hello you get on day one.{" "}
+          A six-second arrival preview, then a ~10–15-minute simulated first shift and an evidence-based debrief.{" "}
           <span className="stills-note">(Short film; static poster in reduced motion.)</span>
         </p>
         <div className="film-hold-wrap film-hold-wrap-cinema threshold-media">
@@ -141,8 +141,8 @@ export function ArrivalFilm({ onSeen }: Props) {
   return (
     <section className="film-gate film-cinema threshold-stage" aria-labelledby="arrival-film-gate">
       <p className="eyebrow">Arrival film · Verdaly Technologies</p>
-      <h1 id="arrival-film-gate">Short preview film before your first day</h1>
-      <p className="lede">About six seconds at the tower — the same hello you get on day one.</p>
+      <h1 id="arrival-film-gate">Short preview film before your first shift</h1>
+      <p className="lede">A six-second arrival preview, then a ~10–15-minute simulated first shift and an evidence-based debrief.</p>
 
       <div className="film-hold-wrap film-hold-wrap-cinema threshold-media">
         {!playing ? (

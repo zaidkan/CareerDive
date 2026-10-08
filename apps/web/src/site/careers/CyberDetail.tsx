@@ -104,8 +104,9 @@ export function CyberDetail({ career }: { career: PublicCareer }) {
           <ShiftMeta>Arrival at Verdaly</ShiftMeta>
           <h1>{career.title}</h1>
           <p className="cyber-hero-lede">
-            Your first shift begins inside a security operations center, with a
-            case already open.
+            Try a ~10–15-minute simulated first shift as a junior analyst, with
+            a case already open. Then review your recorded decisions in an
+            evidence-based debrief: what you can support and what is still unknown.
           </p>
           <p>{career.workplaceSummary}</p>
           <SiteLink className="start-shift" to="/start">
@@ -342,8 +343,9 @@ export function CyberDetail({ career }: { career: PublicCareer }) {
               <ShiftMeta>Reflect</ShiftMeta>
               <h2>See how you worked — not a score of who you are.</h2>
               <p>
-                The debrief puts your actions beside their consequences and
-                the limits of what one short shift can show.
+                The debrief puts your recorded decisions beside their evidence and
+                consequences, names what remains unknown, and explains the
+                limits of what one short simulated shift can show.
               </p>
             </div>
             <figure data-motion-role="consequence">

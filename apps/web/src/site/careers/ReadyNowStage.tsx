@@ -12,7 +12,7 @@ export function ReadyNowStage({
   return (
     <section className="career-stage" aria-labelledby="ready-now-title">
       <Heading id="ready-now-title">Playable now</Heading>
-      <p>Step into a career you can try today.</p>
+      <p>One playable career so far: try a ~10–15-minute first-shift slice as a Junior Cybersecurity Analyst, then review your evidence-based debrief.</p>
       <div className="career-ready-grid">
         {careers.map((career) => (
           <CareerCard

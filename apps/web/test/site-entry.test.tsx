@@ -72,7 +72,7 @@ describe("site routes", () => {
     render(<SiteApp initialRoute="/" />);
     expect(
       screen.getByRole("heading", {
-        name: /know the work before you choose the career/i,
+        name: /try a slice of the work\. see what your decisions support/i,
       }),
     ).toBeVisible();
     expect(createSession).not.toHaveBeenCalled();
@@ -96,12 +96,12 @@ describe("site routes", () => {
     ).toBeNull();
     expect(
       screen.getByRole("heading", {
-        name: /real work, not a job description/i,
+        name: /^a slice of the work\.$/i,
       }),
     ).toBeVisible();
     expect(
       screen.getByRole("heading", {
-        name: /different careers\.?\s*different work\./i,
+        name: /one playable career\. more taking shape/i,
       }),
     ).toBeVisible();
     expect(
@@ -140,7 +140,7 @@ describe("site routes", () => {
     expect(screen.queryByText(/requests stay on this page/i)).toBeNull();
     expect(
       screen.getByRole("heading", {
-        name: "One short day. One real first shift.",
+        name: "One short simulated shift. A clearer view of your decisions.",
       }),
     ).toBeVisible();
     expect(
@@ -151,7 +151,7 @@ describe("site routes", () => {
     ).toBeGreaterThanOrEqual(1);
     // CTA hierarchy: start is primary; explore stays secondary.
     expect(
-      screen.getAllByRole("link", { name: /explore careers/i }).length,
+      screen.getAllByRole("link", { name: /career and previews/i }).length,
     ).toBeGreaterThan(0);
   });
 
@@ -220,7 +220,7 @@ describe("site routes", () => {
     expect(tabs[0]?.textContent).toBe("Cybersecurity Analyst");
     expect(screen.getAllByText(/playable now/i).length).toBeGreaterThan(0);
     expect(
-      screen.getByText(/real work, not a job description/i),
+      screen.getByText(/^a slice of the work\.$/i),
     ).toBeInTheDocument();
   });
 
@@ -296,7 +296,7 @@ describe("site routes", () => {
       }),
     );
     // Brief is ephemeral presentation between Arrive and Connecting — canonical briefing beats
-    expect(await screen.findByRole("heading", { name: /day one as a junior/i })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /a short simulated first shift as a junior/i })).toBeVisible();
     expect(screen.getByText(/walk the floor map into security operations/i)).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /continue to floor/i }));
     await waitFor(() => {
@@ -350,7 +350,7 @@ describe("site routes", () => {
       screen.getByRole("button", { name: /start your first day/i }),
     );
     // Brief sits between Arrive and Connecting — still reaches sim after Continue
-    expect(await screen.findByRole("heading", { name: /day one as a junior/i })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /a short simulated first shift as a junior/i })).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /continue to floor/i }));
     await waitFor(() => {
       expect(createSession).toHaveBeenCalledTimes(1);

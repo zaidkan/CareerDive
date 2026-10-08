@@ -363,7 +363,7 @@ describe("public routes", () => {
     await user.click(within(primary).getByRole("link", { name: "Careers" }));
     expect(
       await screen.findByRole("heading", {
-        name: "Explore careers through the work",
+        name: "Start with one career. Look closely at the work.",
       }),
     ).toHaveFocus();
     expect(
@@ -385,7 +385,7 @@ describe("public routes", () => {
     });
     expect(
       await screen.findByRole("heading", {
-        name: "Explore careers through the work",
+        name: "Start with one career. Look closely at the work.",
       }),
     ).toHaveFocus();
     window.history.forward();

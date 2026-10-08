@@ -174,7 +174,7 @@ const EVIDENCE_VIEWS = [
     id: "a-02",
     slot: "home-evidence-auth",
     caption: "Sign-in record · S-0741",
-    alt: "Product capture: the sign-in record for session S-0741, from the Cybersecurity Analyst first day.",
+    alt: "Product capture: the sign-in record for session S-0741, from the Cybersecurity Analyst first-shift simulation.",
   },
 ] as const;
 
@@ -403,10 +403,10 @@ export function LandingPage() {
           >
             <div className="home-hero-copy">
               <h1 id="home-hero-title" data-motion-role="argument">
-                Know the work before you choose the career.
+                Try a slice of the work. See what your decisions support.
               </h1>
               <p className="ui-type-proof">
-                You can read about a career — or step into its first shift.
+                Start with one career: Junior Cybersecurity Analyst. Try a short simulated first shift, then review your recorded decisions — what the evidence supports and what is still unknown.
               </p>
               <div className="home-hero-actions">
                 <SiteLink className="start-shift v2-primary" to="/start">
@@ -414,11 +414,11 @@ export function LandingPage() {
                   <span aria-hidden="true"> ↗</span>
                 </SiteLink>
                 <SiteLink className="v2-text-link" to="/careers">
-                  Explore careers <span aria-hidden="true">→</span>
+                  Career and previews <span aria-hidden="true">→</span>
                 </SiteLink>
               </div>
               <p className="home-hero-meta">
-                <strong>{FIRST_SHIFT_DURATION_COMPACT}</strong> · one first shift
+                <strong>{FIRST_SHIFT_DURATION_COMPACT}</strong> · one focused first-shift slice
               </p>
             </div>
             <div data-motion-role="artifact" className="home-hero-stage">
@@ -511,7 +511,7 @@ export function LandingPage() {
             className="home-realwork-intro"
           >
             <h2 id="home-realwork-title" data-motion-role="argument">
-              Real work, not a job description.
+              A slice of the work.
             </h2>
             <p className="ui-type-proof">
               One alert. A decision you have to justify.
@@ -630,7 +630,7 @@ export function LandingPage() {
           >
             <div data-motion="chapter-reveal">
               <h2 id="home-careers-title" data-motion-role="argument">
-                Different careers. Different work.
+                One playable career. More taking shape.
               </h2>
               <p className="ui-type-proof">
                 One playable now. Four taking shape.
@@ -722,7 +722,7 @@ export function LandingPage() {
                 </button>
               )}
               <SiteLink className="v2-text-link" to="/careers">
-                Explore careers <span aria-hidden="true">→</span>
+                Career and previews <span aria-hidden="true">→</span>
               </SiteLink>
             </div>
           </div>
@@ -759,7 +759,7 @@ export function LandingPage() {
               See how you worked.
             </h2>
             <p className="ui-type-proof">
-              Not a score. A record of the calls you made.
+              Your recorded decisions, the evidence behind them, and what remains unknown. A debrief, without a career-fit score.
             </p>
             <div className="home-debrief-crop">
               <ProductCapture
@@ -824,7 +824,7 @@ export function LandingPage() {
             className="home-final-inner"
           >
             <h2 id="home-final-title" data-motion-role="argument">
-              One short day. One real first shift.
+              One short simulated shift. A clearer view of your decisions.
             </h2>
             <p>
               Try the work <span aria-hidden="true">→</span> Make the calls{" "}
@@ -836,7 +836,7 @@ export function LandingPage() {
                 <span aria-hidden="true"> ↗</span>
               </SiteLink>
               <SiteLink className="v2-text-link" to="/careers">
-                Explore careers <span aria-hidden="true">→</span>
+                Career and previews <span aria-hidden="true">→</span>
               </SiteLink>
             </div>
           </div>

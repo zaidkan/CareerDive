@@ -8,9 +8,9 @@ export const careers: readonly PublicCareer[] = [
     title: "Cybersecurity Analyst",
     field: "Technology · Security",
     shortSummary:
-      "Triage an alert, check the evidence, and hand off the shift.",
+      "Try a ~10–15-minute first-shift simulation: triage an alert, check evidence, and hand off. Review your recorded decisions in an evidence-based debrief.",
     workplaceSummary:
-      "Spend a first day in Verdaly Technologies' security operations center. Read the handoff, inspect a suspicious login, and document what you can support.",
+      "Try a focused slice of a junior analyst's work in Verdaly's fictional security operations center. Read the handoff, inspect a suspicious login, and document what you can support. This is not a full workday or a complete picture of the job.",
     skills: ["Evidence review", "Prioritization", "Clear handoffs"],
     plannedTasks: [
       "Find what the last analyst left open",
@@ -34,7 +34,7 @@ export const careers: readonly PublicCareer[] = [
       {
         claim: "The job is mostly hacking back at attackers.",
         correction:
-          "A first shift is triage, evidence checking, and documentation inside approval boundaries; offensive work is a separate, separately authorized role.",
+          "This simulated first shift samples triage, evidence checking, and documentation inside approval boundaries; offensive work is a separate, separately authorized role.",
       },
       {
         claim: "An alert means something is confirmed compromised.",
