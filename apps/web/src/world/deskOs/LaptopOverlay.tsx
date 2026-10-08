@@ -5,6 +5,7 @@ import {
   isTypingTarget,
   useFullscreen,
 } from "../useFullscreen.js";
+import { ShiftHints } from "../dialogue/ShiftHints.js";
 import { DeskOs } from "./DeskOs.js";
 import { ResumeVeil } from "./login/WorkstationBoot.js";
 import type {
@@ -113,6 +114,7 @@ export function LaptopOverlay({
         className={`desk-os-laptop${maximized ? " desk-os-laptop-max" : ""}`}
         ref={laptopRef}
       >
+        <ShiftHints view={view} phase={phase} paused={disabled} />
         <DeskOs
           maximized={maximized}
           onAction={onAction}

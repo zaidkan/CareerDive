@@ -1,8 +1,9 @@
-import { missingLoginComparisonSteps } from "@sim/core";
+import { missingLoginComparisonSteps, resolveActionEffect } from "@sim/core";
 import type {
   ActionLogEntry,
   Debrief,
   SimulationActionId,
+  StructuredTicket,
   WorldState,
 } from "@sim/schemas";
 
@@ -169,22 +170,11 @@ function evidenceBefore(
     if (interaction.type === "action") {
       const action = interaction.action;
       const event = state.events.find(({ id }) => id === action.eventId);
-      const sourceByAction: Record<string, string[]> = {
-        inspect_login_context: ["login-context-1"],
-        inspect_account_history: ["account-history-1"],
-        check_device_inventory: ["device-inventory-1"],
-        review_alert:
-          action.eventId === CASE
-            ? ["suspicious-login-alert"]
-            : action.eventId === SCANNER
-              ? ["scanner-alert"]
-              : [],
-      };
-      const effect = event
-        ? state.rules.eventTemplates[event.templateId]?.actionEffects[action.id]
-        : undefined;
-      for (const id of sourceByAction[action.id] ?? [])
-        if (effect?.observeArtifactIds.includes(id)) opened.add(id);
+      if (event) {
+        for (const id of resolveActionEffect(state, event, action.id)
+          .observeArtifactIds)
+          opened.add(id);
+      }
     }
     if (interaction.type === "workplace_interaction") {
       if (interaction.interaction.type === "inspect_query_record")
@@ -201,6 +191,83 @@ function evidenceBefore(
     }
   }
   return allowed.filter((id) => opened.has(id));
+}
+
+/** Rate traceable documentation, not the truth or writing quality of free text. */
+function ticketGaps(
+  state: WorldState,
+  eventId: string,
+  inspectedBefore: readonly string[],
+  required: readonly string[],
+  log: ActionLogEntry[],
+  sequence: number,
+  expectedDisposition?: string,
+): string[] {
+  let ticket:
+    | Pick<
+        StructuredTicket,
+        | "ticketId"
+        | "verifiedEvidence"
+        | "uncertainty"
+        | "followUp"
+        | "disposition"
+        | "sourceArtifactIds"
+      >
+    | undefined = Object.values(state.structuredTickets).find((item) =>
+    item.linkedWorkItemIds.includes(eventId),
+  );
+  // Current journeys carry ticket payloads in the log. Reconstruct fields at the
+  // decision; later edits must not improve an earlier decision's assessment.
+  // Legacy journeys without payload logs retain their saved ticket snapshot.
+  if (ticket) {
+    const writes = log.flatMap((entry) =>
+      entry.interaction.type === "action" &&
+      entry.interaction.action.ticketPayload?.ticketId === ticket?.ticketId
+        ? [{ sequence: entry.sequence, action: entry.interaction.action }]
+        : [],
+    );
+    if (writes.length) {
+      const ticketId = ticket.ticketId;
+      ticket = { ticketId };
+      for (const { sequence: savedAt, action } of writes) {
+        if (savedAt > sequence) continue;
+        const payload = action.ticketPayload;
+        ticket = {
+          ticketId,
+          verifiedEvidence:
+            payload?.verifiedEvidence ?? ticket.verifiedEvidence,
+          uncertainty: payload?.uncertainty ?? ticket.uncertainty,
+          followUp: payload?.followUp ?? ticket.followUp,
+          sourceArtifactIds:
+            payload?.sourceArtifactIds ?? ticket.sourceArtifactIds,
+          disposition:
+            action.decisionOptionId ??
+            payload?.disposition ??
+            ticket.disposition,
+        };
+      }
+    }
+  }
+  const gaps = required
+    .filter(
+      (id) =>
+        !inspectedBefore.includes(id) ||
+        !ticket?.sourceArtifactIds?.includes(id),
+    )
+    .map((id) => `opened and attached ${state.artifacts[id]?.title ?? id}`);
+  for (const field of ["verifiedEvidence", "uncertainty", "followUp"] as const)
+    if (!ticket?.[field]?.trim())
+      gaps.push(
+        {
+          verifiedEvidence: "Verified evidence",
+          uncertainty: "Uncertainty",
+          followUp: "Next step",
+        }[field],
+      );
+  if (!ticket?.disposition?.trim()) gaps.push("a saved disposition");
+  if (expectedDisposition && ticket?.disposition !== expectedDisposition)
+    gaps.push("an expected scanner closure disposition");
+  return gaps;
 }
 
 function decision(input: {
@@ -292,19 +359,35 @@ export function buildDecisionReview(
         .flatMap(({ resultIds }) => resultIds),
     ],
   );
+  const caseGaps = ticketGaps(
+    state,
+    CASE,
+    caseEvidence,
+    ["login-session-timeline", "vpn-context-1", "device-inventory-1"],
+    log,
+    v2
+      ? authoredSequence(log, CASE, caseChoice)
+      : (caseAction?.sequence ?? Infinity),
+  );
+  const authoredCaseDocumented = Boolean(
+    state.taskProgress[`${CASE}:login-ticket-summary`]?.completed &&
+    hasStep(
+      state,
+      CASE,
+      "login-ticket-summary",
+      "summary-collection-limits",
+      "collection-coverage-limit",
+    ),
+  );
   const caseDocumented =
-    (state.taskProgress[`${CASE}:login-ticket-summary`]?.completed &&
-      hasStep(
-        state,
-        CASE,
-        "login-ticket-summary",
-        "summary-collection-limits",
-        "collection-coverage-limit",
-      )) ||
-    Object.values(state.structuredTickets).some(
-      (ticket) =>
-        ticket.linkedWorkItemIds.includes(CASE) && Boolean(ticket.uncertainty),
-    );
+    ["login-session-timeline", "vpn-context-1", "device-inventory-1"].every(
+      (id) => caseEvidence.includes(id),
+    ) &&
+    (authoredCaseDocumented ||
+      Object.values(state.structuredTickets).some(
+        (ticket) =>
+          ticket.linkedWorkItemIds.includes(CASE) && caseGaps.length === 0,
+      ));
   const routeCompared =
     caseEvidence.includes("login-session-timeline") &&
     caseEvidence.includes("vpn-context-1") &&
@@ -346,8 +429,20 @@ export function buildDecisionReview(
     scannerClosure?.sequence ?? Infinity,
     ["scanner-alert", "scanner-run-log", "scanner-window"],
   );
+  const scannerGaps = ticketGaps(
+    state,
+    SCANNER,
+    scannerEvidence,
+    ["scanner-run-log", "scanner-window"],
+    log,
+    scannerClosure?.sequence ?? Infinity,
+    "expected-close",
+  );
   const scannerDocumented =
-    (state.taskProgress[`${SCANNER}:scanner-ticket-summary`]?.completed &&
+    ["scanner-run-log", "scanner-window"].every((id) =>
+      scannerEvidence.includes(id),
+    ) &&
+    ((state.taskProgress[`${SCANNER}:scanner-ticket-summary`]?.completed &&
       hasStep(
         state,
         SCANNER,
@@ -355,11 +450,11 @@ export function buildDecisionReview(
         "scanner-decision",
         "expected-close",
       )) ||
-    Object.values(state.structuredTickets).some(
-      (ticket) =>
-        ticket.linkedWorkItemIds.includes(SCANNER) &&
-        Boolean(ticket.disposition),
-    );
+      Object.values(state.structuredTickets).some(
+        (ticket) =>
+          ticket.linkedWorkItemIds.includes(SCANNER) &&
+          scannerGaps.length === 0,
+      ));
   const scannerChecked =
     scannerEvidence.includes("scanner-run-log") &&
     scannerEvidence.includes("scanner-window");
@@ -460,10 +555,20 @@ export function buildDecisionReview(
     savedHandoff?.interaction.type === "action"
       ? savedHandoff.interaction.action.handoffPayload
       : undefined;
+  const handoffInspectedBefore = evidenceBefore(
+    state,
+    log,
+    savedHandoff?.sequence ?? Infinity,
+    Object.keys(state.artifacts),
+  );
   const handoffFact = handoffPayload
-    ? handoffPayload.sourceArtifactIds.length > 0 &&
-      handoffPayload.sourceArtifactIds.every((id) =>
-        state.workplace.inspectedArtifactIds?.includes(id),
+    ? ["login-session-timeline", "vpn-context-1", "device-inventory-1"].every(
+        (id) => handoffPayload.sourceArtifactIds.includes(id),
+      ) &&
+      handoffPayload.sourceArtifactIds.every(
+        (id) =>
+          state.workplace.inspectedArtifactIds?.includes(id) &&
+          handoffInspectedBefore.includes(id),
       )
     : hasStep(
         state,
@@ -480,7 +585,15 @@ export function buildDecisionReview(
         "scanner-checked",
       );
   const handoffUncertainty = handoffPayload
-    ? true
+    ? authoredCaseDocumented ||
+      ticketGaps(
+        state,
+        CASE,
+        handoffInspectedBefore,
+        ["login-session-timeline", "vpn-context-1", "device-inventory-1"],
+        log,
+        savedHandoff?.sequence ?? Infinity,
+      ).length === 0
     : hasStep(
         state,
         HANDOFF,
@@ -497,6 +610,24 @@ export function buildDecisionReview(
         "handoff-next-owner",
         "next-analyst-review",
       );
+  const handoffGaps = handoffPayload
+    ? [
+        ...["login-session-timeline", "vpn-context-1", "device-inventory-1"]
+          .filter(
+            (id) =>
+              !handoffPayload.sourceArtifactIds.includes(id) ||
+              !state.workplace.inspectedArtifactIds?.includes(id) ||
+              !handoffInspectedBefore.includes(id),
+          )
+          .map(
+            (id) => `opened and attached ${state.artifacts[id]?.title ?? id}`,
+          ),
+        ...(!handoffUncertainty
+          ? ["a source-backed case uncertainty note"]
+          : []),
+        ...(!handoffOwner ? ["a next owner/check"] : []),
+      ]
+    : [];
   const handoffSupported =
     handoffChoice !== null &&
     handoffFact &&
@@ -658,7 +789,9 @@ export function buildDecisionReview(
         state.taskProgress[`${HANDOFF}:end-shift-continuity`]
           ?.correctionHistory ?? [],
       evidence: handoffPayload
-        ? handoffPayload.sourceArtifactIds
+        ? handoffPayload.sourceArtifactIds.filter((id) =>
+            handoffInspectedBefore.includes(id),
+          )
         : handoffEvidence,
       signals: [
         ["named_confirmed_work", handoffFact],
@@ -673,7 +806,9 @@ export function buildDecisionReview(
       explanation:
         v2 && handoffChoice
           ? handoffPayload
-            ? "You sent a structured handoff containing selected opened sources, actual case states, and follow-up for the next analyst. Any additional note remains your own statement."
+            ? handoffSupported
+              ? "Your structured handoff carries the opened timeline, VPN and device sources, a source-backed uncertainty note, and the next check. Free-text meaning is not evaluated."
+              : `Your handoff is missing: ${handoffGaps.join("; ")}. Selected references and generated case states alone do not establish a complete handoff.`
             : `You sent a ${handoffChoice} handoff. The saved record keeps initial omissions and later corrections in order.`
           : handoffChoice
             ? handoffSupported
@@ -710,7 +845,7 @@ export function buildDecisionReview(
       "Documentation",
       caseDocumented && scannerDocumented,
       caseDocumented || scannerDocumented,
-      "Tracks case and routine closure notes.",
+      `Tracks inspected, attached sources and complete fields; free-text meaning is not evaluated.${!caseDocumented ? ` Case gaps: ${caseGaps.join("; ")}.` : ""}${!scannerDocumented ? ` Scanner gaps: ${scannerGaps.join("; ")}.` : ""}`,
     ],
     [
       "Role boundaries",
@@ -722,7 +857,7 @@ export function buildDecisionReview(
       "Handoff clarity",
       handoffSupported,
       handoffChoice !== null,
-      "Tracks checked facts, an open question, and the next owner.",
+      `Tracks checked facts, an open question, and the next owner.${handoffGaps.length ? ` Missing: ${handoffGaps.join("; ")}.` : ""}`,
     ],
   ].map(([dimension, strong, developing, explanation]) => ({
     dimension: String(dimension),

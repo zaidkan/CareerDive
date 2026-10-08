@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { ClientView } from "@sim/schemas";
+import { getOptionalShiftHints } from "../../guidance.js";
 export type ShiftHint = { id: string; title: string; subtitle?: string };
 /** A bounded latest-work queue. Never interrupt a decision acknowledgement. */
 export function enqueueHint(queue: ShiftHint[], next: ShiftHint): ShiftHint[] {
@@ -14,6 +15,37 @@ export function ShiftHints({
   phase: string;
   paused?: boolean;
 }) {
+  const optionalHints = getOptionalShiftHints(view, phase);
+  const [hintIndex, setHintIndex] = useState<number | null>(null);
+  const hintId = useId();
+  const hintButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    setHintIndex(null);
+  }, [view.sessionId, phase]);
+  useEffect(() => {
+    if (paused || !optionalHints.length) return;
+    const onHint = (event: KeyboardEvent) => {
+      if (
+        event.key.toLowerCase() !== "h" ||
+        event.repeat ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey ||
+        (event.target instanceof HTMLElement &&
+          (event.target.isContentEditable ||
+            event.target.closest('input, textarea, select, [role="textbox"]')))
+      )
+        return;
+      event.preventDefault();
+      setHintIndex((index) =>
+        index === null ? 0 : (index + 1) % optionalHints.length,
+      );
+    };
+    window.addEventListener("keydown", onHint);
+    return () => {
+      window.removeEventListener("keydown", onHint);
+    };
+  }, [paused, optionalHints.length]);
   const previous = useRef({
     session: view.sessionId,
     phase,
@@ -109,18 +141,69 @@ export function ShiftHints({
       document.removeEventListener("visibilitychange", hide);
     };
   }, [current]);
-  if (!current || paused || view.completed || phase === "floor_map")
-    return null;
+  if (paused || view.completed) return null;
   return (
-    <div
-      className="shift-title-hint"
-      key={current.id}
-      role="status"
-      aria-live="polite"
-      aria-atomic="true"
-    >
-      <strong>{current.title}</strong>
-      {current.subtitle ? <span>{current.subtitle}</span> : null}
-    </div>
+    <>
+      {optionalHints.length ? (
+        <aside className="optional-shift-hint" aria-label="Optional shift hint">
+          <button
+            type="button"
+            ref={hintButton}
+            aria-controls={hintId}
+            aria-expanded={hintIndex !== null}
+            aria-keyshortcuts="H"
+            onClick={() => {
+              setHintIndex((index) => (index === null ? 0 : null));
+            }}
+          >
+            {hintIndex === null ? "Hint · H" : "Hide hint · H for next"}
+          </button>
+          {hintIndex !== null ? (
+            <div
+              id={hintId}
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
+              <strong>Optional hint</strong>
+              <p>{optionalHints[hintIndex % optionalHints.length]}</p>
+              {optionalHints.length > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHintIndex(
+                      (index) => ((index ?? 0) + 1) % optionalHints.length,
+                    );
+                  }}
+                >
+                  Next hint
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => {
+                  setHintIndex(null);
+                  hintButton.current?.focus();
+                }}
+              >
+                Dismiss hint
+              </button>
+            </div>
+          ) : null}
+        </aside>
+      ) : null}
+      {current && phase !== "floor_map" ? (
+        <div
+          className="shift-title-hint"
+          key={current.id}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <strong>{current.title}</strong>
+          {current.subtitle ? <span>{current.subtitle}</span> : null}
+        </div>
+      ) : null}
+    </>
   );
 }

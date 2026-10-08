@@ -322,7 +322,7 @@ describe("end-of-shift decision review", () => {
       entry.interaction.interaction.artifactId !== "scanner-window"
     );
     expect(buildDecisionReview(state, withoutBoth).decisions[1]?.outcomeLabel)
-      .toBe("partially_supported");
+      .toBe("needs_more_evidence");
   });
 
   it("does not praise completed work without inspected support", () => {
@@ -330,7 +330,7 @@ describe("end-of-shift decision review", () => {
     const noSources = log.filter((entry) => entry.interaction.type !== "workplace_interaction");
     const review = buildDecisionReview(state, noSources);
     expect(review.decisions[0]?.outcomeLabel).toBe("needs_more_evidence");
-    expect(review.decisions[1]?.outcomeLabel).toBe("partially_supported");
+    expect(review.decisions[1]?.outcomeLabel).toBe("needs_more_evidence");
     expect(review.decisions[2]?.outcomeLabel).toBe("partially_supported");
     expect(review.decisions[3]?.outcomeLabel).toBe("partially_supported");
     expect(review.decisions[4]?.outcomeLabel).toBe("partially_supported");
@@ -348,6 +348,106 @@ describe("end-of-shift decision review", () => {
     expect(review.decisions[4]?.userChoiceId).toBeNull();
     expect(review.decisions[4]?.outcomeLabel).toBe("needs_more_evidence");
     expect(review.decisions[3]?.outcomeLabel).toBe("needs_more_evidence");
+  });
+
+  it("credits default-effect inspections only before the committed decision", () => {
+    const { state } = fixture();
+    const log: ActionLogEntry[] = [
+      { sequence: 1, interaction: { type: "action", action: { id: "inspect_login_context", eventId: "suspicious-login-1", actorId: owner } } },
+      { sequence: 2, interaction: { type: "action", action: { id: "escalate_alert", eventId: "suspicious-login-1", actorId: owner } } },
+      { sequence: 3, interaction: { type: "action", action: { id: "inspect_account_history", eventId: "suspicious-login-1", actorId: owner } } },
+    ];
+    expect(buildDecisionReview(state, log).decisions[0]?.evidenceUsedIds).toEqual(["login-context-1"]);
+    const committed = log[1];
+    if (!committed) throw new Error("Missing decision fixture");
+    committed.sequence = 4;
+    log.sort((a, b) => a.sequence - b.sequence);
+    expect(buildDecisionReview(state, log).decisions[0]?.evidenceUsedIds).toEqual(["login-context-1", "account-history-1"]);
+  });
+
+  it("requires complete fields and key inspected attachments for strong documentation", () => {
+    const { state, log } = fixture();
+    delete state.taskProgress["suspicious-login-1:login-ticket-summary"];
+    delete state.taskProgress["routine-alert-1:scanner-ticket-summary"];
+    const caseTicket = {
+      ticketId: "ticket-suspicious-login-1", linkedWorkItemIds: ["suspicious-login-1"],
+      status: "pending_review" as const, entityRefs: [], evidenceFactIds: [],
+      verifiedEvidence: "Timeline and VPN routes differ; device ownership unconfirmed.",
+      uncertainty: "Session ownership is not verified.", followUp: "Ask senior reviewer to verify ownership.",
+      disposition: "escalate-with-comparisons",
+      sourceArtifactIds: ["login-session-timeline", "vpn-context-1", "device-inventory-1"],
+    };
+    const scannerTicket = {
+      ...caseTicket, ticketId: "ticket-routine-alert-1", linkedWorkItemIds: ["routine-alert-1"],
+      verifiedEvidence: "Run ID and target match the approved window.",
+      disposition: "expected-close", sourceArtifactIds: ["scanner-run-log", "scanner-window"],
+    };
+    state.structuredTickets = { case: caseTicket, scanner: scannerTicket };
+    const documentation = () => buildDecisionReview(state, log).profile.find(({ dimension }) => dimension === "Documentation");
+    expect(documentation()?.state).toBe("strong");
+    scannerTicket.sourceArtifactIds = ["scanner-run-log"];
+    expect(documentation()?.state).toBe("developing");
+    expect(documentation()?.explanation).toContain(state.artifacts["scanner-window"]?.title);
+    caseTicket.followUp = "   ";
+    expect(documentation()?.state).toBe("needs_more_evidence");
+    expect(documentation()?.explanation).toContain("Next step");
+    scannerTicket.sourceArtifactIds = ["scanner-run-log", "scanner-window"];
+    caseTicket.followUp = "Senior review";
+    scannerTicket.disposition = "unrelated text";
+    expect(documentation()?.state).toBe("developing");
+  });
+
+  it("does not call a thin generated handoff supported; names missing references", () => {
+    const { state, log } = fixture();
+    state.careerVersion = "2.0.0";
+    state.flags.b3_choice = "complete";
+    const sources = ["login-session-timeline", "vpn-context-1", "device-inventory-1"];
+    state.workplace.inspectedArtifactIds = sources;
+    const payload = { sourceArtifactIds: ["device-inventory-1"], followUp: "senior-review" as const };
+    log.push({ sequence: 20, interaction: { type: "action", action: {
+      id: "submit_shift_handoff", eventId: "shift-handoff-1", actorId: owner, handoffPayload: payload,
+    } } });
+    let review = buildDecisionReview(state, log);
+    expect(review.decisions[4]?.outcomeLabel).toBe("partially_supported");
+    expect(review.decisions[4]?.explanation).toContain(state.artifacts["vpn-context-1"]?.title);
+    expect(review.profile.find(({ dimension }) => dimension === "Handoff clarity")?.state).toBe("developing");
+    payload.sourceArtifactIds = sources;
+    expect(buildDecisionReview(state, log).decisions[4]?.outcomeLabel).toBe("supported");
+    state.workplace.inspectedArtifactIds = ["device-inventory-1"];
+    review = buildDecisionReview(state, log);
+    expect(review.decisions[4]?.outcomeLabel).toBe("partially_supported");
+    expect(review.decisions[4]?.rubricSignals).toContainEqual({ id: "named_confirmed_work", supported: false });
+  });
+
+  it("credits a later source-backed handoff without retroactively improving the earlier decision", () => {
+    const { state, log } = fixture();
+    delete state.taskProgress["suspicious-login-1:login-ticket-summary"];
+    const sources = ["login-session-timeline", "vpn-context-1", "device-inventory-1"];
+    state.workplace.inspectedArtifactIds = sources;
+    const ticket = {
+      ticketId: "ticket-suspicious-login-1", linkedWorkItemIds: ["suspicious-login-1"],
+      status: "pending_review" as const, entityRefs: [], evidenceFactIds: [],
+      sourceArtifactIds: sources, verifiedEvidence: "Timeline/VPN route difference and unverified device.",
+      uncertainty: "Session owner is unverified.", followUp: "Senior reviewer checks ownership.",
+      disposition: "escalate-with-comparisons",
+    };
+    state.structuredTickets.case = ticket;
+    log.push({ sequence: 200, interaction: { type: "action", action: {
+      id: "document_ticket", eventId: "suspicious-login-1", actorId: owner,
+      ticketPayload: { ticketId: ticket.ticketId, sourceArtifactIds: sources,
+        verifiedEvidence: ticket.verifiedEvidence, uncertainty: ticket.uncertainty,
+        followUp: ticket.followUp, disposition: ticket.disposition },
+    } } });
+    log.push({ sequence: 210, interaction: { type: "action", action: {
+      id: "submit_shift_handoff", eventId: "shift-handoff-1", actorId: owner,
+      handoffPayload: { sourceArtifactIds: sources, followUp: "senior-review" },
+    } } });
+    const review = buildDecisionReview(state, log);
+    expect(review.decisions[0]?.outcomeLabel).toBe("partially_supported");
+    expect(review.decisions[0]?.rubricSignals).toContainEqual({ id: "documented_uncertainty", supported: false });
+    expect(review.decisions[4]?.outcomeLabel).toBe("supported");
+    expect(review.profile.find(({ dimension }) => dimension === "Handoff clarity")?.state).toBe("strong");
+    expect(review.profile.find(({ dimension }) => dimension === "Documentation")?.state).toBe("developing");
   });
 
   it("hides small cohorts and derives whole percentages from counts", () => {

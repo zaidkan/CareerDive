@@ -89,3 +89,19 @@ describe("client artifact serialization", () => {
     expect(handoff).not.toHaveProperty("searchableText");
   });
 });
+
+it("exposes only delivered delayed consequences/callbacks with their originating action", () => {
+  const state = createInitialWorldState("delivery", 42, {}, loadDefaultCybersecurityPack());
+  state.ledger.push(
+    { id: "pending", eventId: "suspicious-login-1", actionId: "dismiss_alert", description: "Not yet delivered", createdAt: 10, dueAt: 50, applied: false },
+    { id: "delayed", eventId: "suspicious-login-1", actionId: "dismiss_alert", description: "Related activity appeared", createdAt: 10, dueAt: 50, applied: true },
+    { id: "ordinary", eventId: "suspicious-login-1", actionId: "review_alert", description: "Read the alert", createdAt: 10, applied: true },
+    { id: "callback", eventId: "suspicious-login-1", actionId: "escalate_alert", description: "Reviewer received the records", createdAt: 60, applied: true },
+  );
+  state.pendingCallbacks.push({ id: "reviewer", eventId: "suspicious-login-1", actionId: "escalate_alert", delayMinutes: 20, dueAt: 60, applied: true, when: [], author: "reviewer", body: "Reviewer received the records", activationMessages: [], requiredAtCompletion: true });
+  const before = structuredClone(state);
+  const updates = toClientView(state).consequenceUpdates;
+  expect(updates?.map(({ id }) => id)).toEqual(["delayed", "callback"]);
+  expect(updates?.[0]).toMatchObject({ body: "Related activity appeared", actionLabel: state.rules.actions.dismiss_alert?.label });
+  expect(state).toEqual(before);
+});

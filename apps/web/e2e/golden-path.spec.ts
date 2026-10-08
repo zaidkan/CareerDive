@@ -265,6 +265,9 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
     await expect(page.getByRole("region", { name: "Workplace space" })).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('section[aria-label="Workplace space"] .room-canvas canvas')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator("body")).toContainText("press E to sit", { timeout: 30_000 });
+    await page.getByRole("button", { name: "Hint · H", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Optional hint" })).toContainText("Ready prompt");
+    await page.getByRole("button", { name: "Dismiss hint" }).click();
   });
 
   await test.step("7 · walk with WASD to the workstation", async () => {
@@ -318,6 +321,18 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
     await expect(page.locator('[data-desk-os="true"]')).toBeVisible();
     await expect.poll(() => workstationFitsViewport(page)).toBe(true);
     expect(sessionCreates.length, "login creates no extra session").toBe(1);
+    await page.keyboard.press("h");
+    await expect(page.getByRole("status").filter({ hasText: "Optional hint" })).toContainText("Record comparison");
+    await page.getByRole("button", { name: "Dismiss hint" }).click();
+    await page.keyboard.press("f");
+    await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement?.classList.contains("desk-os-laptop")))).toBe(true);
+    await page.getByRole("button", { name: "Hint · H", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Optional hint" })).toContainText("Record comparison");
+    await page.getByRole("button", { name: "Next hint" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Optional hint" })).toContainText("07:30 = 450");
+    await page.getByRole("button", { name: "Dismiss hint" }).click();
+    await page.keyboard.press("f");
+    await expect.poll(() => page.evaluate(() => document.fullscreenElement === null)).toBe(true);
   });
 
   await test.step("9 · leave, walk away, return, and resume Desk OS state", async () => {

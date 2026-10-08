@@ -451,11 +451,11 @@ function SpatialShellStage({
         className={`room-stage${atDesk ? " room-stage-desk" : ""}${maximized ? " room-stage-desk-max" : ""}${fullscreen ? " room-stage-fs" : ""}`}
         ref={stageRef}
       >
-        <ShiftHints
+        {!atDesk ? <ShiftHints
           view={view}
           phase={spatial.phase}
           paused={julesOpen || morganOpen}
-        />
+        /> : null}
         <Suspense
           fallback={<p className="room-loading">Entering {roomLabel}…</p>}
         >

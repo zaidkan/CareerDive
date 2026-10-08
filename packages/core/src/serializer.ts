@@ -154,6 +154,28 @@ export function toClientView(state: WorldState): ClientView {
       ),
     availableActions: actions,
     operationalMessages,
+    consequenceUpdates: state.ledger
+      .filter(
+        (entry) =>
+          entry.applied &&
+          (entry.dueAt !== undefined ||
+            state.pendingCallbacks.some(
+              (callback) =>
+                callback.applied &&
+                callback.eventId === entry.eventId &&
+                callback.actionId === entry.actionId &&
+                callback.body === entry.description,
+            )),
+      )
+      .map((entry) => ({
+        id: entry.id,
+        eventTitle:
+          state.events.find(({ id }) => id === entry.eventId)?.title ??
+          entry.eventId,
+        actionLabel:
+          state.rules.actions[entry.actionId]?.label ?? entry.actionId,
+        body: entry.description,
+      })),
     acknowledgements: state.acknowledgements,
     pacingMode: state.pacingMode,
     alertRecords: (state.rules.datasets.alerts?.records ?? []).flatMap(
