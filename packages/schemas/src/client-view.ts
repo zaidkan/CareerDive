@@ -59,6 +59,16 @@ export const ClientViewSchema = z.object({
   events: z.array(ClientEventSchema),
   availableActions: z.array(AvailableActionSchema),
   operationalMessages: z.array(z.string()),
+  consequenceUpdates: z
+    .array(
+      z.object({
+        id: z.string(),
+        eventTitle: z.string(),
+        actionLabel: z.string(),
+        body: z.string(),
+      }),
+    )
+    .optional(),
   pacingMode: PacingModeSchema,
   artifacts: z.array(ClientArtifactSchema),
   alertRecords: z.array(AlertRecordSchema).optional(),

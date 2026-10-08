@@ -5838,3 +5838,27 @@ section[aria-labelledby="structured-title"],
 .room-hud .room-hud-brief .room-flavor { color: #aeeedb; }
 .jules-dialogue { max-height: min(calc(100% - 9rem), calc(100dvh - 8rem)); }
 @media (max-width: 600px) { .jules-dialogue { max-height: min(calc(100% - 2rem), calc(100dvh - 8rem)); } }
+
+/* Optional help and delivered follow-ups remain until acknowledged; no motion. */
+.optional-shift-hint {
+  position: absolute; z-index: 1100; right: 1rem; top: 1rem;
+  max-width: min(25rem, calc(100% - 2rem)); color: #f8fafc;
+}
+.optional-shift-hint > div, .consequence-updates {
+  background: #101e2b; color: #f8fafc; border: 2px solid #7dd3fc;
+  border-radius: 0.4rem; padding: 0.8rem; line-height: 1.5;
+}
+.optional-shift-hint button, .consequence-updates button {
+  background: #203c50; color: #ffffff; border: 1px solid #7dd3fc;
+  padding: 0.45rem 0.7rem; border-radius: 0.25rem; cursor: pointer;
+}
+.optional-shift-hint button:focus-visible, .consequence-updates :focus-visible {
+  outline: 3px solid #fbbf24; outline-offset: 3px;
+}
+.optional-shift-hint p { margin: 0.5rem 0; }
+.consequence-updates {
+  max-height: min(12rem, 30vh); overflow: auto;
+}
+.desk-os-has-followups { grid-template-rows: auto minmax(0, 1fr) auto; }
+.consequence-updates p { margin: 0.35rem 0 0.7rem; }
+.consequence-updates summary { cursor: pointer; }

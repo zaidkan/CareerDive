@@ -12,6 +12,7 @@ import type { OsAppId } from "./os/browserState.js";
 import { OsIcon } from "./os/Icons.js";
 import { MAX_OPEN_WINDOWS, canOpenWindow, fitWindowBounds, type WindowBounds, type WorkspaceSize } from "./os/windows.js";
 import { useOsSession } from "./osSession.js";
+import { ConsequenceUpdates } from "../../components/ConsequenceUpdates.js";
 import { NotificationBanner } from "../../components/NotificationBanner.js";
 import type {
   NotificationHandler,
@@ -156,9 +157,10 @@ export function DeskOs({
 
   return (
     <div
-      className={`desk-os${maximized ? " desk-os-max" : ""}${osFullscreen ? " desk-os-os-fs" : ""}${locked ? " desk-os-locked" : " desk-os-shell"}`}
+      className={`desk-os${maximized ? " desk-os-max" : ""}${osFullscreen ? " desk-os-os-fs" : ""}${locked ? " desk-os-locked" : " desk-os-shell"}${!locked && view.consequenceUpdates?.length ? " desk-os-has-followups" : ""}`}
       data-desk-os="true"
     >
+      {!locked ? <ConsequenceUpdates view={view} /> : null}
       <div aria-label="Verdaly workstation ready" className="os-workspace" hidden={locked} ref={workspaceRef} role="group" tabIndex={-1}>
         <Desktop onOpen={launch} />
         {state.windows.windows.filter((window) => !window.minimized).map((window) => (
