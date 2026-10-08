@@ -85,3 +85,30 @@ export function getFirstDayStep(
   }
   return null;
 }
+
+/** Optional procedural help. Explains tools without choosing a disposition. */
+export function getOptionalShiftHints(
+  view: ClientView,
+  phase: string,
+): string[] {
+  if (view.completed) return [];
+  if (phase === "room_walk" || phase === "floor_map")
+    return [
+      "Follow the workstation marker to your chair. Approach from the aisle; when the Ready prompt says Sit at computer, press E. If it says Move closer, keep approaching the chair rather than the desktop.",
+    ];
+  if (phase === "desk_login")
+    return [
+      "The workstation sign-in shows your first-day credentials. Enter those in the two fields, then sign in to begin the shift.",
+    ];
+  const hints: string[] = [];
+  const login = view.events.find(({ id }) => id === "suspicious-login-1");
+  if (login && !["resolved", "expired"].includes(login.status))
+    hints.push(
+      "For a route comparison, open the session timeline and VPN context in the case evidence, then use Record comparison. Opening or attaching both sources alone does not record a comparison. Compare what the records show before choosing a disposition.",
+    );
+  hints.push(
+    "In Record Search, time values use minutes since midnight: 07:30 = 450 and 08:00 = 480. Narrow the user or device first, run the query, then open matching rows to inspect them.",
+    "Reading a source records an inspection. A comparison, ticket, or handoff is saved only with its own Record/Save/Send control. Attach inspected sources and check the saved confirmation before moving on.",
+  );
+  return hints;
+}

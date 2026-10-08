@@ -3,6 +3,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 const CONTROLS: ReadonlyArray<{ keys: string; action: string }> = [
   { keys: "W A S D / arrows", action: "Move around the floor" },
   { keys: "Click + drag", action: "Look around" },
+  { keys: "H", action: "Show an optional hint (outside text fields)" },
   { keys: "E", action: "Use the action shown in the Ready prompt" },
   { keys: "F / Esc", action: "Fullscreen on and off" },
 ];
