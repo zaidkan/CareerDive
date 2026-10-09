@@ -82,6 +82,7 @@ export const ClientViewSchema = z.object({
         author: z.enum(["player", "morgan", "reviewer", "employee"]),
         body: z.string(),
         actionId: AvailableActionSchema.shape.id,
+        consultationKey: z.string().optional(),
         simMinutes: z.number().int().nonnegative(),
       }),
     )

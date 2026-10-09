@@ -1,4 +1,5 @@
-import { useRef } from "react";
+import { managerRecap } from "@sim/core";
+import { useRef, useState } from "react";
 import {
   DialogueLine,
   type DialogueController,
@@ -34,6 +35,19 @@ export function TeamChatTool({
     `chat:${view.sessionId}`,
     {},
   );
+  const [recap, setRecap] = useState<{
+    eventId: string;
+    body: string;
+    question: string;
+  }>();
+  function consult(action: AvailableAction, question: string) {
+    const body = managerRecap(view, action.eventId, question);
+    if (body) setRecap({ eventId: action.eventId, body, question });
+    else {
+      setRecap(undefined);
+      onAction?.(action, question);
+    }
+  }
   const osSession = useOptionalOsSession();
   const morganIntroSeen = osSession?.state.morganIntroSeen ?? false;
   const chatActions = actions.filter(
@@ -104,6 +118,13 @@ export function TeamChatTool({
           ))}
         </ol>
       ) : null}
+      {recap &&
+      managerRecap(view, recap.eventId, recap.question) === recap.body ? (
+        <aside role="status" aria-label="Morgan recap">
+          <strong>Recap · no time or energy spent</strong>
+          <p>{recap.body}</p>
+        </aside>
+      ) : null}
       {latestReply || chatActions.some((a) => a.id === "ask_manager") ? (
         <AudioToggle />
       ) : null}
@@ -137,7 +158,7 @@ export function TeamChatTool({
                         return;
                       }
                       unlockDialogueAudio();
-                      onAction?.(action, choice);
+                      consult(action, choice);
                     }}
                   >
                     {choice}
@@ -155,7 +176,7 @@ export function TeamChatTool({
                         return;
                       }
                       unlockDialogueAudio();
-                      onAction?.(action, draft.trim());
+                      consult(action, draft.trim());
                       setDrafts((current) => ({ ...current, [key]: "" }));
                     }
                   }}

@@ -1,3 +1,4 @@
+import { managerRecap } from "@sim/core";
 import { useEffect, useRef, useState } from "react";
 import type { AvailableAction, ClientView } from "@sim/schemas";
 import { DialogueLine } from "./DialogueLine.js";
@@ -26,19 +27,38 @@ export function MorganDialogue({
   );
   const [selected, setSelected] = useState(
     () =>
+      actions.find(
+        (a) =>
+          a.eventId ===
+          view.teamMessages?.findLast((m) => m.author === "morgan")?.eventId,
+      )?.eventId ??
       actions.find((a) => source?.eventIds.includes(a.eventId))?.eventId ??
       actions.find((a) => a.eventId === "suspicious-login-1")?.eventId ??
       actions[0]?.eventId ??
       "",
   );
   const action = actions.find((a) => a.eventId === selected) ?? actions[0];
-  const initialMessages = useRef(new Set(view.teamMessages?.map((m) => m.id)));
+  const [recap, setRecap] = useState<{
+    eventId: string;
+    body: string;
+    question: string;
+  }>();
   const reply = view.teamMessages?.findLast(
+    (m) => m.eventId === action?.eventId && m.author === "morgan",
+  );
+  const lastQuestion = view.teamMessages?.findLast(
     (m) =>
       m.eventId === action?.eventId &&
-      m.author === "morgan" &&
-      !initialMessages.current.has(m.id),
+      m.author === "player" &&
+      m.actionId === "ask_manager",
   );
+  const shownRecap =
+    recap &&
+    recap.eventId === action?.eventId &&
+    managerRecap(view, recap.eventId, recap.question) === recap.body
+      ? recap
+      : undefined;
+  const initialReplyId = useRef(reply?.id);
   const focus = useRef(document.activeElement);
   useEffect(
     () => () => {
@@ -83,12 +103,19 @@ export function MorganDialogue({
           ))}
         </select>
       </label>
+      {lastQuestion ? <p>You asked: {lastQuestion.body}</p> : null}
+      {shownRecap ? <p role="status">Recap · no time or energy spent</p> : null}
       <DialogueLine
-        key={reply?.id ?? action?.eventId}
+        key={shownRecap?.body ?? reply?.id ?? action?.eventId}
         text={
+          shownRecap?.body ??
           reply?.body ??
           "Which part of this work do you want to discuss? I can help with context, not guess who used a session."
         }
+        animate={
+          !reply || Boolean(shownRecap) || reply.id !== initialReplyId.current
+        }
+        advanceLabel="Back to work"
         onAdvance={onClose}
       >
         <div className="jules-dialogue-topics">
@@ -100,7 +127,19 @@ export function MorganDialogue({
               key={choice}
               onClick={() => {
                 unlockDialogueAudio();
-                if (action) onAction(action, choice);
+                if (action) {
+                  const body = managerRecap(view, action.eventId, choice);
+                  if (body)
+                    setRecap({
+                      eventId: action.eventId,
+                      body,
+                      question: choice,
+                    });
+                  else {
+                    setRecap(undefined);
+                    onAction(action, choice);
+                  }
+                }
               }}
             >
               {choice}

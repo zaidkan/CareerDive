@@ -124,7 +124,7 @@ describe("purposeful deterministic Jules dialogue", () => {
 
     const reply = julesDialogueFromClientView(view, "current_work");
 
-    expect(reply.text).toMatch(/public work is available/i);
+    expect(reply.text).toMatch(/there is work available/i);
     expect(reply.text).not.toMatch(/isn't a new|no public work/i);
     expect(JSON.stringify(reply)).not.toContain("update_notebook");
   });

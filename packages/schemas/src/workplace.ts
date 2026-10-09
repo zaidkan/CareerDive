@@ -30,6 +30,7 @@ export const WorkplaceStateSchema = z.object({
   lastInspectedArtifactId: z.string().optional(),
   inspectedArtifactIds: z.array(z.string()).optional(),
   inspectedRecordIds: z.array(z.string()).optional(),
+  inspectedRecordIdsByEvent: z.record(z.string(), z.array(z.string())).optional(),
   comparisons: z
     .array(
       z.object({

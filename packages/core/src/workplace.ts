@@ -183,18 +183,16 @@ export function applyWorkplaceInteraction(
       if (interaction.eventId) {
         if (!visibleEventIds(state).has(interaction.eventId))
           reject("Coworker context must refer to visible work");
-        state.workplace.julesConsultations ??= [];
-        if (
-          !state.workplace.julesConsultations.some(
-            (c) =>
-              c.eventId === interaction.eventId &&
-              c.topic === interaction.topic,
-          )
-        )
-          state.workplace.julesConsultations.push({
-            eventId: interaction.eventId,
-            topic: interaction.topic,
-          });
+        state.workplace.julesConsultations = (
+          state.workplace.julesConsultations ?? []
+        ).filter(
+          (c) =>
+            c.eventId !== interaction.eventId || c.topic !== interaction.topic,
+        );
+        state.workplace.julesConsultations.push({
+          eventId: interaction.eventId,
+          topic: interaction.topic,
+        });
       }
       if (!state.workplace.julesTopicsSeen.includes(interaction.topic)) {
         state.workplace.julesTopicsSeen.push(interaction.topic);
@@ -227,6 +225,13 @@ export function applyWorkplaceInteraction(
       state.workplace.inspectedRecordIds ??= [];
       if (!state.workplace.inspectedRecordIds.includes(interaction.recordId))
         state.workplace.inspectedRecordIds.push(interaction.recordId);
+      if (query.actorEventId) {
+        state.workplace.inspectedRecordIdsByEvent ??= {};
+        const ids = (state.workplace.inspectedRecordIdsByEvent[
+          query.actorEventId
+        ] ??= []);
+        if (!ids.includes(interaction.recordId)) ids.push(interaction.recordId);
+      }
       feedbackCode = "query_record_inspected";
       break;
     }

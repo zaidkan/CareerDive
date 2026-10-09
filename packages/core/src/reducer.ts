@@ -10,6 +10,8 @@ import {
   TicketUpdatePayloadSchema,
   WorldStateSchema,
 } from "@sim/schemas";
+import { managerRecap, ticketSourceAcknowledgement } from "./morgan.js";
+import { toClientView } from "./serializer.js";
 import { availableActions } from "./availability.js";
 import { applyResolvedEffect, resolveActionEffect } from "./effects.js";
 import { handoffCaseLines, handoffFollowUps } from "./handoff-summary.js";
@@ -205,6 +207,16 @@ export function applyAction(
     throw new ActionUnavailableError(action.id);
   }
 
+  if (
+    action.id === "ask_manager" &&
+    managerRecap(
+      toClientView(currentState),
+      targetEventId,
+      action.freeText ?? "",
+    )
+  )
+    return { state: structuredClone(currentState), effects: [] };
+
   const state = structuredClone(currentState);
   const effects: DomainEffect[] = [
     { type: "action_applied", actionId: action.id },
@@ -353,7 +365,7 @@ export function applyAction(
       author: "morgan",
       actionId: action.id,
       simMinutes: state.simClock,
-      body: `${previouslyAsked ? "Following up on your handoff question: " : "I have your saved case note. "}${String(ticket.sourceArtifactIds?.length ?? 0)} source ${ticket.sourceArtifactIds?.length === 1 ? "reference is" : "references are"} attached. ${ticket.uncertainty ? `The open question remains: ${ticket.uncertainty}` : "No uncertainty is written in this note; silence is not confirmation."} I will use the recorded decision when routing the follow-up.`,
+      body: `${previouslyAsked ? "Following up on your handoff question: " : "I have your saved case note. "}${ticketSourceAcknowledgement(toClientView(state), targetEventId)} ${ticket.uncertainty ? `The open question remains: ${ticket.uncertainty}` : "No uncertainty is written in this note; silence is not confirmation."} I will use the recorded decision when routing the follow-up.`,
     });
   }
 
