@@ -111,3 +111,12 @@ it("cancels the scheduled reveal frame immediately on skip and close", () => {
   unmount();
   expect(pending.size).toBe(0);
 });
+
+it("instant text remains silent and keeps the complete screen-reader line", () => {
+  const frames = vi.spyOn(window, "requestAnimationFrame");
+  const text = "This complete line needs no animated reveal.";
+  render(<DialogueLine text={text} animate={false} />);
+  expect(screen.getByRole("status")).toHaveTextContent(text);
+  expect(screen.queryByRole("button", { name: "Show full message" })).toBeNull();
+  expect(frames).not.toHaveBeenCalled();
+});
