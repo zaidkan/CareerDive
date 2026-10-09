@@ -404,13 +404,17 @@ export function LandingPage() {
           width="reading"
           className="home-reflect-chapter"
         >
-          <div ref={reflectRef} data-motion="chapter-reveal">
+          <div
+            ref={reflectRef}
+            data-motion="chapter-reveal"
+            className="home-reflect-content"
+          >
             <h2 id="home-reflect-title" data-motion-role="argument">
               Would you want to do this again?
             </h2>
             <p className="ui-type-proof">
-              Notice what held your attention. One shift is a starting point,
-              not a career verdict.
+              What felt interesting? What felt difficult? Use this shift to
+              explore those questions—not as a career verdict.
             </p>
             <p>
               <SiteLink className="v2-text-link" to="/trust">

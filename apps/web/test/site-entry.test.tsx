@@ -170,6 +170,11 @@ describe("site routes", () => {
     expect(
       screen.getByRole("heading", { name: "An honest review, not a score." }),
     ).toBeVisible();
+    expect(
+      screen.getByText(
+        "What felt interesting? What felt difficult? Use this shift to explore those questions—not as a career verdict.",
+      ),
+    ).toBeVisible();
     expect(document.querySelectorAll(".home-analysis-beats li")).toHaveLength(
       3,
     );

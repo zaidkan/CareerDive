@@ -279,10 +279,24 @@
   font-weight: 700;
   line-height: 1.45;
 }
-/* —— Reflection: one compact debrief crop —— */
-.home-reflect-chapter h2 {
-  max-width: 22ch;
+/* —— Reflection: a focused question with room to consider it —— */
+.home-reflect-content {
+  display: grid;
+  gap: 1.25rem;
+  padding-block: clamp(1rem, 3vw, 2rem);
 }
+.home-reflect-content h2 {
+  max-width: 22ch;
+  margin: 0;
+  text-wrap: balance;
+}
+.home-reflect-content .ui-type-proof {
+  max-width: 48ch;
+}
+.home-reflect-content > p {
+  margin: 0;
+}
+
 /* Show the authentic review heading and first decision, rather than the
    middle of the long full-shift capture. This is an explicitly labeled excerpt. */
 .home-debrief-crop {
