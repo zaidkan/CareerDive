@@ -251,6 +251,10 @@ export function collectMetrics({ leakPatterns = [] } = {}) {
     navReport,
     workshopArtifactCount,
     workshopLabels,
+    homeSectionOrder: Array.from(document.querySelectorAll(".v2-home > section")).map((section) => section.className),
+    homeAnalysisCropWidth: document.querySelector(".home-debrief-crop")?.clientWidth ?? 0,
+    homeAnalysisCropHeight: document.querySelector(".home-debrief-crop")?.clientHeight ?? 0,
+    homeAnalysisCaptures: document.querySelectorAll('.home-analysis [data-media-slot="home-debrief-reflection"]').length,
     homeCareerLabels: Array.from(document.querySelectorAll(".home-hero-card"))
       .map((card) => card.getAttribute("aria-label") ?? ""),
     cls: window.__qaCls ?? 0,
@@ -409,6 +413,15 @@ export function evaluateChecks({ route, theme, motion, metrics }) {
   );
 
   if (route.key === "home") {
+    const order = metrics.homeSectionOrder ?? [];
+    push("home-feature-order", JSON.stringify(order) === JSON.stringify([
+      "home-hero", "home-place", "home-realwork", "home-analysis", "home-shift", "home-reflect", "home-faq", "home-final",
+    ]), order);
+    push("one-home-analysis-capture", metrics.homeAnalysisCaptures === 1, metrics.homeAnalysisCaptures);
+    push("compact-home-analysis-capture", metrics.homeAnalysisCropWidth > 0 &&
+      metrics.homeAnalysisCropHeight >= metrics.homeAnalysisCropWidth * 0.5 &&
+      metrics.homeAnalysisCropHeight <= metrics.homeAnalysisCropWidth * 1.3,
+      { width: metrics.homeAnalysisCropWidth, height: metrics.homeAnalysisCropHeight });
     const labels = metrics.homeCareerLabels ?? [];
     push("home-career-availability", labels.length === 5 &&
       labels.filter((label) => /Cybersecurity Analyst.*Playable now/i.test(label)).length === 1 &&

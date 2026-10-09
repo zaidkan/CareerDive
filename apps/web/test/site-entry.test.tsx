@@ -135,9 +135,35 @@ describe("site routes", () => {
     // Hero visual is the compact career-card system, not a static thumbnail.
     expect(document.querySelectorAll(".home-hero-card")).toHaveLength(5);
     expect(document.querySelector(".home-hero-stage img")).toBeNull();
-    // How a shift works stays text-only; the handoff preview is removed.
+    // How a shift works stays text-only; the redundant handoff preview is gone.
     expect(document.querySelector(".home-desk")).toBeNull();
     expect(document.querySelector(".home-handoff")).toBeNull();
+    expect(
+      screen.queryByText("Your shift ends. The work does not."),
+    ).toBeNull();
+    expect(
+      document.querySelectorAll('[data-media-slot="home-debrief-reflection"]'),
+    ).toHaveLength(1);
+    expect(
+      Array.from(document.querySelectorAll(".v2-home > section")).map(
+        (section) => section.className,
+      ),
+    ).toEqual([
+      "home-hero",
+      "home-place",
+      "home-realwork",
+      "home-analysis",
+      "home-shift",
+      "home-reflect",
+      "home-faq",
+      "home-final",
+    ]);
+    expect(
+      screen.getByRole("heading", { name: "An honest review, not a score." }),
+    ).toBeVisible();
+    expect(document.querySelectorAll(".home-analysis-beats li")).toHaveLength(
+      3,
+    );
     expect(
       document.querySelectorAll('[data-media-slot^="career-artifact-"]'),
     ).toHaveLength(0);
@@ -150,7 +176,7 @@ describe("site routes", () => {
     expect(screen.queryByText(/requests stay on this page/i)).toBeNull();
     expect(
       screen.getByRole("heading", {
-        name: "One short simulated shift. A clearer view of your decisions.",
+        name: "Try a shift. See how you reasoned.",
       }),
     ).toBeVisible();
     expect(

@@ -102,11 +102,11 @@ function ProductCapture({
 }
 
 const SHIFT_ACTS = [
-  { act: "Prepare", claim: "Context first. Then the actual work." },
-  { act: "Decide", claim: "You decide before the picture is complete." },
+  { act: "Prepare", claim: "Read the handoff. Check the records." },
+  { act: "Decide", claim: "Make a call with incomplete evidence." },
   {
     act: "Pass it on",
-    claim: "The work isn't done until someone else can continue it.",
+    claim: "Leave a clear next step.",
   },
 ] as const;
 
@@ -156,6 +156,7 @@ export function LandingPage() {
   const heroRef = useChapterReveal<HTMLDivElement>();
   const realWorkRef = useChapterReveal<HTMLDivElement>();
   const shiftRef = useChapterReveal<HTMLDivElement>();
+  const analysisRef = useChapterReveal<HTMLDivElement>();
   const reflectRef = useChapterReveal<HTMLDivElement>();
   const faqRef = useChapterReveal<HTMLDivElement>();
   const finalRef = useChapterReveal<HTMLDivElement>();
@@ -403,6 +404,53 @@ export function LandingPage() {
         </PublicChapter>
       </section>
 
+      <section className="home-analysis" aria-labelledby="home-analysis-title">
+        <PublicChapter
+          as="div"
+          surface="base"
+          rhythm="standard"
+          className="home-analysis-chapter"
+        >
+          <div
+            ref={analysisRef}
+            data-motion="chapter-reveal"
+            className="home-feature-grid home-feature-grid--analysis"
+          >
+            <div className="home-analysis-copy">
+              <h2 id="home-analysis-title" data-motion-role="argument">
+                An honest review, not a score.
+              </h2>
+              <p className="ui-type-proof">
+                See how you reasoned—not which career a quiz picked for you.
+              </p>
+              <ol
+                className="home-analysis-beats"
+                aria-label="What your shift review shows"
+              >
+                <li>What you chose.</li>
+                <li>What the evidence supported.</li>
+                <li>What's still unknown.</li>
+              </ol>
+            </div>
+            <figure className="home-feature-proof">
+              <div className="home-feature-frame" data-motion-role="artifact">
+                <div className="home-debrief-crop">
+                  <ProductCapture
+                    id="a-10"
+                    slot="home-debrief-reflection"
+                    alt="Product capture: Your shift in review, showing the recorded decision and evidence for the unfamiliar sign-in."
+                  />
+                </div>
+              </div>
+              <figcaption>
+                Your shift in review · excerpt from an actual product capture,
+                synthetic records
+              </figcaption>
+            </figure>
+          </div>
+        </PublicChapter>
+      </section>
+
       <section className="home-shift" aria-labelledby="home-shift-title">
         <PublicChapter
           as="div"
@@ -429,28 +477,18 @@ export function LandingPage() {
       <section className="home-reflect" aria-labelledby="home-reflect-title">
         <PublicChapter
           as="div"
-          surface="chapter"
-          rhythm="standard"
+          surface="base"
+          rhythm="compact"
           width="reading"
           className="home-reflect-chapter"
         >
           <div ref={reflectRef} data-motion="chapter-reveal">
             <h2 id="home-reflect-title" data-motion-role="argument">
-              See how you worked.
+              Would you want to do this again?
             </h2>
             <p className="ui-type-proof">
-              Your recorded decisions, the evidence behind them, and what
-              remains unknown. A debrief, without a career-fit score.
-            </p>
-            <div className="home-debrief-crop">
-              <ProductCapture
-                id="a-10"
-                slot="home-debrief-reflection"
-                alt="Product capture: one decision block from the shift debrief, reviewing what happened and what stayed uncertain."
-              />
-            </div>
-            <p className="home-media-note">
-              Shift debrief · actual product capture, synthetic records
+              Notice what held your attention. One shift is a starting point,
+              not a career verdict.
             </p>
             <p>
               <SiteLink className="v2-text-link" to="/trust">
@@ -505,7 +543,7 @@ export function LandingPage() {
             className="home-final-inner"
           >
             <h2 id="home-final-title" data-motion-role="argument">
-              One short simulated shift. A clearer view of your decisions.
+              Try a shift. See how you reasoned.
             </h2>
             <p>
               Try the work <span aria-hidden="true">→</span> Make the calls{" "}
