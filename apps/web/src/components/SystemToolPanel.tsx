@@ -267,6 +267,7 @@ export function SystemToolPanel({
             view={view}
             eventId={selectedEventId}
             onInspect={onWorkplaceInteraction}
+            bodyShownElsewhere={eventArtifacts.map(({ id }) => id)}
             pending={Boolean(mutationState.pendingKey)}
           />
         ) : null}

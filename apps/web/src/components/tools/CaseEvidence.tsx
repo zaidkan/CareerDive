@@ -6,6 +6,7 @@ export function CaseEvidence({
   eventId,
   onInspect,
   pending,
+  bodyShownElsewhere = [],
 }: {
   view: ClientView;
   eventId: string;
@@ -13,6 +14,7 @@ export function CaseEvidence({
     | ((interaction: WorkplaceInteraction) => Promise<unknown>)
     | undefined;
   pending: boolean;
+  bodyShownElsewhere?: string[];
 }) {
   const sources = view.artifacts.filter((source) =>
     source.eventIds.includes(eventId),
@@ -97,6 +99,14 @@ export function CaseEvidence({
         </section>
       ) : null}
       <h4>Sources for this case</h4>
+      <details>
+        <summary>Record terms</summary>
+        <dl>
+          <dt>MFA</dt><dd>An extra identity check beyond a password.</dd>
+          <dt>VPN</dt><dd>A private connection; its exit address may differ from a person's location.</dd>
+          <dt>Enrolled device / MDM</dt><dd>A device registered for work support and management, not proof of who held it.</dd>
+        </dl>
+      </details>
       <p className="source-count">
         {sources.filter(({ id }) => inspected.includes(id)).length} of{" "}
         {sources.length} inspected
@@ -162,7 +172,7 @@ export function CaseEvidence({
           </div>
         </details>
       ) : null}
-      {source?.observed && source.body ? (
+      {source?.observed && source.body && !bodyShownElsewhere.includes(source.id) ? (
         <article aria-label={`Inspected source: ${source.title}`}>
           <h5>{source.title}</h5>
           <pre className="artifact-body">{source.body}</pre>
