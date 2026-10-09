@@ -356,7 +356,9 @@ function SpatialShellStage({
     view,
     ...(spatial.visitedDesk ? { visitedDesk: true } : {}),
   });
-  const stepLabel = `Step ${String(journey.index)} of ${String(journey.total)}`;
+  const stepLabel = spatial.visitedDesk
+    ? "Current shift"
+    : `Step ${String(journey.index)} of ${String(journey.total)}`;
   const walking = spatial.phase === "room_walk";
   const atDesk =
     spatial.phase === "desk_login" ||
@@ -372,6 +374,7 @@ function SpatialShellStage({
   if (spatial.phase === "floor_map") {
     return (
       <FloorMap
+        returning={Boolean(spatial.visitedDesk)}
         hint={journey.body}
         onEnterRoom={(roomId) => {
           dispatch({ type: "enter_room", roomId });
@@ -451,11 +454,13 @@ function SpatialShellStage({
         className={`room-stage${atDesk ? " room-stage-desk" : ""}${maximized ? " room-stage-desk-max" : ""}${fullscreen ? " room-stage-fs" : ""}`}
         ref={stageRef}
       >
-        {!atDesk ? <ShiftHints
-          view={view}
-          phase={spatial.phase}
-          paused={julesOpen || morganOpen}
-        /> : null}
+        {!atDesk ? (
+          <ShiftHints
+            view={view}
+            phase={spatial.phase}
+            paused={julesOpen || morganOpen}
+          />
+        ) : null}
         <Suspense
           fallback={<p className="room-loading">Entering {roomLabel}…</p>}
         >

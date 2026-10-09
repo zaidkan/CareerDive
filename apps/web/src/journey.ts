@@ -1,5 +1,9 @@
 import type { ClientView, WorkSystemId } from "@sim/schemas";
-import { getShiftGuidance, getFirstDayStep, FIRST_DAY_STEPS } from "./guidance.js";
+import {
+  getShiftGuidance,
+  getFirstDayStep,
+  FIRST_DAY_STEPS,
+} from "./guidance.js";
 import type { HotspotId, RoomId, SpatialPhase } from "./world/worldTypes.js";
 
 export type JourneyStepId =
@@ -79,6 +83,19 @@ export function getJourneyStep({
   view: ClientView;
   visitedDesk?: boolean;
 }): JourneyStep {
+  const guidance = getShiftGuidance(view);
+  if (visitedDesk && (phase === "floor_map" || phase === "room_walk")) {
+    return step("ready", {
+      title: view.completed
+        ? "Your shift is complete"
+        : (guidance?.headline ?? "Your current shift"),
+      body: `${guidance?.detail ?? "No work step is waiting."} You are away from your workstation; return when ready, or take a break.`,
+      target:
+        phase === "floor_map"
+          ? { kind: "room", roomId: "soc" }
+          : { kind: "hotspot", hotspotId: "desk_player" },
+    });
+  }
   if (phase === "floor_map") {
     return step("find_room", {
       title: "Head to Security Operations",
@@ -111,12 +128,11 @@ export function getJourneyStep({
     });
   }
 
-  const guidance = getShiftGuidance(view);
   const firstDayStep = getFirstDayStep(view);
 
   if (!firstDayStep) {
     return step("ready", {
-      title: "You have covered the basics",
+      title: guidance?.headline ?? "Your current shift",
       body:
         guidance?.detail ??
         "Keep working the shift, or wrap up when everything is handled.",
@@ -126,6 +142,8 @@ export function getJourneyStep({
   return step(DESK_STEP_BY_FIRST_DAY_ID[firstDayStep.id], {
     title: withoutStepPrefix(firstDayStep.title),
     body: guidance?.detail ?? firstDayStep.body,
-    ...(guidance ? { target: { kind: "system", systemId: guidance.systemId } } : {}),
+    ...(guidance
+      ? { target: { kind: "system", systemId: guidance.systemId } }
+      : {}),
   });
 }
