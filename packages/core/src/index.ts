@@ -32,7 +32,10 @@ export {
   canOpenArtifact,
 } from "./workplace.js";
 
-export { missingLoginComparisonSteps, hasLoginRouteComparison } from "./login-comparison.js";
+export {
+  missingLoginComparisonSteps,
+  hasLoginRouteComparison,
+} from "./login-comparison.js";
 
 export { resolveActionEffect } from "./effects.js";
 
@@ -43,6 +46,19 @@ export {
   ticketSourceAcknowledgement,
 } from "./morgan.js";
 
-export { reasoningGroups, validateReasoning, reviewReasoning, sourceBundle, inspectedSourceBundle } from "./reasoning-options.js";
+export {
+  reasoningGroups,
+  validateReasoning,
+  reviewReasoning,
+  sourceBundle,
+  inspectedSourceBundle,
+} from "./reasoning-options.js";
 
-export { handoffOptions, handoffOptionsForCases, validateHandoffSelections, reviewHandoffSelections } from "./handoff-options.js";
+export {
+  handoffOptions,
+  handoffOptionsForCases,
+  validateHandoffSelections,
+  reviewHandoffSelections,
+} from "./handoff-options.js";
+
+export { matchingGuides } from "./knowledge.js";

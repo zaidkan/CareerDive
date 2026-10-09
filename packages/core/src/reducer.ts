@@ -21,7 +21,8 @@ import { availableActions } from "./availability.js";
 import { applyResolvedEffect, resolveActionEffect } from "./effects.js";
 import { handoffCaseLines, handoffFollowUps } from "./handoff-summary.js";
 import { runQuery } from "./query.js";
-import { alertRecordSource } from "./workplace.js";
+import { matchingGuides } from "./knowledge.js";
+import { alertRecordSource, canOpenArtifact } from "./workplace.js";
 import {
   activatePendingEvents,
   applyDueConsequences,
@@ -276,6 +277,23 @@ export function applyAction(
         throw new TaskRequiredError(action.id, allowedAction.taskId);
       }
     }
+  }
+
+  if (
+    action.id === "search_knowledge_base" &&
+    currentState.careerVersion === "2.0.0" &&
+    !matchingGuides(
+      Object.values(currentState.artifacts).filter((a) =>
+        canOpenArtifact(currentState, a.id),
+      ),
+      action.freeText ?? "",
+      targetEventId,
+    ).length
+  ) {
+    const error = new ActionUnavailableError(action.id);
+    error.message =
+      "No relevant guide matched this query. Try a short keyword from this case, such as scanner or device. No task, time, or energy changed.";
+    throw error;
   }
 
   const definition = currentState.rules.actions[action.id];

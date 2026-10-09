@@ -31,7 +31,7 @@ function guideView(): ClientView {
         title: "Phishing response guide",
         summary: "Approved steps for a reported phishing message.",
         body: "Full phishing response procedure.",
-        eventIds: [],
+        eventIds: ["guide-event"],
         relatedArtifactIds: [],
         searchableText: "reported message suspicious link",
         observed: false,
@@ -43,7 +43,7 @@ function guideView(): ClientView {
         title: "Login alert guide",
         summary: "Review an unfamiliar successful login.",
         body: "Full login alert procedure.",
-        eventIds: [],
+        eventIds: ["guide-event"],
         relatedArtifactIds: [],
         searchableText: "account history device",
         observed: false,
@@ -105,7 +105,10 @@ describe("Guide search", () => {
     const onAction = vi.fn();
     const onOpen = vi.fn().mockResolvedValue(undefined);
     render(
-      <SystemToolPanel systemId="knowledge_base" actions={[]} view={guideView()}
+      <SystemToolPanel
+        systemId="knowledge_base"
+        actions={[]}
+        view={guideView()}
         onAction={onAction}
         onWorkplaceInteraction={onOpen}
       />,
@@ -228,7 +231,7 @@ describe("Guide search", () => {
     );
 
     const canonicalInput = screen.getByRole("searchbox", {
-      name: "Search guides",
+      name: "Find a guide",
     });
     await user.type(canonicalInput, "phishing");
     await user.click(screen.getByRole("button", { name: "Search guides" }));
@@ -245,9 +248,9 @@ describe("Guide search", () => {
         view={{ ...guideView(), kbQuery: "phishing" }}
       />,
     );
-    expect(
-      screen.getByRole("searchbox", { name: "Find a guide" }),
-    ).toHaveValue("phishing");
+    expect(screen.getByRole("searchbox", { name: "Find a guide" })).toHaveValue(
+      "phishing",
+    );
     expect(
       screen.queryByRole("button", { name: /Login alert guide kb document/ }),
     ).not.toBeInTheDocument();
@@ -259,11 +262,40 @@ describe("Guide search", () => {
         view={{ ...guideView(), kbQuery: "login" }}
       />,
     );
-    expect(
-      screen.getByRole("searchbox", { name: "Search guides" }),
-    ).toHaveValue("login");
-    expect(
-      screen.getByRole("searchbox", { name: "Find a guide" }),
-    ).toHaveValue("login");
+    expect(screen.getByRole("searchbox", { name: "Find a guide" })).toHaveValue(
+      "login",
+    );
+    expect(screen.getByRole("searchbox", { name: "Find a guide" })).toHaveValue(
+      "login",
+    );
   });
+});
+
+it("does not submit a no-match procedure query; a relevant keyword enables recording", async () => {
+  const user = userEvent.setup();
+  const onAction = vi.fn();
+  render(
+    <SystemToolPanel
+      actions={[{ ...taskBearingSearch, taskId: undefined }]}
+      onAction={onAction}
+      systemId="knowledge_base"
+      selectedEventId="guide-event"
+      view={guideView()}
+    />,
+  );
+  const query = screen.getByRole("searchbox", { name: "Find a guide" });
+  expect(screen.getAllByRole("searchbox")).toHaveLength(1);
+  await user.type(query, "no-matching-procedure{Enter}");
+  expect(screen.getByRole("button", { name: "Search guides" })).toBeDisabled();
+  expect(
+    screen.getByText(/Your procedure step has not advanced/),
+  ).toBeVisible();
+  expect(onAction).not.toHaveBeenCalled();
+  await user.clear(query);
+  await user.type(query, "phishing");
+  await user.click(screen.getByRole("button", { name: "Search guides" }));
+  expect(onAction).toHaveBeenCalledExactlyOnceWith(
+    { ...taskBearingSearch, taskId: undefined },
+    "phishing",
+  );
 });
