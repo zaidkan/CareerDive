@@ -157,7 +157,7 @@ export function OpsConsole({
           </span>
           {tab !== "home" ? (
             <span className="desk-os-status-objective">
-              <small>Queue objective</small>{" "}
+              <small>Other work waiting</small>{" "}
               {guidance?.headline ?? "Finish the shift"}
             </span>
           ) : null}

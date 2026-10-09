@@ -270,64 +270,173 @@ describe("rendered workplace golden path", () => {
             expect([...foundTasks].sort()).toEqual(view.tasks
                 // document_ticket uses TicketComposer; every other task kind,
                 // including authored build summaries, must render a task panel.
-                .filter(({ actionId }) => actionId !== "document_ticket" && actionId !== "submit_shift_handoff")
+                .filter(({ actionId }) => !["document_ticket", "submit_shift_handoff", "route_access_request", "resolve_login_help"].includes(actionId))
                 .map(({ id, eventId, stepIndex }) => `${id}:${eventId}:${String(stepIndex)}`)
                 .sort());
         }
-        async function perform(id: SimulationActionId, eventId: string) {
-            const action = toClientView(state).availableActions.find((entry) => entry.id === id && entry.eventId === eventId);
-            if (!action)
-                throw new Error(`Unavailable ${id}:${eventId}`);
-            await openSystem(action.systemId);
-            const queue = container.querySelector(".desk-os-queue");
-            const eventTitle = state.events.find(({ id }) => id === eventId)?.title;
-            const item = Array.from(queue?.querySelectorAll<HTMLButtonElement>("button") ?? []).find((button) => eventTitle && button.textContent.includes(eventTitle));
-            if (item)
-                await user.click(item);
-            if (action.systemId === "alert_dashboard" &&
-                !state.workplace.selectedAlertIdsByEvent?.[eventId]) {
-                const recordId = eventId === routine ? "A-1180" : "A-1042";
-                await activate(required(container.querySelector<HTMLElement>(`button[data-record-id="${recordId}"]`), `${recordId} alert record`));
-                expect(state.workplace.selectedAlertIdsByEvent?.[eventId]).toBe(recordId);
+    async function perform(id: SimulationActionId, eventId: string) {
+        const action = toClientView(state).availableActions.find(
+          (entry) => entry.id === id && entry.eventId === eventId,
+        );
+        if (!action) throw new Error(`Unavailable ${id}:${eventId}`);
+        await openSystem(action.systemId);
+        const queue = container.querySelector(".desk-os-queue");
+        const eventTitle = state.events.find(({ id }) => id === eventId)?.title;
+        const item = Array.from(
+          queue?.querySelectorAll<HTMLButtonElement>("button") ?? [],
+        ).find(
+          (button) => eventTitle && button.textContent.includes(eventTitle),
+        );
+        if (item) await user.click(item);
+        if (
+          action.systemId === "alert_dashboard" &&
+          !state.workplace.selectedAlertIdsByEvent?.[eventId]
+        ) {
+          const recordId = eventId === routine ? "A-1180" : "A-1042";
+          await activate(
+            required(
+              container.querySelector<HTMLElement>(
+                `button[data-record-id="${recordId}"]`,
+              ),
+              `${recordId} alert record`,
+            ),
+          );
+          expect(state.workplace.selectedAlertIdsByEvent?.[eventId]).toBe(
+            recordId,
+          );
+        }
+        if (id === "submit_shift_handoff") {
+          const builder = screen.getByRole("region", {
+            name: "Build shift handoff",
+          });
+          const sources = within(builder).getAllByRole("checkbox");
+          for (const source of sources)
+            if (
+              (source as HTMLInputElement).dataset.optionId?.startsWith(
+                "carry-",
+              )
+            )
+              await user.click(source);
+          await activate(
+            within(builder).getByRole("button", {
+              name: "Send handoff to next analyst",
+            }),
+          );
+          expect(
+            state.teamMessages?.some(
+              ({ actionId, body }) =>
+                actionId === "submit_shift_handoff" &&
+                body.includes("STILL NEEDS FOLLOW-UP"),
+            ),
+          ).toBe(true);
+          return;
+        }
+        if (
+          !action.taskId ||
+          [
+            "document_ticket",
+            "route_access_request",
+            "resolve_login_help",
+          ].includes(id)
+        ) {
+          if (
+            [
+              "document_ticket",
+              "route_access_request",
+              "resolve_login_help",
+            ].includes(id)
+          ) {
+            const button = required(
+              container.querySelector<HTMLButtonElement>(
+                `button[data-action-id="${id}"][data-event-id="${eventId}"]`,
+              ),
+              `${id} submit button`,
+            );
+            const form = required(button.closest("form"), `${id} form`);
+            const selections: Record<string, string[]> = {
+              "suspicious-login-1": [
+                "login-evidence-1",
+                "login-evidence-2",
+                "login-evidence-3",
+                "login-uncertainty-1",
+                "login-uncertainty-3",
+                "login-nextStep-1",
+              ],
+              "routine-alert-1": [
+                "scanner-evidence-1",
+                "scanner-evidence-2",
+                "scanner-evidence-3",
+                "scanner-uncertainty-1",
+                "scanner-nextStep-1",
+              ],
+              "access-request-1": [
+                "finance-evidence-1",
+                "finance-evidence-2",
+                "finance-uncertainty-1",
+                "finance-nextStep-1",
+              ],
+              "login-help-1": [
+                "rivera-evidence-1",
+                "rivera-uncertainty-1",
+                "rivera-uncertainty-2",
+                "rivera-nextStep-1",
+              ],
+            };
+            for (const optionId of required(
+              selections[eventId],
+              "case selections",
+            )) {
+              const checkbox = required(
+                form.querySelector<HTMLInputElement>(
+                  `input[data-option-id="${optionId}"]`,
+                ),
+                optionId,
+              );
+              const sourceButtons = checkbox
+                .closest("label")
+                ?.parentElement?.querySelectorAll<HTMLButtonElement>(
+                  "button[data-source-id]",
+                );
+              for (const source of Array.from(sourceButtons ?? []))
+                await activate(source);
+              const current = required(
+                form.querySelector<HTMLInputElement>(
+                  `input[data-option-id="${optionId}"]`,
+                ),
+                optionId,
+              );
+              if (!current.checked) await user.click(current);
             }
-            if (id === "submit_shift_handoff") {
-                const builder = screen.getByRole("region", { name: "Build shift handoff" });
-                const sources = within(builder).getAllByRole("checkbox");
-                for (const source of sources) await user.click(source);
-                await activate(within(builder).getByRole("button", { name: "Send handoff to next analyst" }));
-                expect(state.teamMessages?.some(({ actionId, body }) => actionId === "submit_shift_handoff" && body.includes("STILL NEEDS FOLLOW-UP"))).toBe(true);
-                return;
+            const firstDecision = within(form).queryAllByRole("radio")[0];
+            if (firstDecision) await user.click(firstDecision);
+            const saveDraft = within(form).queryByRole("button", {
+              name: "Save draft",
+            });
+            if (saveDraft) {
+              await activate(saveDraft);
+              expect(state.structuredTickets[`ticket-${eventId}`]?.status).toBe(
+                "in_progress",
+              );
             }
-            if (!action.taskId || id === "document_ticket") {
-                if (id === "document_ticket") {
-                    const button = required(container.querySelector<HTMLButtonElement>(`button[data-action-id="${id}"][data-event-id="${eventId}"]`), `${id} submit button`);
-                    const form = required(button.closest("form"), `${id} form`);
-                    const fields = within(form).getAllByRole("textbox");
-                    await user.type(required(fields[0], "verified evidence"), eventId === routine
-                        ? "A-1180 matches RUN-FIN-031 and SCAN-FIN-MON at the recorded event time."
-                        : "unknown-laptop-17 is not enrolled; sign-in context and account history checked.");
-                    await user.type(required(fields[1], "uncertainty"), eventId === routine
-                        ? "The log covers discovery connections only."
-                        : "Device ownership and file-access or mailbox activity are suspected, not yet proven.");
-                    await user.type(required(fields[2], "next step"), eventId === routine
-                        ? "Close matching alert with source records."
-                        : "Escalate for review of file-access or mailbox activity.");
-                    const sources = within(form).getAllByRole("checkbox");
-                    expect(sources.length).toBeGreaterThan(0);
-                    for (const source of sources)
-                        if (!(source as HTMLInputElement).checked) await user.click(source);
-                    const firstDecision = within(form).queryAllByRole("radio")[0];
-                    if (firstDecision) await user.click(firstDecision);
-                    const saveDraft = required(within(form).queryByRole("button", { name: "Save draft" }), "ticket draft button");
-                    await activate(saveDraft);
-                    expect(state.structuredTickets[`ticket-${eventId}`]?.status).toBe("in_progress");
-                    await activate(button);
-                    expect(state.structuredTickets[`ticket-${eventId}`]?.sourceArtifactIds
-                        ?.length).toBe(sources.length);
-                    expect(state.structuredTickets[`ticket-${eventId}`]?.sourceArtifactIds).toContain(eventId === routine ? "scanner-window" : "device-inventory-1");
-                    return;
-                }
-                if (id === "ask_manager" ) {
+            await activate(button);
+            expect(
+              state.structuredTickets[`ticket-${eventId}`]?.reasoning?.evidence
+                .length,
+            ).toBeGreaterThan(0);
+            expect(
+              state.structuredTickets[`ticket-${eventId}`]?.sourceArtifactIds,
+            ).toContain(
+              eventId === routine
+                ? "scanner-window"
+                : eventId === "suspicious-login-1"
+                  ? "device-inventory-1"
+                  : eventId === "access-request-1"
+                    ? "access-approval-guide"
+                    : "rivera-auth-summary",
+            );
+            return;
+          }
+          if (id === "ask_manager") {
             const button = required(
               container.querySelector<HTMLButtonElement>(
                 `button[data-action-id="${id}"][data-event-id="${eventId}"]`,
@@ -343,67 +452,164 @@ describe("rendered workplace golden path", () => {
             ).toBe(true);
             return;
           }
-          if ( id === "acknowledge_handoff") {
-                    const button = required(container.querySelector<HTMLButtonElement>(`button[data-action-id="${id}"][data-event-id="${eventId}"]`), `${id} chat button`);
-                    const form = required(button.closest("form"), `${id} chat form`);
-                    await user.type(within(form).getByRole("textbox"),  "I read the handoff and will review the open sign-in alert first.");
-                    await activate(button);
-                    expect(state.teamMessages?.some((message) => message.eventId === eventId && message.author === "player")).toBe(true);
-                    return;
-                }
-                if ((id === "dismiss_alert" && eventId === routine) ||
-                    id === "escalate_alert") {
-                    const note = required(state.ticketNotes[eventId], "saved handoff before decision");
-                    expect(Array.from(container.querySelectorAll("pre.artifact-body")).some((node) => node.textContent === note)).toBe(true);
-                    expect(note).toContain(eventId === routine
-                        ? "RUN-FIN-031"
-                        : "file-access or mailbox activity");
-                }
-                await activate(required(container.querySelector<HTMLElement>(`button[data-action-id="${id}"][data-event-id="${eventId}"]`), `${id} action button`));
-                return;
-            }
-            const taskId = action.taskId;
-            while (!state.taskProgress[`${eventId}:${taskId}`]?.completed) {
-                const stepIndex = state.taskProgress[`${eventId}:${taskId}`]?.currentStep ?? 0;
-                // Answer fixtures stay in tests; only toClientView(state) enters the renderer.
-                const taskRule = required(state.rules.tasks[taskId], `task rule ${taskId}`);
-                const step = required(taskRule.steps[stepIndex], `task step ${taskId}:${String(stepIndex)}`);
-                const panel = () => required(container.querySelector<HTMLElement>(`[data-task-id="${taskId}"][data-event-id="${eventId}"]`), `${taskId} task panel`);
-                if (step.id === "scanner-run-cross-check") {
-                    expect(within(panel()).getByRole("button", { name: "Submit findings" })).toBeDisabled();
-                    expect(panel().querySelector('[data-option-id="run-identity-scope"]')).toBeNull();
-                }
-                for (const artifactId of step.relatedArtifactIds) {
-                    if (!state.observedArtifactIds.includes(artifactId)) {
-                        const taskContainer = required(panel().parentElement, `${taskId} task container`);
-                        await activate(required(taskContainer.querySelector<HTMLElement>(`[data-interaction-id="open_artifact"][data-artifact-id="${artifactId}"]`), `${artifactId} artifact open button`));
-                    }
-                }
-                expect(panel().dataset.stepIndex).toBe(String(stepIndex));
-                for (const optionId of step.requiredOptionIds)
-                    await activate(required(panel().querySelector<HTMLElement>(`[data-option-id="${optionId}"]`), `${optionId} task option`));
-                await activate(within(panel()).getByRole("button", {
-                    name: /Submit findings|Save findings|Send selected response/,
-                }));
-            }
-        }
-        async function saveTicketNote(eventId: string, note: string) {
-            await openSystem("ticket_queue");
-            const queue = container.querySelector(".desk-os-queue");
-            const eventTitle = state.events.find(({ id }) => id === eventId)?.title;
-            const item = Array.from(queue?.querySelectorAll<HTMLButtonElement>("button") ?? []).find((button) => eventTitle && button.textContent.includes(eventTitle));
-            if (item)
-                await user.click(item);
-            const button = required(container.querySelector<HTMLButtonElement>(`button[data-action-id="update_ticket_notes"][data-event-id="${eventId}"]`), `${eventId} save note button`);
-            const editor = required(button.closest("form"), `${eventId} note editor`);
-            const field = within(editor).getByRole("textbox", { name: "Verified evidence" });
-            await user.clear(field);
-            await user.type(field, note);
-            for (const source of within(editor).getAllByRole("checkbox")) if (!(source as HTMLInputElement).checked) await user.click(source);
+          if (id === "acknowledge_handoff") {
+            const button = required(
+              container.querySelector<HTMLButtonElement>(
+                `button[data-action-id="${id}"][data-event-id="${eventId}"]`,
+              ),
+              `${id} chat button`,
+            );
+            const form = required(button.closest("form"), `${id} chat form`);
+            await user.type(
+              within(form).getByRole("textbox"),
+              "I read the handoff and will review the open sign-in alert first.",
+            );
             await activate(button);
-            expect(state.ticketNotes[eventId]).toContain(note);
+            expect(
+              state.teamMessages?.some(
+                (message) =>
+                  message.eventId === eventId && message.author === "player",
+              ),
+            ).toBe(true);
+            return;
+          }
+          if (
+            (id === "dismiss_alert" && eventId === routine) ||
+            id === "escalate_alert"
+          ) {
+            const note = required(
+              state.ticketNotes[eventId],
+              "saved handoff before decision",
+            );
+            expect(
+              Array.from(container.querySelectorAll("pre.artifact-body")).some(
+                (node) => node.textContent === note,
+              ),
+            ).toBe(true);
+            expect(note).toContain(
+              eventId === routine ? "RUN-FIN-031" : "files or messages",
+            );
+          }
+          await activate(
+            required(
+              container.querySelector<HTMLElement>(
+                `button[data-action-id="${id}"][data-event-id="${eventId}"]`,
+              ),
+              `${id} action button`,
+            ),
+          );
+          return;
         }
-        await verifyAvailableTargets();
+        const taskId = action.taskId;
+        while (!state.taskProgress[`${eventId}:${taskId}`]?.completed) {
+          const stepIndex =
+            state.taskProgress[`${eventId}:${taskId}`]?.currentStep ?? 0;
+          // Answer fixtures stay in tests; only toClientView(state) enters the renderer.
+          const taskRule = required(
+            state.rules.tasks[taskId],
+            `task rule ${taskId}`,
+          );
+          const step = required(
+            taskRule.steps[stepIndex],
+            `task step ${taskId}:${String(stepIndex)}`,
+          );
+          const panel = () =>
+            required(
+              container.querySelector<HTMLElement>(
+                `[data-task-id="${taskId}"][data-event-id="${eventId}"]`,
+              ),
+              `${taskId} task panel`,
+            );
+          if (step.id === "scanner-run-cross-check") {
+            expect(
+              within(panel()).getByRole("button", { name: "Submit findings" }),
+            ).toBeDisabled();
+            expect(
+              panel().querySelector('[data-option-id="run-identity-scope"]'),
+            ).toBeNull();
+          }
+          for (const artifactId of step.relatedArtifactIds) {
+            if (!state.observedArtifactIds.includes(artifactId)) {
+              const taskContainer = required(
+                panel().parentElement,
+                `${taskId} task container`,
+              );
+              await activate(
+                required(
+                  taskContainer.querySelector<HTMLElement>(
+                    `[data-interaction-id="open_artifact"][data-artifact-id="${artifactId}"]`,
+                  ),
+                  `${artifactId} artifact open button`,
+                ),
+              );
+            }
+          }
+          expect(panel().dataset.stepIndex).toBe(String(stepIndex));
+          for (const optionId of step.requiredOptionIds)
+            await activate(
+              required(
+                panel().querySelector<HTMLElement>(
+                  `[data-option-id="${optionId}"]`,
+                ),
+                `${optionId} task option`,
+              ),
+            );
+          await activate(
+            within(panel()).getByRole("button", {
+              name: /Submit findings|Save findings|Send selected response/,
+            }),
+          );
+        }
+      }
+      async function saveTicketNote(eventId: string) {
+        await openSystem("ticket_queue");
+        const queue = container.querySelector(".desk-os-queue");
+        const eventTitle = state.events.find(({ id }) => id === eventId)?.title;
+        const item = Array.from(
+          queue?.querySelectorAll<HTMLButtonElement>("button") ?? [],
+        ).find(
+          (button) => eventTitle && button.textContent.includes(eventTitle),
+        );
+        if (item) await user.click(item);
+        const button = required(
+          container.querySelector<HTMLButtonElement>(
+            `button[data-action-id="update_ticket_notes"][data-event-id="${eventId}"]`,
+          ),
+          `${eventId} save note button`,
+        );
+        const editor = required(
+          button.closest("form"),
+          `${eventId} note editor`,
+        );
+        const source = required(
+          editor.querySelector<HTMLButtonElement>(
+            'button[data-source-id="scanner-run-log"]',
+          ),
+          "scanner run source",
+        );
+        await activate(source);
+        for (const optionId of [
+          "scanner-evidence-1",
+          "scanner-evidence-2",
+          "scanner-evidence-3",
+          "scanner-uncertainty-1",
+          "scanner-nextStep-1",
+        ]) {
+          const checkbox = required(
+            editor.querySelector<HTMLInputElement>(
+              `input[data-option-id="${optionId}"]`,
+            ),
+            optionId,
+          );
+          if (!checkbox.checked) await user.click(checkbox);
+        }
+        await activate(button);
+        expect(state.ticketNotes[eventId]).toContain("Scanner run log");
+        expect(state.ticketNotes[eventId]).toContain(
+          "connections, not the results",
+        );
+      }
+          await verifyAvailableTargets();
         await perform("read_handoff", "handoff-1");
         await perform("acknowledge_handoff", "handoff-1");
         await perform("review_alert", suspicious);
@@ -420,7 +626,7 @@ describe("rendered workplace golden path", () => {
         await activate(required(container.querySelector<HTMLElement>('[data-interaction-id="open_artifact"][data-artifact-id="scanner-window"]'), "scanner guide"));
         expect(state.observedArtifactIds).toContain("scanner-window");
         await perform("search_knowledge_base", routine);
-        await saveTicketNote(routine, "A-1180 matches RUN-FIN-031 and SCAN-FIN-MON at the recorded event time. The log covers discovery connections only.");
+        await saveTicketNote(routine);
         await perform("document_ticket", routine);
         await perform("dismiss_alert", routine);
         await perform("inspect_account_history", suspicious);
@@ -447,8 +653,8 @@ describe("rendered workplace golden path", () => {
         await perform("ask_manager", suspicious);
         expect(screen.getByRole("list", { name: "Team conversation" })).toBeVisible();
         await perform("document_ticket", suspicious);
-        expect(state.ticketNotes[suspicious]).toContain("unknown-laptop-17 is not enrolled");
-        expect(state.ticketNotes[suspicious]).toContain("suspected, not yet proven");
+        expect(state.ticketNotes[suspicious]).toContain("Device inventory · j.patel");
+        expect(state.ticketNotes[suspicious]).toContain("do not identify who used the unfamiliar laptop");
         await perform("escalate_alert", suspicious);
         // Sol content coverage: end-of-shift handoff before complete.
         await perform("submit_shift_handoff", "shift-handoff-1");

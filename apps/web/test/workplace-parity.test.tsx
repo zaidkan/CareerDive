@@ -127,16 +127,18 @@ describe("structured workplace acceptance", () => {
             return (<SystemToolPanel view={updated} systemId="ticket_queue" selectedEventId={task.eventId} actions={[action]} onAction={vi.fn()}/>);
         };
         const { rerender } = render(renderStep(0));
-        expect(screen.getByRole("textbox", { name: "Verified evidence" })).toBeVisible();
-        expect(screen.getByRole("textbox", { name: "Uncertainty" })).toBeVisible();
-        expect(screen.getByRole("textbox", { name: "Next step" })).toBeVisible();
-        expect(screen.getByRole("group", { name: "Attach opened sources" })).toBeVisible();
-        rerender(renderStep(1));
-        expect(screen.getByRole("textbox", { name: "Uncertainty" })).toBeVisible();
-        rerender(renderStep(2));
-        expect(screen.getByRole("textbox", { name: "Uncertainty" })).toBeVisible();
-        rerender(renderStep(summary.steps.length - 1));
-        expect(screen.getByRole("textbox", { name: "Next step" })).toBeVisible();
-        expect(screen.queryByRole("button", { name: "Submit findings" })).toBeNull();
+        const assertGroups = () => {
+            expect(screen.getByRole("group", { name: "Which records support the device and connection differences in S-0741?" })).toBeVisible();
+            expect(screen.getByRole("group", { name: "What is still unknown?" })).toBeVisible();
+            expect(screen.getByRole("group", { name: "What is the next step?" })).toBeVisible();
+            expect(screen.queryByRole("textbox", { name: "Verified evidence" })).toBeNull();
+            expect(screen.queryByRole("group", { name: "Attach opened sources" })).toBeNull();
+            expect(screen.queryByRole("button", { name: "Submit findings" })).toBeNull();
+        };
+        assertGroups();
+        for (let index = 1; index < summary.steps.length; index++) {
+            rerender(renderStep(index));
+            assertGroups();
+        }
     });
 });

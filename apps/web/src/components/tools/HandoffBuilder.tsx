@@ -1,4 +1,4 @@
-import { handoffCaseLines, handoffFollowUps } from "@sim/core";
+import { handoffCaseLines, handoffFollowUps, sourceBundle } from "@sim/core";
 import type { AvailableAction, ClientView, HandoffPayload } from "@sim/schemas";
 import { useTabDraft } from "../../useTabDraft.js";
 
@@ -7,147 +7,166 @@ export function HandoffBuilder({
   action,
   onAction,
   pending,
+  onOpenArtifact,
 }: {
   view: ClientView;
   action: AvailableAction;
   onAction: (action: AvailableAction) => void;
   pending: boolean;
+  onOpenArtifact?: ((id: string) => Promise<unknown>) | undefined;
 }) {
-  const [draft, setDraft] = useTabDraft<HandoffPayload>(
-    `handoff:${view.sessionId}`,
-    { sourceArtifactIds: [], followUp: "senior-review", note: "" },
+  const offered = view.handoffOptions;
+  const [selected, setSelected] = useTabDraft<string[]>(
+    `handoff:${view.sessionId}:carry-v1`,
+    [],
   );
-  const sources = view.artifacts.filter(
-    ({ id, eventIds }) =>
-      view.workplace.inspectedArtifactIds?.includes(id) &&
-      eventIds.some((eventId) =>
-        ["suspicious-login-1", "routine-alert-1"].includes(eventId),
-      ),
+  const [followUp, setFollowUp] = useTabDraft<HandoffPayload["followUp"]>(
+    `handoff:${view.sessionId}:owner-v1`,
+    "senior-review",
   );
   const cases = handoffCaseLines(view.events, view.structuredTickets);
-  const followUps = handoffFollowUps(view.events, view.teamMessages);
   const next = {
-    "senior-review":
-      "Ask senior reviewer to check session ownership and containment",
+    "senior-review": "Senior reviewer: check ownership and missing activity",
     "verify-employee":
-      "Verify employee context through the approved contact route",
-    "review-device": "Review flagged device and missing session activity",
-    monitor: "Continue monitoring; reassess with new evidence",
+      "Next analyst: verify employee context through the usual contact route",
+    "review-device":
+      "Next analyst: check flagged device and missing session activity",
+    monitor: "Next analyst: monitor and reassess new evidence",
   };
+  const validIds = selected.filter((id) =>
+    offered?.options.some((o) => o.id === id),
+  );
+  const inspected = [
+    ...view.artifacts.filter((a) => a.observed).map((a) => a.id),
+    ...(view.workplace.inspectedRecordIds ?? []),
+  ];
+  const refs = [
+    ...new Set(
+      offered?.options
+        .filter((o) => validIds.includes(o.id))
+        .flatMap((o) =>
+          o.sourceArtifactIds.flatMap((id) => sourceBundle(id, inspected)),
+        ) ?? [],
+    ),
+  ];
+  const sources = refs.filter((id) => view.artifacts.some((a) => a.id === id));
+  const recordSources = refs.filter(
+    (id) => !view.artifacts.some((a) => a.id === id),
+  );
   return (
     <section aria-label="Build shift handoff" className="handoff-builder">
       <h4>Hand your work forward</h4>
-      <p>Select references and the next check. Review before sending.</p>
       <fieldset>
-        <legend>What I checked</legend>
-        {sources.length ? (
-          sources.map((source) => (
-            <label key={source.id}>
+        <legend>What must carry into the next shift?</legend>
+        {offered?.options.map((option) => (
+          <div key={option.id} className="reasoning-option">
+            <label>
               <input
                 type="checkbox"
-                checked={draft.sourceArtifactIds.includes(source.id)}
+                data-option-id={option.id}
+                checked={validIds.includes(option.id)}
                 onChange={() => {
-                  setDraft((current) => ({
-                    ...current,
-                    sourceArtifactIds: current.sourceArtifactIds.includes(
-                      source.id,
-                    )
-                      ? current.sourceArtifactIds.filter(
-                          (id) => id !== source.id,
-                        )
-                      : [...current.sourceArtifactIds, source.id],
-                  }));
+                  setSelected((ids) =>
+                    ids.includes(option.id)
+                      ? ids.filter((id) => id !== option.id)
+                      : [...ids, option.id],
+                  );
                 }}
               />
-              {source.title}
+              {option.label}
             </label>
-          ))
-        ) : (
-          <p>No inspected sources. Outstanding checks remain in the preview.</p>
-        )}
-      </fieldset>
-      <h5>What I decided</h5>
-      <ul>
-        {cases.map((event) => (
-          <li key={event.eventId}>
-            <strong>
-              {event.title}: {event.label}
-            </strong>
-            {event.detail ? (
-              <details>
-                <summary>Decision details</summary>
-                <p>{event.detail}</p>
-              </details>
-            ) : (
-              <p>See the recorded disposition above.</p>
-            )}
-          </li>
+            {option.sourceArtifactIds.map((id) => (
+              <button
+                key={id}
+                data-source-id={id}
+                type="button"
+                disabled={pending || !onOpenArtifact}
+                onClick={() => {
+                  void onOpenArtifact?.(id).catch(() => {});
+                }}
+              >
+                Open source:{" "}
+                {view.artifacts.find((a) => a.id === id)?.title ?? id}
+              </button>
+            ))}
+          </div>
         ))}
-      </ul>
+      </fieldset>
       <fieldset>
-        <legend>What the next person should do</legend>
+        <legend>Primary next owner / check</legend>
         {Object.entries(next).map(([id, label]) => (
           <label key={id}>
             <input
               type="radio"
               name="handoff-follow-up"
-              checked={draft.followUp === id}
+              checked={followUp === id}
               onChange={() => {
-                setDraft((current) => ({
-                  ...current,
-                  followUp: id as HandoffPayload["followUp"],
-                }));
+                setFollowUp(id as HandoffPayload["followUp"]);
               }}
             />
             {label}
           </label>
         ))}
       </fieldset>
-      <label>
-        Optional short note
-        <textarea
-          aria-label="Optional short note"
-          maxLength={300}
-          value={draft.note ?? ""}
-          onChange={(event) => {
-            setDraft((current) => ({ ...current, note: event.target.value }));
-          }}
-        />
-      </label>
       <section aria-label="Handoff preview">
         <h5>Handoff preview</h5>
+        <ul>
+          {cases.map((c) => (
+            <li key={c.eventId}>
+              <strong>
+                {c.title}: {c.label}
+              </strong>
+              {c.detail ? (
+                <details>
+                  <summary>Recorded result</summary>
+                  <p>{c.detail}</p>
+                </details>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+        {handoffFollowUps(
+          view.events.filter((e) => e.status !== "active"),
+          view.teamMessages,
+        ).map((text) => (
+          <p key={text}>{text}</p>
+        ))}
+        <details>
+          <summary>Selected source references ({refs.length})</summary>
+          <ul>
+            {refs.map((id) => (
+              <li key={id}>
+                {view.artifacts.find((a) => a.id === id)?.title ?? id}
+              </li>
+            ))}
+          </ul>
+        </details>
         <p>
-          <strong>Found:</strong> Opened sources:{" "}
-          {sources
-            .filter(({ id }) => draft.sourceArtifactIds.includes(id))
-            .map(({ title }) => title)
-            .join(", ") || "No references selected"}
-          .
+          {validIds
+            .map((id) => offered?.options.find((o) => o.id === id)?.label)
+            .join(" ") || "No continuity statements selected."}
         </p>
-        <p>
-          <strong>Decided:</strong>{" "}
-          {cases
-            .map(
-              ({ title, label, detail }) =>
-                `${title}: ${label}.${detail ? ` ${detail}` : ""}`,
-            )
-            .join(" ")}
-        </p>
-        <p>
-          <strong>Still needs follow-up:</strong> {followUps.join(" ")}{" "}
-          {view.structuredTickets?.["ticket-suspicious-login-1"]?.uncertainty ??
-            "Session ownership has not been independently established."}{" "}
-          {next[draft.followUp]}.
-        </p>
-        {draft.note ? <p>Your note: {draft.note}</p> : null}
       </section>
       <button
         type="button"
-        disabled={pending}
+        disabled={pending || !offered}
         data-action-id={action.id}
         data-event-id={action.eventId}
         onClick={() => {
-          onAction({ ...action, handoffPayload: draft });
+          if (offered)
+            onAction({
+              ...action,
+              handoffPayload: {
+                sourceArtifactIds: sources,
+                sourceRecordIds: recordSources,
+                followUp,
+                selections: {
+                  version: "desk-options-v1",
+                  stateKey: offered.stateKey,
+                  optionIds: validIds,
+                },
+              },
+            });
         }}
       >
         Send handoff to next analyst

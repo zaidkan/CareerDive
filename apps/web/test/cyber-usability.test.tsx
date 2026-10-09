@@ -129,11 +129,11 @@ it("mounted case search discovers authored records, inspects/revisits and retain
   );
   expect(screen.getByRole("region", { name: "Case evidence" })).toBeVisible();
 });
-it("handoff offers only inspected sources, previews actual open work and retains choices on remount", async () => {
+it("handoff selections generate inspected references, preview actual work and persist on remount", async () => {
   const user = userEvent.setup();
   const state = applyWorkplaceInteraction(fresh(), {
     type: "open_artifact",
-    artifactId: "login-context-1",
+    artifactId: "login-session-timeline",
   }).state;
   const view = toClientView(state);
   const onAction = vi.fn();
@@ -150,34 +150,37 @@ it("handoff offers only inspected sources, previews actual open work and retains
   expect(
     screen.queryByRole("checkbox", { name: /Device inventory/ }),
   ).toBeNull();
-  await user.click(screen.getByRole("checkbox", { name: /Login context/ }));
-  await user.type(
-    screen.getByRole("textbox", { name: "Optional short note" }),
-    "Keep the ownership question open.",
+  await user.click(
+    screen.getByRole("checkbox", { name: /S-0741 still needs senior review/ }),
   );
   expect(
     screen.getByRole("region", { name: "Handoff preview" }),
   ).toHaveTextContent("active");
   first.unmount();
   render(<HandoffBuilder {...props} />);
-  expect(screen.getByRole("checkbox", { name: /Login context/ })).toBeChecked();
-  expect(screen.getByRole("textbox")).toHaveValue(
-    "Keep the ownership question open.",
-  );
+  expect(
+    screen.getByRole("checkbox", { name: /S-0741 still needs senior review/ }),
+  ).toBeChecked();
+  expect(screen.queryByRole("textbox")).toBeNull();
   await user.click(
     screen.getByRole("button", { name: "Send handoff to next analyst" }),
   );
   expect(onAction).toHaveBeenCalledWith(
     expect.objectContaining({
       handoffPayload: {
-        sourceArtifactIds: ["login-context-1"],
+        sourceArtifactIds: ["login-session-timeline"],
+        sourceRecordIds: [],
         followUp: "senior-review",
-        note: "Keep the ownership question open.",
+        selections: {
+          version: "desk-options-v1",
+          stateKey: view.handoffOptions?.stateKey,
+          optionIds: ["carry-login"],
+        },
       },
     }),
   );
 });
-it("ticket text, selected sources and disposition survive application remount", async () => {
+it("ticket findings and disposition survive application remount without assessed textareas", async () => {
   const user = userEvent.setup();
   let state = fresh();
   for (const id of [
@@ -198,17 +201,16 @@ it("ticket text, selected sources and disposition survive application remount", 
   if (!action) throw new Error("Ticket not offered");
   const props = { view, action, onAction: vi.fn(), mutationState: {} };
   const first = render(<TicketComposer {...props} />);
-  await user.type(
-    screen.getByRole("textbox", { name: "Verified evidence" }),
-    "Device missing from managed inventory.",
-  );
+  expect(
+    screen.queryByRole("textbox", { name: "Verified evidence" }),
+  ).toBeNull();
   await user.click(screen.getByRole("checkbox", { name: /Device inventory/ }));
   await user.click(screen.getAllByRole("radio")[0] as HTMLElement);
   first.unmount();
   render(<TicketComposer {...props} />);
   expect(
-    screen.getByRole("textbox", { name: "Verified evidence" }),
-  ).toHaveValue("Device missing from managed inventory.");
+    screen.queryByRole("textbox", { name: "Verified evidence" }),
+  ).toBeNull();
   expect(
     screen.getByRole("checkbox", { name: /Device inventory/ }),
   ).toBeChecked();
@@ -235,7 +237,7 @@ it("finance response labels distinguish direct approval from identical source qu
   );
   expect(
     screen.getByRole("radio", {
-      name: /Approve it yourself because the project deadline is urgent/,
+      name: /Give temporary read-only access until 17:00/,
     }),
   ).toBeVisible();
   expect(

@@ -146,19 +146,19 @@ export function RecordQueryTool({
   mutationState?: MutationState;
 }) {
   const [datasetId, setDatasetId] = useTabDraft<DatasetId>(
-    `search:${view.sessionId}:dataset`,
+    `search:${view.sessionId}:${queryAction?.eventId ?? "none"}:dataset`,
     "auth",
   );
   const [stringFilters, setStringFilters] = useTabDraft<Record<string, string>>(
-    `search:${view.sessionId}:filters`,
+    `search:${view.sessionId}:${queryAction?.eventId ?? "none"}:filters`,
     {},
   );
   const [windowStart, setWindowStart] = useTabDraft(
-    `search:${view.sessionId}:from`,
+    `search:${view.sessionId}:${queryAction?.eventId ?? "none"}:from`,
     "",
   );
   const [windowEnd, setWindowEnd] = useTabDraft(
-    `search:${view.sessionId}:to`,
+    `search:${view.sessionId}:${queryAction?.eventId ?? "none"}:to`,
     "",
   );
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -193,8 +193,11 @@ export function RecordQueryTool({
   function parseWindowBound(raw: string): number | undefined {
     const trimmed = raw.trim();
     if (!trimmed) return undefined;
-    if (!/^\d+$/.test(trimmed)) return undefined;
-    return Number.parseInt(trimmed, 10);
+    const time = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(trimmed);
+    if (time) return Number(time[1]) * 60 + Number(time[2]);
+    // Older local drafts stored minute counts; keep those usable.
+    if (/^\d+$/.test(trimmed) && Number(trimmed) < 1440) return Number(trimmed);
+    return undefined;
   }
 
   function handleSubmit(event: SyntheticEvent<HTMLFormElement>) {
@@ -208,7 +211,7 @@ export function RecordQueryTool({
       (windowEnd.trim() && end === undefined)
     ) {
       setValidationError(
-        "Time window bounds must be whole numbers zero or above.",
+        "Enter office-local times as HH:MM.",
       );
       return;
     }
@@ -259,13 +262,14 @@ export function RecordQueryTool({
     );
   }
 
-  const results = view.queryResults;
+  const results = view.queryResults.filter((result) => !result.actorEventId || result.actorEventId === queryAction?.eventId);
+  const earlierResults = view.queryResults.filter((result) => result.actorEventId && result.actorEventId !== queryAction?.eventId);
   const windowRangeInvalid =
     validationError ===
     "Time window start must be at or before the window end.";
   const windowNumberInvalid =
     validationError ===
-    "Time window bounds must be whole numbers zero or above.";
+    "Enter office-local times as HH:MM.";
 
   return (
     <section aria-label="Record search" className="record-query-tool">
@@ -337,7 +341,7 @@ export function RecordQueryTool({
             <div className="rq-time-grid">
               <div>
                 <label htmlFor={`record-query-${datasetId}-window-start`}>
-                  Time from (minute since midnight)
+                  Time from (HH:MM)
                 </label>
                 <input
                   id={`record-query-${datasetId}-window-start`}
@@ -358,7 +362,7 @@ export function RecordQueryTool({
               </div>
               <div>
                 <label htmlFor={`record-query-${datasetId}-window-end`}>
-                  Time to (minute since midnight)
+                  Time to (HH:MM)
                 </label>
                 <input
                   id={`record-query-${datasetId}-window-end`}
@@ -379,8 +383,7 @@ export function RecordQueryTool({
               </div>
             </div>
             <p className="rq-time-help">
-              Office-local time: 07:30 = 450; 08:00 = 480. Blank means no time
-              limit.
+              Office-local HH:MM. Blank means no time limit.
             </p>
           </div>
         </details>
@@ -419,6 +422,7 @@ export function RecordQueryTool({
         </div>
       </form>
 
+      {earlierResults.length ? <details><summary>Previous-case searches ({earlierResults.length})</summary><ul>{earlierResults.map((result) => <li key={result.queryId}>{view.events.find((event) => event.id === result.actorEventId)?.title ?? result.actorEventId}: {result.datasetId} · {result.totalCount} records</li>)}</ul></details> : null}
       <div className="rq-results" aria-label="Search results" aria-live="off">
         {results.length === 0 ? (
           <p className="rq-empty">

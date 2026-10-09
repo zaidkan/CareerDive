@@ -48,7 +48,7 @@ it.each(["visual"] as const)("finds an exact device before and after canonical o
     expect(lookup.getByRole("heading", { name: "Device inventory · j.patel" })).toBeVisible();
     const opened = toClientView(state).artifacts.find(({ id }) => id === "device-inventory-1");
     expect(opened?.observed).toBe(true);
-    expect(opened?.body).toContain("has never checked into MDM");
+    expect(opened?.body).toContain("no enrollment or MDM check-in record");
     await user.clear(query);
     await user.type(query, " UNKNOWN-LAPTOP-17 ");
     expect(lookup.getByRole("heading", { name: "Device inventory · j.patel" })).toBeVisible();

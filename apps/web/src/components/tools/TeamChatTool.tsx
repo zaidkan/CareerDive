@@ -99,7 +99,7 @@ export function TeamChatTool({
                   message.eventId}
                 :
               </strong>{" "}
-              {message.id === latestReply?.id ? (
+              {message.actionId === "submit_shift_handoff" ? <details><summary>Recorded handoff · sources and continuation</summary><pre className="artifact-body">{message.body}</pre></details> : message.id === latestReply?.id ? (
                 <DialogueLine
                   controller={dialogueRef}
                   key={message.id}

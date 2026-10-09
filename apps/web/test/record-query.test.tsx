@@ -139,12 +139,12 @@ describe("RecordQueryTool", () => {
     await user.click(screen.getByText(/^More filters/));
     await user.type(screen.getByLabelText("Session ID"), "S-0741");
     await user.type(
-      screen.getByLabelText("Time from (minute since midnight)"),
-      "441",
+      screen.getByLabelText("Time from (HH:MM)"),
+      "07:21",
     );
     await user.type(
-      screen.getByLabelText("Time to (minute since midnight)"),
-      "465",
+      screen.getByLabelText("Time to (HH:MM)"),
+      "07:45",
     );
     await user.click(screen.getByRole("button", { name: "Search records" }));
 
@@ -190,12 +190,12 @@ describe("RecordQueryTool", () => {
 
     await user.click(screen.getByText(/^More filters/));
     await user.type(
-      screen.getByLabelText("Time from (minute since midnight)"),
-      "465",
+      screen.getByLabelText("Time from (HH:MM)"),
+      "07:45",
     );
     await user.type(
-      screen.getByLabelText("Time to (minute since midnight)"),
-      "441",
+      screen.getByLabelText("Time to (HH:MM)"),
+      "07:21",
     );
     await user.click(screen.getByRole("button", { name: "Search records" }));
 
@@ -204,21 +204,21 @@ describe("RecordQueryTool", () => {
       "Time window start must be at or before the window end.",
     );
 
-    await user.clear(screen.getByLabelText("Time to (minute since midnight)"));
+    await user.clear(screen.getByLabelText("Time to (HH:MM)"));
     await user.type(
-      screen.getByLabelText("Time to (minute since midnight)"),
+      screen.getByLabelText("Time to (HH:MM)"),
       "later",
     );
     await user.click(screen.getByRole("button", { name: "Search records" }));
     expect(onQueryRecords).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Time window bounds must be whole numbers zero or above.",
+      "Enter office-local times as HH:MM.",
     );
 
     await user.clear(
-      screen.getByLabelText("Time from (minute since midnight)"),
+      screen.getByLabelText("Time from (HH:MM)"),
     );
-    await user.clear(screen.getByLabelText("Time to (minute since midnight)"));
+    await user.clear(screen.getByLabelText("Time to (HH:MM)"));
     await user.click(screen.getByRole("button", { name: "Search records" }));
     expect(onQueryRecords).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("alert")).toBeNull();

@@ -66,10 +66,9 @@ export function eventsForSystem(
   return view.events.filter(
     (event) =>
       (isActiveCase(event) ||
-        (systemId === "team_chat" &&
-          view.availableActions.some(
-            (a) => a.id === "ask_manager" && a.eventId === event.id,
-          ))) &&
+        view.availableActions.some(
+          (a) => a.systemId === systemId && a.eventId === event.id,
+        )) &&
       belongsToSystem(view, event, systemId),
   );
 }
