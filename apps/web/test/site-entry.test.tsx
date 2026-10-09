@@ -85,6 +85,14 @@ describe("site routes", () => {
 
   it("defers launch media until interaction and keeps playback manual", () => {
     render(<LandingPage />);
+    expect(
+      screen.getByRole("heading", { name: "Watch the launch film." }),
+    ).toBeVisible();
+    for (const chapter of ["home-shift", "home-launch", "home-reflect"]) {
+      expect(document.querySelector(`.${chapter}-chapter`)).toHaveClass(
+        "ui-surface--base",
+      );
+    }
     const video = screen.getByLabelText("CareerDive launch film");
     expect(video).toHaveAttribute("preload", "none");
     expect(video).toHaveAttribute("controls");

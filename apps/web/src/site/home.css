@@ -556,6 +556,7 @@
   width: 100%;
   height: auto;
   aspect-ratio: 16 / 9;
-  background: #080b10;
+  background: var(--canvas);
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
 }

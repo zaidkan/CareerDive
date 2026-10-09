@@ -434,11 +434,11 @@ export function LandingPage() {
       <section className="home-launch" aria-labelledby="home-launch-title">
         <PublicChapter
           as="div"
-          surface="finale"
+          surface="base"
           rhythm="standard"
           className="home-launch-chapter"
         >
-          <h2 id="home-launch-title">See a shift in motion.</h2>
+          <h2 id="home-launch-title">Watch the launch film.</h2>
           <LaunchFilm />
         </PublicChapter>
       </section>
