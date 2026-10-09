@@ -165,22 +165,23 @@ describe("site routes", () => {
     ).toBeGreaterThan(0);
   });
 
-  it("hero stack CTA is career-aware and never launches cyber for other careers", () => {
+  it("keeps one hero CTA pair without a stray status button", () => {
     render(<LandingPage />);
-    const action = () => document.querySelector(".home-career-actions");
-    // Cyber default: an active start route is offered.
-    expect(action()?.querySelector('a[href="/start"]')).not.toBeNull();
-    // Select a taking-shape career (Registered Nurse) → disabled CTA, no route.
-    const tabs = Array.from(
-      document.querySelectorAll<HTMLButtonElement>(".home-hero-card"),
-    );
-    const nurseTab = tabs[1];
-    if (!nurseTab) throw new Error("Missing Registered Nurse card");
-    fireEvent.click(nurseTab);
-    expect(action()?.querySelector('a[href="/start"]')).toBeNull();
-    const disabled = action()?.querySelector("button[disabled]");
-    expect(disabled).toBeTruthy();
-    expect(disabled?.textContent).toMatch(/taking shape/i);
+    const hero = document.querySelector(".home-hero");
+    expect(hero?.querySelectorAll('a[href="/start"]')).toHaveLength(1);
+    expect(hero?.querySelectorAll('a[href="/careers"]')).toHaveLength(1);
+    expect(hero?.querySelector("button[disabled]")).toBeNull();
+    const nurse = screen.getByRole("button", {
+      name: /registered nurse.*taking shape/i,
+    });
+    fireEvent.click(nurse);
+    expect(nurse).toHaveAttribute("aria-pressed", "true");
+    expect(hero?.querySelector("button[disabled]")).toBeNull();
+    expect(
+      document.querySelector(
+        '.home-hero-card[data-emphasis="true"] .home-hero-card-status',
+      ),
+    ).toHaveTextContent("Taking shape");
   });
 
   it("keeps a static, selectable stack when reduced motion is requested", () => {

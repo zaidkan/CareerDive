@@ -1,4 +1,3 @@
-import type { PublicCareer } from "../../careers/types.js";
 import {
   availabilityLabel,
   FIRST_SHIFT_DURATION_COMPACT,
@@ -104,25 +103,6 @@ function ProductCapture({
   );
 }
 
-type CareerAction =
-  | { kind: "link"; href: NonNullable<PublicCareer["simulationRoute"]> }
-  | { kind: "disabled"; label: string };
-
-/**
- * Career-aware CTA. A playable career with a route gets an active action; every
- * other career gets a concise "Taking shape" state that never launches Cyber.
- * Adding a future career route is a data change, not a component change.
- */
-function careerAction(career: {
-  availability: string;
-  simulationRoute?: PublicCareer["simulationRoute"];
-}): CareerAction {
-  if (career.availability === "ready_now" && career.simulationRoute) {
-    return { kind: "link", href: career.simulationRoute };
-  }
-  return { kind: "disabled", label: "Taking shape" };
-}
-
 const SHIFT_ACTS = [
   { act: "Prepare", claim: "Context first. Then the actual work." },
   { act: "Decide", claim: "You decide before the picture is complete." },
@@ -221,12 +201,6 @@ export function LandingPage() {
   const startLabel = hasSeenFilm
     ? "Continue your first day"
     : "Start your first day";
-  const activeCareer = careers.find(
-    (item) => item.id === HERO_CARDS[heroActive]?.careerId,
-  );
-  const activeAction: CareerAction = activeCareer
-    ? careerAction(activeCareer)
-    : { kind: "disabled", label: "Taking shape" };
   const activeEvidence =
     EVIDENCE_VIEWS.find((view) => view.key === evidence) ?? EVIDENCE_VIEWS[0];
 
@@ -249,9 +223,8 @@ export function LandingPage() {
                 Try a slice of the work. See what your decisions support.
               </h1>
               <p className="ui-type-proof">
-                Start with one career: Junior Cybersecurity Analyst. Try a short
-                simulated first shift, then review your recorded decisions —
-                what the evidence supports and what is still unknown.
+                Make real calls in a simulated cybersecurity shift. Review your
+                reasoning against the evidence—not a quiz score.
               </p>
               <div className="home-hero-actions">
                 <SiteLink className="start-shift v2-primary" to="/start">
@@ -263,8 +236,8 @@ export function LandingPage() {
                 </SiteLink>
               </div>
               <p className="home-hero-meta">
-                <strong>{FIRST_SHIFT_DURATION_COMPACT}</strong> · one focused
-                first-shift slice
+                <strong>{FIRST_SHIFT_DURATION_COMPACT}</strong> · simulated
+                first shift
               </p>
             </div>
             <div data-motion-role="artifact" className="home-hero-stage">
@@ -333,29 +306,6 @@ export function LandingPage() {
               <p className="home-hero-availability">
                 One playable now. Four taking shape.
               </p>
-              <div className="home-career-actions">
-                {activeAction.kind === "link" ? (
-                  <SiteLink
-                    className="start-shift v2-primary"
-                    to={activeAction.href}
-                  >
-                    {startLabel}
-                    <span aria-hidden="true"> ↗</span>
-                  </SiteLink>
-                ) : (
-                  <button
-                    type="button"
-                    className="start-shift v2-primary home-career-cta-disabled"
-                    disabled
-                    aria-disabled="true"
-                  >
-                    {activeAction.label}
-                  </button>
-                )}
-                <SiteLink className="v2-text-link" to="/careers">
-                  Career and previews <span aria-hidden="true">→</span>
-                </SiteLink>
-              </div>
             </div>
           </div>
         </PublicChapter>

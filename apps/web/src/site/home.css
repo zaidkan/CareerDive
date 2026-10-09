@@ -38,7 +38,7 @@
   align-items: center;
 }
 .home-hero-copy h1 {
-  max-width: 12ch;
+  max-width: 16ch;
   margin: 0 0 1.35rem;
   color: var(--text-primary);
   font-family: var(--font-display);
@@ -68,6 +68,21 @@
 }
 .home-hero-stage {
   min-width: 0;
+  width: min(100%, 400px);
+  justify-self: end;
+}
+.v2-home .home-hero-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+  gap: clamp(3rem, 6vw, 6rem);
+}
+@media (max-width: 1000px) {
+  .v2-home .home-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+  .home-hero-stage {
+    justify-self: center;
+  }
 }
 /* One opaque, bounded deck. Rank controls every offset and layer; the front
    card keeps its full face, while only the header of each rear card peeks out. */
