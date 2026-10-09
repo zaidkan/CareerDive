@@ -123,11 +123,11 @@ async function enterDesk(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByTestId("login-surface"));
   await user.type(await screen.findByLabelText(/^Password$/i), "FirstDay!");
   await user.click(await screen.findByRole("button", { name: /^Sign in$/i }));
-  await screen.findByRole("heading", { name: "Your workstation" });
+  await screen.findByRole("navigation", { name: "Workstation tools" });
 }
 
 async function openTeamChat(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(await screen.findByRole("tab", { name: /^Team/ }));
+  await user.click(await screen.findByRole("button", { name: /^Team/ }));
 }
 
 function introNodes() {
@@ -213,9 +213,9 @@ describe("once-per-session Morgan introduction", () => {
     await openTeamChat(user);
     expect(introNodes()).toHaveLength(1);
 
-    await user.click(screen.getByRole("button", { name: "Browser" }));
-    await user.click(screen.getByRole("button", { name: "Files" }));
-    await user.click(screen.getByRole("button", { name: "Browser" }));
+    await user.click(screen.getByRole("button", { name: "Alerts" }));
+    await user.click(screen.getByRole("button", { name: "Tickets" }));
+    await user.click(screen.getByRole("button", { name: "Alerts" }));
     await openTeamChat(user);
     expect(introNodes()).toHaveLength(1);
 
@@ -224,7 +224,7 @@ describe("once-per-session Morgan introduction", () => {
       await screen.findByRole("button", { name: "Sit at desk" }, { timeout: 6000 }),
     );
     expect(screen.queryByRole("heading", { name: /Sign in/i })).toBeNull();
-    expect(await screen.findByRole("tab", { name: /^Team/ })).toHaveAttribute("aria-selected", "true");
+    expect(await screen.findByRole("button", { name: /^Team/ })).toHaveAttribute("aria-current", "page");
     await openTeamChat(user);
     expect(introNodes()).toHaveLength(1);
     expect(screen.getByTestId("morgan-intro")).toHaveTextContent(

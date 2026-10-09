@@ -6,6 +6,11 @@ import type { ReactNode, SVGProps } from "react";
  * Unicode glyphs, so every surface shares the same weight and rhythm.
  */
 export type OsIconName =
+  | "alert"
+  | "mail"
+  | "ticket"
+  | "book"
+  | "chat"
   | "app-browser"
   | "app-files"
   | "app-notes"
@@ -27,6 +32,41 @@ export type OsIconName =
 
 function geometry(name: OsIconName): ReactNode {
   switch (name) {
+    case "alert":
+      return (
+        <>
+          <path d="M12 3L2.5 20h19L12 3z" />
+          <path d="M12 9v5M12 17v.1" />
+        </>
+      );
+    case "mail":
+      return (
+        <>
+          <rect x="3" y="5" width="18" height="14" rx="2" />
+          <path d="M3 6l9 7 9-7" />
+        </>
+      );
+    case "ticket":
+      return (
+        <>
+          <rect x="5" y="4" width="14" height="17" rx="2" />
+          <path d="M9 3h6v4H9zM9 12h6M9 16h4" />
+        </>
+      );
+    case "book":
+      return (
+        <>
+          <path d="M12 6c-3-2-6-2-10-1v14c4-1 7-1 10 1 3-2 6-2 10-1V5c-4-1-7-1-10 1zM12 6v14" />
+        </>
+      );
+    case "chat":
+      return (
+        <>
+          <path d="M21 11a8 8 0 0 1-8 8H8l-5 3 1.5-6A8 8 0 1 1 21 11z" />
+          <path d="M8 9h8M8 13h5" />
+        </>
+      );
+
     case "app-browser":
       return (
         <>

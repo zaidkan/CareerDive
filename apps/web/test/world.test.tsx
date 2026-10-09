@@ -282,8 +282,8 @@ describe("spatial presentation", () => {
     await user.click(screen.getByRole("button", { name: /^Sign in$/i }));
     expect(
       await screen.findByRole(
-        "heading",
-        { name: /Your workstation/i },
+        "navigation",
+        { name: "Workstation tools" },
         { timeout: 3000 },
       ),
     ).toBeVisible();

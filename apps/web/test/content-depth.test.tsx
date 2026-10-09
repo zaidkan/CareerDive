@@ -8,7 +8,7 @@ import { EmailTool } from "../src/components/tools/EmailTool.js";
 import { TeamChatTool } from "../src/components/tools/TeamChatTool.js";
 import { SystemToolPanel } from "../src/components/SystemToolPanel.js";
 import { CaseRail } from "../src/components/CaseRail.js";
-import { CalendarPanel } from "../src/world/deskOs/DashboardHome.js";
+import { ShiftCheckpoints } from "../src/world/deskOs/ShiftCheckpoints.js";
 afterEach(cleanup);
 const pack = loadDefaultCybersecurityPack();
 const view = () => toClientView(createInitialWorldState("content", 24, {}, pack));
@@ -23,14 +23,14 @@ it("shows the approved email timestamp without opening its body", () => {
     expect(artifact).not.toHaveProperty("body");
     expect(screen.queryByText(/Did not finish device inventory check/)).toBeNull();
 });
-it("derives calendar checkpoints from current visible work, not static future meetings", () => {
+it("derives shift checkpoints from current visible work, not static future meetings", () => {
     const current = view();
-    const { rerender } = render(<CalendarPanel view={current} onOpenEmail={vi.fn()}/>);
+    const { rerender } = render(<ShiftCheckpoints view={current} onOpenEmail={vi.fn()}/>);
     expect(screen.getByText("Shift handoff")).toBeVisible();
     expect(screen.getByText(/Buddy check with Morgan/)).toBeVisible();
     expect(screen.getByText(/Optional break with Jules/)).toBeVisible();
     expect(screen.queryByText(/Priya|09:15|11:00|14:30|locked/)).toBeNull();
-    rerender(<CalendarPanel view={{
+    rerender(<ShiftCheckpoints view={{
             ...current,
             events: current.events.map((event) => ({
                 ...event,

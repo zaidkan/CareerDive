@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { OpsConsole } from "../src/world/deskOs/OpsConsole.js";
+import { OsSessionProvider } from "../src/world/deskOs/osSession.js";
 import { afterEach, expect, it, vi } from "vitest";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import {
@@ -71,7 +74,8 @@ it("uses the sent handoff's dispositions for every preview case and outcome hist
   expect(preview).toHaveTextContent("closed as expected");
   expect(screen.getByText("Recorded outcomes (3)")).toBeVisible();
 });
-it("shows selected-case work while the queue objective concerns a different case", () => {
+it("shows selected-case work while the queue objective concerns a different case", async () => {
+  const user = userEvent.setup();
   const view = fixture();
   const original = toClientView(
     createInitialWorldState("action", 7, {}, loadDefaultCybersecurityPack()),
@@ -84,6 +88,14 @@ it("shows selected-case work while the queue objective concerns a different case
   view.availableActions = [
     {
       ...original,
+      id: "route_access_request",
+      label: "Route request to the data owner",
+      description: "Approval pending",
+      eventId: "access-request-1",
+      systemId: "email",
+    },
+    {
+      ...original,
       id: "search_knowledge_base",
       label: "Check scanner window",
       description: "Compare scanner event time with approved window.",
@@ -92,23 +104,22 @@ it("shows selected-case work while the queue objective concerns a different case
     },
   ];
   render(
-    <SystemApp
-      view={view}
-      systemId="alert_dashboard"
-      onAction={vi.fn()}
-      guidance={{
-        headline: "Route request to the data owner",
-        detail: "Approval pending",
-        systemId: "team_chat",
-      }}
-      onOpenSystem={vi.fn()}
-    />,
+    <OsSessionProvider>
+      <OpsConsole view={view} onAction={vi.fn()} />
+    </OsSessionProvider>,
   );
-  const next = screen.getByRole("region", { name: "Selected case next step" });
-  expect(next).toHaveTextContent("Check scanner window");
+  await user.selectOptions(
+    screen.getByRole("combobox", { name: "Current case" }),
+    scanner.id,
+  );
+  const next = screen.getByRole("region", { name: "Current objective" });
+  expect(next).toHaveTextContent("Check the relevant guide");
   expect(next).not.toHaveTextContent("Route request");
   expect(
-    within(next).getByRole("button", { name: "Open Guides for this case" }),
+    within(next).getByRole("button", { name: "Go to Guides" }),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "Other work waiting: Finance" }),
   ).toBeVisible();
 });
 it("does not repeat pre-resolution scanner summary or show its old deadline", () => {

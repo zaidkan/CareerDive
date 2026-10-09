@@ -68,7 +68,7 @@ it("creates exactly one assessed session after arrival and preserves class-clien
   await user.click(await screen.findByTestId("login-surface"));
   await user.type(screen.getByLabelText(/^Password$/i), "FirstDay!");
   await user.click(screen.getByRole("button", { name: /^Sign in$/ }));
-  await user.click(await screen.findByRole("tab", { name: /^Email/ }));
+  await user.click(await screen.findByRole("button", { name: /^Email/ }));
   await user.click(screen.getByRole("button", { name: /Read shift handoff/ }));
   await waitFor(() => { expect(requests.some(({ url }) => url.endsWith("simulation.performAction"))).toBe(true); });
   expect(screen.queryByText("That workplace interaction could not be completed.")).toBeNull();

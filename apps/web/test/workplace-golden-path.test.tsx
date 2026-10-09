@@ -10,7 +10,6 @@ import { createInitialWorldState, foldActionLog, toClientView, } from "@sim/core
 import { InMemoryRepository, createAppRouter, type StoredSession, } from "../../server/src/index.js";
 import { DeskOs } from "../src/world/deskOs/DeskOs.js";
 import { OsSessionProvider } from "../src/world/deskOs/osSession.js";
-import { APP_TABS } from "../src/world/deskOs/tabs.js";
 import { WORK_SYSTEMS } from "../src/systems.js";
 import type { NotificationHandler } from "../src/components/shared.js";
 import { BreakRoomPanel, CarriedSnackControl, } from "../src/world/BreakRoomPanel.js";
@@ -229,8 +228,8 @@ describe("rendered workplace golden path", () => {
             }
         }
         async function openSystem(systemId: AvailableAction["systemId"]) {
-            const tab = required(APP_TABS.find(({ id }) => id === systemId), `Desk OS tab ${systemId}`);
-            await user.click(screen.getByRole("tab", {
+            const tab = required(WORK_SYSTEMS.find(({ id }) => id === systemId), `Desk OS tab ${systemId}`);
+            await user.click(screen.getByRole("button", {
                 name: new RegExp(`^${tab.label}( suggested next)?$`),
             }));
         }
@@ -257,9 +256,8 @@ describe("rendered workplace golden path", () => {
             for (const system of WORK_SYSTEMS) {
                 await openSystem(system.id);
                 collect();
-                const queue = container.querySelector(".desk-os-queue");
-                for (const button of Array.from(queue?.querySelectorAll<HTMLButtonElement>("button") ?? [])) {
-                    await user.click(button);
+                for (const event of toClientView(state).events) {
+                    await user.selectOptions(screen.getByRole("combobox", { name: "Current case" }), event.id);
                     collect();
                 }
             }
@@ -280,14 +278,8 @@ describe("rendered workplace golden path", () => {
         );
         if (!action) throw new Error(`Unavailable ${id}:${eventId}`);
         await openSystem(action.systemId);
-        const queue = container.querySelector(".desk-os-queue");
-        const eventTitle = state.events.find(({ id }) => id === eventId)?.title;
-        const item = Array.from(
-          queue?.querySelectorAll<HTMLButtonElement>("button") ?? [],
-        ).find(
-          (button) => eventTitle && button.textContent.includes(eventTitle),
-        );
-        if (item) await user.click(item);
+        if (state.events.some(({ id }) => id === eventId))
+          await user.selectOptions(screen.getByRole("combobox", { name: "Current case" }), eventId);
         if (
           action.systemId === "alert_dashboard" &&
           !state.workplace.selectedAlertIdsByEvent?.[eventId]

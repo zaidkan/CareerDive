@@ -1,0 +1,347 @@
+/* One restrained workspace; the panel is the only scrolling work surface. */
+.desk-os.desk-workspace {
+  grid-template-rows: auto minmax(0, 1fr);
+  font-size: 1rem;
+  background: var(--surface-base);
+  box-shadow: none;
+}
+.desk-workspace .workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 1.25rem;
+  background: var(--surface-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.desk-workspace .workspace-header strong {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+.desk-workspace .workspace-header strong span {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+.desk-workspace .workspace-controls {
+  display: flex;
+  gap: 0.5rem;
+}
+.desk-workspace .workspace-controls button {
+  min-height: 44px;
+}
+.desk-workspace .workspace-content,
+.desk-workspace .workspace-console,
+.desk-workspace .workspace-layout {
+  min-height: 0;
+  min-width: 0;
+}
+.desk-workspace .workspace-content[hidden] {
+  display: none;
+}
+.desk-workspace .workspace-console {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.desk-workspace .workspace-spine {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-base);
+}
+.desk-workspace .workspace-case-picker {
+  display: grid;
+  gap: 0.35rem;
+  flex: 0 1 21rem;
+  min-width: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.desk-workspace .workspace-case-picker select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+.desk-workspace .workspace-objective {
+  display: grid;
+  gap: 0.3rem;
+  flex: 1;
+  min-width: 0;
+}
+.desk-workspace .workspace-objective strong {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+.desk-workspace .workspace-objective span {
+  font-size: 0.85rem;
+  max-width: 65ch;
+  color: var(--text-secondary);
+}
+.desk-workspace .workspace-next {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+  min-height: 44px;
+  color: var(--action-on-primary);
+  background: var(--action-primary);
+  padding: 0.65rem 0.9rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+.desk-workspace .workspace-layout {
+  display: grid;
+  grid-template-columns: 11.5rem minmax(0, 1fr);
+}
+.desk-workspace .workspace-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1rem 0.65rem;
+  background: var(--surface-subtle);
+  border-right: 1px solid var(--border-subtle);
+  overflow-y: auto;
+}
+.desk-workspace .workspace-tool {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 64px;
+  padding: 0.7rem 0.65rem;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.desk-workspace .workspace-tool > span:first-of-type {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+.desk-workspace .workspace-tool small {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+.desk-workspace .workspace-tool[aria-current="page"] {
+  background: var(--surface-strong);
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+.desk-workspace .workspace-tool[data-next] small {
+  color: var(--action-primary);
+  font-weight: 650;
+}
+.desk-workspace .workspace-tool:hover {
+  background: var(--surface-strong);
+}
+.desk-workspace .workspace-unread {
+  margin-left: auto;
+  color: var(--action-on-primary);
+  background: var(--action-primary);
+  border-radius: var(--radius-sm);
+  padding: 0.1rem 0.35rem;
+  font-size: 0.75rem;
+}
+.desk-workspace .workspace-shift-status {
+  margin-top: auto;
+  display: grid;
+  gap: 0.4rem;
+  padding: 1.5rem 0.65rem 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+.desk-workspace .workspace-panel {
+  min-width: 0;
+  overflow: auto;
+  padding: 1.5rem 2rem 3rem;
+  scrollbar-color: var(--border-strong) var(--surface-base);
+  scroll-padding-block: 1.5rem;
+}
+.desk-workspace .workspace-panel > .desk-os-system {
+  display: block;
+  overflow: visible;
+  min-height: auto;
+}
+.desk-os.desk-workspace .desk-os-detail {
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  background: transparent;
+}
+.desk-os.desk-workspace .desk-os-detail > h3 {
+  font-size: 1.4rem;
+  margin-block: 0.5rem 1rem;
+}
+.desk-workspace
+  .desk-os-detail
+  :is(.tool-panel, .tool-split, .context-actions) {
+  font-size: 0.95rem;
+}
+.desk-workspace .tool-chrome {
+  display: none;
+}
+.desk-workspace .workspace-panel > :is(aside, .consequence-updates) {
+  margin-bottom: 1.25rem;
+}
+.desk-workspace .workspace-other-work {
+  display: block;
+  margin-bottom: 1rem;
+  padding: 0.6rem 0;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--action-primary);
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.desk-workspace :is(button, select, input, textarea, summary):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+.desk-workspace :is(button, select, input, textarea):disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+.desk-workspace .workspace-next:hover {
+  filter: brightness(1.08);
+}
+.desk-workspace ::selection {
+  color: var(--action-on-primary);
+  background: var(--action-primary);
+}
+@media (max-width: 900px) {
+  .desk-workspace .workspace-spine {
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .desk-workspace .workspace-case-picker {
+    flex-basis: 100%;
+  }
+  .desk-workspace .workspace-layout {
+    grid-template-columns: 9.5rem minmax(0, 1fr);
+  }
+  .desk-workspace .workspace-panel {
+    padding: 1.25rem;
+  }
+  .desk-workspace .workspace-header strong span {
+    display: none;
+  }
+}
+@media (max-width: 600px) {
+  .desk-workspace .workspace-header {
+    padding: 0.4rem 0.65rem;
+    gap: 0.4rem;
+  }
+  .desk-workspace .workspace-controls {
+    gap: 0.25rem;
+  }
+  .desk-workspace .workspace-controls button {
+    padding-inline: 0.45rem;
+    font-size: 0.75rem;
+  }
+  .desk-workspace .workspace-spine {
+    padding: 0.65rem;
+  }
+  .desk-workspace .workspace-objective strong {
+    font-size: 1rem;
+  }
+  .desk-workspace .workspace-objective span {
+    font-size: 0.78rem;
+  }
+  .desk-workspace .workspace-next {
+    font-size: 0.8rem;
+    padding: 0.5rem;
+  }
+  .desk-workspace .workspace-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .desk-workspace .workspace-rail {
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow-x: auto;
+    padding: 0.35rem;
+    gap: 0.2rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .desk-workspace .workspace-tool {
+    flex: 1 0 auto;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.25rem;
+    min-height: 52px;
+    padding: 0.35rem 0.5rem;
+  }
+  .desk-workspace .workspace-tool > span:first-of-type {
+    font-size: 0.8rem;
+  }
+  .desk-workspace .workspace-tool small {
+    display: none;
+  }
+  .desk-workspace .workspace-shift-status {
+    display: flex;
+    flex-basis: 100%;
+    gap: 1rem;
+    padding: 0.15rem 0.5rem;
+    margin: 0;
+    font-size: 0.7rem;
+  }
+  .desk-workspace .workspace-tool[data-next] {
+    border-color: var(--action-primary);
+  }
+  .desk-workspace .workspace-unread {
+    margin: 0;
+  }
+  .desk-workspace .workspace-panel {
+    padding: 1rem 0.75rem 2rem;
+  }
+  .desk-os.desk-workspace .desk-os-detail > h3 {
+    font-size: 1.2rem;
+  }
+}
+.desk-workspace .workspace-scratchpad,
+.desk-workspace .workspace-checkpoints {
+  margin-top: 2rem;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 1rem;
+}
+.desk-workspace .workspace-scratchpad textarea {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  font: inherit;
+  padding: 0.75rem;
+  color: var(--text-primary);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+.desk-os.desk-workspace .context-actions button :is(small, .action-time) {
+  font-family: var(--font-body);
+}
+.desk-workspace .workspace-related-sources {
+  margin-block: 1rem;
+}

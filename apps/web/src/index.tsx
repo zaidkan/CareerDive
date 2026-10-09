@@ -29,6 +29,7 @@ import {
 } from "./useMutationCoordinator.js";
 import "./styles.css";
 import "./desk-os-polish.css";
+import "./world/deskOs/workspace.css";
 import { readTabValue, writeTabValue } from "./useTabDraft.js";
 // Route changes retain the pending creation promise as well as its confirmed session.
 const liveSessions = new WeakMap<

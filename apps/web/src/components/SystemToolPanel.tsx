@@ -277,16 +277,6 @@ export function SystemToolPanel({
     return (
       <div className="tool-panel" data-system={systemId}>
         <ToolChrome systemId={systemId} />
-        {selectedEventId && onWorkplaceInteraction ? (
-          <CaseEvidence
-            key={selectedEventId}
-            view={view}
-            eventId={selectedEventId}
-            onInspect={onWorkplaceInteraction}
-            bodyShownElsewhere={eventArtifacts.map(({ id }) => id)}
-            pending={Boolean(mutationState.pendingKey)}
-          />
-        ) : null}
         <EmailTool
           artifacts={eventArtifacts}
           onOpenArtifact={openArtifact}
@@ -294,6 +284,19 @@ export function SystemToolPanel({
           selectedId={selectedArtifactId}
           mutationState={mutationState}
         />
+        {selectedEventId && onWorkplaceInteraction ? (
+          <details className="workspace-related-sources">
+            <summary>Related case sources</summary>
+            <CaseEvidence
+              key={selectedEventId}
+              view={view}
+              eventId={selectedEventId}
+              onInspect={onWorkplaceInteraction}
+              bodyShownElsewhere={eventArtifacts.map(({ id }) => id)}
+              pending={Boolean(mutationState.pendingKey)}
+            />
+          </details>
+        ) : null}
         <WorkInteraction
           onOpenArtifact={openArtifact}
           actions={workInteractionActions(actions)}
@@ -460,15 +463,6 @@ export function SystemToolPanel({
           {...(onTaskAttempt ? { onTaskAttempt } : {})}
           view={view}
         />
-        {selectedEventId && onWorkplaceInteraction ? (
-          <CaseEvidence
-            key={selectedEventId}
-            view={view}
-            eventId={selectedEventId}
-            onInspect={onWorkplaceInteraction}
-            pending={Boolean(mutationState.pendingKey)}
-          />
-        ) : null}
         <TeamChatTool
           view={view}
           onOpenArtifact={openArtifact}
@@ -476,6 +470,18 @@ export function SystemToolPanel({
           actions={actions}
           onAction={onAction}
         />
+        {selectedEventId && onWorkplaceInteraction ? (
+          <details className="workspace-related-sources">
+            <summary>Related case sources</summary>
+            <CaseEvidence
+              key={selectedEventId}
+              view={view}
+              eventId={selectedEventId}
+              onInspect={onWorkplaceInteraction}
+              pending={Boolean(mutationState.pendingKey)}
+            />
+          </details>
+        ) : null}
       </div>
     );
   }
@@ -536,7 +542,9 @@ export function SystemToolPanel({
             eventId={selectedEventId}
             onInspect={onWorkplaceInteraction}
             pending={Boolean(mutationState.pendingKey)}
-            comparisonInNote={Boolean(view.reasoningOptions?.[selectedEventId]?.length)}
+            comparisonInNote={Boolean(
+              view.reasoningOptions?.[selectedEventId]?.length,
+            )}
           />
         ) : null}
         <details className="case-files-disclosure">
