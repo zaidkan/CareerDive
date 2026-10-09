@@ -22,6 +22,10 @@ const FAQS: Faq[] = [
     a: "Not at all. Clicking fast or steering the camera well doesn’t count. What matters is how the work feels to you.",
   },
   {
+    q: "Can teachers or career counselors use CareerDive?",
+    a: "Yes. Teachers and career counselors can use the short simulation as a starting point for career exploration and discussion. Students try the work, then discuss what interested them, what felt difficult, and what they would like to explore next.",
+  },
+  {
     q: "What if something doesn’t load, or I get stuck?",
     a: "If something doesn't load, CareerDive can retry the shift, check compatibility, offer a fallback recovery path, and let you report the problem directly. Keyboard support and reduced motion are available. On the shift screen, use Retry starting shift when offered, or Report a problem. If the office cannot open, a compatibility check can offer the recovery workstation. If report delivery is unavailable, your draft stays during this tab session; use Copy report details or retry delivery later.",
   },
