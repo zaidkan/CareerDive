@@ -1,4 +1,12 @@
 export { availableActions } from "./availability.js";
+export { availableCaseActions } from "./availability.js";
+export {
+  findingQuestions,
+  findingText,
+  reasoningFromFindings,
+  findingReviewGaps,
+} from "./case-findings.js";
+export type { FindingQuestion } from "./case-findings.js";
 export { createInitialWorldState } from "./world.js";
 export {
   ActionUnavailableError,

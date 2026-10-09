@@ -3,6 +3,11 @@ import type {
   ReasoningSelection,
   WorldState,
 } from "@sim/schemas";
+import {
+  validateCaseFindings,
+  findingReviewGaps,
+  reasoningFromFindings,
+} from "./case-findings.js";
 
 type Option = {
   id: string;
@@ -592,6 +597,8 @@ export function validateReasoning(
   )
     throw new Error("Follow-up options require a recorded result.");
   const sourceIds: string[] = [];
+  if (selected.caseFindings)
+    validateCaseFindings(state, eventId, selected.caseFindings);
   for (const field of [
     "evidence",
     "context",
@@ -648,6 +655,7 @@ export function reviewReasoning(
   selected: ReasoningSelection,
   inspected: readonly string[],
 ): ReasoningReview {
+  selected = reasoningFromFindings(eventId, selected);
   const key =
     eventId === "login-help-1" && selected.phase === "follow-up"
       ? "riveraFollowup"
@@ -738,6 +746,15 @@ export function reviewReasoning(
     };
   }
   const values = Object.values(fields);
+  if (selected.caseFindings) {
+    const gaps = findingReviewGaps(eventId, selected.caseFindings);
+    fields.findings = {
+      verdict: gaps.length ? "needs_more_evidence" : "supported",
+      gaps,
+      selectedLabels: [],
+    };
+    values.push(fields.findings);
+  }
   return {
     verdict: values.some((v) => v.verdict === "needs_more_evidence")
       ? "needs_more_evidence"

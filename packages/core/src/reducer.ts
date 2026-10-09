@@ -17,7 +17,8 @@ import {
 } from "@sim/schemas";
 import { managerRecap, ticketSourceAcknowledgement } from "./morgan.js";
 import { toClientView } from "./serializer.js";
-import { availableActions } from "./availability.js";
+import { availableActions, availableCaseActions } from "./availability.js";
+import { reasoningFromFindings } from "./case-findings.js";
 import { applyResolvedEffect, resolveActionEffect } from "./effects.js";
 import { handoffCaseLines, handoffFollowUps } from "./handoff-summary.js";
 import { runQuery } from "./query.js";
@@ -62,12 +63,21 @@ function validateTicketPayload(
   )
     throw new ActionUnavailableError(action.id);
   const payload = TicketUpdatePayloadSchema.parse(action.ticketPayload);
+  if (
+    payload.dispatch &&
+    (action.id !== "document_ticket" || !payload.reasoning?.caseFindings)
+  )
+    throw new ActionUnavailableError(
+      "Only a case memo can dispatch an alert response",
+    );
   if (payload.reasoning) {
     if (payload.ticketId !== `ticket-${eventId}`)
       throw new ActionUnavailableError(action.id);
+    const reasoning = reasoningFromFindings(eventId, payload.reasoning);
     return {
       ...payload,
-      ...validateReasoning(state, eventId, payload.reasoning),
+      reasoning,
+      ...validateReasoning(state, eventId, reasoning),
     };
   }
   if (["route_access_request", "resolve_login_help"].includes(action.id))
@@ -187,7 +197,14 @@ export function applyAction(
     return applyQueryRecords(currentState, action);
   }
 
-  const allowedAction = availableActions(currentState).find(
+  const caseWorkspace =
+    action.ticketPayload?.reasoning?.caseFindings !== undefined ||
+    currentState.structuredTickets[`ticket-${action.eventId ?? ""}`]?.reasoning
+      ?.caseFindings !== undefined;
+  const allowedAction = [
+    ...availableActions(currentState),
+    ...(caseWorkspace ? availableCaseActions(currentState) : []),
+  ].find(
     ({ id, eventId }) =>
       id === action.id &&
       (action.eventId === undefined || action.eventId === eventId),
@@ -451,8 +468,28 @@ export function applyAction(
     applyDueConsequences(state, effects, true);
     applyDueCallbacks(state, effects, true);
   }
+  const previousFindings =
+    currentState.structuredTickets[`ticket-${targetEventId}`]?.reasoning
+      ?.caseFindings ?? [];
+  // Time belongs to the first constructed finding, not a separate check button.
+  // Revisiting records and correcting a saved finding never earn extra progress.
+  const findingMinutes =
+    action.id === "update_ticket_notes"
+      ? (ticketPayload?.reasoning?.caseFindings ?? [])
+          .filter(
+            (f) => !previousFindings.some((p) => p.questionId === f.questionId),
+          )
+          .reduce(
+            (minutes, f) =>
+              minutes +
+              ({ signal: 10, route: 10, device: 10, coverage: 10 }[
+                f.questionId
+              ] ?? 0),
+            0,
+          )
+      : 0;
   state.workplace.energy.current -= definition.energyCost;
-  state.simClock += definition.simulatedMinutes;
+  state.simClock += definition.simulatedMinutes + findingMinutes;
   state.completedActionIds.push(action.id);
   const event = state.events.find(({ id }) => id === targetEventId);
 
@@ -507,7 +544,7 @@ export function applyAction(
       author: "morgan",
       actionId: action.id,
       simMinutes: state.simClock,
-      body: `${previouslyAsked ? "Following up on your handoff question: " : "I have your saved case note. "}${ticketSourceAcknowledgement(toClientView(state), targetEventId)} ${ticket.uncertainty ? `The open question remains: ${ticket.uncertainty}` : "No uncertainty is written in this note; silence is not confirmation."} I will use the recorded decision when routing the follow-up.`,
+      body: `${previouslyAsked ? "Following up on your handoff question: " : "I have your saved case note. "}${ticketSourceAcknowledgement(toClientView(state), targetEventId)} ${ticket.uncertainty ? `Your recorded claims (not yet verified): ${ticket.uncertainty}` : "No uncertainty is written in this note; silence is not confirmation."} I will use the recorded decision when routing the follow-up.`,
     });
   }
 
@@ -556,6 +593,28 @@ export function applyAction(
   applyDueConsequences(state, effects);
   applyDueCallbacks(state, effects);
 
+  if (ticketPayload?.dispatch) {
+    const expected =
+      state.flags.b1_terminal === "dismiss"
+        ? "dismiss_alert"
+        : "escalate_alert";
+    if (
+      targetEventId !== "suspicious-login-1" ||
+      ticketPayload.dispatch !== expected
+    )
+      throw new ActionUnavailableError(
+        "The response must match the memo's disposition",
+      );
+    const dispatched = applyAction(state, {
+      id: ticketPayload.dispatch,
+      eventId: targetEventId,
+      actorId: action.actorId,
+    });
+    return {
+      state: dispatched.state,
+      effects: [...effects, ...dispatched.effects],
+    };
+  }
   return { state: WorldStateSchema.parse(state), effects };
 }
 

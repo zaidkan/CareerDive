@@ -59,6 +59,7 @@ export const ClientViewSchema = z.object({
   currentLocation: LocationSchema,
   events: z.array(ClientEventSchema),
   availableActions: z.array(AvailableActionSchema),
+  caseActions: z.array(AvailableActionSchema).optional(),
   operationalMessages: z.array(z.string()),
   consequenceUpdates: z
     .array(

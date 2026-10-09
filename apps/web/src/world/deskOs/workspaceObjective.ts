@@ -1,9 +1,32 @@
 import type { ClientView, WorkSystemId } from "@sim/schemas";
 import { getShiftGuidance } from "../../guidance.js";
 import { shiftWorkActions } from "../../systems.js";
+import { findingQuestions } from "@sim/core";
 
 /** Navigation cues only. Never evaluate evidence or recommend a disposition. */
 export function workspaceObjective(view: ClientView, eventId?: string) {
+  if (eventId === "suspicious-login-1" && view.caseActions) {
+    const ticket = view.structuredTickets?.[`ticket-${eventId}`];
+    const event = view.events.find((e) => e.id === eventId);
+    if (event?.status === "active") {
+      const question = findingQuestions(eventId).find(
+        (q) =>
+          !ticket?.reasoning?.caseFindings?.some((f) => f.questionId === q.id),
+      );
+      return {
+        objective:
+          question?.title ??
+          "What judgment and next check will your memo carry?",
+        systemId: question?.systemId ?? ("ticket_queue" as WorkSystemId),
+        eventId,
+      };
+    }
+    return {
+      objective: "What does the recipient still need from this case?",
+      systemId: "team_chat" as WorkSystemId,
+      eventId,
+    };
+  }
   const guidance = getShiftGuidance(view);
   const actions = shiftWorkActions(view.availableActions).filter(
     (action) => !["ask_manager", "query_records"].includes(action.id),

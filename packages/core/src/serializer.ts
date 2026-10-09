@@ -7,7 +7,7 @@ import type {
   WorldState,
 } from "@sim/schemas";
 import { DatasetRecordSchema, InventoryLookupKeysSchema } from "@sim/schemas";
-import { availableActions } from "./availability.js";
+import { availableActions, availableCaseActions } from "./availability.js";
 import { conditionsMet } from "./conditions.js";
 import { taskProgressKey } from "./tasks.js";
 import { alertRecordSource, canOpenArtifact } from "./workplace.js";
@@ -155,6 +155,9 @@ export function toClientView(state: WorldState): ClientView {
         },
       ),
     availableActions: actions,
+    ...(state.careerVersion === "2.0.0"
+      ? { caseActions: availableCaseActions(state) }
+      : {}),
     operationalMessages,
     consequenceUpdates: state.ledger
       .filter(
@@ -251,7 +254,11 @@ export function toClientView(state: WorldState): ClientView {
       }),
     ticketNotes: state.ticketNotes,
     handoffOptions: handoffOptions(state),
-    reasoningOptions: Object.fromEntries(state.events.filter((e) => e.status !== "pending").map((e) => [e.id, reasoningGroups(state, e.id)])),
+    reasoningOptions: Object.fromEntries(
+      state.events
+        .filter((e) => e.status !== "pending")
+        .map((e) => [e.id, reasoningGroups(state, e.id)]),
+    ),
     structuredTickets: state.structuredTickets,
     teamMessages: state.teamMessages ?? [],
     notebook: state.notebook,

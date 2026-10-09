@@ -20,6 +20,7 @@ import {
   type MutationState,
 } from "../../useMutationCoordinator.js";
 import { workspaceObjective } from "./workspaceObjective.js";
+import { CaseWorkspace } from "./CaseWorkspace.js";
 
 const TOOL_ICONS: Record<WorkSystemId, OsIconName> = {
   alert_dashboard: "alert",
@@ -242,18 +243,31 @@ export function OpsConsole({
                 otherWork.label}
             </button>
           ) : null}
-          <SystemApp
-            view={view}
-            systemId={systemId}
-            onAction={onAction}
-            guidance={guidance}
-            onOpenSystem={openTool}
-            {...(eventId ? { focusEventId: eventId } : {})}
-            focusRequestId={state.workspace?.requestId ?? 0}
-            mutationState={mutationState}
-            {...(onTaskAttempt ? { onTaskAttempt } : {})}
-            {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
-          />
+          {eventId === "suspicious-login-1" && view.caseActions ? (
+            <CaseWorkspace
+              view={view}
+              eventId={eventId}
+              systemId={systemId}
+              onAction={onAction}
+              mutationState={mutationState}
+              onOpenSystem={openTool}
+              focusRequestId={state.workspace?.requestId ?? 0}
+              {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
+            />
+          ) : (
+            <SystemApp
+              view={view}
+              systemId={systemId}
+              onAction={onAction}
+              guidance={guidance}
+              onOpenSystem={openTool}
+              {...(eventId ? { focusEventId: eventId } : {})}
+              focusRequestId={state.workspace?.requestId ?? 0}
+              mutationState={mutationState}
+              {...(onTaskAttempt ? { onTaskAttempt } : {})}
+              {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
+            />
+          )}
           {systemId === "ticket_queue" ? (
             <details className="workspace-scratchpad">
               <summary>Personal scratchpad (optional)</summary>

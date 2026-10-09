@@ -22,6 +22,8 @@ export const TicketUpdatePayloadSchema = z
     verifiedEvidence: z.string().max(2_000).optional(),
     uncertainty: z.string().max(2_000).optional(),
     reasoning: ReasoningSelectionSchema.optional(),
+    /** One memo dispatch, including the existing consequential alert action. */
+    dispatch: z.enum(["escalate_alert", "dismiss_alert"]).optional(),
     sourceRecordIds: z.array(z.string()).optional(),
     sourceArtifactIds: z.array(z.string()).optional(),
   })

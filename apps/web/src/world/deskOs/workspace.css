@@ -508,3 +508,127 @@
   color: var(--text-primary);
   border: 1px solid var(--border-strong);
 }
+
+/* A compact argument remains with the selected case, above one work surface. */
+.desk-workspace .case-workspace {
+  min-width: 0;
+}
+.desk-workspace .case-board {
+  position: sticky;
+  top: -1.25rem;
+  z-index: 2;
+  background: var(--surface-base);
+  border-bottom: 1px solid var(--border-strong);
+  padding: 0.75rem 0 1rem;
+  margin-bottom: 1.5rem;
+}
+.desk-workspace .case-board h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.3rem;
+}
+.desk-workspace .case-board p {
+  margin: 0.45rem 0;
+  max-width: 72ch;
+}
+.desk-workspace .case-board small,
+.desk-workspace .case-board li small {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.desk-workspace .case-board-status {
+  font-size: 0.85rem;
+}
+.desk-workspace .case-board > label {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+.desk-workspace .case-work-surface {
+  max-width: 75ch;
+}
+.desk-workspace .case-work-surface h4 {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 1.2rem;
+}
+.desk-workspace .case-workspace fieldset {
+  min-width: 0;
+  padding: 0;
+  margin: 1.5rem 0;
+  border: 0;
+}
+.desk-workspace .case-workspace legend {
+  margin-bottom: 0.65rem;
+  font-weight: 650;
+}
+.desk-workspace .case-workspace fieldset label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.6rem 0;
+  line-height: 1.6;
+}
+.desk-workspace .case-workspace fieldset label:has(select) {
+  display: grid;
+  width: 100%;
+}
+.desk-workspace .case-workspace :is(select, button) {
+  font: inherit;
+  min-height: 44px;
+}
+.desk-workspace .case-workspace select {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.65rem;
+  color: var(--text-primary);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+.desk-workspace .case-workspace :is(input, select, button):focus-visible {
+  outline: 2px solid var(--action-primary);
+  outline-offset: 3px;
+}
+.desk-workspace .case-workspace button {
+  cursor: pointer;
+  padding: 0.55rem 0.8rem;
+  color: var(--text-primary);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+.desk-workspace .case-workspace button:hover:not(:disabled) {
+  background: var(--surface-raised, var(--surface-subtle));
+}
+.desk-workspace .case-workspace button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.desk-workspace .case-workspace .action-primary {
+  background: var(--action-primary);
+  color: var(--action-on-primary);
+  border-color: var(--action-primary);
+}
+.desk-workspace .case-source-actions,
+.desk-workspace .case-operation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+.desk-workspace .case-source-body {
+  white-space: pre-line;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.desk-workspace .case-memo-link {
+  margin-top: 1.5rem;
+}
+@media (max-width: 700px) {
+  .desk-workspace .case-board {
+    position: static;
+  }
+  .desk-workspace .case-workspace fieldset label {
+    overflow-wrap: anywhere;
+  }
+}

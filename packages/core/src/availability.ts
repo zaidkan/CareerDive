@@ -254,3 +254,25 @@ export function availableActions(state: WorldState): AvailableAction[] {
   }
   return [...eventActions, ...correctionActions(state)];
 }
+
+/** Alternate presentation of existing authored operations, without read/check gates.
+ * Legacy action availability and recorded shifts keep their original contract.
+ */
+export function availableCaseActions(state: WorldState): AvailableAction[] {
+  if (state.careerVersion !== "2.0.0") return [];
+  return state.events.flatMap((event) => {
+    if (event.id !== "suspicious-login-1") return [];
+    if (!["active", "resolved", "escalated"].includes(event.status)) return [];
+    const ids: SimulationActionId[] = ["update_ticket_notes"];
+    if (event.status === "active") {
+      ids.push("document_ticket", "query_records", "ask_manager");
+      if (event.completedActionIds.includes("document_ticket"))
+        ids.push(
+          state.flags.b1_terminal === "dismiss"
+            ? "dismiss_alert"
+            : "escalate_alert",
+        );
+    }
+    return ids.map((id) => target(state, state.rules, event, id));
+  });
+}

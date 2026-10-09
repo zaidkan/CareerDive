@@ -334,6 +334,32 @@ export function buildDecisionReview(
   state: WorldState,
   log: ActionLogEntry[],
 ): NonNullable<Debrief["decisionReview"]> {
+  // One logged memo transaction contains the same two canonical operations as
+  // the legacy save-then-send flow. Both retain its provenance sequence.
+  log = log.flatMap((entry) => {
+    if (
+      entry.interaction.type !== "action" ||
+      !entry.interaction.action.ticketPayload?.dispatch
+    )
+      return [entry];
+    const action = entry.interaction.action;
+    const dispatch = action.ticketPayload?.dispatch;
+    if (!dispatch) return [entry];
+    return [
+      entry,
+      {
+        ...entry,
+        interaction: {
+          type: "action" as const,
+          action: {
+            id: dispatch,
+            actorId: action.actorId,
+            eventId: action.eventId,
+          },
+        },
+      },
+    ];
+  });
   const v2 = state.careerVersion === "2.0.0";
   const choicesFor = (id: string) =>
     v2

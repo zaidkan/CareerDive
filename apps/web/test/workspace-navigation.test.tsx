@@ -93,7 +93,7 @@ it("keeps a case across tools, shows a short navigation cue, and never chooses a
   );
   expect(
     screen.getByRole("region", { name: "Current objective" }),
-  ).toHaveTextContent("Review the alert");
+  ).toHaveTextContent("What sequence created S-0741?");
   await user.click(screen.getByRole("button", { name: "Go to Alerts" }));
   expect(screen.getByRole("combobox", { name: "Current case" })).toHaveValue(
     "suspicious-login-1",
@@ -109,8 +109,28 @@ it("updates the objective after canonical progress without forcing a tool switch
     "suspicious-login-1",
   );
   await user.click(screen.getByRole("button", { name: "Alerts" }));
-  const note = {
+  const note: ClientView = {
     ...view,
+    structuredTickets: {
+      "ticket-suspicious-login-1": {
+        ticketId: "ticket-suspicious-login-1",
+        linkedWorkItemIds: ["suspicious-login-1"],
+        entityRefs: [],
+        evidenceFactIds: [],
+        status: "in_progress",
+        revision: 1,
+        reasoning: {
+          version: "desk-options-v1",
+          evidence: [],
+          context: [],
+          uncertainty: [],
+          nextStep: [],
+          caseFindings: ["signal", "route", "device", "coverage"].map(
+            (questionId) => ({ questionId, rowIds: [], claimId: "pending" }),
+          ),
+        },
+      },
+    },
     availableActions: [
       {
         id: "document_ticket" as const,
@@ -125,7 +145,7 @@ it("updates the objective after canonical progress without forcing a tool switch
   rerender(tree(note));
   expect(
     screen.getByRole("region", { name: "Current objective" }),
-  ).toHaveTextContent("Record your reasoning");
+  ).toHaveTextContent("What judgment and next check will your memo carry?");
   expect(screen.getByRole("button", { name: "Alerts" })).toHaveAttribute(
     "aria-current",
     "page",
@@ -150,7 +170,7 @@ it("updates the objective after canonical progress without forcing a tool switch
     ],
   };
   expect(workspaceObjective(decision, "suspicious-login-1").objective).toBe(
-    "Choose how to handle this case",
+    "What judgment and next check will your memo carry?",
   );
 });
 it("persists selected tool/case and unassessed scratchpad through a full provider remount", async () => {
