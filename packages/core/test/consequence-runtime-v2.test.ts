@@ -61,7 +61,7 @@ describe("Cyber 2.0.0 consequence routes", () => {
   });
 
   it("commits all B2 authority routes and gives each a later response", () => {
-    for (const choice of ["route-to-owner", "route-with-interim", "self-approve", "reject-as-attack"]) {
+    for (const choice of ["route-to-owner", "route-with-interim", "self-approve", "route-to-director"]) {
       const state = ready("access-request-1", "access-authority-check");
       required(state.taskProgress["access-request-1:access-authority-check"]).currentStep = 0;
       const turn = applyTaskAttempt(state, { eventId: "access-request-1", taskId: "access-authority-check", selectedOptionIds: [choice] });

@@ -1,3 +1,4 @@
+import { HandoffSelectionSchema } from "./reasoning.js";
 import { z } from "zod";
 
 import { QueryRecordsPayloadSchema } from "./query.js";
@@ -34,6 +35,7 @@ export type SimulationActionId = z.infer<typeof SimulationActionIdSchema>;
 
 export const HandoffPayloadSchema = z.object({
   sourceArtifactIds: z.array(z.string().min(1)).max(30),
+  sourceRecordIds: z.array(z.string().min(1)).max(30).optional(),
   followUp: z.enum([
     "senior-review",
     "verify-employee",
@@ -41,6 +43,7 @@ export const HandoffPayloadSchema = z.object({
     "monitor",
   ]),
   note: z.string().max(300).optional(),
+  selections: HandoffSelectionSchema.optional(),
 });
 export type HandoffPayload = z.infer<typeof HandoffPayloadSchema>;
 

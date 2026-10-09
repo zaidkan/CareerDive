@@ -1,3 +1,4 @@
+import { ReasoningGroupSchema } from "./reasoning.js";
 import { z } from "zod";
 
 import { AvailableActionSchema } from "./actions.js";
@@ -73,6 +74,21 @@ export const ClientViewSchema = z.object({
   artifacts: z.array(ClientArtifactSchema),
   alertRecords: z.array(AlertRecordSchema).optional(),
   ticketNotes: z.record(z.string(), z.string()),
+  reasoningOptions: z
+    .record(z.string(), z.array(ReasoningGroupSchema))
+    .optional(),
+  handoffOptions: z
+    .object({
+      stateKey: z.string(),
+      options: z.array(
+        z.object({
+          id: z.string(),
+          label: z.string(),
+          sourceArtifactIds: z.array(z.string()),
+        }),
+      ),
+    })
+    .optional(),
   structuredTickets: z.record(z.string(), StructuredTicketSchema).optional(),
   teamMessages: z
     .array(

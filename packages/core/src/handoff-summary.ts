@@ -1,3 +1,4 @@
+import { reviewReasoning } from "./reasoning-options.js";
 import type { ClientView } from "@sim/schemas";
 
 type HandoffEventInput = {
@@ -17,12 +18,19 @@ type HandoffEventInput = {
  */
 
 /** Work-item bookkeeping events that are not case decisions. */
-const NON_CASE_EVENT_IDS = new Set(["handoff-1", "shift-handoff-1"]);
+const NON_CASE_EVENT_IDS = new Set([
+  "handoff-1",
+  "shift-handoff-1",
+  "status-check-1",
+]);
 
 type HandoffTicket =
   | {
       status?: string | undefined;
       uncertainty?: string | undefined;
+      disposition?: string | undefined;
+      decisionReasoning?: import("@sim/schemas").ReasoningSelection | undefined;
+      decisionSourceIds?: string[] | undefined;
     }
   | undefined;
 
@@ -40,11 +48,6 @@ function firstSentence(text: string): string {
   return (match?.[1] ?? text.trim()).trim();
 }
 
-/** True when the recorded disposition still obligates someone later. */
-function isContinuation(text: string): boolean {
-  return /\b(pending|remains|remain|monitoring|follow-up|review)\b/i.test(text);
-}
-
 export function caseDispositionLabel(
   event: HandoffEventInput,
   ticket: HandoffTicket,
@@ -58,8 +61,18 @@ export function caseDispositionLabel(
   if (ticket?.status === "pending_review" || event.status === "escalated") {
     return "escalated — senior review pending; nothing recorded confirms misuse";
   }
-  if (event.id === "routine-alert-1" && event.status === "resolved")
-    return "closed as expected — bounded to the matched run and window";
+  if (event.id === "routine-alert-1" && event.status === "resolved") {
+    const supported =
+      ticket?.decisionReasoning &&
+      reviewReasoning(
+        event.id,
+        ticket.decisionReasoning,
+        ticket.decisionSourceIds ?? [],
+      ).verdict === "supported";
+    return supported
+      ? "closed as expected — bounded to the matched run and window"
+      : "closed — recorded closure; run/window support still needs review";
+  }
   if (ticket?.status === "closed") {
     return "closed on the documented record — bounded to what was checked";
   }
@@ -67,6 +80,8 @@ export function caseDispositionLabel(
     if (event.id === "access-request-1") {
       if (event.resolution?.includes("without the data owner's authorization"))
         return "approval recorded — authorization review pending";
+      if (event.resolution?.includes("deadline approver"))
+        return "routed to deadline approver — data-owner authorization pending";
       if (event.resolution?.includes("rejected"))
         return "rejected — business need unresolved";
       return "routed — approval pending";
@@ -76,6 +91,8 @@ export function caseDispositionLabel(
       /escalat|senior review/i.test(event.resolution ?? "")
     )
       return "escalated — senior review pending; nothing recorded confirms misuse";
+    if (event.id === "suspicious-login-1")
+      return "closed — session ownership and missing activity remain unverified";
     return "completed — see recorded outcome";
   }
   return event.status;
@@ -114,6 +131,7 @@ export function handoffFollowUps(
   events: readonly HandoffEventInput[],
   teamMessages: ClientView["teamMessages"],
 ): string[] {
+  void teamMessages;
   const followUps: string[] = [];
   const liveEvents = events.filter(
     (event) => event.status !== "pending" && !NON_CASE_EVENT_IDS.has(event.id),
@@ -123,21 +141,24 @@ export function handoffFollowUps(
       followUps.push(`${event.title} still needs a final decision.`);
       continue;
     }
-    const responses = (teamMessages ?? [])
-      .filter(
-        (message) =>
-          message.eventId === event.id &&
-          (message.author === "reviewer" || message.author === "employee"),
-      )
-      .map(({ body }) => firstSentence(body))
-      .filter((body) => body.length > 0);
-    const candidates = [
-      ...responses.reverse(),
-      ...(event.resolution ? [firstSentence(event.resolution)] : []),
-    ];
-    const continuation = candidates.find((text) => isContinuation(text));
-    if (continuation) {
-      followUps.push(`${event.title}: ${continuation}`);
+    if (event.id === "suspicious-login-1") {
+      followUps.push(
+        "S-0741: session ownership and missing activity remain unverified; preserve the recorded disposition.",
+      );
+    } else if (event.id === "access-request-1") {
+      followUps.push(
+        `${event.title}: finance data-owner authorization or business need still needs follow-up.`,
+      );
+    } else if (event.id === "login-help-1") {
+      if (
+        event.resolution?.includes("no further retries") ||
+        event.resolution?.includes("monitoring shows no further retries")
+      ) {
+        followUps.push(
+          "Rivera: bounded check completed. Reopen only if retries continue, an unfamiliar device appears or unrecognized activity is reported.",
+        );
+      } else
+        followUps.push("Rivera: phone-specific follow-up remains untested.");
     }
   }
   return followUps;

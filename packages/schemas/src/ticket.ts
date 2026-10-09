@@ -1,3 +1,4 @@
+import { ReasoningSelectionSchema } from "./reasoning.js";
 import { z } from "zod";
 
 /**
@@ -32,6 +33,11 @@ export const StructuredTicketSchema = z
     followUp: z.string().max(500).optional(),
     verifiedEvidence: z.string().max(2_000).optional(),
     uncertainty: z.string().max(2_000).optional(),
+    reasoning: ReasoningSelectionSchema.optional(),
+    decisionReasoning: ReasoningSelectionSchema.optional(),
+    decisionSourceIds: z.array(z.string()).optional(),
+    sourceRecordIds: z.array(z.string()).optional(),
+    revision: z.number().int().nonnegative().optional(),
     sourceArtifactIds: z.array(z.string()).optional(),
   })
   .strict();

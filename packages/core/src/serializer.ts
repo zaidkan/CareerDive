@@ -1,3 +1,5 @@
+import { handoffOptions } from "./handoff-options.js";
+import { reasoningGroups } from "./reasoning-options.js";
 import type {
   ClientView,
   QueryResultView,
@@ -248,6 +250,8 @@ export function toClientView(state: WorldState): ClientView {
         return preview;
       }),
     ticketNotes: state.ticketNotes,
+    handoffOptions: handoffOptions(state),
+    reasoningOptions: Object.fromEntries(state.events.filter((e) => e.status !== "pending").map((e) => [e.id, reasoningGroups(state, e.id)])),
     structuredTickets: state.structuredTickets,
     teamMessages: state.teamMessages ?? [],
     notebook: state.notebook,
@@ -289,6 +293,7 @@ function projectQueryResults(state: WorldState): QueryResultView[] {
       return parsed.success ? [parsed.data] : [];
     });
     return {
+      ...(entry.actorEventId ? { actorEventId: entry.actorEventId } : {}),
       queryId: entry.queryId,
       datasetId: entry.datasetId,
       records,

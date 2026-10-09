@@ -24,6 +24,36 @@ export function resolveActionEffect(
 ): ActionEffect {
   const template = state.rules.eventTemplates[event.templateId];
   const override = template?.actionEffects[actionId];
+  if (
+    actionId === "resolve_login_help" &&
+    ["wrong-device", "reset-again"].includes(state.flags.rivera_choice ?? "")
+  ) {
+    const resolution =
+      state.flags.rivera_choice === "wrong-device"
+        ? "Laptop check selected; the phone's saved password remains untested."
+        : "Another password reset selected; the phone's saved credential remains untested.";
+    return {
+      observeArtifactIds: [],
+      resolve: true,
+      resolution,
+      callbacks: [],
+      emitEventResolved: true,
+      setTicketNotesFromFreeText: false,
+      setKbQueryFromFreeText: false,
+      setNotebookFromFreeText: false,
+      consequence: {
+        description: resolution,
+        escalateOnApply: false,
+        requiredAtCompletion: false,
+      },
+    };
+  }
+  const recordedRoute =
+    actionId === "route_access_request"
+      ? state.rules.tasks["access-authority-check"]?.steps
+          .at(-1)
+          ?.outcomes.find((o) => o.id === state.flags.b2_choice)
+      : undefined;
   const defaults = state.rules.actions[actionId]?.defaultEffect;
   return {
     hidden: {
@@ -35,8 +65,19 @@ export function resolveActionEffect(
       ...(override?.observeArtifactIds ?? []),
     ],
     resolve: override?.resolve ?? defaults?.resolve ?? false,
-    resolution: override?.resolution ?? defaults?.resolution,
-    consequence: override?.consequence ?? defaults?.consequence,
+    resolution:
+      recordedRoute?.resolution ?? override?.resolution ?? defaults?.resolution,
+    consequence:
+      recordedRoute?.resolution &&
+      ["self-approve", "route-to-director", "reject-as-attack"].includes(
+        recordedRoute.id,
+      )
+        ? {
+            ...(override?.consequence ?? defaults?.consequence),
+            description: recordedRoute.resolution,
+            requiredAtCompletion: false,
+          }
+        : (override?.consequence ?? defaults?.consequence),
     callbacks: override?.callbacks ?? defaults?.callbacks ?? [],
     emitEventResolved:
       override?.emitEventResolved ?? defaults?.emitEventResolved ?? false,
@@ -361,22 +402,8 @@ export function applyResolvedEffect(input: {
       )
     )
       continue;
-    const compared = state.workplace.comparisons?.some(
-      ({ eventId, artifactIds }) =>
-        eventId === event.id &&
-        ["login-session-timeline", "vpn-context-1"].every((id) =>
-          artifactIds.includes(id),
-        ),
-    );
-    const attached =
-      state.structuredTickets[`ticket-${event.id}`]?.sourceArtifactIds ?? [];
     const comparisonSupported =
-      compared &&
-      ["login-session-timeline", "vpn-context-1", "device-inventory-1"].every(
-        (id) =>
-          attached.includes(id) &&
-          state.workplace.inspectedArtifactIds?.includes(id),
-      );
+      missingLoginComparisonSteps(state, event.id).length === 0;
     state.pendingCallbacks.push({
       ...callback,
       ...(callback.id === "b1-comparison-review"

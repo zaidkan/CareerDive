@@ -101,6 +101,7 @@ export type QueryHistoryEntry = z.infer<typeof QueryHistoryEntrySchema>;
  */
 export const QueryResultViewSchema = z
   .object({
+    actorEventId: z.string().optional(),
     queryId: z.string().min(1),
     datasetId: DatasetIdSchema,
     records: z.array(DatasetRecordSchema),

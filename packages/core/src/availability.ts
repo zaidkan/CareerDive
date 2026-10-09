@@ -26,8 +26,11 @@ function stateNoteFor(
   actionId: SimulationActionId,
 ): string | undefined {
   const observed = new Set(state.observedArtifactIds);
-  const alreadyOpened = resolveActionEffect(state, event, actionId)
-    .observeArtifactIds.filter((artifactId) => observed.has(artifactId));
+  const alreadyOpened = resolveActionEffect(
+    state,
+    event,
+    actionId,
+  ).observeArtifactIds.filter((artifactId) => observed.has(artifactId));
   if (alreadyOpened.length === 0) return undefined;
   const titles = alreadyOpened.map(
     (artifactId) => state.artifacts[artifactId]?.title ?? artifactId,
@@ -62,7 +65,11 @@ function target(
     simulatedMinutes: definition.simulatedMinutes,
     ...(stateNote ? { stateNote } : {}),
     ...(gated ? { taskId: task.id } : {}),
-    ...(definition.id === "document_ticket" && finalStep?.outcomes.length
+    ...([
+      "document_ticket",
+      "route_access_request",
+      "resolve_login_help",
+    ].includes(definition.id) && finalStep?.outcomes.length
       ? {
           decisionOptions: finalStep.options
             .filter(({ id }) =>
@@ -176,6 +183,27 @@ function actionsForEvent(
   );
 }
 
+function correctionActions(state: WorldState): AvailableAction[] {
+  const actions = state.events
+    .filter(
+      (event) =>
+        ["resolved", "escalated"].includes(event.status) &&
+        state.structuredTickets[`ticket-${event.id}`]?.reasoning,
+    )
+    .map((event) => target(state, state.rules, event, "update_ticket_notes"));
+  const handoff = state.events.find(
+    (event) => event.id === "shift-handoff-1" && event.status === "resolved",
+  );
+  if (
+    handoff &&
+    state.teamMessages?.some(
+      (message) => message.actionId === "submit_shift_handoff",
+    )
+  )
+    actions.push(target(state, state.rules, handoff, "submit_shift_handoff"));
+  return actions;
+}
+
 export function availableActions(state: WorldState): AvailableAction[] {
   const activeEvents = state.events.filter(({ status }) => status === "active");
   if (
@@ -200,6 +228,7 @@ export function availableActions(state: WorldState): AvailableAction[] {
         description: complete.description,
         simulatedMinutes: complete.simulatedMinutes,
       },
+      ...correctionActions(state),
     ];
   }
   const eventActions = activeEvents.flatMap((event) =>
@@ -223,5 +252,5 @@ export function availableActions(state: WorldState): AvailableAction[] {
       simulatedMinutes: notebook.simulatedMinutes,
     });
   }
-  return eventActions;
+  return [...eventActions, ...correctionActions(state)];
 }

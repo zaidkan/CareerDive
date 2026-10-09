@@ -770,7 +770,7 @@ scenario:
               source:
                 artifactId: access-request-email
                 quote: "Director Chen approved the project deadline in chat."
-            - id: reject-as-attack
+            - id: route-to-director
               label: Ask the director who approved the deadline to approve the role as well.
               source:
                 artifactId: access-approval-guide
@@ -792,11 +792,11 @@ scenario:
               setFlags: { b2_choice: self-approve }
               resolution: Access was approved without the data owner's authorization; the decision remains recorded for review.
               feedback: Your approval was committed. The authorization boundary will be reviewed.
-            - id: reject-as-attack
-              selectedOptionIds: [reject-as-attack]
-              setFlags: { b2_choice: reject-as-attack }
-              resolution: The request was rejected as suspicious; the business request remains unresolved.
-              feedback: Rejection recorded. The coworker still needs a route for the request.
+            - id: route-to-director
+              selectedOptionIds: [route-to-director]
+              setFlags: { b2_choice: route-to-director }
+              resolution: The request was sent to the deadline approver rather than the finance data owner; role authorization remains pending and no access has been granted.
+              feedback: Wrong-owner routing recorded. Finance data-owner authorization remains pending.
           coachOnFailure: Choose one response.
           successText: Access decision recorded.
 
@@ -812,7 +812,9 @@ scenario:
           title: Compare the device activity
           prompt: Identify what the login records actually show.
           instruction: Select both observations that explain why more troubleshooting is appropriate.
-          relatedArtifactIds: [rivera-login-email, rivera-auth-summary]
+          relatedArtifactIds:
+            - rivera-login-email
+            - rivera-auth-summary
           minSelections: 2
           maxSelections: 2
           options:
@@ -830,21 +832,29 @@ scenario:
               label: The employee reports that the managed laptop still works.
               source:
                 artifactId: rivera-login-email
-                quote: "I can still sign in on my work laptop."
+                quote: I can still sign in on my work laptop.
             - id: attack-confirmed
               label: The new password worked on the laptop, so the phone's saved password is already current.
               source:
                 artifactId: rivera-login-email
-                quote: "I can still sign in on my work laptop."
-          requiredOptionIds: [phone-retries, laptop-success]
+                quote: I can still sign in on my work laptop.
+          requiredOptionIds:
+            - phone-retries
+            - laptop-success
           outcomes:
             - id: record-comparison
-              selectedOptionIds: [phone-retries, laptop-success]
-              setFlags: { d8_login_help: compared-records }
+              selectedOptionIds:
+                - phone-retries
+                - laptop-success
+              setFlags:
+                d8_login_help: compared-records
               feedback: Device records compared.
             - id: report-comparison
-              selectedOptionIds: [phone-retries, employee-device-report]
-              setFlags: { d8_login_help: employee-report }
+              selectedOptionIds:
+                - phone-retries
+                - employee-device-report
+              setFlags:
+                d8_login_help: employee-report
               feedback: Employee report recorded; the laptop sign-in record remains available to verify.
           coachOnFailure: Compare which known device failed and which known device succeeded. Attempt counts alone do not identify a person.
           successText: You found a device-specific pattern instead of treating every failure as an attack.
@@ -852,28 +862,44 @@ scenario:
           title: Record the bounded next step
           prompt: Choose a troubleshooting step that fits the evidence while leaving room to reassess.
           instruction: Use the approved guide and preserve what is still uncertain.
-          relatedArtifactIds: [login-troubleshooting-guide, ticket-login-help]
+          relatedArtifactIds:
+            - login-troubleshooting-guide
+            - ticket-login-help
           minSelections: 1
           maxSelections: 1
           options:
             - id: update-saved-password
-              label: Ask the employee to update the saved password in the phone app, then monitor for retries.
-              source:
-                artifactId: login-troubleshooting-guide
-                quote: "A working sign-in on one known device plus repeated retries from another known device can indicate a stale saved password."
+              label: Ask Rivera to update the saved password in the phone app, then check for further retries.
             - id: name-attacker
-              label: Record an attacker as the confirmed cause of the failed attempts.
-              source:
-                artifactId: login-troubleshooting-guide
-                quote: "Failed attempts do not identify an attacker."
+              label: Update the laptop's saved password first, then check whether the phone retries stop.
             - id: grant-access
-              label: Change the employee's access role so the phone can sign in.
-              source:
-                artifactId: ticket-login-help
-                quote: "No access-role change is requested or supported by these records."
-          requiredOptionIds: [update-saved-password]
+              label: Reset the account password again before checking the phone's saved password.
+          requiredOptionIds:
+            - update-saved-password
           coachOnFailure: Use the least disruptive step that tests the ordinary explanation. Keep monitoring if the retries continue.
           successText: The ticket records a safe troubleshooting step and a reason to reopen if the pattern continues.
+          outcomes:
+            - id: update-saved-password
+              selectedOptionIds:
+                - update-saved-password
+              setFlags:
+                rivera_choice: update-saved-password
+              resolution: The phone app's saved password was updated; the employee confirmed sign-in works and no further retries occurred in this bounded check.
+              feedback: Phone check recorded; reopen if retries continue or unfamiliar activity appears.
+            - id: wrong-device
+              selectedOptionIds:
+                - name-attacker
+              setFlags:
+                rivera_choice: wrong-device
+              resolution: The laptop password check was selected; the phone's saved password has not been tested and follow-up remains open.
+              feedback: Laptop check recorded; the phone still needs a bounded test.
+            - id: reset-again
+              selectedOptionIds:
+                - grant-access
+              setFlags:
+                rivera_choice: reset-again
+              resolution: Another account-password reset was selected; the phone's saved credential has not been checked and follow-up remains open.
+              feedback: Reset request recorded; phone-specific hypothesis still untested.
 
     - id: morgan-midshift-update
       eventTemplateId: morgan_status_check
@@ -943,7 +969,7 @@ scenario:
           title: Name the next action
           prompt: Finish with the concrete work you will do next.
           instruction: Choose the step that preserves evidence and keeps authority with the reviewer.
-          relatedArtifactIds: [ticket-suspicious-login]
+          relatedArtifactIds: [login-session-timeline]
           minSelections: 1
           maxSelections: 1
           options:
@@ -956,21 +982,21 @@ scenario:
                 - flag: b1_choice
                   notEquals: escalate-with-comparisons
               source:
-                artifactId: ticket-suspicious-login
-                quote: "Next step: name the review you are requesting and the question it should resolve."
+                artifactId: login-session-timeline
+                quote: "Limit: collection ends 07:45; no file/mail activity collected. A-1042 and login-context-1 summarize this same source, not independent corroboration."
             - id: review-in-progress
               label: Senior review of the escalated session is in progress; ownership stays unverified.
               when:
                 - flag: b1_choice
                   equals: escalate-with-comparisons
               source:
-                artifactId: ticket-suspicious-login
-                quote: "Limit: saving analysis proposes a disposition; send the explicit request or closure from Alerts."
+                artifactId: login-session-timeline
+                quote: "Limit: collection ends 07:45; no file/mail activity collected. A-1042 and login-context-1 summarize this same source, not independent corroboration."
             - id: close-on-location
               label: Close the case because the displayed city explains the session.
               source:
-                artifactId: ticket-suspicious-login
-                quote: "Limit: saving analysis proposes a disposition; send the explicit request or closure from Alerts."
+                artifactId: login-session-timeline
+                quote: "Limit: collection ends 07:45; no file/mail activity collected. A-1042 and login-context-1 summarize this same source, not independent corroboration."
           requiredOptionIds: [document-and-review]
           conditionalRequiredOptionIds:
             - when: [{ flag: b1_choice, equals: escalate-with-comparisons }]
@@ -1576,9 +1602,9 @@ scenario:
             - id: b2-reject-response
               decisionId: finance_access
               delayMinutes: 15
-              when: [{ flag: b2_choice, equals: reject-as-attack }]
+              when: [{ flag: b2_choice, equals: route-to-director }]
               author: employee
-              body: This is a real project request. Who can review the access need now that it was rejected?
+              body: Deadline approval does not authorize this data role. The finance data owner still needs to review the request.
               acknowledgement: A request response will follow.
               requiredAtCompletion: true
           hidden:
@@ -1714,7 +1740,7 @@ scenario:
       deadlineMinutes: 320
       initialStatus: pending
       managerGuidance: >
-        A strong handoff does not pretend every question is closed. Preserve the source
+        A clear handoff does not pretend every question is closed. Preserve the source
         references, say what remains under review, and name who should act next.
       progression:
         kind: linear
@@ -2003,6 +2029,20 @@ scenario:
         Limit: approval describes permitted discovery, not proof a run occurred. It grants no finance data-access role and does not cover a different source, network or time.
       eventIds: [routine-alert-1, access-request-1, shift-handoff-1]
       searchableText: approved scanner window finance
+    - id: scanner-other-notice
+      systemId: alert_dashboard
+      kind: alert
+      title: Other finance notice · A-1214
+      summary: Separate activity sharing SCAN-FIN-MON
+      body: |
+        A-1214 · vuln-scan-03 · finance VLAN · SCAN-FIN-MON.
+        State: open. This notice is not A-1180 or its matched RUN-FIN-031.
+        Source note: approved scanner is still running; monitor until the window ends.
+        Limit: a shared schedule reference does not establish each notice's run, event time or closure. Check this activity against its own records; A-1180's bounded match cannot close it automatically.
+      eventIds: [routine-alert-1]
+      relatedArtifactIds: [scanner-window, scanner-alert]
+      searchableText: scanner finance A-1214 ongoing monitoring
+
     - id: access-request-email
       systemId: email
       kind: email

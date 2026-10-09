@@ -133,6 +133,12 @@ function WorkInteraction({
   onOpenArtifact?: ((id: string) => Promise<unknown>) | undefined;
   mutationState?: MutationState;
 }) {
+  const converted = actions.filter(
+    (action) =>
+      ["route_access_request", "resolve_login_help"].includes(action.id) &&
+      view.reasoningOptions?.[action.eventId]?.length,
+  );
+  actions = actions.filter((action) => !converted.includes(action));
   const taskActions = actions.filter(({ taskId }) => taskId !== undefined);
   const tasks = taskActions.flatMap((action) => {
     const task = view.tasks.find(
@@ -154,6 +160,16 @@ function WorkInteraction({
   const ordinary = actions.filter(({ taskId }) => taskId === undefined);
   return (
     <>
+      {converted.map((action) => (
+        <TicketComposer
+          key={action.eventId}
+          view={view}
+          action={action}
+          onAction={onAction}
+          onOpenArtifact={onOpenArtifact}
+          mutationState={mutationState}
+        />
+      ))}
       {uniqueTasks.map((task) => (
         <TaskInteraction
           key={`${task.eventId}:${task.id}`}
@@ -427,6 +443,7 @@ export function SystemToolPanel({
               view={view}
               action={action}
               onAction={onAction}
+              onOpenArtifact={openArtifact}
               pending={Boolean(mutationState.pendingKey)}
             />
           ))}
@@ -472,7 +489,20 @@ export function SystemToolPanel({
       <div className="tool-panel" data-system={systemId}>
         <ToolChrome systemId={systemId} />
         {actions
-          .filter(({ id }) => id === "document_ticket")
+          .filter(
+            (action) =>
+              action.id === "document_ticket" ||
+              (action.id === "update_ticket_notes" &&
+                Boolean(
+                  view.structuredTickets?.[`ticket-${action.eventId}`]
+                    ?.reasoning,
+                ) &&
+                !actions.some(
+                  (other) =>
+                    other.id === "document_ticket" &&
+                    other.eventId === action.eventId,
+                )),
+          )
           .map((action) => (
             <TicketComposer
               key={action.eventId}
@@ -483,13 +513,15 @@ export function SystemToolPanel({
                   id === "update_ticket_notes" && eventId === action.eventId,
               )}
               onAction={onAction}
+              onOpenArtifact={openArtifact}
               mutationState={mutationState}
             />
           ))}
         <WorkInteraction
           onOpenArtifact={openArtifact}
           actions={workInteractionActions(actions).filter(
-            ({ id }) => id !== "document_ticket",
+            ({ id }) =>
+              id !== "document_ticket" && id !== "update_ticket_notes",
           )}
           {...(highlightActionId ? { highlightActionId } : {})}
           onAction={onAction}
@@ -504,6 +536,7 @@ export function SystemToolPanel({
             eventId={selectedEventId}
             onInspect={onWorkplaceInteraction}
             pending={Boolean(mutationState.pendingKey)}
+            comparisonInNote={Boolean(view.reasoningOptions?.[selectedEventId]?.length)}
           />
         ) : null}
         <details className="case-files-disclosure">

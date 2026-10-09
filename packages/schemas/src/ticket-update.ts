@@ -1,3 +1,4 @@
+import { ReasoningSelectionSchema } from "./reasoning.js";
 import { z } from "zod";
 
 import { TicketStatusSchema } from "./ticket.js";
@@ -36,6 +37,9 @@ export const TicketUpdatePayloadSchema = z
     followUp: z.string().max(500).optional(),
     verifiedEvidence: z.string().max(2_000).optional(),
     uncertainty: z.string().max(2_000).optional(),
+    reasoning: ReasoningSelectionSchema.optional(),
+    sourceRecordIds: z.array(z.string()).optional(),
+    revision: z.number().int().nonnegative().optional(),
     sourceArtifactIds: z.array(z.string()).optional(),
   })
   .strict();
