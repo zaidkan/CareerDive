@@ -619,7 +619,7 @@ describe("Desk OS mutation coordination", () => {
     const error = await screen.findByRole("alert");
     await user.click(within(error).getByRole("button", { name: "Retry" }));
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.getByText("Saving…")).toBeVisible();
+    expect(screen.getByText("Recording your action…")).toBeVisible();
 
     await act(async () => {
       retry.resolve(handledView);
@@ -662,7 +662,7 @@ describe("Desk OS mutation coordination", () => {
     const firstError = await screen.findByRole("alert");
     await user.click(within(firstError).getByRole("button", { name: "Retry" }));
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.getByText("Saving…")).toBeVisible();
+    expect(screen.getByText("Recording your action…")).toBeVisible();
 
     await act(async () => {
       retry.reject(new Error("network down"));

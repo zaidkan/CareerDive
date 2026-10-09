@@ -373,3 +373,138 @@
 .desk-workspace .workspace-related-sources {
   margin-block: 1rem;
 }
+
+/* Draft choices read as controls; sources remain separate inspection actions. */
+.desk-workspace .reasoning-group {
+  margin-block: 1.25rem;
+  padding: 0;
+  border: 0;
+}
+.desk-workspace .reasoning-group legend {
+  font-weight: 650;
+}
+.desk-workspace .selection-help {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+.desk-workspace .reasoning-option {
+  margin-block: 0.6rem;
+}
+.desk-workspace .reasoning-option > label {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  min-height: 44px;
+  padding: 0.8rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  background: var(--surface-subtle);
+  color: var(--text-primary);
+  transition:
+    background-color 160ms ease-out,
+    border-color 160ms ease-out;
+}
+.desk-workspace .reasoning-option > label:hover,
+.desk-workspace .reasoning-option > label[data-selected] {
+  border-color: var(--action-primary);
+  background: var(--surface-raised);
+}
+.desk-workspace .reasoning-option > label:has(input:focus-visible) {
+  outline: 2px solid var(--action-primary);
+  outline-offset: 3px;
+}
+.desk-workspace .reasoning-option > label:has(input:disabled) {
+  cursor: default;
+}
+.desk-workspace .reasoning-option input {
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+  accent-color: var(--action-primary);
+}
+.desk-workspace .reasoning-option > button {
+  margin: 0.4rem 0 0.2rem 0.8rem;
+}
+.desk-workspace .reasoning-option > small {
+  display: block;
+  margin: 0.35rem 0.8rem;
+}
+.desk-workspace .decision-confirmation {
+  margin-block: 1rem;
+}
+.desk-workspace .decision-review {
+  padding: 1rem;
+  margin-block: 0.75rem;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+.desk-workspace .decision-review > button {
+  margin: 0.25rem 0.5rem 0.25rem 0;
+  min-height: 44px;
+}
+.desk-workspace .workspace-panel > .mutation-status {
+  justify-self: stretch;
+  white-space: normal;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface-base);
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.desk-workspace .workspace-objective > small {
+  color: var(--text-secondary);
+}
+@media (prefers-reduced-motion: no-preference) {
+  :root:has(.desk-workspace .workspace-panel) {
+    view-transition-name: none;
+  }
+  .desk-workspace .workspace-panel {
+    view-transition-name: analyst-workspace;
+  }
+  ::view-transition {
+    pointer-events: none;
+  }
+  ::view-transition-group(analyst-workspace) {
+    animation-duration: 160ms;
+  }
+  ::view-transition-old(analyst-workspace),
+  ::view-transition-new(analyst-workspace) {
+    animation-duration: 160ms;
+    animation-timing-function: ease-out;
+  }
+  .desk-workspace .decision-review {
+    animation: workspace-review-in 160ms ease-out;
+  }
+  @keyframes workspace-review-in {
+    from {
+      opacity: 0.6;
+      transform: translateY(-3px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .desk-workspace .reasoning-option > label {
+    transition: none;
+  }
+}
+.desk-os.desk-workspace.recovery-workspace {
+  position: relative;
+  height: min(80dvh, 56rem);
+  min-height: 28rem;
+  display: block;
+  overflow: hidden;
+}
+.desk-workspace .option-source-reader {
+  margin-block: 1rem;
+}
+.desk-workspace .reasoning-option > .action-primary {
+  background: var(--surface-subtle);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+}

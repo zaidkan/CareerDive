@@ -1,3 +1,4 @@
+import { updateWorkspacePresentation } from "./world/deskOs/workspaceTransition.js";
 import { useCallback, useRef, useState } from "react";
 import type {
   AvailableAction,
@@ -61,7 +62,7 @@ export function workplaceMutationKey(
       ? `workplace:${interaction.type}:${interaction.artifactId}`
       : interaction.type === "open_alert_record"
         ? `workplace:${interaction.type}:${interaction.recordId}`
-      : `workplace:${interaction.type}`;
+        : `workplace:${interaction.type}`;
 }
 
 function errorMessage(cause: unknown): string {
@@ -101,16 +102,19 @@ export function useMutationCoordinator(applyView: (view: ClientView) => void) {
 
       const promise = Promise.resolve()
         .then(operation)
-        .then((outcome) => {
+        .then(async (outcome) => {
           if (sequence === sequenceRef.current) {
-            applyView(outcome.view);
-            failedRef.current = undefined;
-            setMutationState(
-              outcome.success
-                ? { requestSequence: sequence, success: outcome.success }
-                : { requestSequence: sequence },
-            );
-            outcome.onApplied?.();
+            await updateWorkspacePresentation(() => {
+              if (sequence !== sequenceRef.current) return;
+              applyView(outcome.view);
+              failedRef.current = undefined;
+              setMutationState(
+                outcome.success
+                  ? { requestSequence: sequence, success: outcome.success }
+                  : { requestSequence: sequence },
+              );
+              outcome.onApplied?.();
+            });
           }
           return outcome.result;
         })

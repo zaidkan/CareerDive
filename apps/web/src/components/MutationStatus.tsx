@@ -49,7 +49,7 @@ export function MutationStatus({
         className="mutation-status mutation-status-pending"
         ref={messageRef}
       >
-        Saving…
+        Recording your action…
       </div>
     );
   }

@@ -1,3 +1,4 @@
+import { updateWorkspacePresentation } from "./workspaceTransition.js";
 import type { AvailableAction, ClientView, WorkSystemId } from "@sim/schemas";
 import { useEffect } from "react";
 import { getShiftGuidance } from "../../guidance.js";
@@ -68,10 +69,12 @@ export function OpsConsole({
       });
   }, [dispatch, state.workspace, systemId, eventId]);
   const openTool = (next: WorkSystemId, targetEventId = eventId) => {
-    dispatch({
-      type: "open_tool",
-      systemId: next,
-      ...(targetEventId ? { eventId: targetEventId } : {}),
+    void updateWorkspacePresentation(() => {
+      dispatch({
+        type: "open_tool",
+        systemId: next,
+        ...(targetEventId ? { eventId: targetEventId } : {}),
+      });
     });
   };
   const objective = workspaceObjective(view, eventId);
@@ -131,6 +134,7 @@ export function OpsConsole({
           aria-live="polite"
           aria-atomic="true"
         >
+          <small>{systemLabel(systemId)} open</small>
           <strong>{objective.objective}</strong>
           <span>
             {objective.systemId
@@ -207,6 +211,7 @@ export function OpsConsole({
           className="workspace-panel"
           role="region"
           aria-label={systemLabel(systemId)}
+          aria-busy={Boolean(mutationState.pendingKey)}
         >
           <MutationStatus
             compact
