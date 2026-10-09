@@ -3,7 +3,7 @@ import {
   FIRST_SHIFT_DURATION_COMPACT,
 } from "../../careers/publicCopy.js";
 import { HOME_FAQ } from "../faqData.js";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { careers } from "../../careers/careers.js";
 import {
   ChapterSeparator,
@@ -21,6 +21,41 @@ function prefersReducedMotion(): boolean {
     typeof window !== "undefined" &&
     typeof window.matchMedia === "function" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+/** Defer the poster and source until the film is near the viewport or focused. */
+function LaunchFilm() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      setReady(true);
+      observer.disconnect();
+    }, { rootMargin: "200px" });
+    observer.observe(video);
+    return () => { observer.disconnect(); };
+  }, []);
+
+  return (
+    <video
+      ref={videoRef}
+      className="home-launch-video"
+      aria-label="CareerDive launch film"
+      width={1920}
+      height={1080}
+      controls
+      playsInline
+      preload="none"
+      tabIndex={0}
+      poster={ready ? "/launch-film-poster.jpg" : undefined}
+      src={ready ? "/launch-film.mp4" : undefined}
+      onFocus={() => { setReady(true); }}
+      onPointerDown={() => { setReady(true); }}
+    />
   );
 }
 
@@ -393,6 +428,18 @@ export function LandingPage() {
               ))}
             </ol>
           </div>
+        </PublicChapter>
+      </section>
+
+      <section className="home-launch" aria-labelledby="home-launch-title">
+        <PublicChapter
+          as="div"
+          surface="finale"
+          rhythm="standard"
+          className="home-launch-chapter"
+        >
+          <h2 id="home-launch-title">See a shift in motion.</h2>
+          <LaunchFilm />
         </PublicChapter>
       </section>
 

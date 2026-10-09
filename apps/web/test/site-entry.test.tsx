@@ -83,6 +83,23 @@ describe("site routes", () => {
     expect(screen.getByRole("heading", { level: 1 })).not.toHaveFocus();
   });
 
+  it("defers launch media until interaction and keeps playback manual", () => {
+    render(<LandingPage />);
+    const video = screen.getByLabelText("CareerDive launch film");
+    expect(video).toHaveAttribute("preload", "none");
+    expect(video).toHaveAttribute("controls");
+    expect(video).not.toHaveAttribute("autoplay");
+    expect(video).not.toHaveAttribute("src");
+    expect(video).not.toHaveAttribute("poster");
+    expect(video).toHaveAttribute("width", "1920");
+    expect(video).toHaveAttribute("height", "1080");
+    fireEvent.focus(video);
+    expect(video).toHaveAttribute("src", "/launch-film.mp4");
+    expect(video).toHaveAttribute("poster", "/launch-film-poster.jpg");
+    expect(video).toHaveAttribute("preload", "none");
+    expect(video).not.toHaveAttribute("autoplay");
+  });
+
   it("landing presents the full career journey without fake proof", () => {
     render(<LandingPage />);
     expect(screen.queryByText(/early response/i)).toBeNull();
@@ -163,6 +180,7 @@ describe("site routes", () => {
       "home-realwork",
       "home-analysis",
       "home-shift",
+      "home-launch",
       "home-reflect",
       "home-faq",
       "home-final",
