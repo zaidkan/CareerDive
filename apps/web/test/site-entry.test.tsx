@@ -126,15 +126,15 @@ describe("site routes", () => {
         name: "How a shift works",
       }),
     ).toBeVisible();
-    expect(screen.getByText("Alert A-1042")).toBeVisible();
+    expect(document.querySelector(".home-realwork figure")).toBeNull();
+    expect(document.querySelector(".home-realwork button")).toBeNull();
+    expect(document.querySelector(".home-realwork [data-media-slot]")).toBeNull();
     expect(
       screen.getAllByText(/actual product capture/i).length,
     ).toBeGreaterThanOrEqual(1);
     // Deterministic media slots stay stable for the real-media pipeline.
     for (const slot of [
       "home-hero-workplace",
-      "home-case-a1042",
-      "home-evidence-auth",
       "home-debrief-reflection",
     ]) {
       expect(

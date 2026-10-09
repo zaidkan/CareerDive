@@ -111,32 +111,6 @@ const SHIFT_ACTS = [
 ] as const;
 
 /**
- * Real Work is a PREVIEW: the alert plus ONE supporting evidence transition.
- * The simulation owns discovery — the homepage establishes that real work
- * exists, it does not walk through the whole investigation.
- */
-const EVIDENCE_VIEWS = [
-  {
-    key: "alert",
-    label: "Alert A-1042",
-    id: "a-01",
-    slot: "home-case-a1042",
-    caption: "Alert record · A-1042",
-    alt: "Product capture: alert record A-1042, a sign-in from an unfamiliar device, open for review.",
-  },
-  {
-    key: "signin",
-    label: "Sign-in record",
-    id: "a-02",
-    slot: "home-evidence-auth",
-    caption: "Sign-in record · S-0741",
-    alt: "Product capture: the sign-in record for session S-0741, from the Cybersecurity Analyst first-shift simulation.",
-  },
-] as const;
-
-type EvidenceKey = (typeof EVIDENCE_VIEWS)[number]["key"];
-
-/**
  * Compact hero cards: career name, field, availability, and one restrained
  * visual cue. No detailed artifacts here — the hero states what exists.
  */
@@ -161,7 +135,6 @@ export function LandingPage() {
   const faqRef = useChapterReveal<HTMLDivElement>();
   const finalRef = useChapterReveal<HTMLDivElement>();
 
-  const [evidence, setEvidence] = useState<EvidenceKey>("alert");
   // Hero cards: one finite rearrangement cycle, settling on Cyber.
   const [heroActive, setHeroActive] = useState(0);
   const [heroStep, setHeroStep] = useState(0);
@@ -199,8 +172,6 @@ export function LandingPage() {
   const startLabel = hasSeenFilm
     ? "Continue your first day"
     : "Start your first day";
-  const activeEvidence =
-    EVIDENCE_VIEWS.find((view) => view.key === evidence) ?? EVIDENCE_VIEWS[0];
 
   return (
     <div className="v2-home">
@@ -336,7 +307,7 @@ export function LandingPage() {
           <div
             ref={realWorkRef}
             data-motion="chapter-reveal"
-            className="home-feature-grid"
+            className="home-decision-feature"
           >
             <div className="home-realwork-intro">
               <h2 id="home-realwork-title" data-motion-role="argument">
@@ -351,44 +322,6 @@ export function LandingPage() {
                 <li>And some consequences surface later in your shift.</li>
               </ol>
             </div>
-            <figure className="home-feature-proof">
-              <div
-                className="home-feature-frame home-evidence-views"
-                data-motion-role="artifact"
-              >
-                {EVIDENCE_VIEWS.map((view) => (
-                  <div key={view.key} hidden={evidence !== view.key}>
-                    <ProductCapture
-                      id={view.id}
-                      slot={view.slot}
-                      alt={view.alt}
-                    />
-                  </div>
-                ))}
-              </div>
-              <figcaption>
-                {activeEvidence.caption} · actual product capture, synthetic
-                records
-              </figcaption>
-              <div
-                className="home-evidence-swap"
-                role="group"
-                aria-label="Evidence views for alert A-1042"
-              >
-                {EVIDENCE_VIEWS.map((view) => (
-                  <button
-                    key={view.key}
-                    type="button"
-                    aria-pressed={evidence === view.key}
-                    onClick={() => {
-                      setEvidence(view.key);
-                    }}
-                  >
-                    {view.label}
-                  </button>
-                ))}
-              </div>
-            </figure>
           </div>
         </PublicChapter>
       </section>

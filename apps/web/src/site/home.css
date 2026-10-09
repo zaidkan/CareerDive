@@ -191,6 +191,15 @@
   gap: clamp(2rem, 5vw, 5rem);
   align-items: center;
 }
+.home-realwork-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(2rem, 5vw, 5rem);
+}
+.home-realwork-intro h2 {
+  margin-bottom: 0;
+}
 .home-realwork-intro h2,
 .home-analysis-copy h2 {
   max-width: 17ch;
@@ -230,60 +239,12 @@
   margin-bottom: 2rem;
 }
 @media (max-width: 900px) {
-  .home-feature-grid {
+  .home-feature-grid,
+  .home-realwork-intro {
     grid-template-columns: 1fr;
     gap: 2rem;
   }
 }
-/* One dominant proof at a time; the labels swap the view manually. */
-.home-evidence-views {
-  min-width: 0;
-}
-.home-evidence-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.55rem 2rem;
-  margin-top: 1.15rem;
-}
-.home-evidence-swap {
-  width: fit-content;
-  max-width: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  padding: 0.32rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: var(--surface-base);
-}
-.home-evidence-swap button {
-  padding: 0.45rem 0.95rem;
-  border: 0;
-  border-radius: 7px;
-  background: none;
-  color: var(--text-secondary);
-  font: 600 0.82rem/1.5 var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-}
-.home-evidence-swap button[aria-pressed="true"] {
-  background: var(--surface-subtle);
-  box-shadow: inset 0 0 0 1px var(--border-strong);
-  color: var(--text-primary);
-  font-weight: 700;
-}
-.home-evidence-swap button:hover {
-  color: var(--text-primary);
-}
-.home-evidence-note {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.78rem;
-  line-height: 1.5;
-}
-
 /* —— How a shift works —— */
 .home-acts {
   display: grid;
@@ -516,9 +477,6 @@
 /* —— Homepage spacing: keep labels off the surface edges —— */
 .v2-home .ui-artifact-stage__field {
   padding: clamp(1.35rem, 3vw, 2.75rem);
-}
-.v2-home .home-realwork-stage .ui-artifact-stage__primary {
-  width: min(100%, 1040px);
 }
 .v2-home .shift-handoff {
   padding: clamp(1.35rem, 2.8vw, 2.4rem);

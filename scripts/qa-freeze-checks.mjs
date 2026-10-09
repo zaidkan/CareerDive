@@ -254,6 +254,7 @@ export function collectMetrics({ leakPatterns = [] } = {}) {
     homeSectionOrder: Array.from(document.querySelectorAll(".v2-home > section")).map((section) => section.className),
     homeAnalysisCropWidth: document.querySelector(".home-debrief-crop")?.clientWidth ?? 0,
     homeAnalysisCropHeight: document.querySelector(".home-debrief-crop")?.clientHeight ?? 0,
+    homeBranchingArtifacts: document.querySelectorAll('.home-realwork figure, .home-realwork [data-media-slot], .home-realwork button').length,
     homeAnalysisCaptures: document.querySelectorAll('.home-analysis [data-media-slot="home-debrief-reflection"]').length,
     homeCareerLabels: Array.from(document.querySelectorAll(".home-hero-card"))
       .map((card) => card.getAttribute("aria-label") ?? ""),
@@ -417,6 +418,7 @@ export function evaluateChecks({ route, theme, motion, metrics }) {
     push("home-feature-order", JSON.stringify(order) === JSON.stringify([
       "home-hero", "home-place", "home-realwork", "home-analysis", "home-shift", "home-reflect", "home-faq", "home-final",
     ]), order);
+    push("text-only-home-branching", metrics.homeBranchingArtifacts === 0, metrics.homeBranchingArtifacts);
     push("one-home-analysis-capture", metrics.homeAnalysisCaptures === 1, metrics.homeAnalysisCaptures);
     push("compact-home-analysis-capture", metrics.homeAnalysisCropWidth > 0 &&
       metrics.homeAnalysisCropHeight >= metrics.homeAnalysisCropWidth * 0.5 &&
