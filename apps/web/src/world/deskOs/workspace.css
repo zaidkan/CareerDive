@@ -322,6 +322,34 @@
     font-size: 1.2rem;
   }
 }
+/* Conversation stays above the 3D world, centered and readable at every size. */
+.simulation-main .jules-dialogue {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  width: min(38rem, calc(100% - 2rem));
+  max-height: min(80%, calc(100dvh - 8rem));
+  padding: 1.5rem;
+  font-size: 1.05rem;
+  animation: none;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 35%);
+}
+.simulation-main .jules-dialogue .dialogue-text {
+  font-size: 1.15rem;
+  line-height: 1.65;
+}
+.simulation-main .jules-dialogue :is(button, select) {
+  font-size: 1rem;
+  min-height: 44px;
+}
+@media (max-width: 600px) {
+  .simulation-main .jules-dialogue {
+    width: calc(100% - 1.25rem);
+    padding: 1rem;
+  }
+}
 .desk-workspace .workspace-scratchpad,
 .desk-workspace .workspace-checkpoints {
   margin-top: 2rem;
