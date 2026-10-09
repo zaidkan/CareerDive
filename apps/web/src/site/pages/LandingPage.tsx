@@ -346,20 +346,9 @@ export function LandingPage() {
                 className="home-decision-beats"
                 aria-label="How your decisions carry forward"
               >
-                <li>
-                  <strong>Make the call.</strong>
-                  <span>
-                    Escalate an alert, dismiss it, or route a request.
-                  </span>
-                </li>
-                <li>
-                  <strong>Change the outcome.</strong>
-                  <span>The case records the decision you made.</span>
-                </li>
-                <li>
-                  <strong>Hear back later.</strong>
-                  <span>Some consequences surface later in the shift.</span>
-                </li>
+                <li>Make the call — escalate, dismiss, or route.</li>
+                <li>The outcome follows from what you chose.</li>
+                <li>And some consequences surface later in your shift.</li>
               </ol>
             </div>
             <figure className="home-feature-proof">

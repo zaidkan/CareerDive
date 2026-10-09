@@ -110,8 +110,17 @@ describe("site routes", () => {
       3,
     );
     expect(
-      screen.getByText("Some consequences surface later in the shift."),
+      screen.getByText("And some consequences surface later in your shift."),
     ).toBeVisible();
+    expect(
+      Array.from(document.querySelectorAll(".home-decision-beats li")).map(
+        (beat) => beat.textContent,
+      ),
+    ).toEqual([
+      "Make the call — escalate, dismiss, or route.",
+      "The outcome follows from what you chose.",
+      "And some consequences surface later in your shift.",
+    ]);
     expect(
       screen.getByRole("heading", {
         name: "How a shift works",
