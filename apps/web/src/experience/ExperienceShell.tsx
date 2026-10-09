@@ -25,9 +25,9 @@ function workplaceLoader() {
 const InitialWorkplace = workplaceLoader();
 const RetriedWorkplace = workplaceLoader();
 
-const WorkSurface = lazy(async () => {
-  const mod = await import("../components/WorkSurface.js");
-  return { default: mod.WorkSurface };
+const RecoveryWorkspace = lazy(async () => {
+  const mod = await import("./RecoveryWorkspace.js");
+  return { default: mod.RecoveryWorkspace };
 });
 
 /** Recovery changes presentation only; the caller retains session and mutations. */
@@ -127,7 +127,7 @@ export function ExperienceShell(props: WorkstationProps) {
             <p role="status">
               Continue your current shift here. Your work is preserved.
             </p>
-            <WorkSurface {...props} />
+            <RecoveryWorkspace {...props} />
           </section>
         )}
         {phase === "workplace" && (
