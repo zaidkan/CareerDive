@@ -58,6 +58,10 @@ const DECISIONS: Record<
     reflection:
       "Would handling this alert immediately, snoozing it, or finishing the login check first change what the next analyst needed from your notes?",
     choices: {
+      "expected-close": "Close the matched run",
+      "expected-close-with-monitoring":
+        "Close matched run; keep routine monitoring",
+      "close-low-priority": "Close without a matched run",
       handle: "Handled it immediately",
       snooze: "Snoozed the interruption",
       continue: "Continued the current case",
@@ -82,6 +86,8 @@ const DECISIONS: Record<
       "route-with-interim": "Routed with an interim report",
       "self-approve": "Approved access directly",
       "reject-as-attack": "Rejected as an attack",
+      "route-to-director":
+        "Sent to deadline approver; role authorization pending",
     },
     signals: {
       reviewed_approval_owner: "Opened the approval guide",
@@ -128,13 +134,15 @@ const DECISIONS: Record<
 };
 
 const OUTCOMES = {
-  supported: "Supported by the record",
+  supported: "Supported",
   partially_supported: "Partly documented",
   needs_more_evidence: "Needs more evidence",
 };
 const PROFILE_STATES = {
-  strong: "Strong",
-  developing: "Developing",
+  strong: "Supported",
+  supported: "Supported",
+  developing: "Partly documented",
+  partially_supported: "Partly documented",
   needs_more_evidence: "Needs more evidence",
 };
 
@@ -216,9 +224,11 @@ export function DebriefView({
                     item.userChoiceId === "self-approve"
                       ? "finance-reporting-prod · role approved directly"
                       : item.decisionId === "finance_access" &&
-                          item.userChoiceId === "reject-as-attack"
-                        ? "finance-reporting-prod · request rejected; business need unresolved"
-                        : meta.recordLine}
+                          item.userChoiceId === "route-to-director"
+                        ? "Deadline approver contacted; data-owner authorization still pending."
+                        : item.userChoiceId === "reject-as-attack"
+                          ? "finance-reporting-prod · request rejected; business need unresolved"
+                          : meta.recordLine}
                   </p>
                 </div>
                 <div className="decision-review-choice">
@@ -237,6 +247,27 @@ export function DebriefView({
                 <details className="decision-review-reasoning">
                   <summary>Evidence and reasoning</summary>
                   <p>{item.explanation}</p>
+                  {item.evaluationMode === "limited-text-evaluation" ? (
+                    <p>
+                      Limited-text-evaluation · saved text meaning was not
+                      assessed.
+                    </p>
+                  ) : null}
+                  {item.fieldReviews?.map((field) => (
+                    <details key={field.field}>
+                      <summary>
+                        {field.field}: {OUTCOMES[field.outcomeLabel]}
+                      </summary>
+                      <ul>
+                        {field.selectedLabels.map((label) => (
+                          <li key={label}>{label}</li>
+                        ))}
+                      </ul>
+                      {field.gaps.map((gap) => (
+                        <p key={gap}>{gap}</p>
+                      ))}
+                    </details>
+                  ))}
                   <ul>
                     {item.rubricSignals.map(({ id, supported }) => (
                       <li

@@ -260,8 +260,8 @@ describe("end-of-shift decision review", () => {
       "vpn-context-1",
       "login-session-timeline",
     ]);
-    expect(review.decisions[0]?.outcomeLabel).toBe("supported");
-    expect(review.decisions[1]?.outcomeLabel).toBe("supported");
+    expect(review.decisions[0]?.outcomeLabel).toBe("partially_supported");
+    expect(review.decisions[1]?.outcomeLabel).toBe("partially_supported");
     expect(review.decisions[1]?.reasoningAnalysis?.evidenceUsedBeforeDecision).toEqual([]);
     expect(review.decisions[1]?.evidenceUsedIds).toContain("scanner-run-log");
     expect(review.decisions[2]?.rubricSignals).toContainEqual({
@@ -281,7 +281,7 @@ describe("end-of-shift decision review", () => {
       const review = buildDecisionReview(state, log);
       expect(review.decisions[0]?.userChoiceId).toBe(choice);
       expect(review.decisions[0]?.outcomeLabel).toBe(
-        choice === "dismiss_alert" ? "partially_supported" : "supported",
+        "partially_supported",
       );
       expect(review.decisions[0]?.evidenceUsedIds).not.toContain(
         "travel-status-1",
@@ -299,7 +299,7 @@ describe("end-of-shift decision review", () => {
       entry.response.response = choice;
       expect(buildDecisionReview(state, log).decisions[1]).toMatchObject({
         userChoiceId: choice,
-        outcomeLabel: "supported",
+        outcomeLabel: "partially_supported",
       });
     },
   );
@@ -365,7 +365,7 @@ describe("end-of-shift decision review", () => {
     expect(buildDecisionReview(state, log).decisions[0]?.evidenceUsedIds).toEqual(["login-context-1", "account-history-1"]);
   });
 
-  it("requires complete fields and key inspected attachments for strong documentation", () => {
+  it("requires complete fields and key inspected attachments for legacy limited-text documentation", () => {
     const { state, log } = fixture();
     delete state.taskProgress["suspicious-login-1:login-ticket-summary"];
     delete state.taskProgress["routine-alert-1:scanner-ticket-summary"];
@@ -384,17 +384,17 @@ describe("end-of-shift decision review", () => {
     };
     state.structuredTickets = { case: caseTicket, scanner: scannerTicket };
     const documentation = () => buildDecisionReview(state, log).profile.find(({ dimension }) => dimension === "Documentation");
-    expect(documentation()?.state).toBe("strong");
+    expect(documentation()?.state).toBe("partially_supported");
     scannerTicket.sourceArtifactIds = ["scanner-run-log"];
-    expect(documentation()?.state).toBe("developing");
+    expect(documentation()?.state).toBe("partially_supported");
     expect(documentation()?.explanation).toContain(state.artifacts["scanner-window"]?.title);
     caseTicket.followUp = "   ";
-    expect(documentation()?.state).toBe("needs_more_evidence");
+    expect(documentation()?.state).toBe("partially_supported");
     expect(documentation()?.explanation).toContain("Next step");
     scannerTicket.sourceArtifactIds = ["scanner-run-log", "scanner-window"];
     caseTicket.followUp = "Senior review";
     scannerTicket.disposition = "unrelated text";
-    expect(documentation()?.state).toBe("developing");
+    expect(documentation()?.state).toBe("partially_supported");
   });
 
   it("does not call a thin generated handoff supported; names missing references", () => {
@@ -410,9 +410,9 @@ describe("end-of-shift decision review", () => {
     let review = buildDecisionReview(state, log);
     expect(review.decisions[4]?.outcomeLabel).toBe("partially_supported");
     expect(review.decisions[4]?.explanation).toContain(state.artifacts["vpn-context-1"]?.title);
-    expect(review.profile.find(({ dimension }) => dimension === "Handoff clarity")?.state).toBe("developing");
+    expect(review.profile.find(({ dimension }) => dimension === "Handoff clarity")?.state).toBe("partially_supported");
     payload.sourceArtifactIds = sources;
-    expect(buildDecisionReview(state, log).decisions[4]?.outcomeLabel).toBe("supported");
+    expect(buildDecisionReview(state, log).decisions[4]?.outcomeLabel).toBe("partially_supported");
     state.workplace.inspectedArtifactIds = ["device-inventory-1"];
     review = buildDecisionReview(state, log);
     expect(review.decisions[4]?.outcomeLabel).toBe("partially_supported");
@@ -445,9 +445,9 @@ describe("end-of-shift decision review", () => {
     const review = buildDecisionReview(state, log);
     expect(review.decisions[0]?.outcomeLabel).toBe("partially_supported");
     expect(review.decisions[0]?.rubricSignals).toContainEqual({ id: "documented_uncertainty", supported: false });
-    expect(review.decisions[4]?.outcomeLabel).toBe("supported");
-    expect(review.profile.find(({ dimension }) => dimension === "Handoff clarity")?.state).toBe("strong");
-    expect(review.profile.find(({ dimension }) => dimension === "Documentation")?.state).toBe("developing");
+    expect(review.decisions[4]?.outcomeLabel).toBe("partially_supported");
+    expect(review.profile.find(({ dimension }) => dimension === "Handoff clarity")?.state).toBe("partially_supported");
+    expect(review.profile.find(({ dimension }) => dimension === "Documentation")?.state).toBe("partially_supported");
   });
 
   it("hides small cohorts and derives whole percentages from counts", () => {
@@ -481,7 +481,7 @@ describe("end-of-shift decision review", () => {
   });
 
   it("isolates cohorts by exact option set", () => {
-    const choices = ["route-to-owner", "route-with-interim", "self-approve", "reject-as-attack"];
+    const choices = ["route-to-owner", "route-with-interim", "self-approve", "route-to-director"];
     const key = optionSetKey(choices);
     const rows = [
       { decisionId: "finance_access", choiceId: "route-to-owner", optionSetKey: key, count: 29 },
