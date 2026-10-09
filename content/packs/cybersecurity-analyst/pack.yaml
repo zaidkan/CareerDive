@@ -1499,7 +1499,7 @@ scenario:
               delayMinutes: 20
               when: [{ flag: b1_choice, equals: close-familiar-account }]
               author: employee
-              body: That account is mine, but I cannot confirm who controlled the unfamiliar session. Please keep the session question open.
+              body: "It’s my account, but I don’t recognize that laptop. What happens next?"
               acknowledgement: Later review will follow this case.
               requiredAtCompletion: true
               emitEvent: login_clarification
@@ -1516,10 +1516,8 @@ scenario:
       deadlineMinutes: 35
       initialStatus: active
       managerGuidance: >
-        Morgan asks you to read the handoff, identify unfinished work, and confirm
-        what you will prioritize first. A useful reply names what you own and what you
-        will watch for, rather than promising everything is resolved. Keep the missing
-        reference in your notes so an interruption does not erase it.
+        Read the handoff and tell me what you’re taking on first. Keep the missing
+        reference in your notes so we can pick up the unfinished check after an interruption.
       progression:
         kind: linear
         allowManager: true
@@ -1596,12 +1594,8 @@ scenario:
       deadlineMinutes: 220
       initialStatus: pending
       managerGuidance: >
-        Morgan recommends checking the approved activity window and documenting why
-        the alert can be closed. Compare the recorded event time, scanner name, and target
-        network with the approved entry; the delivery time and dashboard color are not
-        enough. If a detail does not line up, keep the mismatch visible in the ticket
-        and ask for guidance instead of stretching the reference to fit. When you return to the
-        main case, use your saved note to resume the unfinished check, not to assume it was done.
+        Check the scanner, target network, and event time against the approved window.
+        If they don’t match, leave the mismatch open.
       progression:
         kind: linear
         allowManager: true

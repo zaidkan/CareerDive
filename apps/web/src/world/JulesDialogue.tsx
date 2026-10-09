@@ -83,6 +83,7 @@ export function JulesDialogue({
       <DialogueLine
         key={reply?.text ?? "greeting"}
         text={reply?.text ?? "Morning. What are you carrying back to the desk?"}
+        advanceLabel="Back to work"
         onAdvance={onClose}
       >
         <fieldset className="jules-dialogue-topics" disabled={pending}>

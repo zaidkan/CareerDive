@@ -33,12 +33,14 @@ export type DialogueController = {
 export function DialogueLine({
   text,
   animate = true,
+  advanceLabel = "Continue conversation",
   onAdvance,
   children,
   controller,
 }: {
   text: string;
   animate?: boolean;
+  advanceLabel?: string;
   onAdvance?: () => void;
   children?: ReactNode;
   controller?: Ref<DialogueController>;
@@ -160,7 +162,7 @@ export function DialogueLine({
           onAdvance?.();
         }}
       >
-        {revealing ? "Show full message" : "Continue conversation"}
+        {revealing ? "Show full message" : advanceLabel}
       </button>
       {children}
     </div>

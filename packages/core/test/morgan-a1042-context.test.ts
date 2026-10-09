@@ -130,7 +130,7 @@ describe("V1 · bounded Morgan context for A-1042", () => {
       expect(response).toMatch(
         lastQuery && !lastQuery.resultIds.length
           ? /not enough context/i
-          : /records you opened are context/i,
+          : /records you opened are context|records give us context/i,
       );
       assertNoRestrictedContext(response);
       expect(response.length).toBeLessThan(400);
@@ -162,7 +162,7 @@ describe("V1 · bounded Morgan context for A-1042", () => {
       response.events.find(({ id }) => id === A)?.resolution,
     ).toBeUndefined();
     expect(response.ledger.at(-1)?.description).toMatch(
-      /records you opened are context/i,
+      /device lookup, route\/VPN comparison, or what remains uncertain/i,
     );
     assertNoRestrictedContext(response.ledger.at(-1)?.description ?? "");
     expect(response.ledger.at(-1)?.description).not.toMatch(

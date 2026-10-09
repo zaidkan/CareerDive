@@ -1,5 +1,5 @@
 import { launchEvent } from "./analytics.js";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   AvailableAction,
   ClientNotification,
@@ -44,7 +44,10 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
   const [error, setError] = useState<string>();
   const [startupStatus, setStartupStatus] = useState("Preparing your shift…");
   const [startupFailure, setStartupFailure] = useState<StartupFailure>();
-  const retryFocus = useRef<HTMLButtonElement>(null);
+  // Focus on attachment, before paint; passive effects can race a retry control becoming visible.
+  const retryFocus = useCallback((node: HTMLButtonElement | null) => {
+    node?.focus();
+  }, []);
   const [sessionRequest, setSessionRequest] = useState(0);
   const [debriefStatus, setDebriefStatus] = useState<"loading" | "failed">();
   const creationRef = useRef<
@@ -196,10 +199,6 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
       sessionGenerationRef.current += 1;
     };
   }, [client, invalidateMutations, sessionRequest]);
-
-  useEffect(() => {
-    if (error) retryFocus.current?.focus();
-  }, [error]);
 
   useEffect(() => {
     if (sessionId && view)

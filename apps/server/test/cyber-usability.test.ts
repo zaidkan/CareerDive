@@ -350,7 +350,7 @@ describe("current Cyber shift usability and truthful provenance", () => {
       freeText: "Purple banana spaceship, where is lunch?",
     });
     expect(run.state.teamMessages?.at(-1)?.body).toContain(
-      "Which case or record",
+      "device lookup, route/VPN comparison, or what remains uncertain",
     );
     expect(
       run.state.events.find(({ id }) => id === "suspicious-login-1")
