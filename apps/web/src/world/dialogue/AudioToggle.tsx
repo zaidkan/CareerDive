@@ -5,13 +5,15 @@ export function AudioToggle() {
     <button
       type="button"
       data-dialogue-immediate="true"
-      aria-label="Mute simulation audio"
-      aria-pressed={muted}
+      aria-label={
+        muted ? "Sound off — turn sound on" : "Sound on — turn sound off"
+      }
+      aria-pressed={!muted}
       onClick={() => {
         setSimulationMuted(!muted);
       }}
     >
-      {muted ? "Sound off" : "Sound on"}
+      {muted ? "Sound off — turn on" : "Sound on — turn off"}
     </button>
   );
 }

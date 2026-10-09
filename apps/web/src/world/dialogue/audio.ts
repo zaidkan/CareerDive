@@ -1,9 +1,9 @@
 import { useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "career-expo:simulation-muted";
-let muted = true;
+let muted = false;
 try {
-  muted = localStorage.getItem(STORAGE_KEY) !== "false";
+  muted = localStorage.getItem(STORAGE_KEY) === "true";
 } catch {
   /* Storage is optional. */
 }
@@ -109,6 +109,6 @@ export function useSimulationMuted() {
   return useSyncExternalStore(
     subscribe,
     () => muted,
-    () => true,
+    () => false,
   );
 }
