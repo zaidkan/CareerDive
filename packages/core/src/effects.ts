@@ -8,6 +8,13 @@ import type {
   WorldState,
 } from "@sim/schemas";
 import { missingLoginComparisonSteps } from "./login-comparison.js";
+import {
+  managerConsultationKey,
+  managerIntentReply,
+  managerQuestionWrongCase,
+  managerQuestionRelevant,
+} from "./morgan.js";
+import { toClientView } from "./serializer.js";
 import { conditionsMet } from "./conditions.js";
 
 export function resolveActionEffect(
@@ -139,7 +146,21 @@ function managerGuidanceForA1042(
     return "The records you opened are context, not proof of who used the flagged device. The device check is recorded; the session timeline and VPN record can help test whether the two sign-ins followed the same route.";
   if (
     !completed.has("review_alert") &&
-    !inspected.has("suspicious-login-alert")
+    !inspected.has("suspicious-login-alert") &&
+    !state.queryHistory.some(
+      (q) =>
+        q.actorEventId === event.id &&
+        q.resultIds.some((id) =>
+          state.workplace.inspectedRecordIds?.includes(id),
+        ),
+    ) &&
+    ![
+      "login-context-1",
+      "account-history-1",
+      "device-inventory-1",
+      "login-session-timeline",
+      "vpn-context-1",
+    ].some((id) => inspected.has(id))
   )
     return authoredGuidance;
 
@@ -167,7 +188,7 @@ function managerGuidanceForA1042(
     return "I have seen the alert, but not enough context to add much yet. Tell me which record you checked and what still does not line up; I will help with the process, not choose the outcome.";
   }
 
-  return "Morgan notes that the records you opened are context, not proof of who used the flagged device. Keep the exact identifier and the remaining uncertainty in your note.";
+  return "Those records give us context, but they don’t identify who used the device. Keep the exact label and the open question in your note.";
 }
 
 export function applyResolvedEffect(input: {
@@ -256,19 +277,10 @@ export function applyResolvedEffect(input: {
       "What remains uncertain?",
       "What should the next analyst know?",
     ].includes(question);
-    const relevant =
-      bounded ||
-      !question ||
-      /\b(login|alert|case|record|device|vpn|session|account|ticket|handoff|review|scanner|approval|access|evidence|check|priority|patel|rivera|finance|investigat\w*)\b/i.test(
-        question,
-      );
+    const relevant = managerQuestionRelevant(question);
     event.managerConsulted ||= relevant;
     const template = state.rules.eventTemplates[event.templateId];
-    const wrongCase =
-      (event.id !== "routine-alert-1" && /scanner|A-1180/i.test(question)) ||
-      (event.id !== "suspicious-login-1" && /Patel|A-1042/i.test(question)) ||
-      (event.id !== "login-help-1" && /Rivera/i.test(question)) ||
-      (event.id !== "access-request-1" && /finance/i.test(question));
+    const wrongCase = managerQuestionWrongCase(event.id, question);
     let guidance = wrongCase
       ? `We are discussing the selected case: ${event.title}. Choose the work you mean before asking about another case.`
       : !relevant
@@ -296,6 +308,9 @@ export function applyResolvedEffect(input: {
         guidance = `${event.title}: ${ticket ? "there is a saved ticket" : "no saved case ticket yet"}. ${state.workplace.comparisons?.some((c) => c.eventId === event.id) ? "A source comparison is recorded." : "No source comparison is recorded."} Pass on the sources you actually opened and the unresolved question, with an owner for the follow-up.`;
       }
     }
+    if (!wrongCase && event.status === "active")
+      guidance =
+        managerIntentReply(toClientView(state), event.id, question) ?? guidance;
     const entry = consequence(state, event.id, action.id, guidance);
     state.ledger.push(entry);
     effects.push({ type: "consequence_recorded", consequenceId: entry.id });
@@ -305,6 +320,11 @@ export function applyResolvedEffect(input: {
       eventId: event.id,
       author: "morgan",
       body: guidance,
+      consultationKey: managerConsultationKey(
+        toClientView(state),
+        event.id,
+        question,
+      ),
       actionId: action.id,
       simMinutes: state.simClock,
     });

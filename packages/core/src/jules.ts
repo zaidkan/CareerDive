@@ -1,3 +1,4 @@
+import { ticketSourceAcknowledgement } from "./morgan.js";
 import { handoffFollowUps } from "./handoff-summary.js";
 import type {
   ClientView,
@@ -76,7 +77,7 @@ function currentWorkReply(
   if (ticket)
     return {
       speaker: "Jules",
-      text: `You saved a note for ${contextEvent.title}. ${ticket.uncertainty ? `The question you left open is: ${ticket.uncertainty}` : "There is no open question written there yet."} I need that uncertainty alongside the decision when I pick up the ticket.`,
+      text: `You saved a note for ${contextEvent.title}. ${ticketSourceAcknowledgement(state, contextEvent.id)} ${ticket.uncertainty ? `The question you left open is: ${ticket.uncertainty}` : "There is no open question written there yet."} I need that uncertainty alongside the decision when I pick up the ticket.`,
       nextSystemId: "ticket_queue",
     };
   if (
@@ -92,6 +93,28 @@ function currentWorkReply(
       speaker: "Jules",
       text: "You recorded a source comparison. What differs between the sessions matters more than whether the city sounds familiar. Keep the comparison with the case note so I can follow your reasoning.",
       nextSystemId: "ticket_queue",
+    };
+  if (contextEvent.id === "routine-alert-1")
+    return {
+      speaker: "Jules",
+      text: "Match the scanner, target network, and event time to the run log and approved window. The time it reached our queue isn't the event time.",
+      nextSystemId: "knowledge_base",
+    };
+  if (contextEvent.id === "access-request-1")
+    return {
+      speaker: "Jules",
+      text: `${contextEvent.title}: a project deadline and an access approval are different. Check the access guide for who can authorize the role.`,
+      nextSystemId: "knowledge_base",
+    };
+  if (contextEvent.id === "login-help-1")
+    return {
+      speaker: "Jules",
+      text: state.workplace.inspectedArtifactIds?.includes(
+        "rivera-auth-summary",
+      )
+        ? "The laptop works while the phone retries. Compare the device-specific results before treating this like the unfamiliar login."
+        : "Open Rivera's device-specific login results first. We need to separate which device works from which one is retrying.",
+      nextSystemId: "email",
     };
   if (!["suspicious-login-1", "handoff-1"].includes(contextEvent.id))
     return {
@@ -171,9 +194,9 @@ function currentWorkReply(
     speaker: "Jules",
     text:
       state.availableActions.length > 0
-        ? `${prefix}public work is available, but I can't safely summarize that step here. Open the available item at your desk, read its purpose, and ask Morgan if the procedure is unclear.`
+        ? `${prefix}there is work available, but I can't safely summarize that step here. Open the available item at your desk, read its purpose, and ask Morgan if the procedure is unclear.`
         : activeWork
-          ? `${prefix}no new public step is showing yet. Keep your notes current and watch the queue for the next visible update.`
+          ? `${prefix}no new step is showing yet. Keep your notes current and watch the queue for the next visible update.`
           : `${prefix}the visible queue is settled. Check your notes, then ask Morgan what should happen next.`,
   };
 }
@@ -200,7 +223,7 @@ function resolveDialogue(
       return {
         speaker: "Jules",
         text: repeated
-          ? "Same break-room rule: write one next step, take a short break, then return to that step. I like a note that says where to resume so I do not have to hold the whole investigation in my head. Breaks are not work evidence."
+          ? "I leave myself one line about where to pick up — otherwise I waste the first five minutes remembering what I was doing."
           : needsEnergy
             ? "A short break can help when energy is low. Write one next step first, use an available snack or coffee if you need it, then return to that step. The room shows what is left; you do not need to rush, and waiting or reading does not use energy."
             : "A short break works best when you write one next step first. Step away briefly, then return to that specific step instead of restarting the whole case. Leave the record reference with the note so the next check is easy to find.",
@@ -222,13 +245,13 @@ function resolveDialogue(
       if (ticket)
         return {
           speaker: "Jules",
-          text: `Following up on the case we discussed: your saved ticket has ${String(ticket.sourceArtifactIds?.length ?? 0)} source references. ${ticket.uncertainty ? `I will carry this question forward: ${ticket.uncertainty}` : "I still need the unresolved question to carry forward."}`,
+          text: `Following up on the case we discussed: ${ticketSourceAcknowledgement(state, consultation.eventId)} ${ticket.uncertainty ? `I will carry this question forward: ${ticket.uncertainty}` : "I still need the unresolved question to carry forward."}`,
           nextSystemId: "ticket_queue",
         };
       return {
         speaker: "Jules",
         text: repeated
-          ? "Peer view: I can pick up a named source and an unresolved question. Morgan owns routing decisions. If your note changes after review, leave the correction alongside the original."
+          ? "I can pick up a named source and an unresolved question. Morgan owns routing decisions. If your note changes after review, leave the correction alongside the original."
           : "Morgan handles routing; I help carry unfinished work between shifts. Tell me which source you compared and what still needs an owner. Sounding certain does not make a handoff usable.",
       };
     }

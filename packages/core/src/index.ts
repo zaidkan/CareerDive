@@ -35,3 +35,10 @@ export {
 export { missingLoginComparisonSteps } from "./login-comparison.js";
 
 export { resolveActionEffect } from "./effects.js";
+
+export {
+  managerQuestionIntent,
+  managerConsultationKey,
+  managerRecap,
+  ticketSourceAcknowledgement,
+} from "./morgan.js";
