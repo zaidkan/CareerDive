@@ -95,7 +95,7 @@ it("specific-question synonyms reuse the same intent recap without sending", () 
   );
   fireEvent.click(screen.getByText("Ask a specific case question"));
   fireEvent.change(
-    screen.getByRole("textbox", { name: "Question for Morgan" }),
+    screen.getByRole("textbox", { name: "Question for your manager" }),
     { target: { value: "How do I look up this laptop?" } },
   );
   fireEvent.click(screen.getByRole("button", { name: "Send case question" }));

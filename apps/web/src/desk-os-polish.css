@@ -85,72 +85,6 @@
 }
 
 /* Window identity and focus stay visible in a multi-window workspace. */
-.desk-os .os-window-frame {
-  border-radius: var(--radius-md);
-  border-color: var(--border-strong);
-  background: var(--surface-base);
-}
-.desk-os .os-window-frame-active {
-  border-color: var(--action-primary);
-}
-.desk-os .os-window-frame-active .os-window-bar {
-  background: var(--status-info-bg);
-  box-shadow: inset 0 2px 0 var(--action-primary);
-}
-.desk-os .os-window-bar {
-  background: var(--surface-subtle);
-}
-.desk-os .os-window-bar-main {
-  padding: 0.5rem 0.75rem;
-  gap: 0.75rem;
-}
-.desk-os .os-window-controls {
-  gap: 0.25rem;
-}
-.desk-os .os-window-control {
-  min-height: 1.75rem;
-}
-.desk-os .os-window-body {
-  container-type: inline-size;
-}
-.desk-os :is(.os-browser-bar, .os-bookmarks, .os-toolbar) {
-  padding: 0.5rem 0.75rem;
-  gap: 0.5rem;
-}
-.desk-os .os-bookmark {
-  border-radius: var(--radius-sm);
-}
-.desk-os .os-desktop {
-  background: var(--surface-subtle);
-}
-.desk-os :is(.os-bookmark-active, .os-taskbar-btn-active, .desk-os-tab-active) {
-  background: var(--status-info-bg);
-  color: var(--action-primary);
-  border-color: var(--action-primary);
-  box-shadow: none;
-}
-.desk-os .desk-os-tab-target:not(.desk-os-tab-active) {
-  background: transparent;
-  border-color: var(--border-strong);
-  box-shadow: none;
-}
-.desk-os .desk-os-app-bar {
-  flex-wrap: wrap;
-  padding: 0.5rem 1rem;
-  gap: 0.75rem;
-}
-.desk-os .desk-os-tabs {
-  gap: 0.25rem;
-  padding: 0.125rem;
-}
-.desk-os .desk-os-app-route {
-  max-width: 15rem;
-}
-.desk-os .desk-os-tab {
-  min-height: 2.25rem;
-  font-size: 0.8125rem;
-  border-radius: var(--radius-sm);
-}
 .desk-os .desk-os-status-strip {
   padding: 0.65rem 1rem;
   gap: 0.5rem 1rem;
@@ -169,11 +103,6 @@
 }
 .desk-os .desk-os-status-strip:has(.mutation-status) {
   row-gap: 0.25rem;
-}
-.desk-os .desk-os-console > .desk-os-body {
-  grid-template-columns: minmax(0, 1fr);
-  padding: 1rem;
-  gap: 1rem;
 }
 .desk-os .case-rail {
   padding: 0.75rem;
@@ -591,7 +520,7 @@
   border-top: 1px solid var(--border-subtle);
 }
 .desk-os
-  :is(.os-intranet, .os-blocked, .desk-os-home, .desk-os-calendar, .os-notes) {
+  :is(.os-intranet, .os-blocked, .desk-os-calendar, .os-notes) {
   padding: 1.25rem;
 }
 .desk-os .os-files-body {
@@ -615,28 +544,6 @@
   color: var(--text-primary);
   background: var(--surface-base);
   border-radius: var(--radius-sm);
-}
-.desk-os .desk-os-tile {
-  padding: 1rem;
-  border-radius: var(--radius-md);
-}
-.desk-os .desk-os-guidance {
-  padding: 1rem;
-}
-.desk-os .desk-os-guidance > .eyebrow {
-  color: var(--text-secondary);
-}
-.desk-os .os-taskbar {
-  padding: 0.5rem 0.75rem;
-  gap: 0.625rem;
-}
-.desk-os .os-taskbar-btn {
-  min-height: 2.25rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--radius-sm);
-}
-.desk-os .os-taskbar-actions {
-  gap: 0.5rem;
 }
 .desk-os .work-notification {
   background: var(--surface-base);
@@ -666,9 +573,6 @@
 
 /* A restored Browser window needs the same layout as a narrow device. */
 @container (max-width: 960px) {
-  .desk-os .desk-os-app-route {
-    display: none;
-  }
   .desk-os :is(.email-tool, .alert-tool) {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -722,12 +626,6 @@
   .desk-os .desk-os-detail {
     padding: 1rem;
   }
-  .desk-os .desk-os-app-name {
-    flex-basis: 100%;
-  }
-  .desk-os .desk-os-tabs {
-    flex-basis: 100%;
-  }
   .desk-os :is(.rq-fields div, .alert-fields div) {
     grid-template-columns: minmax(0, 1fr);
     gap: 0.25rem;
@@ -736,16 +634,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
   .desk-os .work-task-header {
-    flex-wrap: wrap;
-  }
-}
-@media (max-width: 720px) {
-  .desk-os .os-taskbar {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0.5rem;
-  }
-  .desk-os .os-taskbar-actions {
-    grid-column: 1;
     flex-wrap: wrap;
   }
 }
@@ -791,24 +679,11 @@ body:has(.site-main-start .desk-os) :is(.site-nav, .site-footer),
   max-width: none;
   padding: 0;
 }
-.desk-os .os-desktop {
-  background: var(--surface-subtle);
-}
 .desk-os .os-icon {
   color: var(--text-primary);
 }
-.desk-os .os-desktop-hint {
-  color: var(--text-secondary);
-}
 .desk-os
-  :is(
-    .os-icon,
-    .os-taskbar-btn,
-    .desk-os-ghost,
-    .os-window-control,
-    .case-rail-item,
-    .desk-os-queue-item
-  ):hover:not(:disabled) {
+  :is(.os-icon, .desk-os-ghost, .case-rail-item, .desk-os-queue-item):hover:not(:disabled) {
   background: var(--surface-strong);
   color: var(--text-primary);
   border-color: var(--border-strong);
@@ -908,10 +783,6 @@ body:has(.site-main-start .desk-os) :is(.site-nav, .site-footer),
 .simulation-main .room-stage-desk {
   scroll-margin-top: 0;
   box-shadow: none;
-}
-.desk-os .os-taskbar-btn[data-minimized="true"] {
-  opacity: 1;
-  color: var(--text-muted);
 }
 
 /* Keep the active case ahead of secondary navigation and reference material. */

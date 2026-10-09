@@ -21,22 +21,19 @@ export function workspaceObjective(view: ClientView, eventId?: string) {
   ) {
     const event = view.events.find((e) => e.id === eventId);
     const resolved = event?.status !== "active";
-    const finish = view.availableActions.some((a) => a.id === "complete_shift");
     return {
       objective:
         eventId === "handoff-1"
           ? resolved
-            ? "Which inherited question will you investigate next?"
-            : "Which unfinished case will you take ownership of?"
+            ? "Which case will you investigate next?"
+            : "Read your first assignment, then pick a case"
           : eventId === "status-check-1"
             ? resolved
               ? "What did your message carry, and does it need a correction?"
-              : "What does Morgan need from your recorded work?"
-            : finish
-              ? "Ready to review your shift"
-              : resolved
-                ? "What did the next analyst receive?"
-                : "What must carry forward, and who owns the next check?",
+              : "What does your manager need to know?"
+            : resolved
+              ? "What did the next analyst receive?"
+              : "What should the next analyst know and check next?",
       systemId:
         eventId === "handoff-1"
           ? ("email" as WorkSystemId)
@@ -54,8 +51,7 @@ export function workspaceObjective(view: ClientView, eventId?: string) {
       );
       return {
         objective:
-          question?.title ??
-          "What judgment and next check will your memo carry?",
+          question?.title ?? "What should happen next, based on your findings?",
         systemId: question?.systemId ?? "ticket_queue",
         eventId,
       };

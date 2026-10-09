@@ -677,7 +677,7 @@ export function applyAction(
       author: "morgan",
       actionId: action.id,
       simMinutes: state.simClock,
-      body: "Status received with your recorded case memos. Delivery does not certify their claims. Each pending review/approval keeps its actual recipient; missing claims and corrections stay in the review record.",
+      body: "Thanks, I have your case notes and open questions. I’ll use those to follow up; receiving them doesn’t verify the findings. Reviews and approvals stay with the people already handling them.",
     });
   }
   if (ticketPayload?.ownershipCaseId) {
@@ -691,7 +691,7 @@ export function applyAction(
       author: "morgan",
       actionId: action.id,
       simMinutes: state.simClock,
-      body: `You own ${owned?.title ?? "this case"}. Inherited handoff: A-1042 owner unverified, device check unfinished; scanner approval reference was omitted. These are assignment context, not findings you have established.`,
+      body: `I’ve noted that you’ll start with ${owned?.title ?? "this case"}. The last analyst left A-1042’s user and device unchecked and left out the scanner’s approval reference. Those are starting questions, not findings you’ve made.`,
     });
   }
   const dialogueTicket = state.structuredTickets[`ticket-${targetEventId}`];

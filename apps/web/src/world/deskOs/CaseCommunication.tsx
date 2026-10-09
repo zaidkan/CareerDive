@@ -1,3 +1,4 @@
+import { ArtifactOpenButton } from "../../components/tools/ArtifactOpenButton.js";
 import { useEffect, useRef } from "react";
 import { TeamChatTool } from "../../components/tools/TeamChatTool.js";
 import { caseDispositionLabel, findingText } from "@sim/core";
@@ -70,100 +71,106 @@ export function CaseCommunication({
         <p>
           <strong>Question:</strong>{" "}
           {eventId === "handoff-1"
-            ? "Which unfinished case will you take ownership of?"
+            ? "Which case will you start with?"
             : eventId === "status-check-1"
-              ? "What does Morgan need from the work you have actually recorded?"
-              : "What must the next analyst inherit, and who owns the next check?"}
+              ? "What does your manager need to know from your saved work?"
+              : "What should the next analyst know and check next?"}
         </p>
         <p>{event?.resolution ?? "Message has not been sent."}</p>
       </header>
       <div className="case-work-surface">
         {eventId === "handoff-1" ? (
           <>
-            <p>
-              A-1042 created S-0741 after failed checks. Decide whether the
-              available records explain the session or warrant senior review.
-              Your memo must let the reviewer continue without repeating your
-              checks.
-            </p>
-            <button
-              type="button"
-              disabled={pending || !onWorkplaceInteraction}
-              onClick={() => {
-                void open("handoff-email");
-              }}
-            >
-              Read incoming assignment
-            </button>
-            {view.artifacts.find((a) => a.id === "handoff-email")?.observed && (
-              <>
-                <blockquote className="case-source-body">
-                  {view.artifacts.find((a) => a.id === "handoff-email")?.body}
-                </blockquote>
-                <fieldset disabled={pending}>
-                  <legend>Case to own first</legend>
-                  {view.events
-                    .filter((e) =>
-                      ["suspicious-login-1", "routine-alert-1"].includes(e.id),
-                    )
-                    .map((e) => (
-                      <label key={e.id}>
-                        <input
-                          type="radio"
-                          name="assignment-owner"
-                          checked={owner === e.id}
-                          onChange={() => {
-                            setOwner(e.id);
-                          }}
-                        />
-                        {e.title}
-                        {e.status === "pending"
-                          ? " — expected later; login remains available now"
-                          : ""}
-                      </label>
-                    ))}
-                </fieldset>
-                {action && (
-                  <ConfirmAction
-                    label="Take ownership and tell Morgan"
-                    pending={pending}
-                    disabled={!owner}
-                    resetKey={owner}
-                    onConfirm={() => {
-                      onAction({
-                        ...action,
-                        ticketPayload: {
-                          ticketId: "ticket-handoff-1",
-                          ownershipCaseId: owner,
-                        },
-                      });
-                    }}
-                  >
-                    <p>
-                      Own {view.events.find((e) => e.id === owner)?.title}.
-                      Inherited owner/device questions remain unverified; this
-                      operation records responsibility.
-                    </p>
-                  </ConfirmAction>
-                )}
-              </>
+            {event?.status === "active" && (
+              <p>
+                Read the previous analyst’s note, then pick a case to start.
+                Morgan is your manager; your message tells them what you will
+                work on.
+              </p>
             )}
+            <ArtifactOpenButton
+              artifactId="handoff-email"
+              label="Read incoming assignment"
+              disabled={pending || !onWorkplaceInteraction}
+              onOpenArtifact={open}
+            />
+            {event?.status === "active" &&
+              view.artifacts.find((a) => a.id === "handoff-email")
+                ?.observed && (
+                <>
+                  <blockquote className="case-source-body">
+                    {view.artifacts.find((a) => a.id === "handoff-email")?.body}
+                  </blockquote>
+                  <fieldset disabled={pending}>
+                    <legend>Case to start first</legend>
+                    {view.events
+                      .filter((e) =>
+                        ["suspicious-login-1", "routine-alert-1"].includes(
+                          e.id,
+                        ),
+                      )
+                      .map((e) => (
+                        <label key={e.id}>
+                          <input
+                            type="radio"
+                            name="assignment-owner"
+                            checked={owner === e.id}
+                            onChange={() => {
+                              setOwner(e.id);
+                            }}
+                          />
+                          {e.title}
+                          {e.status === "pending"
+                            ? " — expected later; login remains available now"
+                            : ""}
+                        </label>
+                      ))}
+                  </fieldset>
+                  {action && (
+                    <ConfirmAction
+                      label="Start this case · tell your manager"
+                      pending={pending}
+                      disabled={!owner}
+                      resetKey={owner}
+                      onConfirm={() => {
+                        onAction({
+                          ...action,
+                          ticketPayload: {
+                            ticketId: "ticket-handoff-1",
+                            ownershipCaseId: owner,
+                          },
+                        });
+                      }}
+                    >
+                      <p>
+                        Tell your manager you’ll start with{" "}
+                        {view.events.find((e) => e.id === owner)?.title}. This
+                        starts your work; it does not close the case or verify
+                        who used the device.
+                      </p>
+                    </ConfirmAction>
+                  )}
+                </>
+              )}
             {event?.status === "resolved" && (
               <>
                 <p>
-                  Ownership recorded; Morgan's acknowledgement is attached to
-                  the chosen case.
+                  Your manager has your choice. Their reply is saved on the
+                  case; the investigation is still open.
                 </p>
                 <button
                   type="button"
                   onClick={() => {
                     onOpenSystem(
                       "alert_dashboard",
-                      owner || "suspicious-login-1",
+                      view.events.find((e) => e.id === owner)?.status ===
+                        "active"
+                        ? owner
+                        : "suspicious-login-1",
                     );
                   }}
                 >
-                  Open the case I own
+                  Open my first case
                 </button>
               </>
             )}
@@ -215,8 +222,9 @@ export function CaseCommunication({
                 })}
             </details>
             <p>
-              Choose what matters for Morgan. Empty or unsupported claims may be
-              sent; the debrief evaluates them later.
+              Tell your manager what changed and what still needs checking. You
+              can send an incomplete update; the shift review checks its support
+              afterward.
             </p>
             {view.statusOptions?.map((g) => (
               <fieldset key={g.id} disabled={pending}>
@@ -248,15 +256,12 @@ export function CaseCommunication({
                   ),
                 ].map((id) => (
                   <article key={id}>
-                    <button
-                      type="button"
-                      disabled={!onWorkplaceInteraction}
-                      onClick={() => {
-                        void open(id);
-                      }}
-                    >
-                      Open {view.artifacts.find((a) => a.id === id)?.title}
-                    </button>
+                    <ArtifactOpenButton
+                      artifactId={id}
+                      label={`Open ${view.artifacts.find((a) => a.id === id)?.title ?? id}`}
+                      disabled={pending || !onWorkplaceInteraction}
+                      onOpenArtifact={open}
+                    />
                     {view.artifacts.find((a) => a.id === id)?.observed && (
                       <details>
                         <summary>Read source</summary>
@@ -270,7 +275,7 @@ export function CaseCommunication({
               </fieldset>
             ))}
             <section aria-label="Status message preview">
-              <h4>Message to Morgan</h4>
+              <h4>Message to your manager</h4>
               <p>
                 {view.statusOptions
                   ?.flatMap((g) =>
@@ -289,7 +294,7 @@ export function CaseCommunication({
                 label={
                   event?.status === "resolved"
                     ? "Send status correction"
-                    : "Send status to Morgan"
+                    : "Send status to your manager"
                 }
                 pending={pending}
                 resetKey={JSON.stringify(statusIds)}
@@ -321,7 +326,16 @@ export function CaseCommunication({
             <summary>Actual sent message and response</summary>
             {messages.map((m) => (
               <p className="case-source-body" key={m.id}>
-                <strong>{m.author}</strong> · {m.body}
+                <strong>
+                  {m.author === "morgan"
+                    ? "Morgan · your manager"
+                    : m.author === "player"
+                      ? "You"
+                      : m.author === "reviewer"
+                        ? "Reviewer"
+                        : "Employee"}
+                </strong>{" "}
+                · {m.body}
               </p>
             ))}
           </details>

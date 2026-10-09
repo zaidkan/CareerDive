@@ -37,7 +37,7 @@ export const WORK_SYSTEMS: Array<{
   {
     id: "team_chat",
     label: "Team chat",
-    hint: "Talk to Morgan",
+    hint: "Talk to your team",
     toolTitle: "Team channel",
   },
 ];

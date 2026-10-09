@@ -11,7 +11,9 @@ export function ArtifactOpenButton({
   label,
   onOpenArtifact,
   mutationState = EMPTY_MUTATION_STATE,
+  disabled = false,
 }: {
+  disabled?: boolean;
   artifactId: string;
   label: string;
   onOpenArtifact?: ((id: string) => Promise<unknown>) | undefined;
@@ -27,7 +29,12 @@ export function ArtifactOpenButton({
       workplaceMutationKey({ type: "open_artifact", artifactId });
 
   async function open() {
-    if (!onOpenArtifact || pendingRef.current || mutationState.pendingKey)
+    if (
+      disabled ||
+      !onOpenArtifact ||
+      pendingRef.current ||
+      mutationState.pendingKey
+    )
       return;
     pendingRef.current = true;
     setPending(true);
@@ -52,7 +59,10 @@ export function ArtifactOpenButton({
         data-artifact-id={artifactId}
         data-source-id={artifactId}
         disabled={
-          !onOpenArtifact || pending || Boolean(mutationState.pendingKey)
+          disabled ||
+          !onOpenArtifact ||
+          pending ||
+          Boolean(mutationState.pendingKey)
         }
         onClick={() => {
           void open();

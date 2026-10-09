@@ -38,7 +38,8 @@ export function ShiftCheckpoints({
           <li>
             <strong>As needed</strong>
             <span>
-              Buddy check with Morgan · ask in Team chat about your current work
+              Ask your manager · use Team chat for questions about your current
+              case
             </span>
           </li>
         ) : null}
@@ -46,7 +47,7 @@ export function ShiftCheckpoints({
           <li>
             <strong>Optional</strong>
             <span>
-              Optional break with Jules · leave a next step in your notes first
+              Break with Jules, your coworker · leave yourself a next step first
             </span>
           </li>
         ) : null}

@@ -1,3 +1,5 @@
+import { useOptionalOsSession } from "./osSession.js";
+import { ArtifactOpenButton } from "../../components/tools/ArtifactOpenButton.js";
 import { RecordQueryTool } from "../../components/tools/RecordQueryTool.js";
 import { TeamChatTool } from "../../components/tools/TeamChatTool.js";
 import { useEffect, useRef } from "react";
@@ -50,6 +52,8 @@ export function CaseWorkspace({
   mutationState: MutationState;
   focusRequestId?: number;
 }) {
+  const osSession = useOptionalOsSession();
+  const dispatchPresentation = osSession?.dispatch;
   const event = view.events.find((e) => e.id === eventId);
   const questions = findingQuestions(eventId);
   const ticket = view.structuredTickets?.[`ticket-${eventId}`];
@@ -75,7 +79,33 @@ export function CaseWorkspace({
     `case-question:${view.sessionId}:${eventId}`,
     questions[0]?.id ?? "",
   );
+  useEffect(() => {
+    const current = questions.find((q) => q.id === questionId);
+    const candidates = questions.filter((q) => q.systemId === systemId);
+    if (candidates.length && current?.systemId !== systemId) {
+      const next =
+        candidates.find(
+          (q) => !reasoning.caseFindings.some((f) => f.questionId === q.id),
+        ) ?? candidates[0];
+      if (next) setQuestionId(next.id);
+    }
+  }, [
+    systemId,
+    eventId,
+    questionId,
+    questions,
+    reasoning.caseFindings,
+    setQuestionId,
+  ]);
   const question = questions.find((q) => q.id === questionId) ?? questions[0];
+  useEffect(() => {
+    if (question)
+      dispatchPresentation?.({
+        type: "set_finding_question",
+        eventId,
+        questionId: question.id,
+      });
+  }, [dispatchPresentation, eventId, question]);
   const [nextStep, setNextStep] = useTabDraft<string[]>(
     `case-next:${view.sessionId}:${eventId}`,
     reasoning.nextStep,
@@ -172,19 +202,19 @@ export function CaseWorkspace({
           <p>
             <strong>Question:</strong>{" "}
             {finance
-              ? "What request should reach which approver, while the project keeps moving?"
+              ? "Who can approve this access request, and what can happen while it waits?"
               : rivera
-                ? "Which device-specific check tests Rivera's sign-in problem, and what does its result establish?"
+                ? "Which device should Rivera test, and what does the result tell us?"
                 : eventId === "routine-alert-1"
-                  ? "Does this exact activity match this run and approval, and what remains outside the match?"
-                  : "Do the available records explain S-0741, or does it need senior review?"}
+                  ? "Does this scan match the approved work, and what does that match leave unanswered?"
+                  : "Do the records explain sign-in session S-0741, or should a more experienced analyst review it?"}
           </p>
           {eventId === "suspicious-login-1" &&
             view.artifacts.find((a) => a.id === "handoff-email")?.observed && (
               <small>
-                Inherited assignment: S-0741 / owner unverified / device check
-                unfinished. This is the previous analyst's handoff, not your
-                finding.
+                Previous analyst’s note: S-0741 / user not verified / device
+                check unfinished. This is the previous analyst's handoff, not
+                your finding.
               </small>
             )}
 
@@ -198,7 +228,7 @@ export function CaseWorkspace({
                       .find((q) => q.id === f.questionId)
                       ?.rows.filter((r) => f.rowIds.includes(r.id))
                       .map((r) => r.excerpt)
-                      .join(" / ") || "No rows cited."}
+                      .join(" / ") || "No source rows selected."}
                   </small>
                   <button
                     type="button"
@@ -206,7 +236,9 @@ export function CaseWorkspace({
                       choose(f.questionId);
                     }}
                   >
-                    Revisit {f.questionId}
+                    Revisit{" "}
+                    {questions.find((q) => q.id === f.questionId)?.title ??
+                      "finding"}
                   </button>
                 </li>
               ))}
@@ -302,9 +334,9 @@ export function CaseWorkspace({
           <section aria-label="Case memo">
             <h4>
               {finance
-                ? "Routing packet from your saved scope"
+                ? "Access request from your saved findings"
                 : rivera
-                  ? "Choose a discriminating check"
+                  ? "Choose a check that tests your explanation"
                   : "Memo from your saved findings"}
             </h4>
             <p>
@@ -375,7 +407,7 @@ export function CaseWorkspace({
                     ? "Recipient and response"
                     : rivera
                       ? "Check to request"
-                      : "Judgment to dispatch"}
+                      : "What should happen to this case?"}
                 </legend>
                 {memoAction?.decisionOptions
                   ?.filter((o) => !finance || o.id !== "route-with-interim")
@@ -419,10 +451,10 @@ export function CaseWorkspace({
                 <ConfirmAction
                   label={
                     finance
-                      ? "Send routing request"
+                      ? "Send access request"
                       : rivera
                         ? "Request check and receive result"
-                        : "Dispatch case memo"
+                        : "Send case memo"
                   }
                   pending={pending}
                   disabled={!memoAction || !decision}
@@ -462,15 +494,15 @@ export function CaseWorkspace({
                     {labels("nextStep").join(" ") || "None recorded."}
                   </p>
                   <p>
-                    This sends the memo once; there is no second disposition to
-                    select in Alerts.
+                    This sends your note and carries out the response you chose.
+                    You do not need to choose again in Alerts.
                   </p>
                 </ConfirmAction>
               )}
             </div>
             <p>
-              A draft stays on your desk. Dispatch records the requested
-              operation; support is evaluated in review.
+              A draft stays on your desk. Sending carries out your chosen
+              response; the shift review checks how well the records support it.
             </p>
           </section>
         ) : systemId === "email" && !finance ? (
@@ -488,15 +520,12 @@ export function CaseWorkspace({
                 );
                 return (
                   <article key={o.id}>
-                    <button
-                      disabled={pending || !onWorkplaceInteraction}
-                      type="button"
-                      onClick={() => {
-                        if (source) void openSource(source.id);
-                      }}
-                    >
-                      Open {source?.title}
-                    </button>
+                    <ArtifactOpenButton
+                      artifactId={source?.id ?? ""}
+                      label={`Open ${source?.title ?? "source"}`}
+                      disabled={pending || !onWorkplaceInteraction || !source}
+                      onOpenArtifact={openSource}
+                    />
                     {source?.observed && (
                       <>
                         <p className="case-source-body">{source.body}</p>
@@ -599,15 +628,15 @@ export function CaseWorkspace({
             }}
           >
             {finance
-              ? "Build routing request from saved scope"
+              ? "Prepare access request from saved findings"
               : rivera
                 ? "Choose the device check"
-                : "Build judgment from saved findings"}
+                : "Choose a response from saved findings"}
           </button>
         )}
         {finance && systemId === "team_chat" && (
           <details>
-            <summary>Discuss this request with Morgan</summary>
+            <summary>Ask your manager about this request</summary>
             <TeamChatTool
               view={view}
               eventId={eventId}
@@ -642,15 +671,12 @@ export function CaseWorkspace({
             .filter((a) => a.eventIds.includes(eventId) && a.kind !== "ticket")
             .map((a) => (
               <article key={a.id}>
-                <button
-                  type="button"
+                <ArtifactOpenButton
+                  artifactId={a.id}
+                  label={`Open ${a.title}`}
                   disabled={pending || !onWorkplaceInteraction}
-                  onClick={() => {
-                    void openSource(a.id);
-                  }}
-                >
-                  Open {a.title}
-                </button>
+                  onOpenArtifact={openSource}
+                />
                 {a.observed && (
                   <details>
                     <summary>{a.title} · full source</summary>
@@ -717,18 +743,59 @@ function FindingEditor({
     >
       <h4>{question.title}</h4>
       <p>{question.why}</p>
+      <details className="case-glossary">
+        <summary>New to these terms?</summary>
+        <dl>
+          <dt>Session</dt>
+          <dd>
+            One sign-in connection; its ID distinguishes it from another
+            connection.
+          </dd>
+          <dt>MFA / extra identity check</dt>
+          <dd>
+            A check after the password, such as a code or approval prompt.
+          </dd>
+          <dt>Route / source address</dt>
+          <dd>
+            The network connection used to reach a system. A matching address
+            does not identify a person.
+          </dd>
+          <dt>Scanner / discovery</dt>
+          <dd>
+            An automated check that looks for devices on a network. Discovery
+            alone does not prove those devices are secure.
+          </dd>
+          <dt>VPN</dt>
+          <dd>
+            A connection through the company’s network. Match its connection ID
+            and address with the sign-in record.
+          </dd>
+          <dt>Enrolled / MDM</dt>
+          <dd>
+            A device registered in the company’s device-management system.
+            Registration does not identify its current user.
+          </dd>
+          <dt>Escalate / senior review</dt>
+          <dd>
+            Ask a more experienced analyst to check the case; it does not mean
+            an attack is proven.
+          </dd>
+          <dt>Disposition</dt>
+          <dd>
+            The response you choose for the case, such as closing it or
+            requesting review.
+          </dd>
+        </dl>
+      </details>
       <div className="case-source-actions">
         {sources.map((id) => (
-          <button
+          <ArtifactOpenButton
             key={id}
-            type="button"
+            artifactId={id}
+            label={`Open ${view.artifacts.find((a) => a.id === id)?.title ?? id}`}
             disabled={pending || !canOpen}
-            onClick={() => {
-              void openSource(id);
-            }}
-          >
-            Open {view.artifacts.find((a) => a.id === id)?.title ?? id}
-          </button>
+            onOpenArtifact={openSource}
+          />
         ))}
       </div>
       {question.rowGroups.map((group, index) => (
@@ -784,7 +851,7 @@ function FindingEditor({
                   );
                 }}
               >
-                <option value="">Choose a source row, or leave uncited</option>
+                <option value="">Choose a source row, or leave blank</option>
                 {group.rowIds.map((id) => {
                   const row = question.rows.find((r) => r.id === id);
                   if (!row) return null;
@@ -824,7 +891,7 @@ function FindingEditor({
         ) : null;
       })}
       <fieldset disabled={pending}>
-        <legend>Your claim about these rows</legend>
+        <legend>What do these rows tell you?</legend>
         {question.claims.map((c) => (
           <label key={c.id}>
             <input
@@ -850,8 +917,8 @@ function FindingEditor({
         Clear finding selections
       </button>
       <p>
-        Save what you claim, even if incomplete. A save does not certify the
-        relation; the review checks support later.
+        Save the conclusion you reached, even if incomplete. Saving does not
+        mean it is correct; the shift review checks the source support later.
       </p>
       <button
         className="action-primary"
@@ -866,7 +933,8 @@ function FindingEditor({
           {previous.rowIds.length
             ? "The selected rows travel with the memo."
             : "No source rows were cited."}{" "}
-          Remaining decision: what response and next check does this support?
+          Next: choose another open question, or review your saved findings in
+          Tickets.
         </p>
       )}
     </form>
@@ -904,18 +972,15 @@ function RiveraResult({
     <section aria-label="Interpret Rivera's result">
       <h4>What did the requested check establish?</h4>
       <p>
-        The six-minute exchange contains the employee response and a bounded
-        retry check. A laptop/reset branch keeps the phone test unresolved.
+        Read the response to the check you requested. Note which device was
+        tested and what still needs checking.
       </p>
-      <button
-        type="button"
+      <ArtifactOpenButton
+        artifactId="rivera-result-receipt"
+        label="Read the actual result receipt"
         disabled={pending}
-        onClick={() => {
-          void openSource("rivera-result-receipt");
-        }}
-      >
-        Read the actual result receipt
-      </button>
+        onOpenArtifact={openSource}
+      />
       {receipt?.observed && (
         <blockquote className="case-source-body">{receipt.body}</blockquote>
       )}

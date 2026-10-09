@@ -1,3 +1,4 @@
+import { findingQuestions } from "@sim/core";
 import type { AvailableAction, ClientView, WorkSystemId } from "@sim/schemas";
 import { canWrapUpShift, shiftWorkActions } from "./systems.js";
 
@@ -6,9 +7,70 @@ export type ShiftGuidance = {
   detail: string;
   systemId: WorkSystemId;
   action?: AvailableAction;
+  eventId?: string;
 };
 
 export function getShiftGuidance(view: ClientView): ShiftGuidance | null {
+  if (view.caseActions) {
+    if (view.completed) return null;
+    if (view.availableActions.some((a) => a.id === "complete_shift"))
+      return {
+        headline: "Ready to review your shift",
+        detail:
+          "Open Team Chat when you are ready to finish and review your work.",
+        systemId: "team_chat",
+      };
+    const event =
+      view.events.find((e) => e.status === "active" && e.id === "handoff-1") ??
+      view.events.find(
+        (e) =>
+          e.status === "active" &&
+          (findingQuestions(e.id).length ||
+            ["status-check-1", "shift-handoff-1"].includes(e.id)),
+      );
+    if (!event) return null;
+    const action = view.caseActions.find(
+      (a) =>
+        a.eventId === event.id &&
+        !["ask_manager", "query_records"].includes(a.id),
+    );
+    const question = findingQuestions(event.id).find(
+      (q) =>
+        !view.structuredTickets?.[
+          `ticket-${event.id}`
+        ]?.reasoning?.caseFindings?.some((f) => f.questionId === q.id),
+    );
+    const systemId =
+      question?.systemId ??
+      (event.id === "handoff-1"
+        ? "email"
+        : ["status-check-1", "shift-handoff-1"].includes(event.id)
+          ? "team_chat"
+          : "ticket_queue");
+    return {
+      eventId: event.id,
+      headline:
+        question?.title ??
+        (event.id === "handoff-1"
+          ? "Read your first assignment"
+          : event.id === "status-check-1"
+            ? "Update your manager"
+            : event.id === "shift-handoff-1"
+              ? "Leave the next analyst a handoff"
+              : "Choose what to do with your findings"),
+      detail: question
+        ? `${question.why} Save the rows and claim you want to carry forward; opening a source alone saves no finding.`
+        : event.id === "handoff-1"
+          ? "Read the previous analyst’s note in Email, then pick a case to start. Morgan is your manager; the message tells them which case you will work on."
+          : event.id === "status-check-1"
+            ? "Use your saved case notes to tell your manager what changed and what still needs checking."
+            : event.id === "shift-handoff-1"
+              ? "Carry your actual case outcomes and open questions forward for the next analyst."
+              : "In Tickets, review your saved findings and choose a response. Sending the memo carries that choice out once.",
+      systemId,
+      ...(action ? { action: { ...action, systemId } } : {}),
+    };
+  }
   const work = shiftWorkActions(view.availableActions).filter(
     ({ id }) => id !== "query_records" && id !== "ask_manager",
   );
@@ -91,7 +153,26 @@ export const FIRST_DAY_STEPS = [
 
 export function getFirstDayStep(
   view: ClientView,
-): (typeof FIRST_DAY_STEPS)[number] | null {
+):
+  | (Omit<(typeof FIRST_DAY_STEPS)[number], "title" | "body"> & {
+      title: string;
+      body: string;
+    })
+  | null {
+  if (view.caseActions) {
+    const assignment = view.events.find((e) => e.id === "handoff-1");
+    if (assignment?.status !== "active") return null;
+    return view.artifacts.some((a) => a.id === "handoff-email" && a.observed)
+      ? {
+          ...FIRST_DAY_STEPS[1],
+          title: "Step 2 · Pick a case to start",
+          body: "Choose which case to work on first. Your message tells Morgan, your manager, where you are starting.",
+        }
+      : {
+          ...FIRST_DAY_STEPS[0],
+          body: "Open Email and read your first assignment. Then pick a case to start.",
+        };
+  }
   const completed = new Set(
     view.events.flatMap((event) => event.completedActionIds),
   );
@@ -107,6 +188,7 @@ export function getOptionalShiftHints(
   view: ClientView,
   phase: string,
   selectedEventId?: string,
+  selectedQuestionId?: string,
 ): string[] {
   if (view.completed) return [];
   if (phase === "floor_map")
@@ -121,7 +203,59 @@ export function getOptionalShiftHints(
     return [
       "Click the monitor to wake sign-in. Copy the first-day username and password shown on that screen into the matching fields, then choose Sign in.",
     ];
-  const eventId = selectedEventId ?? getShiftGuidance(view)?.action?.eventId;
+  const guidance = getShiftGuidance(view);
+  const eventId =
+    selectedEventId ?? guidance?.eventId ?? guidance?.action?.eventId;
+  if (view.caseActions) {
+    const ticket = view.structuredTickets?.[`ticket-${eventId ?? ""}`];
+    const questions = findingQuestions(eventId ?? "");
+    const question =
+      questions.find((q) => q.id === selectedQuestionId) ??
+      questions.find(
+        (q) =>
+          !ticket?.reasoning?.caseFindings?.some((f) => f.questionId === q.id),
+      );
+    const caseHint: Record<string, string> = {
+      signal:
+        "Open the session timeline in Alerts. Pick the rows showing what happened before and when the sign-in session began, then choose the claim those rows support. A session is one sign-in connection, not proof of who used it.",
+      route:
+        "In Alerts, compare the earlier session, flagged session, and VPN connection rows. Match connection IDs and source addresses, not just a city. Choose the relationship you think they show, then Save finding.",
+      device:
+        "In Guides, compare the exact laptop label from the flagged session with device inventory. Enrollment means registered with the company; it does not identify who used a device. Save the claim you can support.",
+      coverage:
+        "In Guides, read what the activity export includes and leaves out. Missing records and a recorded ‘nothing happened’ result are different. Save that limit in your finding.",
+      "scan-match":
+        "In Alerts, compare the scanner, target network, and event time with the run log and approved window. RUN-FIN-030 is the prior-week run. Queue arrival is not the scan’s event time. Save the match you can support.",
+      "scan-boundary":
+        "In Guides, read the run log’s limits alongside the other open case. Decide how far this scan’s approval reaches; save a claim about that boundary.",
+      "request-scope":
+        "Open the finance request in Email. Carry the requested resource, read-only role, and end date together. A project deadline explains urgency, not permission to grant access.",
+      "approval-boundary":
+        "In Guides, compare the finance request and access approval guide. Who may authorize this role, and what stays pending until they do? Save the distinction before choosing where to send it.",
+      "device-pattern":
+        "Open Rivera’s sign-in and device records in Email. Compare the laptop and phone separately, including successful sign-ins and retries. This is a different person’s case from Patel’s unfamiliar login.",
+    };
+    const first =
+      eventId === "handoff-1"
+        ? "Read incoming assignment in Email, then pick a case to start. Morgan is your manager. Starting a case tells them what you will work on; it does not resolve the case."
+        : eventId === "status-check-1"
+          ? "Open your current case notes and choose what your manager needs to know. Keep what the records show separate from what still needs checking."
+          : eventId === "shift-handoff-1"
+            ? "Select what the next analyst needs from your recorded outcomes. Keep unanswered questions open and choose who should check next; do not replace your actual choices with a better-looking result."
+            : ticket?.decisionReasoning
+              ? eventId === "login-help-1" &&
+                ticket.reasoning?.phase !== "follow-up"
+                ? "Open the actual result in Email. Compare what was tested with what you requested, then save your interpretation. Laptop success alone does not test the phone app."
+                : "Your response is recorded. Read what the recipient received and what still needs checking. You can correct your note without replacing the original decision."
+              : question
+                ? caseHint[question.id]
+                : "In Tickets, review your saved claims and choose a next check and response. Save draft keeps the case open; sending the memo carries out your chosen response once.";
+    return [
+      first ??
+        "Choose an open question and read its sources before saving a finding.",
+      "Source rows support your claim; opening a record alone does not save one. You may save incomplete findings. Review happens afterward, so you can still send a response with gaps.",
+    ];
+  }
   const action = shiftWorkActions(view.availableActions).find(
     (a) =>
       a.eventId === eventId && !["ask_manager", "query_records"].includes(a.id),

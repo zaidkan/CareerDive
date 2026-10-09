@@ -95,7 +95,7 @@ export function TeamChatTool({
                     (
                       {
                         player: "You",
-                        morgan: "Morgan",
+                        morgan: "Morgan · your manager",
                         reviewer: "Reviewer",
                         employee: "Employee",
                       } as const
@@ -156,7 +156,7 @@ export function TeamChatTool({
               aria-label={`Discuss ${view.events.find((e) => e.id === action.eventId)?.title ?? action.eventId} with Morgan`}
             >
               <h4>
-                Morgan ·{" "}
+                Your manager ·{" "}
                 {view.events.find((e) => e.id === action.eventId)?.title ??
                   action.eventId}
               </h4>
@@ -199,7 +199,7 @@ export function TeamChatTool({
                   }}
                 >
                   <label>
-                    Question for Morgan
+                    Question for your manager
                     <textarea
                       maxLength={2000}
                       value={draft}

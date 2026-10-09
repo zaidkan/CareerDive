@@ -16,7 +16,7 @@ export const LOGIN_FINDING_QUESTIONS: FindingQuestion[] = [
   {
     id: "signal",
     title: "What sequence created S-0741?",
-    why: "Reconstruct the signal for the reviewer. A sequence does not identify a person.",
+    why: "Pick the rows showing what happened before this sign-in connection began. Their order does not tell you who used it.",
     systemId: "alert_dashboard",
     rows: [
       {
@@ -64,7 +64,7 @@ export const LOGIN_FINDING_QUESTIONS: FindingQuestion[] = [
   {
     id: "route",
     title: "Does the known connection explain S-0741?",
-    why: "Compare session identifiers and source addresses with the approved connection snapshot.",
+    why: "Compare the sign-in IDs and addresses with the company’s VPN connection record. Matching cities alone may not link two connections.",
     systemId: "alert_dashboard",
     rows: [
       {
@@ -121,7 +121,7 @@ export const LOGIN_FINDING_QUESTIONS: FindingQuestion[] = [
   {
     id: "device",
     title: "What is recorded for this exact device?",
-    why: "This helps the reviewer decide what needs checking; it cannot name the user.",
+    why: "Match the exact laptop label with the device list. The list can show company registration, but not who used the laptop.",
     systemId: "knowledge_base",
     rows: [
       {
@@ -185,7 +185,7 @@ export const LOGIN_FINDING_QUESTIONS: FindingQuestion[] = [
   {
     id: "coverage",
     title: "What prevents a stronger conclusion?",
-    why: "Keep not collected separate from observed absent. Repeated summaries are not independent sources.",
+    why: "Check what the activity record includes. Missing data is different from proof that nothing happened; repeated summaries are not extra evidence.",
     systemId: "alert_dashboard",
     rows: [
       {
@@ -219,7 +219,7 @@ export const SCANNER_FINDING_QUESTIONS: FindingQuestion[] = [
   {
     id: "scan-match",
     title: "Which run and approval match this recorded activity?",
-    why: "Avoid unnecessary escalation with a traceable time, source and target match. Queue arrival is not event time.",
+    why: "Compare the scanner, network, and event time with the run and approved window. The time an alert arrives may be later.",
     systemId: "alert_dashboard",
     rows: [
       {
@@ -291,7 +291,7 @@ export const SCANNER_FINDING_QUESTIONS: FindingQuestion[] = [
   {
     id: "scan-boundary",
     title: "Which activity can this match close?",
-    why: "Bound the closure to this activity. A discovery connection is not a weakness-check finding.",
+    why: "Check what this approved scan covers and what needs a separate check. Finding devices on a network does not prove they are secure.",
     systemId: "knowledge_base",
     rows: [
       {
@@ -336,8 +336,8 @@ export const SCANNER_FINDING_QUESTIONS: FindingQuestion[] = [
 export const FINANCE_FINDING_QUESTIONS: FindingQuestion[] = [
   {
     id: "request-scope",
-    title: "What exactly is Sam asking the recipient to authorize?",
-    why: "Build a useful routing request from the actual resource, role and expiry.",
+    title: "What access is the finance employee requesting?",
+    why: "Sam works in finance. Keep the requested system, permission level, and end time together so the approver knows what is being asked.",
     systemId: "email",
     rows: [
       {
@@ -436,7 +436,7 @@ export const RIVERA_FINDING_QUESTIONS: FindingQuestion[] = [
   {
     id: "device-pattern",
     title: "What differs between Rivera's phone and laptop?",
-    why: "Compare device results before choosing a discriminating check; failed sign-ins alone do not establish an attack.",
+    why: "Rivera is the employee asking for sign-in help. Compare the phone and laptop results before choosing what to test; failures alone do not prove an attack.",
     systemId: "alert_dashboard",
     rows: [
       {

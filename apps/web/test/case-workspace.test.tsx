@@ -69,7 +69,7 @@ it("builds an uncited weak claim, carries it across tools, and dispatches one op
       ?.caseFindings?.[0]?.rowIds,
   ).toEqual([]);
   await user.click(
-    screen.getByRole("button", { name: "Build judgment from saved findings" }),
+    screen.getByRole("button", { name: "Choose a response from saved findings" }),
   );
   expect(screen.queryByText("Evidence reviewed")).toBeNull();
   expect(
@@ -80,7 +80,7 @@ it("builds an uncited weak claim, carries it across tools, and dispatches one op
   await user.click(
     screen.getByRole("radio", { name: /Escalate.*comparisons/i }),
   );
-  await user.click(screen.getByRole("button", { name: "Dispatch case memo" }));
+  await user.click(screen.getByRole("button", { name: "Send case memo" }));
   await user.click(screen.getByRole("button", { name: /Confirm/ }));
   expect(
     sent.mock.calls.filter(([a]) => a.id === "document_ticket"),

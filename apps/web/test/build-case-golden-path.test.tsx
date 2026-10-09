@@ -145,8 +145,8 @@ it("constructs sources/findings through real controls and router, survives faile
   await user.click(
     screen.getByRole("radio", { name: "Unfamiliar successful login" }),
   );
-  await confirm("Take ownership and tell Morgan");
-  await click("Open the case I own");
+  await confirm("Start this case · tell your manager");
+  await click("Open my first case");
   async function construct(eventId: string) {
     for (const question of findingQuestions(eventId)) {
       await user.selectOptions(
@@ -225,7 +225,7 @@ it("constructs sources/findings through real controls and router, survives faile
   await user.click(
     screen.getByRole("radio", { name: /Escalate.*comparisons/i }),
   );
-  await confirm("Dispatch case memo");
+  await confirm("Send case memo");
   expect(
     screen.getByRole("region", { name: "Case response receipt" }),
   ).toHaveTextContent("senior review pending");
@@ -237,7 +237,7 @@ it("constructs sources/findings through real controls and router, survives faile
     screen.getByRole("checkbox", { name: /Close A-1180 with the matched run/ }),
   );
   await user.click(screen.getByRole("radio", { name: /Close.*monitoring/i }));
-  await confirm("Dispatch case memo");
+  await confirm("Send case memo");
   expect(
     screen.getByRole("region", { name: "Case response receipt" }),
   ).toHaveTextContent("A-1214");
@@ -249,7 +249,7 @@ it("constructs sources/findings through real controls and router, survives faile
   await user.click(
     screen.getByRole("checkbox", { name: /Include an interim report request/ }),
   );
-  await confirm("Send routing request");
+  await confirm("Send access request");
   expect(
     current.structuredTickets?.["ticket-access-request-1"]?.disposition,
   ).toBe("route-with-interim");
@@ -298,7 +298,7 @@ it("constructs sources/findings through real controls and router, survives faile
     /Senior review of the escalated session/,
   ])
     await user.click(screen.getByRole("radio", { name: text }));
-  await confirm("Send status to Morgan");
+  await confirm("Send status to your manager");
   await selectCase("shift-handoff-1");
   for (const option of current.handoffOptions?.options.filter((o) =>
     o.id.startsWith("carry-"),

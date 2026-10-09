@@ -28,9 +28,10 @@ export function HandoffBuilder({
   );
   const cases = handoffCaseLines(view.events, view.structuredTickets);
   const next = {
-    "senior-review": "Senior reviewer: check ownership and missing activity",
+    "senior-review":
+      "More experienced analyst: check who used the session and the missing activity",
     "verify-employee":
-      "Next analyst: verify employee context through the usual contact route",
+      "Next analyst: check the employee’s account through the usual contact method",
     "review-device":
       "Next analyst: check flagged device and missing session activity",
     monitor: "Next analyst: monitor and reassess new evidence",
@@ -71,7 +72,7 @@ export function HandoffBuilder({
         )}
       />
       <fieldset>
-        <legend>Primary next owner / check</legend>
+        <legend>Who should check next, and what should they check?</legend>
         {Object.entries(next).map(([id, label]) => (
           <label key={id}>
             <input
@@ -95,7 +96,29 @@ export function HandoffBuilder({
               <strong>
                 {c.title}: {c.label}
               </strong>
-              {c.memo && <details><summary>Reuse saved memo · revision {c.memo.revision}</summary><ul>{c.memo.claims.map((claim, i) => <li key={i}>{claim}</li>)}</ul><p>Recorded unknowns: {c.memo.unknowns}</p><p>Requested next check: {c.memo.nextCheck}</p><p>References from this memo: {c.memo.sourceIds.map(id => view.artifacts.find(a => a.id === id)?.title ?? id).join(" · ") || "None"}</p></details>}
+              {c.memo && (
+                <details>
+                  <summary>
+                    Reuse saved memo · revision {c.memo.revision}
+                  </summary>
+                  <ul>
+                    {c.memo.claims.map((claim, i) => (
+                      <li key={i}>{claim}</li>
+                    ))}
+                  </ul>
+                  <p>Recorded unknowns: {c.memo.unknowns}</p>
+                  <p>Requested next check: {c.memo.nextCheck}</p>
+                  <p>
+                    References from this memo:{" "}
+                    {c.memo.sourceIds
+                      .map(
+                        (id) =>
+                          view.artifacts.find((a) => a.id === id)?.title ?? id,
+                      )
+                      .join(" · ") || "None"}
+                  </p>
+                </details>
+              )}
               {c.detail ? (
                 <details>
                   <summary>Recorded result</summary>

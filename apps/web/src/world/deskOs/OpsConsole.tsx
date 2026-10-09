@@ -59,7 +59,7 @@ export function OpsConsole({
   );
   const selectedCase =
     visibleCases.find(({ id }) => id === state.workspace?.eventId) ??
-    visibleCases.find(({ id }) => id === guidance?.action?.eventId) ??
+    visibleCases.find(({ id }) => id === (guidance?.eventId ?? guidance?.action?.eventId)) ??
     visibleCases[0];
   const eventId = selectedCase?.id;
   useEffect(() => {

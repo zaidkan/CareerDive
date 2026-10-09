@@ -17,6 +17,7 @@ type WorkspaceTarget = {
 /** Session-owned presentation only; never assessment, evidence, or sim time. */
 export interface OsSessionState {
   workspace?: WorkspaceTarget;
+  findingQuestion?: { eventId: string; questionId: string };
   workspaceNotification?:
     | (WorkspaceTarget & { notificationId: string; eventId: string })
     | null;
@@ -39,6 +40,7 @@ export type OsSessionAction =
     }
   | { type: "apply_workspace_notification"; requestId: number }
   | { type: "clear_workspace_notification" }
+  | { type: "set_finding_question"; eventId: string; questionId: string }
   | { type: "set_notes_text"; text: string }
   | { type: "mark_morgan_intro_seen" };
 
@@ -91,6 +93,17 @@ export function osSessionReducer(
     }
     case "clear_workspace_notification":
       return { ...state, workspaceNotification: null };
+    case "set_finding_question":
+      return state.findingQuestion?.eventId === action.eventId &&
+        state.findingQuestion.questionId === action.questionId
+        ? state
+        : {
+            ...state,
+            findingQuestion: {
+              eventId: action.eventId,
+              questionId: action.questionId,
+            },
+          };
     case "set_notes_text":
       return state.notesText === action.text
         ? state

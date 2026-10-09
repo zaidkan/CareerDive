@@ -105,20 +105,11 @@ export function getJourneyStep({
   }
 
   if (phase === "room_walk") {
-    return step(
-      "find_desk",
-      visitedDesk
-        ? {
-            title: "Sit back down when you are ready",
-            body: "Your workstation stays exactly where you left it.",
-            target: { kind: "hotspot", hotspotId: "desk_player" },
-          }
-        : {
-            title: "Find your desk",
-            body: "Follow the blue floor marker to the starred name tag. Approach the open front of the cubicle; when the prompt says Ready, press E to sit.",
-            target: { kind: "hotspot", hotspotId: "desk_player" },
-          },
-    );
+    return step("find_desk", {
+      title: "Find your desk",
+      body: "Follow the blue floor marker to the starred name tag. Approach the open front of the cubicle; when the prompt says Ready, press E to sit.",
+      target: { kind: "hotspot", hotspotId: "desk_player" },
+    });
   }
 
   if (phase === "desk_login") {

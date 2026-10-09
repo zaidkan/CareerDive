@@ -169,7 +169,7 @@ it("creates exactly one assessed session after arrival and preserves class-clien
     await screen.findByRole("radio", { name: "Unfamiliar successful login" }),
   );
   await user.click(
-    screen.getByRole("button", { name: "Take ownership and tell Morgan" }),
+    screen.getByRole("button", { name: "Start this case · tell your manager" }),
   );
   await user.click(screen.getByRole("button", { name: /^Confirm/ }));
   await waitFor(() => {

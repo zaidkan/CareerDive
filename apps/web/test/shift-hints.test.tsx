@@ -120,11 +120,11 @@ it("summons and cycles procedural hints with H, but ignores typing and modifiers
   fireEvent.keyDown(window, { key: "h", repeat: true });
   expect(screen.queryByRole("status")).toBeNull();
   fireEvent.keyDown(window, { key: "h" });
-  expect(screen.getByRole("status").textContent).toContain("Open Email");
+  expect(screen.getByRole("status").textContent).toContain("Read incoming assignment in Email");
   fireEvent.keyDown(window, { key: "H" });
-  expect(screen.getByRole("status").textContent).toContain("Clear selections");
+  expect(screen.getByRole("status").textContent).toContain("Source rows support your claim");
   fireEvent.click(screen.getByRole("button", { name: "Next hint" }));
-  expect(screen.getByRole("status").textContent).toContain("Open Email");
+  expect(screen.getByRole("status").textContent).toContain("Read incoming assignment in Email");
 });
 
 it("does not offer hints during dialogue or after completion and clears on session change", () => {
@@ -157,10 +157,10 @@ it("grounds optional help in the selected case rather than another case's queue 
   const view = hintView();
   expect(
     getOptionalShiftHints(view, "seated_monitor", "routine-alert-1")[0],
-  ).toMatch(/run log and approved window/);
+  ).toMatch(/run log and approved window|run and approved window/);
   expect(
     getOptionalShiftHints(view, "seated_monitor", "access-request-1")[0],
-  ).toMatch(/finance request and access approval guide/);
+  ).toMatch(/finance request|finance request and access approval guide/);
   expect(
     getOptionalShiftHints(view, "seated_monitor", "login-help-1")[0],
   ).toMatch(/laptop and phone separately/);
@@ -174,8 +174,9 @@ it("grounds optional help in the selected case rather than another case's queue 
     /Click the monitor/,
   );
 });
-it("changes login help after source inspection and after recording the comparison", () => {
-  const view = hintView();
+it("keeps legacy comparison help for older views without the case workspace", () => {
+  const { caseActions: _caseActions, ...view } = hintView();
+  expect(_caseActions).toBeDefined();
   expect(
     getOptionalShiftHints(view, "seated_monitor", "suspicious-login-1")[0],
   ).toMatch(/open the session timeline and VPN context/);

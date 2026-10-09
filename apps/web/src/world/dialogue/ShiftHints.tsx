@@ -18,7 +18,15 @@ export function ShiftHints({
 }) {
   const osSession = useOptionalOsSession();
   const eventId = osSession?.state.workspace?.eventId;
-  const optionalHints = getOptionalShiftHints(view, phase, eventId);
+  const selectedQuestion = osSession?.state.findingQuestion;
+  const optionalHints = getOptionalShiftHints(
+    view,
+    phase,
+    eventId,
+    selectedQuestion?.eventId === eventId
+      ? selectedQuestion?.questionId
+      : undefined,
+  );
   const [hintIndex, setHintIndex] = useState<number | null>(null);
   const hintId = useId();
   const hintButton = useRef<HTMLButtonElement>(null);
