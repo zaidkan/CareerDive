@@ -251,6 +251,8 @@ export function collectMetrics({ leakPatterns = [] } = {}) {
     navReport,
     workshopArtifactCount,
     workshopLabels,
+    homeCareerLabels: Array.from(document.querySelectorAll(".home-hero-card"))
+      .map((card) => card.getAttribute("aria-label") ?? ""),
     cls: window.__qaCls ?? 0,
   };
 }
@@ -383,7 +385,8 @@ export function evaluateChecks({ route, theme, motion, metrics }) {
     (label) => !/(playable now|workshop concept|taking shape|in the workshop)/i.test(label),
   );
   const workshopIssues = [];
-  if (workshopRoute && !/workshop/i.test(metrics.bodyText)) {
+  // Home now shows availability cards, not Workshop concept artifacts.
+  if ((route.key === "careers" || metrics.workshopArtifactCount > 0) && !/workshop/i.test(metrics.bodyText)) {
     workshopIssues.push("no workshop wording in visible text");
   }
   if (workshopRoute && metrics.workshopArtifactCount > 0 && provenanceLabels.length === 0) {
@@ -404,6 +407,13 @@ export function evaluateChecks({ route, theme, motion, metrics }) {
         : { labels: provenanceLabels, artefacts: metrics.workshopArtifactCount }
       : "not applicable",
   );
+
+  if (route.key === "home") {
+    const labels = metrics.homeCareerLabels ?? [];
+    push("home-career-availability", labels.length === 5 &&
+      labels.filter((label) => /Cybersecurity Analyst.*Playable now/i.test(label)).length === 1 &&
+      labels.filter((label) => /Taking shape/i.test(label)).length === 4, labels);
+  }
 
   const cyberRoute = route.key === "cyber";
   const cyberIssues = [];

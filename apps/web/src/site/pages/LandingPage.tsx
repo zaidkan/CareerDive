@@ -4,28 +4,15 @@ import {
   FIRST_SHIFT_DURATION_COMPACT,
 } from "../../careers/publicCopy.js";
 import { HOME_FAQ } from "../faqData.js";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { careers } from "../../careers/careers.js";
 import {
   ArtifactStage,
   ChapterSeparator,
   PublicChapter,
   useChapterReveal,
-  type MediaProvenance,
 } from "../ArtDirection.js";
 import { HandoffExcerpt } from "../careers/CareerWorkSamples.js";
-import {
-  ElectricianWiringSchematic,
-  LawyerRedline,
-  MechanicalAnnotatedDrawing,
-  NurseHandoffSheet,
-} from "../workshop/index.js";
 import { hasHomeMedia, HomeMediaSlot } from "../homeMedia.js";
 import { productMedia, type ProductMediaId } from "../productMedia.js";
 import { SiteLink } from "../SiteLink.js";
@@ -117,11 +104,6 @@ function ProductCapture({
   );
 }
 
-const CYBER_PROVENANCE: MediaProvenance = {
-  career: "Cybersecurity Analyst",
-  kind: "real",
-};
-
 type CareerAction =
   | { kind: "link"; href: NonNullable<PublicCareer["simulationRoute"]> }
   | { kind: "disabled"; label: string };
@@ -139,10 +121,6 @@ function careerAction(career: {
     return { kind: "link", href: career.simulationRoute };
   }
   return { kind: "disabled", label: "Taking shape" };
-}
-
-function heroCue(careerId: string): string {
-  return HERO_CARDS.find((card) => card.careerId === careerId)?.cue ?? "";
 }
 
 const SHIFT_ACTS = [
@@ -192,50 +170,8 @@ const HERO_CARDS = [
   { careerId: "lawyer-attorney", cue: "LA" },
 ] as const;
 
-/** Cards rearrange once through the sequence (~12s), then settle on Cyber. */
-const HERO_CARD_STEP_MS = 2000;
-
-const CAREER_SHOWCASE = [
-  {
-    careerId: "cybersecurity-analyst",
-    statement: "Compare the records. Say what the evidence supports.",
-    artifact: (
-      <ProductCapture
-        id="a-01"
-        slot="home-career-artifact-cybersecurity-analyst"
-        alt=""
-      />
-    ),
-    provenance: CYBER_PROVENANCE,
-  },
-  {
-    careerId: "registered-nurse",
-    statement: "Notice the change. Communicate it clearly.",
-    artifact: <NurseHandoffSheet />,
-    provenance: { career: "Registered Nurse", kind: "workshop" },
-  },
-  {
-    careerId: "mechanical-engineer",
-    statement: "Read the result. Decide what needs revision.",
-    artifact: <MechanicalAnnotatedDrawing />,
-    provenance: { career: "Mechanical Engineer", kind: "workshop" },
-  },
-  {
-    careerId: "electrician",
-    statement: "Spot the hazard. Decide how the work proceeds.",
-    artifact: <ElectricianWiringSchematic />,
-    provenance: { career: "Electrician", kind: "workshop" },
-  },
-  {
-    careerId: "lawyer-attorney",
-    statement: "Separate settled facts from open questions.",
-    artifact: <LawyerRedline />,
-    provenance: { career: "Lawyer", kind: "workshop" },
-  },
-] as const;
-
-/** One cycle through the detailed switcher (~4s each), then Cyber for good. */
-const CAREER_SWITCH_MS = 4000;
+/** Cards rearrange once through the sequence (~20s), then settle on Cyber. */
+const HERO_CARD_STEP_MS = 4000;
 
 export function LandingPage() {
   const hasSeenFilm = useHasSeenFilm();
@@ -243,7 +179,6 @@ export function LandingPage() {
   const realWorkRef = useChapterReveal<HTMLDivElement>();
   const shiftRef = useChapterReveal<HTMLDivElement>();
   const handoffRef = useChapterReveal<HTMLDivElement>();
-  const careerRef = useChapterReveal<HTMLDivElement>();
   const reflectRef = useChapterReveal<HTMLDivElement>();
   const faqRef = useChapterReveal<HTMLDivElement>();
   const finalRef = useChapterReveal<HTMLDivElement>();
@@ -253,133 +188,41 @@ export function LandingPage() {
   const [heroActive, setHeroActive] = useState(0);
   const [heroStep, setHeroStep] = useState(0);
   const [heroAuto, setHeroAuto] = useState(() => !prefersReducedMotion());
-  const [reduceMotion] = useState(() => prefersReducedMotion());
-  const heroCardRefs = useRef(new Map<number, HTMLButtonElement>());
-  // Detailed switcher: one cycle starting on viewport entry, settling on Cyber.
-  const [careerPanels, setCareerPanels] = useState(() => ({
-    active: 0,
-    departing: null as number | null,
-  }));
-  const [careerStep, setCareerStep] = useState(0);
-  const [careerAuto, setCareerAuto] = useState(false);
-  const careerAutoStarted = useRef(false);
-
-  // Visible card REARRANGEMENT via pure transforms (FLIP-style, CLS-safe): the
-  // cards keep their grid cells in the DOM and translate into the sequence's
-  // slots — the active card leads, the rest follow, easing into stable rest.
-  // Layout never moves, so there is no cumulative layout shift.
-  const syncHeroCards = useCallback(() => {
-    const cards = heroCardRefs.current;
-    const n = HERO_CARDS.length;
-    const home: ({ x: number; y: number } | null)[] = [];
-    for (let i = 0; i < n; i++) {
-      const el = cards.get(i);
-      // offsetLeft/Top is the transform-independent home cell of each card.
-      home[i] = el ? { x: el.offsetLeft, y: el.offsetTop } : null;
-    }
-    for (let i = 0; i < n; i++) {
-      const el = cards.get(i);
-      const from = home[i];
-      const t = reduceMotion ? i : (i - heroActive + n) % n;
-      const to = home[t];
-      if (!el || !from || !to) continue;
-      const dx = to.x - from.x;
-      const dy = to.y - from.y;
-      el.style.transform = dx || dy ? `translate(${String(dx)}px, ${String(dy)}px)` : "";
-    }
-  }, [heroActive, reduceMotion]);
-
-  useLayoutEffect(() => {
-    syncHeroCards();
-  }, [syncHeroCards]);
-
+  const [reduceMotion, setReduceMotion] = useState(prefersReducedMotion);
   useEffect(() => {
-    window.addEventListener("resize", syncHeroCards);
-    return () => {
-      window.removeEventListener("resize", syncHeroCards);
+    if (typeof window.matchMedia !== "function") return;
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => {
+      setReduceMotion(query.matches);
+      if (query.matches) setHeroAuto(false);
     };
-  }, [syncHeroCards]);
+    query.addEventListener("change", update);
+    return () => {
+      query.removeEventListener("change", update);
+    };
+  }, []);
 
   useEffect(() => {
-    if (!heroAuto) return;
+    if (!heroAuto || reduceMotion) return;
     const nextStep = heroStep + 1;
     if (nextStep > HERO_CARDS.length) {
       setHeroAuto(false);
       return;
     }
     const timer = window.setTimeout(() => {
-      setHeroActive((nextStep) % HERO_CARDS.length);
+      setHeroActive(nextStep % HERO_CARDS.length);
       setHeroStep(nextStep);
     }, HERO_CARD_STEP_MS);
     return () => {
       window.clearTimeout(timer);
     };
-  }, [heroAuto, heroStep]);
-
-  useEffect(() => {
-    const node = careerRef.current;
-    if (!node || typeof IntersectionObserver === "undefined") return;
-    if (prefersReducedMotion()) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0]?.isIntersecting) return;
-        observer.disconnect();
-        if (careerAutoStarted.current) return;
-        careerAutoStarted.current = true;
-        setCareerAuto(true);
-      },
-      { threshold: 0.35 },
-    );
-    observer.observe(node);
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!careerAuto) return;
-    const nextStep = careerStep + 1;
-    if (nextStep > CAREER_SHOWCASE.length) {
-      setCareerAuto(false);
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      setCareerPanels((current) => ({
-        active: nextStep % CAREER_SHOWCASE.length,
-        departing: current.active,
-      }));
-      setCareerStep(nextStep);
-    }, CAREER_SWITCH_MS);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [careerAuto, careerStep]);
-
-  useEffect(() => {
-    if (careerPanels.departing === null) return;
-    const timer = window.setTimeout(() => {
-      setCareerPanels((current) => ({ ...current, departing: null }));
-    }, 280);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [careerPanels.departing]);
-
-  const selectCareer = (index: number) => {
-    setCareerPanels((current) =>
-      current.active === index
-        ? current
-        : { active: index, departing: current.active },
-    );
-  };
+  }, [heroAuto, heroStep, reduceMotion]);
 
   const startLabel = hasSeenFilm
     ? "Continue your first day"
     : "Start your first day";
-  const activeShowcase =
-    CAREER_SHOWCASE[careerPanels.active] ?? CAREER_SHOWCASE[0];
   const activeCareer = careers.find(
-    (item) => item.id === activeShowcase.careerId,
+    (item) => item.id === HERO_CARDS[heroActive]?.careerId,
   );
   const activeAction: CareerAction = activeCareer
     ? careerAction(activeCareer)
@@ -406,7 +249,9 @@ export function LandingPage() {
                 Try a slice of the work. See what your decisions support.
               </h1>
               <p className="ui-type-proof">
-                Start with one career: Junior Cybersecurity Analyst. Try a short simulated first shift, then review your recorded decisions — what the evidence supports and what is still unknown.
+                Start with one career: Junior Cybersecurity Analyst. Try a short
+                simulated first shift, then review your recorded decisions —
+                what the evidence supports and what is still unknown.
               </p>
               <div className="home-hero-actions">
                 <SiteLink className="start-shift v2-primary" to="/start">
@@ -418,7 +263,8 @@ export function LandingPage() {
                 </SiteLink>
               </div>
               <p className="home-hero-meta">
-                <strong>{FIRST_SHIFT_DURATION_COMPACT}</strong> · one focused first-shift slice
+                <strong>{FIRST_SHIFT_DURATION_COMPACT}</strong> · one focused
+                first-shift slice
               </p>
             </div>
             <div data-motion-role="artifact" className="home-hero-stage">
@@ -426,6 +272,9 @@ export function LandingPage() {
                 className="home-hero-cards"
                 role="group"
                 aria-label="Careers at CareerDive"
+                onPointerEnter={() => {
+                  setHeroAuto(false);
+                }}
                 onPointerDown={() => {
                   setHeroAuto(false);
                 }}
@@ -446,9 +295,17 @@ export function LandingPage() {
                       className="home-hero-card"
                       data-emphasis={emphasized ? "true" : "false"}
                       aria-pressed={emphasized}
-                      ref={(el) => {
-                        if (el) heroCardRefs.current.set(index, el);
-                        else heroCardRefs.current.delete(index);
+                      aria-label={`${career.title} · ${availabilityLabel(career.availability)}`}
+                      style={
+                        {
+                          "--deck-rank":
+                            (index - heroActive + HERO_CARDS.length) %
+                            HERO_CARDS.length,
+                        } as CSSProperties
+                      }
+                      onFocus={() => {
+                        setHeroAuto(false);
+                        setHeroActive(index);
                       }}
                       onClick={() => {
                         setHeroAuto(false);
@@ -456,10 +313,7 @@ export function LandingPage() {
                       }}
                     >
                       <span className="home-hero-card-surface">
-                        <span
-                          className="home-hero-card-cue"
-                          aria-hidden="true"
-                        >
+                        <span className="home-hero-card-cue" aria-hidden="true">
                           {card.cue}
                         </span>
                         <span className="home-hero-card-name">
@@ -475,6 +329,32 @@ export function LandingPage() {
                     </button>
                   );
                 })}
+              </div>
+              <p className="home-hero-availability">
+                One playable now. Four taking shape.
+              </p>
+              <div className="home-career-actions">
+                {activeAction.kind === "link" ? (
+                  <SiteLink
+                    className="start-shift v2-primary"
+                    to={activeAction.href}
+                  >
+                    {startLabel}
+                    <span aria-hidden="true"> ↗</span>
+                  </SiteLink>
+                ) : (
+                  <button
+                    type="button"
+                    className="start-shift v2-primary home-career-cta-disabled"
+                    disabled
+                    aria-disabled="true"
+                  >
+                    {activeAction.label}
+                  </button>
+                )}
+                <SiteLink className="v2-text-link" to="/careers">
+                  Career and previews <span aria-hidden="true">→</span>
+                </SiteLink>
               </div>
             </div>
           </div>
@@ -511,11 +391,25 @@ export function LandingPage() {
             className="home-realwork-intro"
           >
             <h2 id="home-realwork-title" data-motion-role="argument">
-              A slice of the work.
+              Your decisions change the case.
             </h2>
-            <p className="ui-type-proof">
-              One alert. A decision you have to justify.
-            </p>
+            <ol
+              className="home-decision-beats"
+              aria-label="How your decisions carry forward"
+            >
+              <li>
+                <strong>Make the call.</strong>
+                <span>Escalate an alert, dismiss it, or route a request.</span>
+              </li>
+              <li>
+                <strong>The case changes.</strong>
+                <span>Your choice becomes its recorded outcome.</span>
+              </li>
+              <li>
+                <strong>Hear back later.</strong>
+                <span>Some consequences surface later in the shift.</span>
+              </li>
+            </ol>
           </div>
           <ArtifactStage
             className="home-realwork-stage"
@@ -611,124 +505,6 @@ export function LandingPage() {
         </PublicChapter>
       </section>
 
-      <section className="home-careers" aria-labelledby="home-careers-title">
-        <PublicChapter
-          as="div"
-          surface="stage"
-          rhythm="standard"
-          className="home-careers-chapter"
-        >
-          <div
-            onPointerDown={() => {
-              careerAutoStarted.current = true;
-              setCareerAuto(false);
-            }}
-            onKeyDown={() => {
-              careerAutoStarted.current = true;
-              setCareerAuto(false);
-            }}
-          >
-            <div data-motion="chapter-reveal">
-              <h2 id="home-careers-title" data-motion-role="argument">
-                One playable career. More taking shape.
-              </h2>
-              <p className="ui-type-proof">
-                One playable now. Four taking shape.
-              </p>
-            </div>
-            <div className="home-career-tabs" role="group" aria-label="Careers">
-              {CAREER_SHOWCASE.map((entry, index) => {
-                const career = careers.find(
-                  (item) => item.id === entry.careerId,
-                );
-                if (!career) return null;
-                return (
-                  <button
-                    key={entry.careerId}
-                    type="button"
-                    className="home-career-tab"
-                    aria-pressed={careerPanels.active === index}
-                    onClick={() => {
-                      careerAutoStarted.current = true;
-                      setCareerAuto(false);
-                      selectCareer(index);
-                    }}
-                  >
-                    <span className="home-career-tab-cue" aria-hidden="true">
-                      {heroCue(career.id)}
-                    </span>
-                    <span className="home-career-tab-name">{career.title}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <div
-              className="home-career-stage"
-              data-motion="career-switch"
-              ref={careerRef}
-            >
-              {CAREER_SHOWCASE.map((entry, index) => {
-                const career = careers.find(
-                  (item) => item.id === entry.careerId,
-                );
-                if (!career) return null;
-                const state =
-                  index === careerPanels.active
-                    ? "active"
-                    : index === careerPanels.departing
-                      ? "departing"
-                      : "inactive";
-                return (
-                  <div
-                    key={entry.careerId}
-                    className="home-career-panel"
-                    data-career={state}
-                    data-media-slot={`career-artifact-${career.slug}`}
-                    aria-hidden={state !== "active"}
-                  >
-                    <div className="home-career-plate" aria-hidden="true">
-                      {entry.artifact}
-                    </div>
-                    <h3>{career.title}</h3>
-                    <p className="home-career-statement">{entry.statement}</p>
-                    {/* One truth label per artifact block — provenance, not
-                        availability. Availability lives in the CTA. */}
-                    <span className="ui-provenance home-career-provenance">
-                      {entry.provenance.kind === "real"
-                        ? "Real product capture · synthetic records"
-                        : "Concept artwork · not a product capture"}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="home-career-actions">
-              {activeAction.kind === "link" ? (
-                <SiteLink
-                  className="start-shift v2-primary"
-                  to={activeAction.href}
-                >
-                  {startLabel}
-                  <span aria-hidden="true"> ↗</span>
-                </SiteLink>
-              ) : (
-                <button
-                  type="button"
-                  className="start-shift v2-primary home-career-cta-disabled"
-                  disabled
-                  aria-disabled="true"
-                >
-                  {activeAction.label}
-                </button>
-              )}
-              <SiteLink className="v2-text-link" to="/careers">
-                Career and previews <span aria-hidden="true">→</span>
-              </SiteLink>
-            </div>
-          </div>
-        </PublicChapter>
-      </section>
-
       {hasHomeMedia("home-media-story") ? (
         <section
           className="home-story"
@@ -759,7 +535,8 @@ export function LandingPage() {
               See how you worked.
             </h2>
             <p className="ui-type-proof">
-              Your recorded decisions, the evidence behind them, and what remains unknown. A debrief, without a career-fit score.
+              Your recorded decisions, the evidence behind them, and what
+              remains unknown. A debrief, without a career-fit score.
             </p>
             <div className="home-debrief-crop">
               <ProductCapture

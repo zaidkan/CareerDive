@@ -8,10 +8,14 @@
 .home-capture-theme--light {
   display: none;
 }
-:root[data-theme="light"] .home-capture:has(.home-capture-theme--light) .home-capture-theme--dark {
+:root[data-theme="light"]
+  .home-capture:has(.home-capture-theme--light)
+  .home-capture-theme--dark {
   display: none;
 }
-:root[data-theme="light"] .home-capture:has(.home-capture-theme--light) .home-capture-theme--light {
+:root[data-theme="light"]
+  .home-capture:has(.home-capture-theme--light)
+  .home-capture-theme--light {
   display: block;
 }
 .home-capture img {
@@ -65,105 +69,142 @@
 .home-hero-stage {
   min-width: 0;
 }
-/* —— Hero career cards: a restrained card system that physically
-   rearranges (FLIP transform) into the sequence, then settles on Cyber. —— */
+/* One opaque, bounded deck. Rank controls every offset and layer; the front
+   card keeps its full face, while only the header of each rear card peeks out. */
 .home-hero-cards {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
+  --deck-step: 64px;
+  position: relative;
+  isolation: isolate;
+  height: calc(4 * var(--deck-step) + 180px);
+  margin: 12px 8px 0;
 }
 .home-hero-card {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: calc(100% - 48px);
+  height: 180px;
   min-width: 0;
   padding: 0;
   border: 0;
-  background: none;
-  color: inherit;
+  border-radius: 12px;
+  background: var(--surface-base);
+  color: var(--text-primary);
   text-align: left;
   cursor: pointer;
-  transition: transform var(--ui-motion-medium) var(--ui-motion-ease);
+  z-index: calc(5 - var(--deck-rank));
+  transform: translate(
+      calc(var(--deck-rank) * 10px),
+      calc((4 - var(--deck-rank)) * var(--deck-step))
+    )
+    rotate(calc(var(--deck-rank) * -0.6deg));
+  transform-origin: top left;
+  transition:
+    transform 650ms var(--ui-motion-ease),
+    box-shadow 650ms var(--ui-motion-ease);
 }
 .home-hero-card-surface {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  grid-template-areas:
-    "cue name"
-    "cue field"
-    "cue status";
-  gap: 0.15rem 0.75rem;
+  grid-template-areas: "cue name" ". field" ". status";
+  grid-template-rows: 48px auto 1fr;
   align-items: start;
-  min-width: 0;
+  gap: 0.35rem 0.75rem;
   height: 100%;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  box-sizing: border-box;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: inherit;
   background: var(--surface-base);
-  color: var(--text-secondary);
-  transition:
-    transform var(--ui-motion-medium) var(--ui-motion-ease),
-    border-color var(--ui-motion-medium) var(--ui-motion-ease),
-    box-shadow var(--ui-motion-medium) var(--ui-motion-ease);
-}
-.home-hero-card[data-emphasis="false"] .home-hero-card-surface {
-  transform: scale(0.98);
+  box-shadow: 0 10px 26px -16px rgb(0 0 0 / 40%);
 }
 .home-hero-card[data-emphasis="true"] .home-hero-card-surface {
-  border-color: var(--border-strong);
-  box-shadow: 0 18px 36px -22px rgb(0 0 0 / 55%);
-  transform: translateY(-4px) scale(1.015);
+  background: var(--surface-strong);
+  box-shadow: 0 22px 40px -20px rgb(0 0 0 / 50%);
+}
+.home-hero-card:focus-visible {
+  outline: 3px solid var(--action-primary);
+  outline-offset: 4px;
 }
 .home-hero-card-cue {
   grid-area: cue;
   display: grid;
   place-items: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  border: 1px solid var(--border-subtle);
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font: 700 0.72rem/1 var(--font-mono);
-  letter-spacing: 0.06em;
 }
 .home-hero-card-name {
   grid-area: name;
   color: var(--text-primary);
-  font-size: 0.88rem;
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 1.7vw, 1.4rem);
   font-weight: 700;
-  line-height: 1.35;
-  letter-spacing: -0.012em;
+  line-height: 1.2;
+  overflow-wrap: break-word;
 }
 .home-hero-card-field {
   grid-area: field;
   color: var(--text-secondary);
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 .home-hero-card-status {
   grid-area: status;
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-  line-height: 1.45;
-}
-.home-hero-card[data-emphasis="true"] .home-hero-card-status {
+  align-self: end;
   color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.5;
 }
-
-/* —— Real work —— */
+.home-hero-card[data-emphasis="false"] .home-hero-card-field,
+.home-hero-card[data-emphasis="false"] .home-hero-card-status {
+  visibility: hidden;
+}
+.v2-home .home-hero-availability {
+  margin: 1rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+/* —— Branching decisions, grounded in the real A-1042 capture —— */
 .home-realwork-intro {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  justify-content: space-between;
-  gap: 1.2rem 3rem;
+  display: grid;
+  gap: 1.5rem;
   margin-bottom: 2.2rem;
 }
 .home-realwork-intro h2 {
+  max-width: 16ch;
   margin-bottom: 0;
 }
-.home-realwork-intro .ui-type-proof {
-  max-width: 34ch;
-  margin-bottom: 0.45rem;
+.home-decision-beats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.home-decision-beats li {
+  display: grid;
+  align-content: start;
+  gap: 0.5rem;
+}
+.home-decision-beats strong {
+  color: var(--text-primary);
+  font-size: 1.15rem;
+}
+.home-decision-beats span {
+  max-width: 28ch;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+@media (max-width: 600px) {
+  .home-decision-beats {
+    grid-template-columns: 1fr;
+  }
 }
 /* One dominant proof at a time; the labels swap the view manually. */
 .home-evidence-views {
@@ -254,112 +295,16 @@
   align-items: start;
 }
 
-/* —— Careers: one controlled artifact switcher (one cycle, then Cyber).
-   Selectors read as a restrained card system, not plain text tabs. —— */
-.home-career-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-  margin: 1.9rem 0 1.35rem;
-}
-.home-career-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.85rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: var(--surface-base);
-  color: var(--text-secondary);
-  font: 600 0.85rem/1.3 var(--font-body);
-  cursor: pointer;
-  transition:
-    transform var(--ui-motion-fast) var(--ui-motion-ease),
-    border-color var(--ui-motion-fast) var(--ui-motion-ease),
-    box-shadow var(--ui-motion-fast) var(--ui-motion-ease),
-    color var(--ui-motion-fast) var(--ui-motion-ease);
-}
-.home-career-tab-cue {
-  display: grid;
-  place-items: center;
-  width: 1.65rem;
-  height: 1.65rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 7px;
-  font: 700 0.62rem/1 var(--font-mono);
-  letter-spacing: 0.06em;
-}
-.home-career-tab[aria-pressed="true"] {
-  border-color: var(--border-strong);
-  background: var(--surface-subtle);
-  color: var(--text-primary);
-  box-shadow: 0 12px 26px -20px rgb(0 0 0 / 55%);
-}
-.home-career-tab:hover {
-  color: var(--text-primary);
-}
-.home-career-provenance {
-  display: block;
-}
-/* —— Career-aware CTA: active route for playable careers, concise
-   "Taking shape" state otherwise. —— */
+/* Career-aware action stays with the single homepage career deck. */
 .home-career-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem 1.65rem;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
 }
 .home-career-cta-disabled {
   cursor: not-allowed;
-  opacity: 0.8;
-}
-.home-career-stage {
-  min-width: 0;
-}
-.home-career-panel {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.15rem 2.4rem;
-  align-items: start;
-  min-width: 0;
-}
-/* One representative work object per career, cropped as a document plate.
-   Named media slots stay stable for future real captures. */
-.home-career-plate {
-  height: clamp(250px, 30vw, 400px);
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  background: var(--surface-base);
-  overflow: clip;
-}
-.home-career-plate .wa-sheet {
-  height: 100%;
-  border: 0;
-  border-radius: 0;
-}
-.home-career-plate .home-capture,
-.home-career-plate .home-capture img {
-  height: 100%;
-  border: 0;
-  border-radius: 0;
-  object-fit: cover;
-  object-position: top left;
-}
-.home-career-panel h3 {
-  margin: 0 0 0.65rem;
-  color: var(--text-primary);
-  font-family: var(--font-display);
-  font-size: 1.35rem;
-  letter-spacing: -0.02em;
-}
-.home-career-statement {
-  max-width: 32ch;
-  margin: 0 0 0.85rem;
-  color: var(--text-primary);
-  font-size: 1.02rem;
-  font-weight: 600;
-  line-height: 1.5;
 }
 /* —— Story band: a restrained wide media breath —— */
 .home-story {
@@ -589,9 +534,6 @@
   .home-handoff-grid {
     grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
   }
-  .home-career-panel {
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
-  }
 }
 @media (max-width: 600px) {
   /* Deliberate narrow-screen crop — not a tiny full-page screenshot. */
@@ -620,8 +562,5 @@
   }
   .home-hero-card-surface {
     padding: 0.75rem 0.85rem;
-  }
-  .home-career-tabs {
-    gap: 0.4rem;
   }
 }

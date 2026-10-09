@@ -96,13 +96,21 @@ describe("site routes", () => {
     ).toBeNull();
     expect(
       screen.getByRole("heading", {
-        name: /^a slice of the work\.$/i,
+        name: /^your decisions change the case\.$/i,
       }),
     ).toBeVisible();
     expect(
-      screen.getByRole("heading", {
-        name: /one playable career\. more taking shape/i,
-      }),
+      screen.getAllByText("One playable now. Four taking shape."),
+    ).toHaveLength(1);
+    expect(document.querySelector(".home-careers")).toBeNull();
+    expect(document.querySelector(".home-place")?.nextElementSibling).toBe(
+      document.querySelector(".home-realwork"),
+    );
+    expect(document.querySelectorAll(".home-decision-beats li")).toHaveLength(
+      3,
+    );
+    expect(
+      screen.getByText("Some consequences surface later in the shift."),
     ).toBeVisible();
     expect(
       screen.getByRole("heading", {
@@ -132,10 +140,12 @@ describe("site routes", () => {
     expect(document.querySelectorAll(".home-handoff figure")).toHaveLength(1);
     expect(
       document.querySelectorAll('[data-media-slot^="career-artifact-"]'),
-    ).toHaveLength(5);
+    ).toHaveLength(0);
     // The old third career presentation is gone from home.
     expect(
-      screen.queryByRole("heading", { name: "Which career do you want to try?" }),
+      screen.queryByRole("heading", {
+        name: "Which career do you want to try?",
+      }),
     ).toBeNull();
     expect(screen.queryByText(/requests stay on this page/i)).toBeNull();
     expect(
@@ -155,22 +165,53 @@ describe("site routes", () => {
     ).toBeGreaterThan(0);
   });
 
-  it("switcher CTA is career-aware and never launches cyber for other careers", () => {
+  it("hero stack CTA is career-aware and never launches cyber for other careers", () => {
     render(<LandingPage />);
     const action = () => document.querySelector(".home-career-actions");
     // Cyber default: an active start route is offered.
     expect(action()?.querySelector('a[href="/start"]')).not.toBeNull();
     // Select a taking-shape career (Registered Nurse) → disabled CTA, no route.
     const tabs = Array.from(
-      document.querySelectorAll<HTMLButtonElement>(".home-career-tab"),
+      document.querySelectorAll<HTMLButtonElement>(".home-hero-card"),
     );
     const nurseTab = tabs[1];
-    if (!nurseTab) throw new Error("Missing Registered Nurse tab");
+    if (!nurseTab) throw new Error("Missing Registered Nurse card");
     fireEvent.click(nurseTab);
     expect(action()?.querySelector('a[href="/start"]')).toBeNull();
     const disabled = action()?.querySelector("button[disabled]");
     expect(disabled).toBeTruthy();
     expect(disabled?.textContent).toMatch(/taking shape/i);
+  });
+
+  it("keeps a static, selectable stack when reduced motion is requested", () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    );
+    try {
+      render(<LandingPage />);
+      vi.advanceTimersByTime(24000);
+      const cyber = screen.getByRole("button", {
+        name: /cybersecurity analyst.*playable now/i,
+      });
+      const nurse = screen.getByRole("button", {
+        name: /registered nurse.*taking shape/i,
+      });
+      expect(cyber).toHaveAttribute("aria-pressed", "true");
+      fireEvent.focus(nurse);
+      vi.advanceTimersByTime(24000);
+      expect(nurse).toHaveAttribute("aria-pressed", "true");
+      expect(cyber).toHaveAttribute("aria-pressed", "false");
+    } finally {
+      cleanup();
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
   });
 
   it("landing names verified shift moments without invented scoring or urgency", () => {
@@ -194,33 +235,22 @@ describe("site routes", () => {
     ]) {
       expect(screen.getAllByText(title).length).toBeGreaterThanOrEqual(1);
     }
-    // Panel-level provenance is the visible contract; artifact footers repeat it
-    // inside aria-hidden crop plates and are excluded here.
-    // Panel provenance labels the ARTIFACT (real vs concept), never the
-    // career's availability — availability lives in the CTA and hero cards.
-    const panelProvenance = Array.from(
-      document.querySelectorAll(".home-career-panel > .ui-provenance"),
-    );
+    // One career deck; each selection announces its real availability.
     expect(
-      panelProvenance.filter((el) => /concept artwork/i.test(el.textContent))
-        .length,
-    ).toBe(4);
+      screen.getAllByRole("button", { name: /taking shape/i }),
+    ).toHaveLength(4);
     expect(
-      panelProvenance.filter((el) => /real product capture/i.test(el.textContent))
-        .length,
-    ).toBe(1);
-    // Cyber leads both career systems: first hero card and first switcher tab.
+      screen.getByRole("button", {
+        name: /cybersecurity analyst.*playable now/i,
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
     const heroCards = Array.from(
       document.querySelectorAll(".home-hero-card .home-hero-card-name"),
     );
     expect(heroCards[0]?.textContent).toBe("Cybersecurity Analyst");
-    const tabs = Array.from(
-      document.querySelectorAll(".home-career-tab-name"),
-    );
-    expect(tabs[0]?.textContent).toBe("Cybersecurity Analyst");
     expect(screen.getAllByText(/playable now/i).length).toBeGreaterThan(0);
     expect(
-      screen.getByText(/^a slice of the work\.$/i),
+      screen.getByText(/^your decisions change the case\.$/i),
     ).toBeInTheDocument();
   });
 
@@ -296,8 +326,14 @@ describe("site routes", () => {
       }),
     );
     // Brief is ephemeral presentation between Arrive and Connecting — canonical briefing beats
-    expect(await screen.findByRole("heading", { name: /a short simulated first shift as a junior/i })).toBeVisible();
-    expect(screen.getByText(/walk the floor map into security operations/i)).toBeVisible();
+    expect(
+      await screen.findByRole("heading", {
+        name: /a short simulated first shift as a junior/i,
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByText(/walk the floor map into security operations/i),
+    ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /continue to floor/i }));
     await waitFor(() => {
       expect(createSession).toHaveBeenCalledTimes(1);
@@ -350,12 +386,18 @@ describe("site routes", () => {
       screen.getByRole("button", { name: /start your first day/i }),
     );
     // Brief sits between Arrive and Connecting — still reaches sim after Continue
-    expect(await screen.findByRole("heading", { name: /a short simulated first shift as a junior/i })).toBeVisible();
+    expect(
+      await screen.findByRole("heading", {
+        name: /a short simulated first shift as a junior/i,
+      }),
+    ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /continue to floor/i }));
     await waitFor(() => {
       expect(createSession).toHaveBeenCalledTimes(1);
     });
-    expect(screen.queryByRole("button", { name: /play arrival film/i })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /play arrival film/i }),
+    ).toBeNull();
   }, 15000);
 
   it("sets per-route document title", () => {
