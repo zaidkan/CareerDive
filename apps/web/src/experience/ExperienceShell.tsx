@@ -45,7 +45,12 @@ export function ExperienceShell(props: WorkstationProps) {
   const focus = useCallback((node: HTMLHeadingElement | null) => {
     node?.focus();
   }, []);
-  const SpatialShell = attempt === 0 ? InitialWorkplace : RetriedWorkplace;
+  // Runtime failures need a boundary remount, not another suspended import.
+  // A failed chunk import still gets a fresh lazy loader for the single retry.
+  const SpatialShell =
+    attempt === 0 || failure !== "asset-unavailable"
+      ? InitialWorkplace
+      : RetriedWorkplace;
   const movement = useMovementExertion(
     props.view,
     props.onWorkplaceInteraction,
