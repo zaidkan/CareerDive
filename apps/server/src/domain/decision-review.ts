@@ -879,7 +879,7 @@ export function buildDecisionReview(
         entry.sequence <= before &&
         entry.interaction.type === "action" &&
         entry.interaction.action.eventId === eventId &&
-        entry.interaction.action.ticketPayload?.reasoning,
+        entry.interaction.action.ticketPayload,
     );
     const saved = writes.at(-1);
     const action =

@@ -386,6 +386,44 @@ describe("versioned evidence coverage at the original decision", () => {
     expect(messages[1]?.body).toContain("approved without the data owner");
     expect(messages[1]?.body).not.toContain("closed as expected");
   });
+  it("does not resurrect selections replaced by a legacy note before the decision", () => {
+    const shift = run();
+    shift.openSources(login);
+    shift.action({
+      id: "update_ticket_notes",
+      eventId: login,
+      ticketPayload: {
+        ticketId: `ticket-${login}`,
+        reasoning: required(choices[login]),
+      },
+    });
+    shift.action({
+      id: "document_ticket",
+      eventId: login,
+      decisionOptionId: "escalate-with-comparisons",
+      ticketPayload: {
+        ticketId: `ticket-${login}`,
+        verifiedEvidence: "Legacy edited note",
+        uncertainty: "Unknown",
+        followUp: "Review",
+        sourceArtifactIds: [
+          "login-session-timeline",
+          "vpn-context-1",
+          "device-inventory-1",
+        ],
+      },
+    });
+    shift.action({ id: "escalate_alert", eventId: login });
+    expect(shift.decision("suspicious_login").evaluationMode).toBe(
+      "limited-text-evaluation",
+    );
+    expect(shift.decision("suspicious_login").outcomeLabel).not.toBe(
+      "supported",
+    );
+    expect(
+      shift.state.structuredTickets[`ticket-${login}`]?.decisionReasoning,
+    ).toBeUndefined();
+  });
   it("leaves old text limited instead of manufacturing selections", () => {
     const shift = run();
     shift.openSources(login);
