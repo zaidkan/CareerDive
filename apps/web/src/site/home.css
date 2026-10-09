@@ -184,41 +184,64 @@
   font-size: 0.85rem;
   line-height: 1.5;
 }
-/* —— Branching decisions, grounded in the real A-1042 capture —— */
-.home-realwork-intro {
+/* Feature copy has its own column; captures get generous, bounded edges. */
+.home-feature-grid {
   display: grid;
-  gap: 1.5rem;
-  margin-bottom: 2.2rem;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: center;
 }
-.home-realwork-intro h2 {
-  max-width: 16ch;
-  margin-bottom: 0;
+.home-realwork-intro h2,
+.home-analysis-copy h2 {
+  max-width: 17ch;
+  margin: 0 0 2rem;
 }
-.home-decision-beats {
+.home-decision-beats,
+.home-analysis-beats {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.5rem;
+  gap: 1.75rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .home-decision-beats li {
   display: grid;
-  align-content: start;
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
-.home-decision-beats strong {
+.home-decision-beats strong,
+.home-analysis-beats li {
   color: var(--text-primary);
   font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.5;
 }
 .home-decision-beats span {
-  max-width: 28ch;
+  max-width: 30ch;
   color: var(--text-secondary);
   line-height: 1.6;
 }
-@media (max-width: 600px) {
-  .home-decision-beats {
+.home-feature-proof {
+  min-width: 0;
+  margin: 0;
+}
+.home-feature-frame {
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+  border-radius: 16px;
+  background: var(--surface-subtle);
+}
+.home-feature-proof figcaption {
+  margin: 1rem 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+.home-analysis-copy .ui-type-proof {
+  margin-bottom: 2rem;
+}
+@media (max-width: 900px) {
+  .home-feature-grid {
     grid-template-columns: 1fr;
+    gap: 2rem;
   }
 }
 /* One dominant proof at a time; the labels swap the view manually. */
@@ -234,6 +257,8 @@
   margin-top: 1.15rem;
 }
 .home-evidence-swap {
+  width: fit-content;
+  max-width: 100%;
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
@@ -302,52 +327,34 @@
   font-weight: 700;
   line-height: 1.45;
 }
-/* —— Handoff: one email card beside the closing statement —— */
-.home-handoff-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: clamp(1.6rem, 4vw, 3.2rem);
-  align-items: start;
-}
-
-/* Career-aware action stays with the single homepage career deck. */
-.home-career-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem 1.65rem;
-  margin-top: 1rem;
-}
-.home-career-cta-disabled {
-  cursor: not-allowed;
-}
-/* —— Story band: a restrained wide media breath —— */
-.home-story {
-  overflow: clip;
-}
-
 /* —— Reflection: one compact debrief crop —— */
 .home-reflect-chapter h2 {
   max-width: 22ch;
 }
+/* Show the authentic review heading and first decision, rather than the
+   middle of the long full-shift capture. This is an explicitly labeled excerpt. */
 .home-debrief-crop {
-  height: clamp(200px, 21vw, 280px);
-  margin-top: 1.9rem;
+  position: relative;
+  aspect-ratio: 1366 / 1150;
   overflow: clip;
   border: 1px solid var(--border-strong);
   border-radius: 10px;
   background: var(--surface-base);
 }
-.home-debrief-crop .home-capture,
-.home-debrief-crop .home-capture-theme {
-  height: 100%;
+.home-debrief-crop .home-capture {
+  position: absolute;
+  inset: 0;
 }
 .home-debrief-crop .home-capture img {
-  height: 100%;
+  width: 100%;
+  height: auto;
   border: 0;
   border-radius: 0;
-  object-fit: cover;
-  object-position: top center;
+}
+@media (max-width: 600px) {
+  .home-debrief-crop {
+    aspect-ratio: 4 / 5;
+  }
 }
 
 /* —— Final —— */
@@ -545,9 +552,6 @@
   .home-acts > li + li {
     padding-left: 2rem;
     border-left: 1px solid var(--border-subtle);
-  }
-  .home-handoff-grid {
-    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
   }
 }
 @media (max-width: 600px) {

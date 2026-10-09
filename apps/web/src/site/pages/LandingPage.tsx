@@ -6,13 +6,11 @@ import { HOME_FAQ } from "../faqData.js";
 import { useEffect, useState, type CSSProperties } from "react";
 import { careers } from "../../careers/careers.js";
 import {
-  ArtifactStage,
   ChapterSeparator,
   PublicChapter,
   useChapterReveal,
 } from "../ArtDirection.js";
-import { HandoffExcerpt } from "../careers/CareerWorkSamples.js";
-import { hasHomeMedia, HomeMediaSlot } from "../homeMedia.js";
+import { HomeMediaSlot } from "../homeMedia.js";
 import { productMedia, type ProductMediaId } from "../productMedia.js";
 import { SiteLink } from "../SiteLink.js";
 
@@ -158,7 +156,6 @@ export function LandingPage() {
   const heroRef = useChapterReveal<HTMLDivElement>();
   const realWorkRef = useChapterReveal<HTMLDivElement>();
   const shiftRef = useChapterReveal<HTMLDivElement>();
-  const handoffRef = useChapterReveal<HTMLDivElement>();
   const reflectRef = useChapterReveal<HTMLDivElement>();
   const faqRef = useChapterReveal<HTMLDivElement>();
   const finalRef = useChapterReveal<HTMLDivElement>();
@@ -338,33 +335,37 @@ export function LandingPage() {
           <div
             ref={realWorkRef}
             data-motion="chapter-reveal"
-            className="home-realwork-intro"
+            className="home-feature-grid"
           >
-            <h2 id="home-realwork-title" data-motion-role="argument">
-              Your decisions change the case.
-            </h2>
-            <ol
-              className="home-decision-beats"
-              aria-label="How your decisions carry forward"
-            >
-              <li>
-                <strong>Make the call.</strong>
-                <span>Escalate an alert, dismiss it, or route a request.</span>
-              </li>
-              <li>
-                <strong>The case changes.</strong>
-                <span>Your choice becomes its recorded outcome.</span>
-              </li>
-              <li>
-                <strong>Hear back later.</strong>
-                <span>Some consequences surface later in the shift.</span>
-              </li>
-            </ol>
-          </div>
-          <ArtifactStage
-            className="home-realwork-stage"
-            dominant={
-              <div className="home-evidence-views">
+            <div className="home-realwork-intro">
+              <h2 id="home-realwork-title" data-motion-role="argument">
+                Your decisions change the case.
+              </h2>
+              <ol
+                className="home-decision-beats"
+                aria-label="How your decisions carry forward"
+              >
+                <li>
+                  <strong>Make the call.</strong>
+                  <span>
+                    Escalate an alert, dismiss it, or route a request.
+                  </span>
+                </li>
+                <li>
+                  <strong>Change the outcome.</strong>
+                  <span>The case records the decision you made.</span>
+                </li>
+                <li>
+                  <strong>Hear back later.</strong>
+                  <span>Some consequences surface later in the shift.</span>
+                </li>
+              </ol>
+            </div>
+            <figure className="home-feature-proof">
+              <div
+                className="home-feature-frame home-evidence-views"
+                data-motion-role="artifact"
+              >
                 {EVIDENCE_VIEWS.map((view) => (
                   <div key={view.key} hidden={evidence !== view.key}>
                     <ProductCapture
@@ -375,31 +376,29 @@ export function LandingPage() {
                   </div>
                 ))}
               </div>
-            }
-            caption={activeEvidence.caption}
-          />
-          <div className="home-evidence-bar">
-            <div
-              className="home-evidence-swap"
-              role="group"
-              aria-label="Evidence views for alert A-1042"
-            >
-              {EVIDENCE_VIEWS.map((view) => (
-                <button
-                  key={view.key}
-                  type="button"
-                  aria-pressed={evidence === view.key}
-                  onClick={() => {
-                    setEvidence(view.key);
-                  }}
-                >
-                  {view.label}
-                </button>
-              ))}
-            </div>
-            <p className="home-evidence-note">
-              Actual product capture · synthetic records.
-            </p>
+              <figcaption>
+                {activeEvidence.caption} · actual product capture, synthetic
+                records
+              </figcaption>
+              <div
+                className="home-evidence-swap"
+                role="group"
+                aria-label="Evidence views for alert A-1042"
+              >
+                {EVIDENCE_VIEWS.map((view) => (
+                  <button
+                    key={view.key}
+                    type="button"
+                    aria-pressed={evidence === view.key}
+                    onClick={() => {
+                      setEvidence(view.key);
+                    }}
+                  >
+                    {view.label}
+                  </button>
+                ))}
+              </div>
+            </figure>
           </div>
         </PublicChapter>
       </section>
@@ -426,51 +425,6 @@ export function LandingPage() {
           </div>
         </PublicChapter>
       </section>
-
-      <section className="home-handoff" aria-labelledby="home-handoff-title">
-        <PublicChapter
-          as="div"
-          surface="chapter"
-          rhythm="standard"
-          className="home-handoff-chapter"
-        >
-          <div
-            ref={handoffRef}
-            data-motion="chapter-reveal"
-            className="home-handoff-grid"
-          >
-            <div className="home-handoff-copy">
-              <h2 id="home-handoff-title" data-motion-role="argument">
-                Your shift ends. The work does not.
-              </h2>
-              <p className="ui-type-proof">
-                You won’t finish everything. Before you leave, you record what
-                you found and what the next analyst still needs to check.
-              </p>
-            </div>
-            <div data-motion-role="artifact">
-              <HandoffExcerpt />
-            </div>
-          </div>
-        </PublicChapter>
-      </section>
-
-      {hasHomeMedia("home-media-story") ? (
-        <section
-          className="home-story"
-          aria-label="Inside the security operations floor"
-        >
-          <PublicChapter
-            as="div"
-            surface="base"
-            rhythm="compact"
-            width="full"
-            className="home-story-chapter"
-          >
-            <HomeMediaSlot slotId="home-media-story" />
-          </PublicChapter>
-        </section>
-      ) : null}
 
       <section className="home-reflect" aria-labelledby="home-reflect-title">
         <PublicChapter

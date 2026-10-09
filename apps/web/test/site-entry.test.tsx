@@ -135,9 +135,9 @@ describe("site routes", () => {
     // Hero visual is the compact career-card system, not a static thumbnail.
     expect(document.querySelectorAll(".home-hero-card")).toHaveLength(5);
     expect(document.querySelector(".home-hero-stage img")).toBeNull();
-    // How a shift works stays text-only; handoff shows exactly one artifact.
+    // How a shift works stays text-only; the handoff preview is removed.
     expect(document.querySelector(".home-desk")).toBeNull();
-    expect(document.querySelectorAll(".home-handoff figure")).toHaveLength(1);
+    expect(document.querySelector(".home-handoff")).toBeNull();
     expect(
       document.querySelectorAll('[data-media-slot^="career-artifact-"]'),
     ).toHaveLength(0);
