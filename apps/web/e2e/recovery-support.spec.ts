@@ -9,11 +9,11 @@ test.beforeEach(async ({ page }) => {
 test("temporary connection failure retries once, manual retry starts one shift", async ({
   page,
 }) => {
-  let healthCalls = 0;
+  let readinessCalls = 0;
   let sessions = 0;
-  await page.route("**/health", async (route) => {
-    healthCalls++;
-    if (healthCalls <= 2) await route.abort("failed");
+  await page.route("**/ready", async (route) => {
+    readinessCalls++;
+    if (readinessCalls <= 2) await route.abort("failed");
     else await route.continue();
   });
   page.on("request", (request) => {
@@ -23,7 +23,7 @@ test("temporary connection failure retries once, manual retry starts one shift",
   const retry = page.getByRole("button", { name: "Retry starting shift" });
   await expect(retry).toBeVisible();
   await expect(retry).toBeFocused();
-  expect(healthCalls).toBe(2);
+  expect(readinessCalls).toBe(2);
   expect(sessions).toBe(0);
   await page.keyboard.press("Enter");
   await expect(

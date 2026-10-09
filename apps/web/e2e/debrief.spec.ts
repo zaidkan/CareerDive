@@ -62,7 +62,7 @@ test("completion opens five-decision debrief across themes and viewports", async
   await page.getByRole("textbox", { name: "Username" }).fill(DESK_LOGIN.username);
   await page.getByRole("textbox", { name: "Password" }).fill(DESK_LOGIN.password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByRole("toolbar", { name: "Taskbar" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Workstation tools" })).toBeVisible();
   await page.getByRole("tab", { name: /^Team/ }).click();
   let releaseDebrief: () => void = () => {};
   const debriefGate = new Promise<void>((resolve) => { releaseDebrief = resolve; });

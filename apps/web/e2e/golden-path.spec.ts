@@ -199,7 +199,7 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
   await test.step("1 · landing loads and the start action works", async () => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(
-      page.getByRole("heading", { name: "Know the work before you choose the career." }),
+      page.getByRole("heading", { name: "Try a slice of the work. See how you'd make the call." }),
     ).toBeVisible();
     await expect(page.getByRole("link", { name: /Start your first day/ }).first()).toBeVisible();
     expect(await scanStaleConcepts(page)).toEqual([]);
@@ -208,7 +208,7 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
   await test.step("2 · start navigates into the arrival film", async () => {
     await page.getByRole("link", { name: /Start your first day/ }).first().click();
     await expect(
-      page.getByRole("heading", { name: "Short preview film before your first day" }),
+      page.getByRole("heading", { name: "Short preview film before your first shift" }),
     ).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole("button", { name: "Play arrival film" })).toBeVisible();
   });
@@ -241,7 +241,7 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
     // Threshold: the doors open onto the day-one brief, not straight to the
     // floor. The brief is ephemeral presentation with no session of its own.
     await expect(
-      page.getByRole("heading", { name: /^Day one as a .+ at Verdaly$/ }),
+      page.getByRole("heading", { name: /^A short simulated first shift as a .+ at Verdaly$/ }),
     ).toBeVisible({ timeout: 30_000 });
     expect(sessionCreates.length, "brief creates no session").toBe(0);
     await page.getByRole("button", { name: "Continue to floor" }).click();
@@ -316,7 +316,7 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
     await page.getByRole("textbox", { name: "Username" }).fill(DESK_LOGIN.username);
     await page.getByRole("textbox", { name: "Password" }).fill(DESK_LOGIN.password);
     await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page.getByRole("toolbar", { name: "Taskbar" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Workstation tools" })).toBeVisible();
     await expect(page.getByRole("group", { name: "Verdaly workstation ready" })).toBeFocused();
     await expect(page.locator('[data-desk-os="true"]')).toBeVisible();
     await expect.poll(() => workstationFitsViewport(page)).toBe(true);
@@ -336,43 +336,90 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
   });
 
   await test.step("9 · leave, walk away, return, and resume Desk OS state", async () => {
-    await page.getByRole("button", { name: "Company intranet" }).click();
-    await expect(page.getByRole("heading", { name: "Company intranet" })).toBeVisible();
-    await page.getByRole("group", { name: "Pinned apps" }).getByRole("button", { name: "Notes", exact: true }).click();
-    await page.getByRole("textbox", { name: "Scratch notes" }).fill("continuity probe");
+    await page.getByRole("button", { name: "Tickets", exact: true }).click();
+    await page
+      .getByText("Personal scratchpad (optional)", { exact: true })
+      .click();
+    await page
+      .getByRole("textbox", { name: "Scratch notes", exact: true })
+      .fill("continuity probe");
     await page.getByRole("button", { name: "Leave desk" }).click();
     await expect(page.locator(".site-nav")).toBeVisible();
     await expect(page.locator(".site-footer")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Sit at computer" })).toBeVisible();
-    await page.locator('section[aria-label="Workplace space"] .room-canvas canvas').click({ position: { x: 100, y: 100 } });
+    await expect(
+      page.getByRole("button", { name: "Sit at computer" }),
+    ).toBeVisible();
+    await page
+      .locator('section[aria-label="Workplace space"] .room-canvas canvas')
+      .click({ position: { x: 100, y: 100 } });
     await page.keyboard.down("s");
     try {
-      await expect(page.getByRole("button", { name: "Sit at computer" })).toBeHidden({ timeout: 20_000 });
-    } finally { await page.keyboard.up("s"); }
+      await expect(
+        page.getByRole("button", { name: "Sit at computer" }),
+      ).toBeHidden({ timeout: 20_000 });
+    } finally {
+      await page.keyboard.up("s");
+    }
     await page.keyboard.down("w");
     try {
-      await expect(page.getByRole("button", { name: "Sit at computer" })).toBeVisible({ timeout: 20_000 });
-    } finally { await page.keyboard.up("w"); }
+      await expect(
+        page.getByRole("button", { name: "Sit at computer" }),
+      ).toBeVisible({ timeout: 20_000 });
+    } finally {
+      await page.keyboard.up("w");
+    }
     await page.getByRole("button", { name: "Sit at computer" }).click();
-    await expect(page.getByRole("heading", { name: "Sign in to Verdaly" })).toHaveCount(0);
-    await expect(page.getByRole("toolbar", { name: "Taskbar" })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "Scratch notes" })).toHaveValue("continuity probe");
-    await page.getByRole("group", { name: "Pinned apps" }).getByRole("button", { name: "Browser", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Company intranet" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Sign in to Verdaly" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("navigation", { name: "Workstation tools" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Tickets", exact: true }),
+    ).toHaveAttribute("aria-current", "page");
+    await page
+      .getByText("Personal scratchpad (optional)", { exact: true })
+      .click();
+    await expect(
+      page.getByRole("textbox", { name: "Scratch notes", exact: true }),
+    ).toHaveValue("continuity probe");
     expect(sessionCreates.length, "return creates no extra session").toBe(1);
   });
 
   await test.step("10 · browser Back, Forward and reload retain the same shift and OS", async () => {
     await page.goBack();
-    await expect(page.getByRole("heading", { name: "Know the work before you choose the career." })).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: "Try a slice of the work. See how you'd make the call.",
+      }),
+    ).toBeVisible();
     await page.goForward();
-    await expect(page.getByRole("toolbar", { name: "Taskbar" })).toBeVisible({ timeout: 30000 });
-    await expect(page.getByRole("heading", { name: "Sign in to Verdaly" })).toHaveCount(0);
-    await expect(page.getByRole("textbox", { name: "Scratch notes" })).toHaveValue("continuity probe");
-    expect(sessionCreates.length, "Forward resumes instead of creating").toBe(1);
+    await expect(
+      page.getByRole("navigation", { name: "Workstation tools" }),
+    ).toBeVisible({ timeout: 30000 });
+    await expect(
+      page.getByRole("heading", { name: "Sign in to Verdaly" }),
+    ).toHaveCount(0);
+    await page
+      .getByText("Personal scratchpad (optional)", { exact: true })
+      .click();
+    await expect(
+      page.getByRole("textbox", { name: "Scratch notes", exact: true }),
+    ).toHaveValue("continuity probe");
+    expect(sessionCreates.length, "Forward resumes instead of creating").toBe(
+      1,
+    );
     await page.reload();
-    await expect(page.getByRole("toolbar", { name: "Taskbar" })).toBeVisible({ timeout: 30000 });
-    await expect(page.getByRole("textbox", { name: "Scratch notes" })).toHaveValue("continuity probe");
+    await expect(
+      page.getByRole("navigation", { name: "Workstation tools" }),
+    ).toBeVisible({ timeout: 30000 });
+    await page
+      .getByText("Personal scratchpad (optional)", { exact: true })
+      .click();
+    await expect(
+      page.getByRole("textbox", { name: "Scratch notes", exact: true }),
+    ).toHaveValue("continuity probe");
     expect(sessionCreates.length, "reload resumes instead of creating").toBe(1);
   });
 
@@ -383,7 +430,8 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
     );
     expect(await scanStaleConcepts(page)).toEqual([]);
     // A selectable experience-mode screen would surface as radio/select controls.
-    expect(await page.locator("select").count()).toBe(0);
+    await expect(page.getByRole("combobox", { name: "Current case" })).toHaveCount(1);
+    expect(await page.locator("select").count()).toBe(1);
     expect(await page.locator('[role="radio"]').count()).toBe(0);
     expect(sessionCreates.length).toBe(1);
     expect(sessionCreates[0]?.status).toBe(200);
