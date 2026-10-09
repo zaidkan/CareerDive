@@ -15,7 +15,10 @@ import type {
   ActionLogEntry,
 } from "@sim/schemas";
 import { buildDecisionReview } from "../src/domain/decision-review.js";
-function required<T>(value: T | undefined): T { if (value === undefined) throw new Error("Missing fixture value"); return value; }
+function required<T>(value: T | undefined): T {
+  if (value === undefined) throw new Error("Missing fixture value");
+  return value;
+}
 const eventId = "suspicious-login-1";
 const complete: CaseFinding[] = [
   {
@@ -164,10 +167,23 @@ it("permits an unsupported city-only relation and false coverage, preserving ini
     eventId,
     ticketPayload: { ticketId: `ticket-${eventId}`, reasoning: selection() },
   });
-  const review = required(buildDecisionReview(r.state(), r.log).decisions.find(
-    (d) => d.decisionId === "suspicious_login",
-  ));
+  const review = required(
+    buildDecisionReview(r.state(), r.log).decisions.find(
+      (d) => d.decisionId === "suspicious_login",
+    ),
+  );
   expect(review.outcomeLabel).toBe("needs_more_evidence");
+  expect(review.practicalExample?.claim).toContain("Before 07:45");
+  expect(review.practicalExample?.excerpt).toBe(
+    r
+      .state()
+      .artifacts["login-session-timeline"]?.body.split("\n")
+      .find((line) => line.startsWith("Limit:")),
+  );
+  expect(review.practicalExample?.support).toContain("before OR after");
+  expect(review.practicalExample?.nextCheck).toContain(
+    "Request activity records",
+  );
   expect(review.reasoningAnalysis?.correctionHistory.length).toBeGreaterThan(0);
   expect(
     r.state().structuredTickets[`ticket-${eventId}`]?.decisionReasoning,
@@ -176,16 +192,16 @@ it("permits an unsupported city-only relation and false coverage, preserving ini
 it("rejects forged/unopened rows and mismatched dispatch atomically; missing work can still be sent", () => {
   const r = run();
   const original = structuredClone(r.state());
-  expect(() =>
-    { r.act({
+  expect(() => {
+    r.act({
       id: "update_ticket_notes",
       eventId,
       ticketPayload: { ticketId: `ticket-${eventId}`, reasoning: selection() },
-    }); },
-  ).toThrow(/inspected/);
+    });
+  }).toThrow(/inspected/);
   expect(r.state()).toEqual(original);
-  expect(() =>
-    { r.act({
+  expect(() => {
+    r.act({
       id: "document_ticket",
       eventId,
       decisionOptionId: "close-location-explained",
@@ -194,8 +210,8 @@ it("rejects forged/unopened rows and mismatched dispatch atomically; missing wor
         reasoning: selection([]),
         dispatch: "escalate_alert",
       },
-    }); },
-  ).toThrow(/match/);
+    });
+  }).toThrow(/match/);
   expect(r.state()).toEqual(original);
   r.act({
     id: "document_ticket",

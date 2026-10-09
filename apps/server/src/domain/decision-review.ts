@@ -1,3 +1,4 @@
+import { caseExample } from "./case-example.js";
 import {
   missingLoginComparisonSteps,
   resolveActionEffect,
@@ -937,6 +938,13 @@ export function buildDecisionReview(
         : undefined;
     if (selections || handoff) {
       reviewed.evaluationMode = "structured-selections";
+      if (selections)
+        reviewed.practicalExample = caseExample(
+          state,
+          eventId,
+          selections,
+          sourcesAtSave,
+        );
       if (eventId === SCANNER && !reviewed.userChoiceId && disposition) {
         reviewed.userChoiceId = disposition;
         reviewed.availableChoiceIds =
@@ -1050,6 +1058,10 @@ export function buildDecisionReview(
               ...selections.context,
               ...selections.uncertainty,
               ...selections.nextStep,
+              ...(selections.caseFindings?.flatMap((f) => [
+                f.claimId,
+                ...f.rowIds,
+              ]) ?? []),
             ]
           : (handoff?.optionIds ?? []);
         const corrections = log.filter(
@@ -1075,6 +1087,10 @@ export function buildDecisionReview(
                     ...correction.context,
                     ...correction.uncertainty,
                     ...correction.nextStep,
+                    ...(correction.caseFindings?.flatMap((f) => [
+                      f.claimId,
+                      ...f.rowIds,
+                    ]) ?? []),
                   ]
                 : entry.interaction.type === "action"
                   ? (entry.interaction.action.handoffPayload?.selections

@@ -96,6 +96,17 @@ export const DebriefSchema = z.object({
               }),
             )
             .optional(),
+          practicalExample: z
+            .object({
+              claim: z.string(),
+              sourceId: z.string(),
+              sourceTitle: z.string(),
+              excerpt: z.string(),
+              referenceStatus: z.enum(["cited", "inspected"]),
+              support: z.string(),
+              nextCheck: z.string(),
+            })
+            .optional(),
           reasoningAnalysis: z
             .object({
               decisionId: z.string(),

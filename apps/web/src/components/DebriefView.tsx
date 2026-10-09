@@ -244,6 +244,35 @@ export function DebriefView({
                     {OUTCOMES[item.outcomeLabel]}
                   </span>
                 </div>
+                {item.practicalExample && (
+                  <section
+                    className="decision-practical-example"
+                    aria-label="Your claim and its record"
+                  >
+                    <h4>What your work shows</h4>
+                    <p>
+                      <strong>Your recorded claim:</strong>{" "}
+                      {item.practicalExample.claim}
+                    </p>
+                    <figure>
+                      <blockquote>{item.practicalExample.excerpt}</blockquote>
+                      <figcaption>
+                        {item.practicalExample.sourceTitle} ·{" "}
+                        {item.practicalExample.referenceStatus === "cited"
+                          ? "row cited in your finding"
+                          : "inspected record; row was not cited in your finding"}
+                      </figcaption>
+                    </figure>
+                    <p>
+                      <strong>Support and limit:</strong>{" "}
+                      {item.practicalExample.support}
+                    </p>
+                    <p>
+                      <strong>Useful next check:</strong>{" "}
+                      {item.practicalExample.nextCheck}
+                    </p>
+                  </section>
+                )}
                 <details className="decision-review-reasoning">
                   <summary>Evidence and reasoning</summary>
                   <p>{item.explanation}</p>
@@ -293,7 +322,7 @@ export function DebriefView({
                   {item.reasoningAnalysis?.correctionHistory.map(
                     (entry, correctionIndex) => (
                       <p key={correctionIndex}>
-                        <strong>Initial handoff:</strong>{" "}
+                        <strong>Initial record:</strong>{" "}
                         {describeHandoff(entry.initialOptionIds)}.
                         {entry.correctedOptionIds ? (
                           <>
