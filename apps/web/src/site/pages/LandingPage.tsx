@@ -189,7 +189,7 @@ export function LandingPage() {
           >
             <div className="home-hero-copy">
               <h1 id="home-hero-title" data-motion-role="argument">
-                Try a slice of the work. See what your decisions support.
+                Try a slice of the work. See how you'd make the call.
               </h1>
               <p className="ui-type-proof">
                 Make real calls in a simulated cybersecurity shift. Review your
@@ -401,7 +401,7 @@ export function LandingPage() {
           as="div"
           surface="base"
           rhythm="compact"
-          width="reading"
+          width="wide"
           className="home-reflect-chapter"
         >
           <div

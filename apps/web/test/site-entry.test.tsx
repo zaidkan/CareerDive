@@ -72,7 +72,7 @@ describe("site routes", () => {
     render(<SiteApp initialRoute="/" />);
     expect(
       screen.getByRole("heading", {
-        name: /try a slice of the work\. see what your decisions support/i,
+        name: /try a slice of the work\. see how you'd make the call/i,
       }),
     ).toBeVisible();
     expect(createSession).not.toHaveBeenCalled();
@@ -170,6 +170,9 @@ describe("site routes", () => {
     expect(
       screen.getByRole("heading", { name: "An honest review, not a score." }),
     ).toBeVisible();
+    expect(document.querySelector(".home-reflect-chapter")).toHaveClass(
+      "ui-width--wide",
+    );
     expect(
       screen.getByText(
         "What felt interesting? What felt difficult? Use this shift to explore those questions—not as a career verdict.",

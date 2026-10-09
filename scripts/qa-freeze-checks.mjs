@@ -251,6 +251,8 @@ export function collectMetrics({ leakPatterns = [] } = {}) {
     navReport,
     workshopArtifactCount,
     workshopLabels,
+    homeReflectLeft: document.querySelector(".home-reflect-content")?.getBoundingClientRect().left ?? null,
+    homeShiftLeft: document.querySelector(".home-shift-chapter")?.getBoundingClientRect().left ?? null,
     homeSectionOrder: Array.from(document.querySelectorAll(".v2-home > section")).map((section) => section.className),
     homeAnalysisCropWidth: document.querySelector(".home-debrief-crop")?.clientWidth ?? 0,
     homeAnalysisCropHeight: document.querySelector(".home-debrief-crop")?.clientHeight ?? 0,
@@ -418,6 +420,9 @@ export function evaluateChecks({ route, theme, motion, metrics }) {
     push("home-feature-order", JSON.stringify(order) === JSON.stringify([
       "home-hero", "home-place", "home-realwork", "home-analysis", "home-shift", "home-reflect", "home-faq", "home-final",
     ]), order);
+    push("home-reflection-aligned", metrics.homeReflectLeft !== null &&
+      metrics.homeShiftLeft !== null && Math.abs(metrics.homeReflectLeft - metrics.homeShiftLeft) <= 1,
+      { reflect: metrics.homeReflectLeft, shift: metrics.homeShiftLeft });
     push("text-only-home-branching", metrics.homeBranchingArtifacts === 0, metrics.homeBranchingArtifacts);
     push("one-home-analysis-capture", metrics.homeAnalysisCaptures === 1, metrics.homeAnalysisCaptures);
     push("compact-home-analysis-capture", metrics.homeAnalysisCropWidth > 0 &&
