@@ -1,3 +1,4 @@
+import { InitialHandoff } from "./InitialHandoff.js";
 import { managerRecap } from "@sim/core";
 import { useRef, useState } from "react";
 import {
@@ -24,8 +25,10 @@ export function TeamChatTool({
   mutationState,
   actions = [],
   onAction,
+  eventId,
 }: {
   view: ClientView;
+  eventId?: string | undefined;
   onOpenArtifact?: ((id: string) => Promise<unknown>) | undefined;
   mutationState?: MutationState;
   actions?: AvailableAction[];
@@ -54,10 +57,12 @@ export function TeamChatTool({
     ({ id }) => id === "ask_manager" || id === "acknowledge_handoff",
   );
   const messages = view.artifacts.filter(
-    ({ systemId }) => systemId === "team_chat",
+    (a) =>
+      a.systemId === "team_chat" && (!eventId || a.eventIds.includes(eventId)),
   );
   const latestReply = view.teamMessages?.findLast(
-    (message) => message.author !== "player",
+    (message) =>
+      message.author !== "player" && (!eventId || message.eventId === eventId),
   );
   const dialogueRef = useRef<DialogueController>(null);
   const mountedReplyId = useRef(latestReply?.id);
@@ -81,44 +86,56 @@ export function TeamChatTool({
       </article>
       {(view.teamMessages?.length ?? 0) > 0 ? (
         <ol aria-label="Team conversation">
-          {view.teamMessages?.map((message) => (
-            <li key={message.id}>
-              <strong>
-                {
-                  (
-                    {
-                      player: "You",
-                      morgan: "Morgan",
-                      reviewer: "Reviewer",
-                      employee: "Employee",
-                    } as const
-                  )[message.author]
-                }{" "}
-                ·{" "}
-                {view.events.find(({ id }) => id === message.eventId)?.title ??
-                  message.eventId}
-                :
-              </strong>{" "}
-              {message.actionId === "submit_shift_handoff" ? <details><summary>Recorded handoff · sources and continuation</summary><pre className="artifact-body">{message.body}</pre></details> : message.id === latestReply?.id ? (
-                <DialogueLine
-                  controller={dialogueRef}
-                  key={message.id}
-                  text={message.body}
-                  animate={message.id !== mountedReplyId.current}
-                  onAdvance={() => {
-                    document
-                      .querySelector<HTMLButtonElement>("[data-morgan-choice]")
-                      ?.focus();
-                  }}
-                />
-              ) : (
-                message.body
-              )}
-            </li>
-          ))}
+          {view.teamMessages
+            ?.filter((message) => !eventId || message.eventId === eventId)
+            .map((message) => (
+              <li key={message.id}>
+                <strong>
+                  {
+                    (
+                      {
+                        player: "You",
+                        morgan: "Morgan",
+                        reviewer: "Reviewer",
+                        employee: "Employee",
+                      } as const
+                    )[message.author]
+                  }{" "}
+                  ·{" "}
+                  {view.events.find(({ id }) => id === message.eventId)
+                    ?.title ?? message.eventId}
+                  :
+                </strong>{" "}
+                {message.actionId === "submit_shift_handoff" ? (
+                  <details>
+                    <summary>
+                      Recorded handoff · sources and continuation
+                    </summary>
+                    <pre className="artifact-body">{message.body}</pre>
+                  </details>
+                ) : message.id === latestReply?.id ? (
+                  <DialogueLine
+                    controller={dialogueRef}
+                    key={message.id}
+                    text={message.body}
+                    animate={message.id !== mountedReplyId.current}
+                    onAdvance={() => {
+                      document
+                        .querySelector<HTMLButtonElement>(
+                          "[data-morgan-choice]",
+                        )
+                        ?.focus();
+                    }}
+                  />
+                ) : (
+                  message.body
+                )}
+              </li>
+            ))}
         </ol>
       ) : null}
       {recap &&
+      (!eventId || recap.eventId === eventId) &&
       managerRecap(view, recap.eventId, recap.question) === recap.body ? (
         <aside role="status" aria-label="Morgan recap">
           <strong>Recap · no time or energy spent</strong>
@@ -209,38 +226,13 @@ export function TeamChatTool({
             </section>
           );
         return (
-          <form
+          <InitialHandoff
             key={key}
-            aria-label={`${action.label} for ${view.events.find(({ id }) => id === action.eventId)?.title ?? action.eventId}`}
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (draft.trim()) onAction?.(action, draft.trim());
-            }}
-          >
-            <label>
-              Handoff to Morgan
-              <textarea
-                maxLength={2000}
-                value={draft}
-                onChange={(event) => {
-                  setDrafts((current) => ({
-                    ...current,
-                    [key]: event.target.value,
-                  }));
-                }}
-              />
-            </label>
-            <button
-              type="submit"
-              data-action-id={action.id}
-              data-event-id={action.eventId}
-              disabled={
-                !draft.trim() || Boolean(mutationState?.pendingKey) || !onAction
-              }
-            >
-              {action.label}
-            </button>
-          </form>
+            view={view}
+            action={action}
+            onAction={onAction}
+            pending={Boolean(mutationState?.pendingKey)}
+          />
         );
       })}
     </>

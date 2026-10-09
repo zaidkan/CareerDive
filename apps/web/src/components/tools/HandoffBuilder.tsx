@@ -1,3 +1,5 @@
+import { OptionGroup } from "./OptionGroup.js";
+import { ConfirmAction } from "./ConfirmAction.js";
 import { handoffCaseLines, handoffFollowUps, sourceBundle } from "@sim/core";
 import type { AvailableAction, ClientView, HandoffPayload } from "@sim/schemas";
 import { useTabDraft } from "../../useTabDraft.js";
@@ -56,43 +58,18 @@ export function HandoffBuilder({
   return (
     <section aria-label="Build shift handoff" className="handoff-builder">
       <h4>Hand your work forward</h4>
-      <fieldset>
-        <legend>What must carry into the next shift?</legend>
-        {offered?.options.map((option) => (
-          <div key={option.id} className="reasoning-option">
-            <label>
-              <input
-                type="checkbox"
-                disabled={pending}
-                data-option-id={option.id}
-                checked={validIds.includes(option.id)}
-                onChange={() => {
-                  setSelected((ids) =>
-                    ids.includes(option.id)
-                      ? ids.filter((id) => id !== option.id)
-                      : [...ids, option.id],
-                  );
-                }}
-              />
-              {option.label}
-            </label>
-            {option.sourceArtifactIds.map((id) => (
-              <button
-                key={id}
-                data-source-id={id}
-                type="button"
-                disabled={pending || !onOpenArtifact}
-                onClick={() => {
-                  void onOpenArtifact?.(id).catch(() => {});
-                }}
-              >
-                Open source:{" "}
-                {view.artifacts.find((a) => a.id === id)?.title ?? id}
-              </button>
-            ))}
-          </div>
-        ))}
-      </fieldset>
+      <OptionGroup
+        prompt="What must carry into the next shift?"
+        artifacts={view.artifacts}
+        options={offered?.options ?? []}
+        selected={validIds}
+        onChange={setSelected}
+        pending={pending}
+        onOpenArtifact={onOpenArtifact}
+        sourceTitles={Object.fromEntries(
+          view.artifacts.map((a) => [a.id, a.title]),
+        )}
+      />
       <fieldset>
         <legend>Primary next owner / check</legend>
         {Object.entries(next).map(([id, label]) => (
@@ -148,12 +125,14 @@ export function HandoffBuilder({
             .join(" ") || "No continuity statements selected."}
         </p>
       </section>
-      <button
-        type="button"
-        disabled={pending || !offered}
-        data-action-id={action.id}
-        data-event-id={action.eventId}
-        onClick={() => {
+      <ConfirmAction
+        label="Send handoff to next analyst"
+        actionId={action.id}
+        eventId={action.eventId}
+        pending={pending}
+        disabled={!offered}
+        resetKey={JSON.stringify([validIds, followUp, offered?.stateKey])}
+        onConfirm={() => {
           if (offered)
             onAction({
               ...action,
@@ -170,8 +149,14 @@ export function HandoffBuilder({
             });
         }}
       >
-        Send handoff to next analyst
-      </button>
+        <p>{validIds.length} continuity statement(s) selected.</p>
+        <p>Next owner / check: {next[followUp]}</p>
+        <ul>
+          {validIds.map((id) => (
+            <li key={id}>{offered?.options.find((o) => o.id === id)?.label}</li>
+          ))}
+        </ul>
+      </ConfirmAction>
     </section>
   );
 }

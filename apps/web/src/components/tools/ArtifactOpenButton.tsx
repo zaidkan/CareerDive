@@ -20,6 +20,7 @@ export function ArtifactOpenButton({
   const pendingRef = useRef(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
+  const [opened, setOpened] = useState(false);
   const opening =
     pending ||
     mutationState.pendingKey ===
@@ -33,6 +34,7 @@ export function ArtifactOpenButton({
     setError(false);
     try {
       await onOpenArtifact(artifactId);
+      setOpened(true);
     } catch {
       setError(true);
     } finally {
@@ -48,6 +50,7 @@ export function ArtifactOpenButton({
         type="button"
         data-interaction-id="open_artifact"
         data-artifact-id={artifactId}
+        data-source-id={artifactId}
         disabled={
           !onOpenArtifact || pending || Boolean(mutationState.pendingKey)
         }
@@ -55,7 +58,7 @@ export function ArtifactOpenButton({
           void open();
         }}
       >
-        {opening ? "Opening…" : label}
+        {opening ? "Opening…" : opened ? `Opened · ${label}` : label}
       </button>
       {error ? <p role="alert">Could not open this item. Try again.</p> : null}
     </>

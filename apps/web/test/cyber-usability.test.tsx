@@ -165,6 +165,12 @@ it("handoff selections generate inspected references, preview actual work and pe
   await user.click(
     screen.getByRole("button", { name: "Send handoff to next analyst" }),
   );
+  expect(onAction).not.toHaveBeenCalled();
+  await user.click(
+    screen.getByRole("button", {
+      name: "Confirm Send handoff to next analyst",
+    }),
+  );
   expect(onAction).toHaveBeenCalledWith(
     expect.objectContaining({
       handoffPayload: {
@@ -273,6 +279,8 @@ it("saves weak option notes by keyboard without preselected answers or assessed 
   expect(save).toHaveClass("action-primary");
   save.focus();
   await user.keyboard("{Enter}");
+  expect(onAction).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Confirm Save draft" }));
   expect(onAction).toHaveBeenCalledOnce();
   expect(onAction.mock.calls[0]?.[0]).toMatchObject({
     ticketPayload: {
@@ -325,6 +333,10 @@ it("does not resend a persisted decision when saving a correction, and locks cho
   const { rerender } = render(<TicketComposer {...props} />);
   await user.click(
     screen.getByRole("button", { name: "Save note correction" }),
+  );
+  expect(onAction).not.toHaveBeenCalled();
+  await user.click(
+    screen.getByRole("button", { name: "Confirm Save note correction" }),
   );
   expect(onAction.mock.calls[0]?.[0]).not.toHaveProperty("decisionOptionId");
   rerender(

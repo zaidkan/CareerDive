@@ -1,3 +1,4 @@
+import { ConfirmAction } from "./ConfirmAction.js";
 import { useTabDraft } from "../../useTabDraft.js";
 import type {
   AvailableAction,
@@ -89,6 +90,7 @@ export function TicketComposer({
       </p>
       <ReasoningFields
         groups={groups}
+        artifacts={view.artifacts}
         selected={reasoning}
         onChange={setReasoning}
         onOpenArtifact={onOpenArtifact}
@@ -116,6 +118,22 @@ export function TicketComposer({
           ))}
         </fieldset>
       ) : null}
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => {
+          setReasoning({
+            ...reasoning,
+            evidence: [],
+            context: [],
+            uncertainty: [],
+            nextStep: [],
+          });
+          setDecisionOptionId("");
+        }}
+      >
+        Clear all selections
+      </button>
       <p>
         No answers are preselected. Incomplete findings can be saved and
         reviewed honestly.
@@ -133,16 +151,25 @@ export function TicketComposer({
           Save draft
         </button>
       ) : null}
-      <button
-        type="button"
-        className="action-primary"
-        data-action-id={action.id}
-        data-event-id={action.eventId}
+      <ConfirmAction
+        label={
+          record
+            ? "Record case decision"
+            : action.id === "update_ticket_notes"
+              ? ticket?.decisionReasoning
+                ? "Save note correction"
+                : "Save draft"
+              : "Save analysis and decision"
+        }
+        actionId={action.id}
+        eventId={action.eventId}
+        pending={mutationState.pendingKey === actionMutationKey(action)}
         disabled={
           pending ||
           Boolean(action.decisionOptions?.length && !decisionOptionId)
         }
-        onClick={() => {
+        resetKey={JSON.stringify([reasoning, decisionOptionId])}
+        onConfirm={() => {
           onAction({
             ...action,
             ticketPayload: payload,
@@ -152,16 +179,25 @@ export function TicketComposer({
           });
         }}
       >
-        {mutationState.pendingKey === actionMutationKey(action)
-          ? "Saving…"
-          : record
-            ? "Record case decision"
-            : action.id === "update_ticket_notes"
-              ? ticket?.decisionReasoning
-                ? "Save note correction"
-                : "Save draft"
-              : "Save analysis and decision"}
-      </button>
+        <ul>
+          {groups.flatMap((group) =>
+            group.options
+              .filter((o) => reasoning[group.id].includes(o.id))
+              .map((o) => <li key={o.id}>{o.label}</li>),
+          )}
+        </ul>
+        <p>
+          {sourceIds.length} inspected source(s) attached.{" "}
+          {
+            action.decisionOptions?.find((o) => o.id === decisionOptionId)
+              ?.label
+          }
+        </p>
+        <p>
+          Incomplete or contradictory selections can still be recorded and
+          reviewed honestly.
+        </p>
+      </ConfirmAction>
       {ticket ? (
         <p role="status">
           Saved revision {ticket.revision ?? 0}:{" "}

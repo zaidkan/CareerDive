@@ -1,3 +1,4 @@
+import { ConfirmAction } from "./tools/ConfirmAction.js";
 import { useState } from "react";
 import type {
   AvailableAction,
@@ -65,48 +66,82 @@ function ActionButtons({
 
   return (
     <div className="context-actions" aria-label="Workplace actions">
-      <button
-        className="action-primary"
-        data-action-id={highlighted.id}
-        data-event-id={highlighted.eventId}
-        disabled={pending || disableAction}
-        key={`${highlighted.id}:${highlighted.eventId}`}
-        onClick={() => {
-          onAction(highlighted);
-        }}
-        type="button"
-      >
-        <span>
-          {mutationState.pendingKey === highlightedKey
-            ? `Saving ${highlighted.label}…`
-            : highlighted.label}
-        </span>
-        <small>{highlighted.description}</small>
-        <small className="action-time">
-          Takes about {highlighted.simulatedMinutes} minutes
-        </small>
-      </button>
+      {["escalate_alert", "dismiss_alert"].includes(highlighted.id) ? (
+        <ConfirmAction
+          key={`${highlighted.id}:${highlighted.eventId}`}
+          label={highlighted.label}
+          actionId={highlighted.id}
+          eventId={highlighted.eventId}
+          pending={mutationState.pendingKey === highlightedKey}
+          disabled={pending || disableAction}
+          onConfirm={() => {
+            onAction(highlighted);
+          }}
+        >
+          <p>{highlighted.description}</p>
+        </ConfirmAction>
+      ) : (
+        <button
+          className="action-primary"
+          data-action-id={highlighted.id}
+          data-event-id={highlighted.eventId}
+          disabled={pending || disableAction}
+          key={`${highlighted.id}:${highlighted.eventId}`}
+          onClick={() => {
+            onAction(highlighted);
+          }}
+          type="button"
+        >
+          <span>
+            {mutationState.pendingKey === highlightedKey
+              ? `Saving ${highlighted.label}…`
+              : highlighted.label}
+          </span>
+          <small>{highlighted.description}</small>
+          <small className="action-time">
+            Takes about {highlighted.simulatedMinutes} minutes
+          </small>
+        </button>
+      )}
       {others.length > 0 ? (
         <details className="more-actions">
           <summary>
             {others.length} other option{others.length === 1 ? "" : "s"}
           </summary>
           <div className="more-actions-grid">
-            {others.map((action) => (
-              <button
-                data-action-id={action.id}
-                data-event-id={action.eventId}
-                disabled={pending || disableAction}
-                key={`${action.id}:${action.eventId}`}
-                onClick={() => {
-                  onAction(action);
-                }}
-                type="button"
-              >
-                <span>{action.label}</span>
-                <small>{action.description}</small>
-              </button>
-            ))}
+            {others.map((action) =>
+              ["escalate_alert", "dismiss_alert"].includes(action.id) ? (
+                <ConfirmAction
+                  key={`${action.id}:${action.eventId}`}
+                  label={action.label}
+                  actionId={action.id}
+                  eventId={action.eventId}
+                  disabled={pending || disableAction}
+                  pending={
+                    mutationState.pendingKey === actionMutationKey(action)
+                  }
+                  onConfirm={() => {
+                    onAction(action);
+                  }}
+                >
+                  <p>{action.description}</p>
+                </ConfirmAction>
+              ) : (
+                <button
+                  data-action-id={action.id}
+                  data-event-id={action.eventId}
+                  disabled={pending || disableAction}
+                  key={`${action.id}:${action.eventId}`}
+                  onClick={() => {
+                    onAction(action);
+                  }}
+                  type="button"
+                >
+                  <span>{action.label}</span>
+                  <small>{action.description}</small>
+                </button>
+              ),
+            )}
           </div>
         </details>
       ) : null}
@@ -285,17 +320,24 @@ export function SystemToolPanel({
           mutationState={mutationState}
         />
         {selectedEventId && onWorkplaceInteraction ? (
-          <details className="workspace-related-sources">
-            <summary>Related case sources</summary>
+          <section
+            className="workspace-related-sources"
+            aria-label="Related case sources"
+          >
+            <h4>Related case sources</h4>
             <CaseEvidence
               key={selectedEventId}
               view={view}
               eventId={selectedEventId}
               onInspect={onWorkplaceInteraction}
-              bodyShownElsewhere={eventArtifacts.map(({ id }) => id)}
+              bodyShownElsewhere={
+                selectedArtifactId
+                  ? [selectedArtifactId]
+                  : eventArtifacts.slice(0, 1).map(({ id }) => id)
+              }
               pending={Boolean(mutationState.pendingKey)}
             />
-          </details>
+          </section>
         ) : null}
         <WorkInteraction
           onOpenArtifact={openArtifact}
@@ -369,18 +411,22 @@ export function SystemToolPanel({
             pending={Boolean(mutationState.pendingKey)}
           />
         ) : null}
-        <RecordQueryTool
-          view={view}
-          queryAction={view.availableActions.find(
-            ({ id, eventId }) =>
-              id === "query_records" && eventId === selectedEventId,
-          )}
-          onQueryRecords={(action, payload) => {
-            onAction({ ...action, queryPayload: payload });
-          }}
-          onInspectRecord={onWorkplaceInteraction}
-          mutationState={mutationState}
-        />
+        {view.availableActions.some(
+          (a) => a.id === "query_records" && a.eventId === selectedEventId,
+        ) ? (
+          <RecordQueryTool
+            view={view}
+            queryAction={view.availableActions.find(
+              ({ id, eventId }) =>
+                id === "query_records" && eventId === selectedEventId,
+            )}
+            onQueryRecords={(action, payload) => {
+              onAction({ ...action, queryPayload: payload });
+            }}
+            onInspectRecord={onWorkplaceInteraction}
+            mutationState={mutationState}
+          />
+        ) : null}
       </div>
     );
   }
@@ -411,6 +457,7 @@ export function SystemToolPanel({
           view={view}
         />
         <GuideSearch
+          eventId={selectedEventId}
           canonicalSearchAction={
             searchAction && !searchAction.taskId ? searchAction : undefined
           }
@@ -464,6 +511,7 @@ export function SystemToolPanel({
           view={view}
         />
         <TeamChatTool
+          eventId={selectedEventId}
           view={view}
           onOpenArtifact={openArtifact}
           mutationState={mutationState}
@@ -471,8 +519,11 @@ export function SystemToolPanel({
           onAction={onAction}
         />
         {selectedEventId && onWorkplaceInteraction ? (
-          <details className="workspace-related-sources">
-            <summary>Related case sources</summary>
+          <section
+            className="workspace-related-sources"
+            aria-label="Related case sources"
+          >
+            <h4>Related case sources</h4>
             <CaseEvidence
               key={selectedEventId}
               view={view}
@@ -480,7 +531,7 @@ export function SystemToolPanel({
               onInspect={onWorkplaceInteraction}
               pending={Boolean(mutationState.pendingKey)}
             />
-          </details>
+          </section>
         ) : null}
       </div>
     );

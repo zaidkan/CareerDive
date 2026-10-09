@@ -138,14 +138,8 @@ describe("RecordQueryTool", () => {
     await user.type(screen.getByLabelText("User"), "j.patel@example.com");
     await user.click(screen.getByText(/^More filters/));
     await user.type(screen.getByLabelText("Session ID"), "S-0741");
-    await user.type(
-      screen.getByLabelText("Time from (HH:MM)"),
-      "07:21",
-    );
-    await user.type(
-      screen.getByLabelText("Time to (HH:MM)"),
-      "07:45",
-    );
+    await user.type(screen.getByLabelText("Time from (HH:MM)"), "07:21");
+    await user.type(screen.getByLabelText("Time to (HH:MM)"), "07:45");
     await user.click(screen.getByRole("button", { name: "Search records" }));
 
     expect(onQueryRecords).toHaveBeenCalledTimes(1);
@@ -189,14 +183,8 @@ describe("RecordQueryTool", () => {
     );
 
     await user.click(screen.getByText(/^More filters/));
-    await user.type(
-      screen.getByLabelText("Time from (HH:MM)"),
-      "07:45",
-    );
-    await user.type(
-      screen.getByLabelText("Time to (HH:MM)"),
-      "07:21",
-    );
+    await user.type(screen.getByLabelText("Time from (HH:MM)"), "07:45");
+    await user.type(screen.getByLabelText("Time to (HH:MM)"), "07:21");
     await user.click(screen.getByRole("button", { name: "Search records" }));
 
     expect(onQueryRecords).not.toHaveBeenCalled();
@@ -205,19 +193,14 @@ describe("RecordQueryTool", () => {
     );
 
     await user.clear(screen.getByLabelText("Time to (HH:MM)"));
-    await user.type(
-      screen.getByLabelText("Time to (HH:MM)"),
-      "later",
-    );
+    await user.type(screen.getByLabelText("Time to (HH:MM)"), "later");
     await user.click(screen.getByRole("button", { name: "Search records" }));
     expect(onQueryRecords).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Enter office-local times as HH:MM.",
     );
 
-    await user.clear(
-      screen.getByLabelText("Time from (HH:MM)"),
-    );
+    await user.clear(screen.getByLabelText("Time from (HH:MM)"));
     await user.clear(screen.getByLabelText("Time to (HH:MM)"));
     await user.click(screen.getByRole("button", { name: "Search records" }));
     expect(onQueryRecords).toHaveBeenCalledTimes(1);
@@ -386,8 +369,8 @@ describe("RecordQueryTool", () => {
     ).toBeVisible();
   });
 
-  it("mounts in the desk Alerts panel", () => {
-    const { unmount } = render(
+  it("mounts in the desk Alerts panel only when record search is offered", () => {
+    const { rerender } = render(
       <SystemToolPanel
         actions={[]}
         onAction={() => undefined}
@@ -395,9 +378,18 @@ describe("RecordQueryTool", () => {
         view={baseView()}
       />,
     );
+    expect(screen.queryByRole("heading", { name: "Record search" })).toBeNull();
+    rerender(
+      <SystemToolPanel
+        actions={[queryAction]}
+        selectedEventId={queryAction.eventId}
+        onAction={() => undefined}
+        systemId="alert_dashboard"
+        view={{ ...baseView(), availableActions: [queryAction] }}
+      />,
+    );
     expect(
       screen.getByRole("heading", { name: "Record search" }),
     ).toBeVisible();
-    unmount();
   });
 });
