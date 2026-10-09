@@ -8,10 +8,14 @@
 .home-capture-theme--light {
   display: none;
 }
-:root[data-theme="light"] .home-capture:has(.home-capture-theme--light) .home-capture-theme--dark {
+:root[data-theme="light"]
+  .home-capture:has(.home-capture-theme--light)
+  .home-capture-theme--dark {
   display: none;
 }
-:root[data-theme="light"] .home-capture:has(.home-capture-theme--light) .home-capture-theme--light {
+:root[data-theme="light"]
+  .home-capture:has(.home-capture-theme--light)
+  .home-capture-theme--light {
   display: block;
 }
 .home-capture img {
@@ -34,11 +38,11 @@
   align-items: center;
 }
 .home-hero-copy h1 {
-  max-width: 12ch;
+  max-width: 16ch;
   margin: 0 0 1.35rem;
   color: var(--text-primary);
   font-family: var(--font-display);
-  font-size: clamp(2.85rem, 5vw, 5.4rem);
+  font-size: clamp(2.65rem, calc(5vw - 0.2rem), 5.2rem);
   line-height: 1.03;
   letter-spacing: -0.039em;
   text-wrap: balance;
@@ -64,154 +68,183 @@
 }
 .home-hero-stage {
   min-width: 0;
+  width: min(100%, 400px);
+  justify-self: end;
 }
-/* —— Hero career cards: a restrained card system that physically
-   rearranges (FLIP transform) into the sequence, then settles on Cyber. —— */
+.v2-home .home-hero-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+  gap: clamp(3rem, 6vw, 6rem);
+}
+@media (max-width: 1000px) {
+  .v2-home .home-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 3rem;
+  }
+  .home-hero-stage {
+    justify-self: center;
+  }
+}
+/* One opaque, bounded deck. Rank controls every offset and layer; the front
+   card keeps its full face, while only the header of each rear card peeks out. */
 .home-hero-cards {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
+  --deck-step: 64px;
+  position: relative;
+  isolation: isolate;
+  height: calc(4 * var(--deck-step) + 180px);
+  margin: 12px 8px 0;
 }
 .home-hero-card {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: calc(100% - 48px);
+  height: 180px;
   min-width: 0;
   padding: 0;
   border: 0;
-  background: none;
-  color: inherit;
+  border-radius: 12px;
+  background: var(--surface-base);
+  color: var(--text-primary);
   text-align: left;
   cursor: pointer;
-  transition: transform var(--ui-motion-medium) var(--ui-motion-ease);
+  z-index: calc(5 - var(--deck-rank));
+  transform: translate(
+      calc(var(--deck-rank) * 10px),
+      calc((4 - var(--deck-rank)) * var(--deck-step))
+    )
+    rotate(calc(var(--deck-rank) * -0.6deg));
+  transform-origin: top left;
+  transition:
+    transform 650ms var(--ui-motion-ease),
+    box-shadow 650ms var(--ui-motion-ease);
 }
 .home-hero-card-surface {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  grid-template-areas:
-    "cue name"
-    "cue field"
-    "cue status";
-  gap: 0.15rem 0.75rem;
+  grid-template-areas: "cue name" ". field" ". status";
+  grid-template-rows: 48px auto 1fr;
   align-items: start;
-  min-width: 0;
+  gap: 0.35rem 0.75rem;
   height: 100%;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
+  box-sizing: border-box;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: inherit;
   background: var(--surface-base);
-  color: var(--text-secondary);
-  transition:
-    transform var(--ui-motion-medium) var(--ui-motion-ease),
-    border-color var(--ui-motion-medium) var(--ui-motion-ease),
-    box-shadow var(--ui-motion-medium) var(--ui-motion-ease);
-}
-.home-hero-card[data-emphasis="false"] .home-hero-card-surface {
-  transform: scale(0.98);
+  box-shadow: 0 10px 26px -16px rgb(0 0 0 / 40%);
 }
 .home-hero-card[data-emphasis="true"] .home-hero-card-surface {
-  border-color: var(--border-strong);
-  box-shadow: 0 18px 36px -22px rgb(0 0 0 / 55%);
-  transform: translateY(-4px) scale(1.015);
+  background: var(--surface-strong);
+  box-shadow: 0 22px 40px -20px rgb(0 0 0 / 50%);
+}
+.home-hero-card:focus-visible {
+  outline: 3px solid var(--action-primary);
+  outline-offset: 4px;
 }
 .home-hero-card-cue {
   grid-area: cue;
   display: grid;
   place-items: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  border: 1px solid var(--border-subtle);
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
-  color: var(--text-secondary);
+  color: var(--text-primary);
   font: 700 0.72rem/1 var(--font-mono);
-  letter-spacing: 0.06em;
 }
 .home-hero-card-name {
   grid-area: name;
   color: var(--text-primary);
-  font-size: 0.88rem;
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 1.7vw, 1.4rem);
   font-weight: 700;
-  line-height: 1.35;
-  letter-spacing: -0.012em;
+  line-height: 1.2;
+  overflow-wrap: break-word;
 }
 .home-hero-card-field {
   grid-area: field;
   color: var(--text-secondary);
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.78rem;
+  line-height: 1.5;
 }
 .home-hero-card-status {
   grid-area: status;
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-  line-height: 1.45;
-}
-.home-hero-card[data-emphasis="true"] .home-hero-card-status {
+  align-self: end;
   color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.5;
 }
-
-/* —— Real work —— */
+.home-hero-card[data-emphasis="false"] .home-hero-card-field,
+.home-hero-card[data-emphasis="false"] .home-hero-card-status {
+  visibility: hidden;
+}
+.v2-home .home-hero-availability {
+  margin: 1rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+/* Feature copy has its own column; captures get generous, bounded edges. */
+.home-feature-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: center;
+}
 .home-realwork-intro {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  justify-content: space-between;
-  gap: 1.2rem 3rem;
-  margin-bottom: 2.2rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(2rem, 5vw, 5rem);
 }
 .home-realwork-intro h2 {
   margin-bottom: 0;
 }
-.home-realwork-intro .ui-type-proof {
-  max-width: 34ch;
-  margin-bottom: 0.45rem;
+.home-realwork-intro h2,
+.home-analysis-copy h2 {
+  max-width: 17ch;
+  margin: 0 0 2rem;
 }
-/* One dominant proof at a time; the labels swap the view manually. */
-.home-evidence-views {
-  min-width: 0;
-}
-.home-evidence-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.55rem 2rem;
-  margin-top: 1.15rem;
-}
-.home-evidence-swap {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  padding: 0.32rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: var(--surface-base);
-}
-.home-evidence-swap button {
-  padding: 0.45rem 0.95rem;
-  border: 0;
-  border-radius: 7px;
-  background: none;
-  color: var(--text-secondary);
-  font: 600 0.82rem/1.5 var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-}
-.home-evidence-swap button[aria-pressed="true"] {
-  background: var(--surface-subtle);
-  box-shadow: inset 0 0 0 1px var(--border-strong);
-  color: var(--text-primary);
-  font-weight: 700;
-}
-.home-evidence-swap button:hover {
-  color: var(--text-primary);
-}
-.home-evidence-note {
+.home-decision-beats,
+.home-analysis-beats {
+  display: grid;
+  gap: 1.75rem;
   margin: 0;
-  color: var(--text-muted);
-  font-size: 0.78rem;
+  padding: 0;
+  list-style: none;
+}
+.home-decision-beats li,
+.home-analysis-beats li {
+  color: var(--text-primary);
+  font-size: 1.15rem;
+  font-weight: 700;
   line-height: 1.5;
 }
-
+.home-feature-proof {
+  min-width: 0;
+  margin: 0;
+}
+.home-feature-frame {
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+  border-radius: 16px;
+  background: var(--surface-subtle);
+}
+.home-feature-proof figcaption {
+  margin: 1rem 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+.home-analysis-copy .ui-type-proof {
+  margin-bottom: 2rem;
+}
+@media (max-width: 900px) {
+  .home-feature-grid,
+  .home-realwork-intro {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
 /* —— How a shift works —— */
 .home-acts {
   display: grid;
@@ -246,148 +279,48 @@
   font-weight: 700;
   line-height: 1.45;
 }
-/* —— Handoff: one email card beside the closing statement —— */
-.home-handoff-grid {
+/* —— Reflection: a focused question with room to consider it —— */
+.home-reflect-content {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: clamp(1.6rem, 4vw, 3.2rem);
-  align-items: start;
+  gap: 1.25rem;
+  padding-block: clamp(1rem, 3vw, 2rem);
 }
-
-/* —— Careers: one controlled artifact switcher (one cycle, then Cyber).
-   Selectors read as a restrained card system, not plain text tabs. —— */
-.home-career-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-  margin: 1.9rem 0 1.35rem;
-}
-.home-career-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.85rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: var(--surface-base);
-  color: var(--text-secondary);
-  font: 600 0.85rem/1.3 var(--font-body);
-  cursor: pointer;
-  transition:
-    transform var(--ui-motion-fast) var(--ui-motion-ease),
-    border-color var(--ui-motion-fast) var(--ui-motion-ease),
-    box-shadow var(--ui-motion-fast) var(--ui-motion-ease),
-    color var(--ui-motion-fast) var(--ui-motion-ease);
-}
-.home-career-tab-cue {
-  display: grid;
-  place-items: center;
-  width: 1.65rem;
-  height: 1.65rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 7px;
-  font: 700 0.62rem/1 var(--font-mono);
-  letter-spacing: 0.06em;
-}
-.home-career-tab[aria-pressed="true"] {
-  border-color: var(--border-strong);
-  background: var(--surface-subtle);
-  color: var(--text-primary);
-  box-shadow: 0 12px 26px -20px rgb(0 0 0 / 55%);
-}
-.home-career-tab:hover {
-  color: var(--text-primary);
-}
-.home-career-provenance {
-  display: block;
-}
-/* —— Career-aware CTA: active route for playable careers, concise
-   "Taking shape" state otherwise. —— */
-.home-career-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem 1.65rem;
-  margin-top: 1.5rem;
-}
-.home-career-cta-disabled {
-  cursor: not-allowed;
-  opacity: 0.8;
-}
-.home-career-stage {
-  min-width: 0;
-}
-.home-career-panel {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.15rem 2.4rem;
-  align-items: start;
-  min-width: 0;
-}
-/* One representative work object per career, cropped as a document plate.
-   Named media slots stay stable for future real captures. */
-.home-career-plate {
-  height: clamp(250px, 30vw, 400px);
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  background: var(--surface-base);
-  overflow: clip;
-}
-.home-career-plate .wa-sheet {
-  height: 100%;
-  border: 0;
-  border-radius: 0;
-}
-.home-career-plate .home-capture,
-.home-career-plate .home-capture img {
-  height: 100%;
-  border: 0;
-  border-radius: 0;
-  object-fit: cover;
-  object-position: top left;
-}
-.home-career-panel h3 {
-  margin: 0 0 0.65rem;
-  color: var(--text-primary);
-  font-family: var(--font-display);
-  font-size: 1.35rem;
-  letter-spacing: -0.02em;
-}
-.home-career-statement {
-  max-width: 32ch;
-  margin: 0 0 0.85rem;
-  color: var(--text-primary);
-  font-size: 1.02rem;
-  font-weight: 600;
-  line-height: 1.5;
-}
-/* —— Story band: a restrained wide media breath —— */
-.home-story {
-  overflow: clip;
-}
-
-/* —— Reflection: one compact debrief crop —— */
-.home-reflect-chapter h2 {
+.home-reflect-content h2 {
   max-width: 22ch;
+  margin: 0;
+  text-wrap: balance;
 }
+.home-reflect-content .ui-type-proof {
+  max-width: 48ch;
+}
+.home-reflect-content > p {
+  margin: 0;
+}
+
+/* Show the authentic review heading and first decision, rather than the
+   middle of the long full-shift capture. This is an explicitly labeled excerpt. */
 .home-debrief-crop {
-  height: clamp(200px, 21vw, 280px);
-  margin-top: 1.9rem;
+  position: relative;
+  aspect-ratio: 1366 / 1150;
   overflow: clip;
   border: 1px solid var(--border-strong);
   border-radius: 10px;
   background: var(--surface-base);
 }
-.home-debrief-crop .home-capture,
-.home-debrief-crop .home-capture-theme {
-  height: 100%;
+.home-debrief-crop .home-capture {
+  position: absolute;
+  inset: 0;
 }
 .home-debrief-crop .home-capture img {
-  height: 100%;
+  width: 100%;
+  height: auto;
   border: 0;
   border-radius: 0;
-  object-fit: cover;
-  object-position: top center;
+}
+@media (max-width: 600px) {
+  .home-debrief-crop {
+    aspect-ratio: 4 / 5;
+  }
 }
 
 /* —— Final —— */
@@ -559,9 +492,6 @@
 .v2-home .ui-artifact-stage__field {
   padding: clamp(1.35rem, 3vw, 2.75rem);
 }
-.v2-home .home-realwork-stage .ui-artifact-stage__primary {
-  width: min(100%, 1040px);
-}
 .v2-home .shift-handoff {
   padding: clamp(1.35rem, 2.8vw, 2.4rem);
 }
@@ -585,12 +515,6 @@
   .home-acts > li + li {
     padding-left: 2rem;
     border-left: 1px solid var(--border-subtle);
-  }
-  .home-handoff-grid {
-    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-  }
-  .home-career-panel {
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
   }
 }
 @media (max-width: 600px) {
@@ -616,12 +540,9 @@
 }
 @media (max-width: 480px) {
   .home-hero-copy h1 {
-    font-size: clamp(2.55rem, 11vw, 3.4rem);
+    font-size: clamp(2.35rem, calc(11vw - 0.2rem), 3.2rem);
   }
   .home-hero-card-surface {
     padding: 0.75rem 0.85rem;
-  }
-  .home-career-tabs {
-    gap: 0.4rem;
   }
 }

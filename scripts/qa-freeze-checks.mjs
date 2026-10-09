@@ -251,6 +251,15 @@ export function collectMetrics({ leakPatterns = [] } = {}) {
     navReport,
     workshopArtifactCount,
     workshopLabels,
+    homeReflectLeft: document.querySelector(".home-reflect-content")?.getBoundingClientRect().left ?? null,
+    homeShiftLeft: document.querySelector(".home-shift-chapter")?.getBoundingClientRect().left ?? null,
+    homeSectionOrder: Array.from(document.querySelectorAll(".v2-home > section")).map((section) => section.className),
+    homeAnalysisCropWidth: document.querySelector(".home-debrief-crop")?.clientWidth ?? 0,
+    homeAnalysisCropHeight: document.querySelector(".home-debrief-crop")?.clientHeight ?? 0,
+    homeBranchingArtifacts: document.querySelectorAll('.home-realwork figure, .home-realwork [data-media-slot], .home-realwork button').length,
+    homeAnalysisCaptures: document.querySelectorAll('.home-analysis [data-media-slot="home-debrief-reflection"]').length,
+    homeCareerLabels: Array.from(document.querySelectorAll(".home-hero-card"))
+      .map((card) => card.getAttribute("aria-label") ?? ""),
     cls: window.__qaCls ?? 0,
   };
 }
@@ -383,7 +392,8 @@ export function evaluateChecks({ route, theme, motion, metrics }) {
     (label) => !/(playable now|workshop concept|taking shape|in the workshop)/i.test(label),
   );
   const workshopIssues = [];
-  if (workshopRoute && !/workshop/i.test(metrics.bodyText)) {
+  // Home now shows availability cards, not Workshop concept artifacts.
+  if ((route.key === "careers" || metrics.workshopArtifactCount > 0) && !/workshop/i.test(metrics.bodyText)) {
     workshopIssues.push("no workshop wording in visible text");
   }
   if (workshopRoute && metrics.workshopArtifactCount > 0 && provenanceLabels.length === 0) {
@@ -404,6 +414,26 @@ export function evaluateChecks({ route, theme, motion, metrics }) {
         : { labels: provenanceLabels, artefacts: metrics.workshopArtifactCount }
       : "not applicable",
   );
+
+  if (route.key === "home") {
+    const order = metrics.homeSectionOrder ?? [];
+    push("home-feature-order", JSON.stringify(order) === JSON.stringify([
+      "home-hero", "home-place", "home-realwork", "home-analysis", "home-shift", "home-reflect", "home-faq", "home-final",
+    ]), order);
+    push("home-reflection-aligned", metrics.homeReflectLeft !== null &&
+      metrics.homeShiftLeft !== null && Math.abs(metrics.homeReflectLeft - metrics.homeShiftLeft) <= 1,
+      { reflect: metrics.homeReflectLeft, shift: metrics.homeShiftLeft });
+    push("text-only-home-branching", metrics.homeBranchingArtifacts === 0, metrics.homeBranchingArtifacts);
+    push("one-home-analysis-capture", metrics.homeAnalysisCaptures === 1, metrics.homeAnalysisCaptures);
+    push("compact-home-analysis-capture", metrics.homeAnalysisCropWidth > 0 &&
+      metrics.homeAnalysisCropHeight >= metrics.homeAnalysisCropWidth * 0.5 &&
+      metrics.homeAnalysisCropHeight <= metrics.homeAnalysisCropWidth * 1.3,
+      { width: metrics.homeAnalysisCropWidth, height: metrics.homeAnalysisCropHeight });
+    const labels = metrics.homeCareerLabels ?? [];
+    push("home-career-availability", labels.length === 5 &&
+      labels.filter((label) => /Cybersecurity Analyst.*Playable now/i.test(label)).length === 1 &&
+      labels.filter((label) => /Taking shape/i.test(label)).length === 4, labels);
+  }
 
   const cyberRoute = route.key === "cyber";
   const cyberIssues = [];
