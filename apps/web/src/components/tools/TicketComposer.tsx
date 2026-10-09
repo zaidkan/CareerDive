@@ -22,7 +22,7 @@ export function TicketComposer({
   view: ClientView;
   action: AvailableAction;
   draftAction?: AvailableAction | undefined;
-  onAction: (action: AvailableAction, freeText?: string) => void;
+  onAction: (action: AvailableAction) => void;
   mutationState: MutationState;
   onOpenArtifact?: ((id: string) => Promise<unknown>) | undefined;
 }) {
@@ -104,6 +104,7 @@ export function TicketComposer({
             <label key={id}>
               <input
                 type="radio"
+                disabled={pending}
                 name={`disposition-${action.eventId}`}
                 checked={decisionOptionId === id}
                 onChange={() => {
@@ -134,6 +135,7 @@ export function TicketComposer({
       ) : null}
       <button
         type="button"
+        className="action-primary"
         data-action-id={action.id}
         data-event-id={action.eventId}
         disabled={
@@ -144,7 +146,9 @@ export function TicketComposer({
           onAction({
             ...action,
             ticketPayload: payload,
-            ...(decisionOptionId ? { decisionOptionId } : {}),
+            ...(action.decisionOptions?.length && decisionOptionId
+              ? { decisionOptionId }
+              : {}),
           });
         }}
       >
@@ -152,7 +156,11 @@ export function TicketComposer({
           ? "Saving…"
           : record
             ? "Record case decision"
-            : "Save analysis and decision"}
+            : action.id === "update_ticket_notes"
+              ? ticket?.decisionReasoning
+                ? "Save note correction"
+                : "Save draft"
+              : "Save analysis and decision"}
       </button>
       {ticket ? (
         <p role="status">

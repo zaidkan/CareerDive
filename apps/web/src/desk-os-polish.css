@@ -341,15 +341,13 @@
 }
 .desk-os .tool-panel :is(.action-primary, .rq-submit),
 .desk-os .handoff-builder > button,
-.desk-os .case-ticket-composer > button:last-child,
 .desk-os .desk-os-primary {
   color: var(--action-on-primary);
   background: var(--action-primary);
   border-color: var(--action-primary);
 }
 .desk-os .tool-panel :is(.action-primary, .rq-submit):hover:not(:disabled),
-.desk-os .handoff-builder > button:hover:not(:disabled),
-.desk-os .case-ticket-composer > button:last-child:hover:not(:disabled) {
+.desk-os .handoff-builder > button:hover:not(:disabled) {
   background: var(--action-primary);
   filter: brightness(1.08);
 }
@@ -395,7 +393,7 @@
   gap: 1rem;
   min-width: 0;
 }
-.desk-os :is(.tool-panel form > label, .handoff-builder > label) {
+.desk-os .tool-panel form > label {
   display: grid;
   gap: 0.5rem;
   font-weight: 600;
@@ -965,9 +963,7 @@ body:has(.site-main-start .desk-os) :is(.site-nav, .site-footer),
   color: var(--text-secondary);
   font-size: 0.8125rem;
 }
-.desk-os
-  .case-ticket-composer
-  :is(.rq-submit, button[data-action-id="document_ticket"]),
+.desk-os .case-ticket-composer > .action-primary,
 .desk-os .handoff-builder > button {
   justify-self: start;
   padding: 0.625rem 0.875rem;

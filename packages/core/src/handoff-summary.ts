@@ -129,9 +129,7 @@ export function handoffCaseLines(
  */
 export function handoffFollowUps(
   events: readonly HandoffEventInput[],
-  teamMessages: ClientView["teamMessages"],
 ): string[] {
-  void teamMessages;
   const followUps: string[] = [];
   const liveEvents = events.filter(
     (event) => event.status !== "pending" && !NON_CASE_EVENT_IDS.has(event.id),

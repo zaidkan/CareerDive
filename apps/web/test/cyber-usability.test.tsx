@@ -246,3 +246,151 @@ it("finance response labels distinguish direct approval from identical source qu
     }),
   ).toBeVisible();
 });
+
+it("saves weak option notes by keyboard without preselected answers or assessed text inputs", async () => {
+  const user = userEvent.setup();
+  const view = toClientView(fresh());
+  const action = view.availableActions.find(
+    (a) => a.id === "update_ticket_notes",
+  );
+  if (!action) throw new Error("Missing draft action");
+  const onAction = vi.fn();
+  const { container } = render(
+    <TicketComposer
+      view={view}
+      action={action}
+      onAction={onAction}
+      mutationState={{}}
+    />,
+  );
+  expect(container.querySelectorAll("textarea")).toHaveLength(0);
+  expect(
+    screen
+      .getAllByRole("checkbox")
+      .every((c) => !(c as HTMLInputElement).checked),
+  ).toBe(true);
+  const save = screen.getByRole("button", { name: "Save draft" });
+  expect(save).toHaveClass("action-primary");
+  save.focus();
+  await user.keyboard("{Enter}");
+  expect(onAction).toHaveBeenCalledOnce();
+  expect(onAction.mock.calls[0]?.[0]).toMatchObject({
+    ticketPayload: {
+      reasoning: { evidence: [], uncertainty: [], nextStep: [] },
+    },
+  });
+});
+it("does not resend a persisted decision when saving a correction, and locks choices while saving", async () => {
+  const user = userEvent.setup();
+  let state = fresh();
+  for (const id of [
+    "review_alert",
+    "inspect_login_context",
+    "inspect_account_history",
+    "check_device_inventory",
+  ] as const)
+    state = applyAction(state, {
+      id,
+      eventId: "suspicious-login-1",
+      actorId: "user",
+    }).state;
+  state = applyAction(state, {
+    id: "document_ticket",
+    eventId: "suspicious-login-1",
+    actorId: "user",
+    decisionOptionId: "escalate-with-comparisons",
+    ticketPayload: {
+      ticketId: "ticket-suspicious-login-1",
+      reasoning: {
+        version: "desk-options-v1",
+        evidence: [],
+        context: [],
+        uncertainty: [],
+        nextStep: [],
+      },
+    },
+  }).state;
+  state = applyAction(state, {
+    id: "escalate_alert",
+    eventId: "suspicious-login-1",
+    actorId: "user",
+  }).state;
+  const view = toClientView(state);
+  const action = view.availableActions.find(
+    (a) => a.id === "update_ticket_notes" && a.eventId === "suspicious-login-1",
+  );
+  if (!action) throw new Error("Missing correction action");
+  const onAction = vi.fn();
+  const props = { view, action, onAction, mutationState: {} };
+  const { rerender } = render(<TicketComposer {...props} />);
+  await user.click(
+    screen.getByRole("button", { name: "Save note correction" }),
+  );
+  expect(onAction.mock.calls[0]?.[0]).not.toHaveProperty("decisionOptionId");
+  rerender(
+    <TicketComposer {...props} mutationState={{ pendingKey: "saving" }} />,
+  );
+  expect(
+    screen
+      .getAllByRole("checkbox")
+      .every((c) => (c as HTMLInputElement).disabled),
+  ).toBe(true);
+});
+it("locks handoff checkboxes and next-owner controls during submission", () => {
+  const view = toClientView(fresh());
+  render(
+    <HandoffBuilder
+      view={view}
+      action={{
+        id: "submit_shift_handoff",
+        eventId: "shift-handoff-1",
+        systemId: "team_chat",
+        label: "Send",
+        description: "Send handoff",
+        simulatedMinutes: 5,
+      }}
+      onAction={vi.fn()}
+      pending
+    />,
+  );
+  for (const input of [
+    ...screen.getAllByRole("checkbox"),
+    ...screen.getAllByRole("radio"),
+  ])
+    expect(input).toBeDisabled();
+  expect(screen.queryByRole("textbox")).toBeNull();
+});
+it("renders the arrival handoff body only once with glossary and source links preserved", () => {
+  const state = applyWorkplaceInteraction(fresh(), {
+    type: "open_artifact",
+    artifactId: "handoff-email",
+  }).state;
+  const view = toClientView(state);
+  const body = state.artifacts["handoff-email"]?.body;
+  if (!body) throw new Error("Missing handoff body");
+  const { container } = render(
+    <SystemToolPanel
+      view={view}
+      systemId="email"
+      selectedEventId="handoff-1"
+      actions={view.availableActions.filter((a) => a.eventId === "handoff-1")}
+      onAction={vi.fn()}
+      onWorkplaceInteraction={vi.fn().mockResolvedValue(undefined)}
+    />,
+  );
+  expect(
+    [...container.querySelectorAll("pre")].filter(
+      (node) => node.textContent === body,
+    ),
+  ).toHaveLength(1);
+  expect(screen.getByText("Record terms")).toBeInTheDocument();
+  for (const term of [
+    "MFA",
+    "VPN",
+    "ASN / ISP",
+    "VLAN",
+    "HQ",
+    "Enrolled device / MDM",
+  ])
+    expect(screen.getByText(term)).toBeInTheDocument();
+});

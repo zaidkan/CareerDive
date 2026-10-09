@@ -301,10 +301,14 @@ it("rejects stale handoff state and duplicate selections before sending", () => 
 });
 it.each([
   "rivera-followup-evidence-1",
+  "rivera-followup-evidence-2",
+  "rivera-followup-evidence-3",
   "rivera-followup-uncertainty-1",
   "rivera-followup-uncertainty-2",
+  "rivera-followup-uncertainty-3",
   "rivera-followup-nextStep-1",
   "rivera-followup-nextStep-2",
+  "rivera-followup-nextStep-3",
 ])("Rivera follow-up option %s uses the actual receipt phase", (id) => {
   const state = world();
   event(state, cases.rivera).status = "resolved";
@@ -323,8 +327,21 @@ it.each([
   );
   selected[group.id] = [...new Set([...selected[group.id], id])];
   expect(
-    reviewReasoning(cases.rivera, selected, ["rivera-result-receipt"]).verdict,
-  ).toBe(id.endsWith("-2") ? "needs_more_evidence" : "supported");
+    reviewReasoning(cases.rivera, selected, [
+      "rivera-result-receipt",
+      "rivera-auth-summary",
+      "ticket-login-help",
+    ]).verdict,
+  ).toBe(
+    [
+      "rivera-followup-evidence-3",
+      "rivera-followup-uncertainty-2",
+      "rivera-followup-nextStep-2",
+      "rivera-followup-nextStep-3",
+    ].includes(id)
+      ? "needs_more_evidence"
+      : "supported",
+  );
   expect(() => validateReasoning(world(), cases.rivera, selected)).toThrow(
     "Follow-up options require a recorded result",
   );
@@ -376,4 +393,139 @@ it("handoff accepts an approval source inspected by its canonical check action",
     "scanner-run-log",
     "scanner-window",
   ]);
+});
+
+describe("self-audit: readable options and bounded records", () => {
+  it.each([...Object.values(cases), "rivera-followup"])(
+    "keeps 3–5 options in every assessed field for %s",
+    (caseId) => {
+      const state = world();
+      if (caseId === "rivera-followup")
+        event(state, cases.rivera).status = "resolved";
+      for (const group of reasoningGroups(
+        state,
+        caseId === "rivera-followup" ? cases.rivera : caseId,
+      ).filter((g) => g.id !== "context")) {
+        expect(group.options.length).toBeGreaterThanOrEqual(3);
+        expect(group.options.length).toBeLessThanOrEqual(5);
+      }
+    },
+  );
+  it("uses receipt evidence without requiring redundant pre-action authentication opening", () => {
+    const selected: ReasoningSelection = {
+      version: "desk-options-v1",
+      phase: "follow-up",
+      evidence: ["rivera-followup-evidence-1"],
+      context: [],
+      uncertainty: ["rivera-followup-uncertainty-1"],
+      nextStep: ["rivera-followup-nextStep-1"],
+    };
+    expect(
+      reviewReasoning(cases.rivera, selected, ["rivera-result-receipt"])
+        .verdict,
+    ).toBe("supported");
+    const state = world();
+    event(state, cases.rivera).status = "resolved";
+    for (const group of reasoningGroups(state, cases.rivera))
+      selected[group.id] = group.options.map((o) => o.id);
+    expect(
+      reviewReasoning(cases.rivera, selected, [
+        "rivera-result-receipt",
+        "rivera-auth-summary",
+        "ticket-login-help",
+      ]).verdict,
+    ).toBe("needs_more_evidence");
+  });
+  it("opens the prior-run and cross-case deciding details from the relevant case", () => {
+    let state = world();
+    for (const [id, caseId, detail] of [
+      ["scanner-prior-run", cases.scanner, "RUN-FIN-030"],
+      ["scanner-other-notice", cases.scanner, "monitor until the window ends"],
+      [
+        "scanner-window",
+        cases.finance,
+        "It grants no finance data-access role",
+      ],
+      ["prior-session-1", cases.login, "does not verify S-0741"],
+    ]) {
+      state = applyWorkplaceInteraction(state, {
+        type: "open_artifact",
+        artifactId: required(id),
+      }).state;
+      const source = required(
+        toClientView(state).artifacts.find((a) => a.id === id),
+      );
+      expect(source.eventIds).toContain(caseId);
+      expect(source.observed).toBe(true);
+      expect(source.body).toContain(detail);
+    }
+  });
+  it("keeps key records at 40–80 words, factual rows, and explicit source limits", () => {
+    const state = world();
+    for (const id of [
+      "login-session-timeline",
+      "prior-session-1",
+      "vpn-context-1",
+      "travel-status-1",
+      "login-follow-up-guide",
+      "suspicious-login-alert",
+      "login-context-1",
+      "account-history-1",
+      "device-inventory-1",
+      "handoff-email",
+      "employee-login-reply",
+      "scanner-alert",
+      "scanner-run-log",
+      "scanner-window",
+      "scanner-prior-run",
+      "scanner-other-notice",
+      "access-request-email",
+      "access-approval-guide",
+      "rivera-login-email",
+      "rivera-auth-summary",
+      "rivera-device-inventory",
+      "login-troubleshooting-guide",
+    ]) {
+      const body = required(state.artifacts[id]).body;
+      expect(body.trim().split(/\s+/).length, id).toBeGreaterThanOrEqual(40);
+      expect(body.trim().split(/\s+/).length, id).toBeLessThanOrEqual(80);
+      expect(
+        body.trim().split(/\n/).filter(Boolean).length,
+        id,
+      ).toBeGreaterThanOrEqual(4);
+      expect(
+        body.trim().split(/\n/).filter(Boolean).length,
+        id,
+      ).toBeLessThanOrEqual(7);
+      expect(body, id).toContain("Limit:");
+    }
+    const timeline = required(state.artifacts["login-session-timeline"]).body;
+    for (const fact of [
+      "07:38:02–07:40:51",
+      "203.0.113.44",
+      "07:41:09",
+      "07:43",
+      "07:45",
+      "S-0731",
+      "S-0741",
+      "V-218",
+      "unknown-laptop-17",
+      "extra-check result absent",
+      "no file/mail activity collected",
+      "not independent corroboration",
+    ])
+      expect(timeline).toContain(fact);
+    expect(required(state.artifacts["scanner-run-log"]).body).toContain(
+      "10:05–10:32",
+    );
+    expect(required(state.artifacts["scanner-window"]).body).toContain(
+      "10:00–12:00",
+    );
+    expect(required(state.artifacts["rivera-auth-summary"]).body).toContain(
+      "08:36–08:41",
+    );
+    expect(required(state.artifacts["rivera-auth-summary"]).body).toContain(
+      "08:42",
+    );
+  });
 });

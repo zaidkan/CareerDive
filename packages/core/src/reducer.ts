@@ -327,7 +327,7 @@ export function applyAction(
     ).map(({ title, label, detail }) =>
       detail ? `${title}: ${label}. ${detail}` : `${title}: ${label}.`,
     );
-    const open = handoffFollowUps(state.events, state.teamMessages ?? []);
+    const open = handoffFollowUps(state.events);
     const caseTicket = state.structuredTickets["ticket-suspicious-login-1"];
     const followUp = {
       "senior-review":
@@ -466,7 +466,11 @@ export function applyAction(
   if (ticketPayload) {
     updateTicket(state, targetEventId, action.id, ticketPayload);
     const savedTicket = state.structuredTickets[ticketPayload.ticketId];
-    if (action.decisionOptionId && savedTicket)
+    if (
+      action.id !== "update_ticket_notes" &&
+      action.decisionOptionId &&
+      savedTicket
+    )
       savedTicket.disposition = action.decisionOptionId;
   }
   const dialogueTicket = state.structuredTickets[`ticket-${targetEventId}`];
@@ -518,13 +522,13 @@ export function applyAction(
       id: "rivera-result-receipt",
       systemId: "email",
       kind: "email",
-      title: "Rivera result receipt · recorded phone check",
+      title: "Rivera result receipt · recorded case response",
       summary:
         "Authored simulation result, not an independent pre-action observation",
       body: `${event?.resolution ?? "No completed phone check recorded."} Reopen if retries continue, an unfamiliar device appears or unrecognized activity is reported.`,
       eventIds: ["login-help-1", "shift-handoff-1"],
       relatedArtifactIds: ["rivera-auth-summary"],
-      searchableText: "Rivera result receipt phone check",
+      searchableText: "Rivera result receipt case response",
       metadata: {},
     };
   }

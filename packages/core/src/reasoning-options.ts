@@ -377,9 +377,21 @@ CATALOG.riveraFollowup = {
   evidence: [
     {
       id: "rivera-followup-evidence-1",
-      label: "Rivera result receipt · recorded phone check",
+      label: "Rivera result receipt · recorded case response",
       verdict: "C",
       sourceArtifactIds: ["rivera-result-receipt"],
+    },
+    {
+      id: "rivera-followup-evidence-2",
+      label: "Authentication summary · A. Rivera",
+      verdict: "C",
+      sourceArtifactIds: ["rivera-auth-summary"],
+    },
+    {
+      id: "rivera-followup-evidence-3",
+      label: "Ticket · Rivera login prompts",
+      verdict: "close-wrong",
+      sourceArtifactIds: ["ticket-login-help"],
     },
   ],
   context: [],
@@ -397,19 +409,33 @@ CATALOG.riveraFollowup = {
       verdict: "close-wrong",
       sourceArtifactIds: [],
     },
+    {
+      id: "rivera-followup-uncertainty-3",
+      label:
+        "The 08:42 laptop success is a separate device result; it does not document the phone-app follow-up.",
+      verdict: "C",
+      sourceArtifactIds: [],
+    },
   ],
   nextStep: [
     {
       id: "rivera-followup-nextStep-1",
       label:
-        "Reopen review if retries continue, an unfamiliar device appears, or Rivera reports unrecognized activity.",
+        "Carry the receipt's actual result; complete any untested phone-app check and reopen on continued retries, unfamiliar devices or unrecognized activity.",
       verdict: "C",
       sourceArtifactIds: [],
     },
     {
       id: "rivera-followup-nextStep-2",
       label:
-        "Treat the recorded check as proof that all later phone activity is expected.",
+        "Use the 08:42 laptop success as the completed phone-app check before closing follow-up.",
+      verdict: "close-wrong",
+      sourceArtifactIds: [],
+    },
+    {
+      id: "rivera-followup-nextStep-3",
+      label:
+        "Reset the account password again before checking the phone's saved password.",
       verdict: "close-wrong",
       sourceArtifactIds: [],
     },
@@ -449,9 +475,13 @@ const CONFLICT_DETAILS: Record<string, string> = {
   "rivera-nextStep-4":
     "Laptop sign-in succeeds after the reset. The supported first test is the phone app's stored password, not another account reset.",
   "rivera-followup-uncertainty-2":
-    "A laptop result cannot establish the phone's saved credential. Use the actual phone-check receipt.",
+    "A laptop result cannot establish the phone's saved credential. Use the actual case-response receipt.",
+  "rivera-followup-evidence-3":
+    "The ticket asks for documentation; only the result receipt records which action happened and what remains untested.",
   "rivera-followup-nextStep-2":
-    "The recorded phone check is bounded. Later retries, unfamiliar devices or unrecognized activity require reassessment.",
+    "08:42 describes the laptop, not a completed phone-app check. Preserve the actual receipt, including an untested phone result.",
+  "rivera-followup-nextStep-3":
+    "The successful laptop sign-in supports checking the affected phone app's stored password before another account reset.",
 };
 const PROMPTS: Record<string, string> = {
   login:
@@ -525,7 +555,7 @@ export function reasoningGroups(
       prompt:
         id === "evidence"
           ? key === "riveraFollowup"
-            ? "Which record documents the actual phone check?"
+            ? "Which record documents the actual case response?"
             : (PROMPTS[key] ?? "Which records support this finding?")
           : id === "context"
             ? "Optional reported or administrative context (no rating bonus)"
@@ -659,7 +689,8 @@ export function reviewReasoning(
       const essentials = definition.evidence.filter(
         (o) =>
           o.verdict === "C" &&
-          (key !== "rivera" || o.id === "rivera-evidence-1"),
+          (key !== "rivera" || o.id === "rivera-evidence-1") &&
+          (key !== "riveraFollowup" || o.id === "rivera-followup-evidence-1"),
       );
       for (const o of essentials)
         if (

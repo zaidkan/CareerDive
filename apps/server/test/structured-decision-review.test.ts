@@ -262,6 +262,100 @@ describe("versioned evidence coverage at the original decision", () => {
     ).toEqual([]);
     expect(shift.state.structuredTickets[`ticket-${login}`]?.revision).toBe(2);
   });
+  it("does not treat a complete draft as a committed scanner closure", () => {
+    const shift = run();
+    shift.openSources(scanner);
+    shift.action({
+      id: "document_ticket",
+      eventId: scanner,
+      decisionOptionId: "expected-close",
+      ticketPayload: {
+        ticketId: `ticket-${scanner}`,
+        reasoning: required(choices[scanner]),
+      },
+    });
+    expect(shift.decision("scanner_interruption")).toMatchObject({
+      evaluationMode: "structured-selections",
+      outcomeLabel: "needs_more_evidence",
+      userChoiceId: null,
+    });
+    expect(shift.decision("scanner_interruption").explanation).toContain(
+      "Recorded action: none",
+    );
+    expect(shift.state.events.find((e) => e.id === scanner)?.status).toBe(
+      "active",
+    );
+  });
+  it("preserves the scanner disposition when notes are revised before closure", () => {
+    const shift = run();
+    shift.openSources(scanner);
+    shift.action({
+      id: "document_ticket",
+      eventId: scanner,
+      decisionOptionId: "expected-close-with-monitoring",
+      ticketPayload: {
+        ticketId: `ticket-${scanner}`,
+        reasoning: required(choices[scanner]),
+      },
+    });
+    shift.action({
+      id: "update_ticket_notes",
+      eventId: scanner,
+      ticketPayload: {
+        ticketId: `ticket-${scanner}`,
+        reasoning: required(choices[scanner]),
+      },
+    });
+    shift.action({ id: "dismiss_alert", eventId: scanner });
+    expect(shift.decision("scanner_interruption").outcomeLabel).toBe(
+      "supported",
+    );
+    expect(foldActionLog(shift.initial, shift.log)).toEqual(shift.state);
+  });
+  it("never changes a recorded disposition through a note correction", () => {
+    const shift = run();
+    shift.openSources(login);
+    shift.commit(login);
+    shift.action({
+      id: "update_ticket_notes",
+      eventId: login,
+      decisionOptionId: "close-familiar-account",
+      ticketPayload: {
+        ticketId: `ticket-${login}`,
+        reasoning: required(choices[login]),
+      },
+    });
+    expect(shift.state.structuredTickets[`ticket-${login}`]?.disposition).toBe(
+      "escalate-with-comparisons",
+    );
+    expect(shift.decision("suspicious_login").outcomeLabel).toBe("supported");
+  });
+  it("requires the actual escalation action as well as a supported saved note", () => {
+    const shift = run();
+    shift.openSources(login);
+    shift.commit(login);
+    const inconsistentLog = shift.log.map((entry) =>
+      entry.interaction.type === "action" &&
+      entry.interaction.action.id === "escalate_alert"
+        ? {
+            ...entry,
+            interaction: {
+              type: "action" as const,
+              action: {
+                ...entry.interaction.action,
+                id: "dismiss_alert" as const,
+              },
+            },
+          }
+        : entry,
+    );
+    const reviewed = required(
+      buildDecisionReview(shift.state, inconsistentLog).decisions.find(
+        (d) => d.decisionId === "suspicious_login",
+      ),
+    );
+    expect(reviewed.outcomeLabel).toBe("needs_more_evidence");
+  });
   it("requires inspection before save, not merely before the final action", () => {
     const shift = run();
     shift.openSources(login);
@@ -295,6 +389,67 @@ describe("versioned evidence coverage at the original decision", () => {
     );
     expect(reviewed.explanation).toContain("One session cannot substitute");
   });
+  it.each([
+    ["route-to-owner", "supported", "waiting for the data owner"],
+    ["route-with-interim", "supported", "interim report granted no new role"],
+    ["self-approve", "needs_more_evidence", "approved without the data owner"],
+    ["route-to-director", "needs_more_evidence", "deadline approver"],
+  ])(
+    "finance %s preserves its actual authority outcome in review and handoff",
+    (disposition, verdict, carry) => {
+      const shift = run();
+      shift.openSources(finance);
+      shift.commit(finance, required(choices[finance]), disposition);
+      expect(shift.decision("finance_access").outcomeLabel).toBe(verdict);
+      expect(
+        handoffOptions(shift.state).options.find(
+          (o) => o.id === "carry-finance",
+        )?.label,
+      ).toContain(carry);
+      expect(foldActionLog(shift.initial, shift.log)).toEqual(shift.state);
+    },
+  );
+  it.each(["name-attacker", "grant-access"])(
+    "Rivera %s keeps untested phone work in the receipt and corrected note",
+    (disposition) => {
+      const shift = run();
+      shift.openSources(rivera);
+      shift.commit(rivera, required(choices[rivera]), disposition);
+      shift.inspect({
+        type: "open_artifact",
+        artifactId: "rivera-result-receipt",
+      });
+      const followup = {
+        version: "desk-options-v1" as const,
+        phase: "follow-up" as const,
+        evidence: ["rivera-followup-evidence-1"],
+        context: [],
+        uncertainty: ["rivera-followup-uncertainty-1"],
+        nextStep: ["rivera-followup-nextStep-1"],
+      };
+      shift.action({
+        id: "update_ticket_notes",
+        eventId: rivera,
+        ticketPayload: { ticketId: `ticket-${rivera}`, reasoning: followup },
+      });
+      expect(
+        shift.state.artifacts["rivera-result-receipt"]?.body,
+      ).not.toContain("no further retries");
+      expect(
+        shift.state.artifacts["rivera-result-receipt"]?.title,
+      ).not.toContain("recorded phone check");
+      expect(
+        shift.state.structuredTickets[`ticket-${rivera}`]?.followUp,
+      ).toContain("complete any untested phone-app check");
+      expect(shift.decision("routine_login").outcomeLabel).toBe(
+        "needs_more_evidence",
+      );
+      expect(
+        shift.decision("routine_login").reasoningAnalysis?.correctionHistory,
+      ).toHaveLength(1);
+      expect(foldActionLog(shift.initial, shift.log)).toEqual(shift.state);
+    },
+  );
   it("keeps actual wrong-device Rivera outcome and offers observed follow-up receipt", () => {
     const shift = run();
     shift.openSources(rivera);
@@ -433,9 +588,9 @@ describe("versioned evidence coverage at the original decision", () => {
       decisionOptionId: "escalate-with-comparisons",
       ticketPayload: {
         ticketId: `ticket-${login}`,
-        verifiedEvidence: "I know it is safe",
-        uncertainty: "none",
-        followUp: "done",
+        verifiedEvidence: "banana",
+        uncertainty: "banana",
+        followUp: "banana",
         sourceArtifactIds: [
           "login-session-timeline",
           "vpn-context-1",
@@ -453,5 +608,11 @@ describe("versioned evidence coverage at the original decision", () => {
     expect(
       shift.state.structuredTickets[`ticket-${login}`]?.reasoning,
     ).toBeUndefined();
+    expect(shift.decision("suspicious_login").rubricSignals).not.toContainEqual(
+      { id: "documented_uncertainty", supported: true },
+    );
+    expect(
+      shift.decision("suspicious_login").reasoningAnalysis?.whatSupportedIt,
+    ).not.toContain("documented_uncertainty");
   });
 });

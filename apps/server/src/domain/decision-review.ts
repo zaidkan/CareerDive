@@ -873,7 +873,7 @@ export function buildDecisionReview(
     const eventId = caseIds[reviewed.decisionId];
     if (!eventId) continue;
     const committed = firstAction(log, eventId, commitActions[eventId] ?? []);
-    const before = committed?.sequence ?? -1;
+    const before = committed?.sequence ?? Infinity;
     const writes = log.filter(
       (entry) =>
         entry.sequence <= before &&
@@ -885,6 +885,18 @@ export function buildDecisionReview(
     const action =
       saved?.interaction.type === "action"
         ? saved.interaction.action
+        : undefined;
+    const dispositionAction = [...writes]
+      .reverse()
+      .find(
+        (entry) =>
+          entry.interaction.type === "action" &&
+          entry.interaction.action.id !== "update_ticket_notes" &&
+          entry.interaction.action.decisionOptionId,
+      );
+    const disposition =
+      dispositionAction?.interaction.type === "action"
+        ? dispositionAction.interaction.action.decisionOptionId
         : undefined;
     const selections = action?.ticketPayload?.reasoning;
     const sourcesAtSave = evidenceBefore(
@@ -899,12 +911,8 @@ export function buildDecisionReview(
         : undefined;
     if (selections || handoff) {
       reviewed.evaluationMode = "structured-selections";
-      if (
-        eventId === SCANNER &&
-        !reviewed.userChoiceId &&
-        action?.decisionOptionId
-      ) {
-        reviewed.userChoiceId = action.decisionOptionId;
+      if (eventId === SCANNER && !reviewed.userChoiceId && disposition) {
+        reviewed.userChoiceId = disposition;
         reviewed.availableChoiceIds =
           state.rules.tasks["scanner-ticket-summary"]?.steps
             .at(-1)
@@ -916,9 +924,12 @@ export function buildDecisionReview(
             reviewed.availableChoiceIds;
         }
       }
-      const assessed = selections
+      const reasoningAssessment = selections
         ? reviewReasoning(eventId, selections, sourcesAtSave)
-        : handoff
+        : undefined;
+      const assessed =
+        reasoningAssessment ??
+        (handoff
           ? reviewHandoffSelections(
               handoff,
               evidenceBefore(state, log, before, allSources),
@@ -926,11 +937,14 @@ export function buildDecisionReview(
                 ? committed.interaction.action.handoffPayload?.followUp
                 : undefined,
             )
-          : undefined;
+          : undefined);
       if (!assessed) continue;
       const boundary =
-        eventId === CASE
-          ? [
+        Boolean(committed) &&
+        (eventId === CASE
+          ? committed?.interaction.type === "action" &&
+            committed.interaction.action.id === "escalate_alert" &&
+            [
               "escalate-with-comparisons",
               "escalate-identifiers-only",
               "escalate_alert",
@@ -954,25 +968,30 @@ export function buildDecisionReview(
                   : "") === "update-saved-password"
               : eventId === SCANNER
                 ? ["expected-close", "expected-close-with-monitoring"].includes(
-                    action?.decisionOptionId ?? "",
+                    disposition ?? "",
                   )
-                : true;
+                : true);
       reviewed.outcomeLabel = boundary
         ? assessed.verdict
         : "needs_more_evidence";
+      if (!committed) {
+        reviewed.userChoiceId = null;
+        if (reviewed.reasoningAnalysis)
+          reviewed.reasoningAnalysis.choice = null;
+      }
       const gaps = [
         ...assessed.gaps,
-        ...(!boundary
-          ? [
-              "The recorded action does not preserve this case's session, device or authority boundary.",
-            ]
-          : []),
+        ...(!committed
+          ? ["No consequential case decision was recorded."]
+          : !boundary
+            ? [
+                "The recorded action does not preserve this case's session, device or authority boundary.",
+              ]
+            : []),
       ];
       reviewed.explanation = `Recorded action: ${committed?.interaction.type === "action" ? (committed.interaction.action.decisionOptionId ?? committed.interaction.action.id) : "none"}. Saved selections: ${assessed.selectedLabels.join("; ") || "none"}. ${gaps.length ? gaps.join(" ") : "Essential evidence, uncertainty and next-step groups are supported."}`;
-      reviewed.fieldReviews = selections
-        ? Object.entries(
-            reviewReasoning(eventId, selections, sourcesAtSave).fields,
-          ).map(([field, value]) => ({
+      reviewed.fieldReviews = reasoningAssessment
+        ? Object.entries(reasoningAssessment.fields).map(([field, value]) => ({
             field,
             outcomeLabel: value.verdict,
             selectedLabels: value.selectedLabels,
@@ -1043,60 +1062,59 @@ export function buildDecisionReview(
       reviewed.evaluationMode = "limited-text-evaluation";
       if (reviewed.outcomeLabel === "supported")
         reviewed.outcomeLabel = "partially_supported";
-      reviewed.explanation +=
-        " Limited-text-evaluation: this saved shift has no versioned selections. Text presence is not evidence that its meaning was supported.";
+      // A legacy text box only proves a note exists, not what its words mean.
+      const textClaims = new Set([
+        "documented_uncertainty",
+        "documented_closure",
+        "kept_open_question",
+      ]);
+      reviewed.rubricSignals = reviewed.rubricSignals.filter(
+        (signal) => !textClaims.has(signal.id),
+      );
+      if (reviewed.reasoningAnalysis) {
+        reviewed.reasoningAnalysis.whatSupportedIt =
+          reviewed.reasoningAnalysis.whatSupportedIt.filter(
+            (id) => !textClaims.has(id),
+          );
+        reviewed.reasoningAnalysis.whatWeakenedIt =
+          reviewed.reasoningAnalysis.whatWeakenedIt.filter(
+            (id) => !textClaims.has(id),
+          );
+      }
+      const legacyGaps =
+        eventId === CASE
+          ? [
+              ...caseGaps,
+              ...(!routeCompared
+                ? [
+                    "Record the session timeline (S-0741 / S-0731) + VPN catalogue NET-VPN-04 comparison, or select both records together in the saved case note.",
+                  ]
+                : []),
+            ]
+          : eventId === SCANNER
+            ? scannerGaps
+            : eventId === HANDOFF
+              ? handoffGaps.map((gap) =>
+                  gap.replace(
+                    "a source-backed case uncertainty note",
+                    "a complete legacy case note (text meaning not evaluated)",
+                  ),
+                )
+              : [];
+      reviewed.explanation = `Recorded action: ${committed?.interaction.type === "action" ? committed.interaction.action.id : "none"}. Limited-text-evaluation: this saved shift has no versioned selections. Inspected records and recorded actions can be traced; the meaning of free text is not evaluated.${legacyGaps.length ? ` Missing legacy fields/references: ${legacyGaps.join("; ")}.` : ""}`;
     }
   }
   const profile: NonNullable<Debrief["decisionReview"]>["profile"] = [
-    [
-      "Evidence review",
-      caseEvidence.includes("device-inventory-1") &&
-        routeCompared &&
-        scannerChecked,
-      caseEvidence.length > 0 || scannerEvidence.length > 0,
-      "Tracks case and scanner records inspected before decisions.",
-    ],
-    [
-      "Handling uncertainty",
-      caseDocumented && handoffUncertainty,
-      caseDocumented || handoffUncertainty,
-      "Tracks whether unresolved identity and coverage limits stayed visible.",
-    ],
-    [
-      "Follow-through",
-      scannerChoice !== null &&
-        scannerClosed &&
-        scannerChecked &&
-        scannerDocumented,
-      scannerChoice !== null,
-      "Tracks interruption choice and later scanner work.",
-    ],
-    [
-      "Documentation",
-      caseDocumented && scannerDocumented,
-      caseDocumented || scannerDocumented,
-      `Tracks recorded selections and their inspected evidence.${!caseDocumented ? ` Case gaps: ${caseGaps.join("; ")}.` : ""}${!scannerDocumented ? ` Scanner gaps: ${scannerGaps.join("; ")}.` : ""}`,
-    ],
-    [
-      "Role boundaries",
-      accessSupported,
-      accessChoice !== null,
-      "Tracks approval-guide use and the finance owner's authority.",
-    ],
-    [
-      "Handoff clarity",
-      handoffSupported,
-      handoffChoice !== null,
-      `Tracks checked facts, an open question, and the next owner.${handoffGaps.length ? ` Missing: ${handoffGaps.join("; ")}.` : ""}`,
-    ],
-  ].map(([dimension, strong, developing, explanation]) => ({
-    dimension: String(dimension),
-    state: strong
-      ? ("strong" as const)
-      : developing
-        ? ("developing" as const)
-        : ("needs_more_evidence" as const),
-    explanation: String(explanation),
+    "Evidence review",
+    "Handling uncertainty",
+    "Follow-through",
+    "Documentation",
+    "Role boundaries",
+    "Handoff clarity",
+  ].map((dimension) => ({
+    dimension,
+    state: "needs_more_evidence",
+    explanation: "",
   }));
   const verdictRank = {
     supported: 2,
@@ -1130,7 +1148,7 @@ export function buildDecisionReview(
     item.explanation =
       item.dimension === "Follow-through"
         ? "Records interruption response and later scanner follow-through, not general prioritization ability."
-        : `Evidence coverage of the saved selections; limited text and later corrections do not establish the original reasoning.${item.dimension === "Documentation" ? ` Case gaps: ${caseGaps.join("; ")}. Scanner gaps: ${scannerGaps.join("; ")}.` : ""}`;
+        : `Evidence coverage of the saved selections; limited text and later corrections do not establish the original reasoning.${item.dimension === "Documentation" ? ` Gaps: ${relevant.flatMap((d) => d.fieldReviews?.flatMap((f) => f.gaps) ?? (d.decisionId === "suspicious_login" ? caseGaps : d.decisionId === "scanner_interruption" ? scannerGaps : [])).join("; ") || "No structured field gaps recorded."}` : ""}`;
   }
   return {
     careerVersion: state.careerVersion ?? "unknown",

@@ -109,6 +109,17 @@ export function CaseEvidence({
             A private connection; its exit address may differ from a person's
             location.
           </dd>
+          <dt>ASN / ISP</dt>
+          <dd>
+            A network operator / internet provider; its label does not identify
+            a person.
+          </dd>
+          <dt>VLAN</dt>
+          <dd>
+            A separately managed network segment, such as the finance network.
+          </dd>
+          <dt>HQ</dt>
+          <dd>Headquarters: the organization's main office.</dd>
           <dt>Enrolled device / MDM</dt>
           <dd>
             A device registered for work support and management, not proof of

@@ -56,7 +56,7 @@ function currentWorkReply(
   if (!contextEvent)
     return {
       speaker: "Jules",
-      text: `No active case decision remains on your desk. ${handoffFollowUps(state.events, state.teamMessages).join(" ")} Keep recorded follow-ups in the handoff; check the queue for any remaining shift step.`,
+      text: `No active case decision remains on your desk. ${handoffFollowUps(state.events).join(" ")} Keep recorded follow-ups in the handoff; check the queue for any remaining shift step.`,
       nextSystemId: "team_chat",
     };
   const available = new Set(

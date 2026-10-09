@@ -63,6 +63,7 @@ export function HandoffBuilder({
             <label>
               <input
                 type="checkbox"
+                disabled={pending}
                 data-option-id={option.id}
                 checked={validIds.includes(option.id)}
                 onChange={() => {
@@ -98,6 +99,7 @@ export function HandoffBuilder({
           <label key={id}>
             <input
               type="radio"
+              disabled={pending}
               name="handoff-follow-up"
               checked={followUp === id}
               onChange={() => {
@@ -125,12 +127,11 @@ export function HandoffBuilder({
             </li>
           ))}
         </ul>
-        {handoffFollowUps(
-          view.events.filter((e) => e.status !== "active"),
-          view.teamMessages,
-        ).map((text) => (
-          <p key={text}>{text}</p>
-        ))}
+        {handoffFollowUps(view.events.filter((e) => e.status !== "active")).map(
+          (text) => (
+            <p key={text}>{text}</p>
+          ),
+        )}
         <details>
           <summary>Selected source references ({refs.length})</summary>
           <ul>

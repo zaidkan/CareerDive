@@ -444,7 +444,8 @@ describe("end-of-shift decision review", () => {
     } } });
     const review = buildDecisionReview(state, log);
     expect(review.decisions[0]?.outcomeLabel).toBe("partially_supported");
-    expect(review.decisions[0]?.rubricSignals).toContainEqual({ id: "documented_uncertainty", supported: false });
+    expect(review.decisions[0]?.evaluationMode).toBe("limited-text-evaluation");
+    expect(review.decisions[0]?.rubricSignals.some((signal) => signal.id === "documented_uncertainty")).toBe(false);
     expect(review.decisions[4]?.outcomeLabel).toBe("partially_supported");
     expect(review.profile.find(({ dimension }) => dimension === "Handoff clarity")?.state).toBe("partially_supported");
     expect(review.profile.find(({ dimension }) => dimension === "Documentation")?.state).toBe("partially_supported");

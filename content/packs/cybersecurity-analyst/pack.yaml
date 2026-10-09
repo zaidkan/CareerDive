@@ -701,7 +701,7 @@ scenario:
               label: RUN-FIN-031 records discovery connections only; it does not establish vulnerability findings or prove every finance system is secure.
               source:
                 artifactId: scanner-run-log
-                quote: "Limit: discovery connections only, not weakness-check findings or proof every finance system is secure. Other source/network/time needs its own check."
+                quote: "Limit: discovery connections only, not weakness-check findings or proof every finance system is secure. Other source/network/time needs its own check; shared alert references are not independent measurements."
             - id: run-completion-only
               label: Use the completed run status as the whole closure finding.
               source:
@@ -1034,7 +1034,7 @@ scenario:
               label: The scanner run proves every finance system is secure.
               source:
                 artifactId: scanner-run-log
-                quote: "Limit: discovery connections only, not weakness-check findings or proof every finance system is secure. Other source/network/time needs its own check."
+                quote: "Limit: discovery connections only, not weakness-check findings or proof every finance system is secure. Other source/network/time needs its own check; shared alert references are not independent measurements."
             - id: checks-omitted
               label: Leave the completed checks out of the first handoff draft.
               source:
@@ -1808,10 +1808,10 @@ scenario:
       summary: Session sequence and collection limits · office-local times
       body: |
         07:31 · S-0731: corp-macbook-patel; V-218; 198.51.100.20; password and extra identity check succeeded.
-        07:38:02–07:40:51: six failed extra identity checks; grouped by account/source, not person.
-        07:41:09 · S-0741: password accepted; extra-check result absent.
+        07:38:02–07:40:51: six failed extra identity checks from 203.0.113.44; grouped by account/source, not person.
+        07:41:09 · S-0741: password accepted; session created; extra-check result absent.
         S-0741: source 203.0.113.44; VPN connection ID absent; device label unknown-laptop-17.
-        07:43 · S-0741 · account portal session refresh.
+        07:43 · S-0741 · account portal session refresh, not identity verification.
         Limit: collection ends 07:45; no file/mail activity collected. A-1042 and login-context-1 summarize this same source, not independent corroboration.
       eventIds: [suspicious-login-1, status-check-1, shift-handoff-1]
       relatedArtifactIds:
@@ -1999,7 +1999,7 @@ scenario:
         Most recent completed Monday: 10:05–10:32 office local.
         A-1180 refers to connection activity at 10:18 within this run.
         Run status: completed. Delivery: monitoring forwarded the saved alert to the current shift after a queue delay.
-        Limit: discovery connections only, not weakness-check findings or proof every finance system is secure. Other source/network/time needs its own check.
+        Limit: discovery connections only, not weakness-check findings or proof every finance system is secure. Other source/network/time needs its own check; shared alert references are not independent measurements.
       eventIds: [routine-alert-1, shift-handoff-1]
       relatedArtifactIds: [scanner-alert, scanner-window]
       searchableText: scanner run execution correlation coverage
@@ -2050,9 +2050,10 @@ scenario:
       summary: From Sam Lee · 08:20 · urgent project request
       body: |
         Requested access: finance-reporting-prod, today until 17:00.
-        I need the read-only reporting role to finish a board packet. Director Chen approved the project deadline in chat.
-
-        I know this is late notice. Please approve it if you can, or tell me who owns the decision. I have not included a password or approval code.
+        I need the read-only reporting role to finish a board packet.
+        Director Chen approved the project deadline in chat.
+        Please approve it if you can, or tell me who owns the decision. No password or approval code included.
+        Limit: Sam's reported deadline approval is not a recorded grant of the data role.
       eventIds: [access-request-1]
       relatedArtifactIds: [access-approval-guide]
       searchableText: access request finance reporting approval
@@ -2063,9 +2064,10 @@ scenario:
       summary: Role boundary and routing procedure
       body: |
         Only the finance data owner can approve this role.
-        Security analysts may verify the requested resource, duration, and business contact, then route the request to that owner. Keep access pending until the owner records a decision.
-
-        A manager's support for a project is not approval for a data role. Urgency does not change the approval owner. A request can be legitimate and still require the normal process.
+        Security analysts may verify the requested resource, duration, and business contact, then route the request to that owner.
+        Keep access pending until the owner records a decision.
+        Urgency does not change the approval owner. A legitimate request still requires the normal process.
+        Limit: a manager's project support or scanner approval is not authorization for a data role.
       eventIds: [access-request-1]
       relatedArtifactIds: [access-request-email]
       searchableText: finance access approval owner urgent
@@ -2075,8 +2077,11 @@ scenario:
       title: Phone keeps asking for my password
       summary: From A. Rivera · 08:45 · help request
       body: |
-        My work phone keeps asking for my password after I changed it this morning. I can still sign in on my work laptop.
-        The phone is corp-phone-rivera and the laptop is corp-macbook-rivera. I have not sent the password; I only need help knowing what to update.
+        My work phone keeps asking for my password after I changed it this morning.
+        I can still sign in on my work laptop.
+        The phone is corp-phone-rivera and the laptop is corp-macbook-rivera.
+        I have not sent the password; I need help knowing what to update.
+        Limit: employee-reported context; compare the authentication records before treating either device result as verified.
       eventIds: [login-help-1]
       relatedArtifactIds: [rivera-auth-summary, login-troubleshooting-guide]
       searchableText: Rivera login phone password prompt
@@ -2089,7 +2094,9 @@ scenario:
         08:36–08:41: corp-phone-rivera made five failed saved-password retries.
         08:42: corp-macbook-rivera completed a successful sign-in with the updated password.
 
-        Both labels match enrolled devices in inventory. The grouped retries show a device pattern; they do not identify a person or prove an attack.
+        Both labels match enrolled devices in inventory.
+        The grouped retries show a device pattern.
+        Limit: these recorded device results do not identify a person, prove an attack or establish a completed phone-app fix.
       eventIds: [login-help-1]
       relatedArtifactIds: [rivera-login-email, rivera-device-inventory]
       searchableText: Rivera authentication phone laptop retries
@@ -2102,7 +2109,8 @@ scenario:
         corp-phone-rivera — enrolled, active, assigned to a.rivera@example.com.
         corp-macbook-rivera — enrolled, active, assigned to a.rivera@example.com.
 
-        Exact labels match the help request and authentication summary. Enrollment supports device context; it does not prove who was holding either device.
+        Exact managed-device labels match the help request and authentication summary.
+        Limit: enrollment supports managed-device context, not who held either device or whether a phone-app fix worked.
       eventIds: [login-help-1]
       relatedArtifactIds: [rivera-auth-summary]
       searchableText: Rivera inventory phone laptop
@@ -2114,10 +2122,11 @@ scenario:
       title: Repeated prompts after a password change
       summary: Beginner troubleshooting and escalation boundary
       body: |
-        A working sign-in on one known device plus repeated retries from another known device can indicate a stale saved password.
-        Ask the employee to update the saved password in the affected approved app, then check whether retries stop. Escalate if retries continue, an unknown device appears, or the employee reports activity they did not perform.
-
-        Failed attempts do not identify an attacker. Record the device labels, results, time range, and what would cause the ticket to reopen.
+        Working sign-in on one known device plus retries from another can indicate an old saved password; it remains a hypothesis.
+        Ask the employee to update the saved password in the affected approved app, then check whether retries stop.
+        Escalate if retries continue, an unknown device appears, or the employee reports activity they did not perform.
+        Record device labels, results, time range and reopening conditions.
+        Limit: failed attempts do not identify an attacker.
       eventIds: [login-help-1]
       relatedArtifactIds: [rivera-login-email, rivera-auth-summary]
       searchableText: password change stale saved password retries
