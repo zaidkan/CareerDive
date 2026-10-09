@@ -14,6 +14,10 @@ const FAQS: Faq[] = [
     a: "Read the handoff, investigate selected alerts, document your reasoning, and leave a handoff. Then review a debrief grounded in your recorded actions and evidence, including what remains unknown. This is a simulated slice of the job, not a full workday or a hiring assessment.",
   },
   {
+    q: "How does CareerDive compare with an internship?",
+    a: "Finding an internship can mean months of applications, meeting entry requirements, and networking—before you know whether you enjoy the work. CareerDive is a free, low-commitment first step to explore that interest. It does not replace an internship’s deeper, real-world experience.",
+  },
+  {
     q: "Do I need to be good at games?",
     a: "Not at all. Clicking fast or steering the camera well doesn’t count. What matters is how the work feels to you.",
   },

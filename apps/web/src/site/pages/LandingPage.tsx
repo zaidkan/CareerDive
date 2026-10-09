@@ -519,8 +519,7 @@ export function LandingPage() {
               Try a shift. See how you reasoned.
             </h2>
             <p>
-              Try the work <span aria-hidden="true">→</span> Make the calls{" "}
-              <span aria-hidden="true">→</span> See how you worked
+              Try the work before investing in the path. Free, with no application.
             </p>
             <div className="home-final-actions">
               <SiteLink className="start-shift v2-primary" to="/start">
