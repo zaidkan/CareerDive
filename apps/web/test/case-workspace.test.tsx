@@ -26,7 +26,7 @@ it("builds an uncited weak claim, carries it across tools, and dispatches one op
     loadDefaultCybersecurityPack(),
   );
   let systemId: WorkSystemId = "alert_dashboard";
-  const sent = vi.fn();
+  const sent = vi.fn<(action: AvailableAction) => void>();
   const draw = () => (
     <CaseWorkspace
       view={toClientView(state)}
@@ -40,7 +40,11 @@ it("builds an uncited weak claim, carries it across tools, and dispatches one op
       onWorkplaceInteraction={async (interaction) => {
         state = applyWorkplaceInteraction(state, interaction).state;
         mounted.rerender(draw());
-        return {view: toClientView(state), sequence: 1, feedback: "artifact_opened"};
+        return {
+          view: toClientView(state),
+          sequence: 1,
+          feedback: "artifact_opened",
+        };
       }}
       onAction={(available: AvailableAction) => {
         sent(available);

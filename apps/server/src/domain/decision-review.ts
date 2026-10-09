@@ -1,5 +1,7 @@
+import { statusReview } from "./status-review.js";
 import { caseExample } from "./case-example.js";
 import {
+  handoffReferences,
   missingLoginComparisonSteps,
   resolveActionEffect,
   reviewReasoning,
@@ -929,7 +931,7 @@ export function buildDecisionReview(
     const sourcesAtSave = evidenceBefore(
       state,
       log,
-      saved?.sequence ?? -1,
+      saved?.sequence ?? (eventId === HANDOFF ? before : -1),
       allSources,
     );
     const handoff =
@@ -1024,6 +1026,37 @@ export function buildDecisionReview(
             : []),
       ];
       reviewed.explanation = `Recorded action: ${committed?.interaction.type === "action" ? (committed.interaction.action.decisionOptionId ?? committed.interaction.action.id) : "none"}. Saved selections: ${assessed.selectedLabels.join("; ") || "none"}. ${gaps.length ? gaps.join(" ") : "Essential evidence, uncertainty and next-step groups are supported."}`;
+      if (eventId === LOGIN) {
+        const followup = log.find(
+          (entry) =>
+            entry.sequence > before &&
+            entry.interaction.type === "action" &&
+            entry.interaction.action.eventId === eventId &&
+            entry.interaction.action.ticketPayload?.reasoning?.phase ===
+              "follow-up",
+        );
+        const followupSelections =
+          followup?.interaction.type === "action"
+            ? followup.interaction.action.ticketPayload?.reasoning
+            : undefined;
+        if (followup && followupSelections) {
+          const assessedFollowup = reviewReasoning(
+            eventId,
+            followupSelections,
+            evidenceBefore(state, log, followup.sequence, allSources),
+          );
+          reviewed.followUpReview = {
+            outcomeLabel: assessedFollowup.verdict,
+            selectedLabels: assessedFollowup.selectedLabels,
+            gaps: assessedFollowup.gaps,
+            excerpt:
+              state.artifacts["rivera-result-receipt"]?.body ??
+              "No response receipt recorded.",
+            nextCheck:
+              "Carry the receipt's actual phone/laptop result. Complete any untested phone-app check; reopen on continued retries, an unfamiliar device or unrecognized activity.",
+          };
+        }
+      }
       reviewed.fieldReviews = reasoningAssessment
         ? Object.entries(reasoningAssessment.fields).map(([field, value]) => ({
             field,
@@ -1050,7 +1083,9 @@ export function buildDecisionReview(
         reviewed.reasoningAnalysis.whatWeakenedIt = gaps;
         reviewed.reasoningAnalysis.evidenceUsedBeforeDecision = sourcesAtSave;
       }
-      reviewed.evidenceUsedIds = sourcesAtSave;
+      reviewed.evidenceUsedIds = handoff
+        ? handoffReferences(handoff, sourcesAtSave)
+        : sourcesAtSave;
       if (reviewed.reasoningAnalysis) {
         const initialIds = selections
           ? [
@@ -1194,6 +1229,9 @@ export function buildDecisionReview(
   }
   return {
     careerVersion: state.careerVersion ?? "unknown",
+    ...(statusReview(state, log)
+      ? { statusReview: statusReview(state, log) }
+      : {}),
     decisions,
     profile,
   };

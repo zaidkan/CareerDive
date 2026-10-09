@@ -7,6 +7,8 @@ import {
   validateCaseFindings,
   findingReviewGaps,
   reasoningFromFindings,
+  findingQuestions,
+  findingText,
 } from "./case-findings.js";
 
 type Option = {
@@ -618,6 +620,14 @@ export function validateReasoning(
       }
     }
   }
+  if (selected.caseFindings) {
+    for (const finding of selected.caseFindings) {
+      for (const row of findingQuestions(eventId)
+        .find((q) => q.id === finding.questionId)
+        ?.rows.filter((r) => finding.rowIds.includes(r.id)) ?? [])
+        sourceIds.push(...inspectedSourceBundle(state, row.sourceId));
+    }
+  }
   const labels = (field: keyof CaseOptions) =>
     definition[field]
       .filter((o) => selected[field].includes(o.id))
@@ -630,7 +640,20 @@ export function validateReasoning(
     sourceRecordIds: [
       ...new Set(sourceIds.filter((id) => !state.artifacts[id])),
     ],
-    verifiedEvidence: labels("evidence"),
+    verifiedEvidence: selected.caseFindings
+      ? selected.caseFindings
+          .map(
+            (f) =>
+              `${findingText(eventId, f)}\n${
+                findingQuestions(eventId)
+                  .find((q) => q.id === f.questionId)
+                  ?.rows.filter((r) => f.rowIds.includes(r.id))
+                  .map((r) => r.excerpt)
+                  .join("\n") ?? "No rows cited."
+              }`,
+          )
+          .join("\n\n")
+      : labels("evidence"),
     uncertainty: labels("uncertainty"),
     followUp: labels("nextStep"),
   };

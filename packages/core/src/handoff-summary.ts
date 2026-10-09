@@ -1,3 +1,4 @@
+import { findingText } from "./case-findings.js";
 import { reviewReasoning } from "./reasoning-options.js";
 import type { ClientView } from "@sim/schemas";
 
@@ -29,6 +30,11 @@ type HandoffTicket =
       status?: string | undefined;
       uncertainty?: string | undefined;
       disposition?: string | undefined;
+      reasoning?: import("@sim/schemas").ReasoningSelection | undefined;
+      revision?: number | undefined;
+      sourceArtifactIds?: string[] | undefined;
+      sourceRecordIds?: string[] | undefined;
+      followUp?: string | undefined;
       decisionReasoning?: import("@sim/schemas").ReasoningSelection | undefined;
       decisionSourceIds?: string[] | undefined;
     }
@@ -41,6 +47,13 @@ export type HandoffCaseLine = {
   label: string;
   /** Recorded resolution sentence, when one exists. */
   detail?: string;
+  memo?: {
+    revision: number;
+    claims: string[];
+    unknowns: string;
+    nextCheck: string;
+    sourceIds: string[];
+  };
 };
 
 function firstSentence(text: string): string {
@@ -73,6 +86,14 @@ export function caseDispositionLabel(
       ? "closed as expected — bounded to the matched run and window"
       : "closed — recorded closure; run/window support still needs review";
   }
+  if (
+    event.id === "login-help-1" &&
+    event.status === "resolved" &&
+    ticket?.reasoning?.caseFindings
+  )
+    return event.resolution?.includes("no further retries")
+      ? "bounded phone check completed — reopen on new activity"
+      : "follow-up pending — phone-specific check remains untested";
   if (ticket?.status === "closed") {
     return "closed on the documented record — bounded to what was checked";
   }
@@ -115,6 +136,22 @@ export function handoffCaseLines(
         eventId: event.id,
         title: event.title,
         label,
+        ...(ticket?.reasoning?.caseFindings
+          ? {
+              memo: {
+                revision: ticket.revision ?? 0,
+                claims: ticket.reasoning.caseFindings.map((f) =>
+                  findingText(event.id, f),
+                ),
+                unknowns: ticket.uncertainty ?? "No uncertainty recorded.",
+                nextCheck: ticket.followUp ?? "No next check recorded.",
+                sourceIds: [
+                  ...(ticket.sourceArtifactIds ?? []),
+                  ...(ticket.sourceRecordIds ?? []),
+                ],
+              },
+            }
+          : {}),
         ...(event.resolution
           ? { detail: firstSentence(event.resolution) }
           : {}),

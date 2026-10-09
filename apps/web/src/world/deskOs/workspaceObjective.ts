@@ -5,7 +5,46 @@ import { findingQuestions } from "@sim/core";
 
 /** Navigation cues only. Never evaluate evidence or recommend a disposition. */
 export function workspaceObjective(view: ClientView, eventId?: string) {
-  if (eventId === "suspicious-login-1" && view.caseActions) {
+  if (
+    view.caseActions &&
+    view.availableActions.some((a) => a.id === "complete_shift")
+  )
+    return {
+      objective: "Ready to review your shift",
+      systemId: "team_chat" as WorkSystemId,
+      eventId: eventId ?? "shift",
+    };
+  if (
+    view.caseActions &&
+    eventId &&
+    ["handoff-1", "status-check-1", "shift-handoff-1"].includes(eventId)
+  ) {
+    const event = view.events.find((e) => e.id === eventId);
+    const resolved = event?.status !== "active";
+    const finish = view.availableActions.some((a) => a.id === "complete_shift");
+    return {
+      objective:
+        eventId === "handoff-1"
+          ? resolved
+            ? "Which inherited question will you investigate next?"
+            : "Which unfinished case will you take ownership of?"
+          : eventId === "status-check-1"
+            ? resolved
+              ? "What did your message carry, and does it need a correction?"
+              : "What does Morgan need from your recorded work?"
+            : finish
+              ? "Ready to review your shift"
+              : resolved
+                ? "What did the next analyst receive?"
+                : "What must carry forward, and who owns the next check?",
+      systemId:
+        eventId === "handoff-1"
+          ? ("email" as WorkSystemId)
+          : ("team_chat" as WorkSystemId),
+      eventId,
+    };
+  }
+  if (eventId && findingQuestions(eventId).length && view.caseActions) {
     const ticket = view.structuredTickets?.[`ticket-${eventId}`];
     const event = view.events.find((e) => e.id === eventId);
     if (event?.status === "active") {
@@ -17,10 +56,20 @@ export function workspaceObjective(view: ClientView, eventId?: string) {
         objective:
           question?.title ??
           "What judgment and next check will your memo carry?",
-        systemId: question?.systemId ?? ("ticket_queue" as WorkSystemId),
+        systemId: question?.systemId ?? "ticket_queue",
         eventId,
       };
     }
+    if (
+      eventId === "login-help-1" &&
+      ticket?.decisionReasoning &&
+      ticket.reasoning?.phase !== "follow-up"
+    )
+      return {
+        objective: "What did the requested device check establish?",
+        systemId: "email" as WorkSystemId,
+        eventId,
+      };
     return {
       objective: "What does the recipient still need from this case?",
       systemId: "team_chat" as WorkSystemId,

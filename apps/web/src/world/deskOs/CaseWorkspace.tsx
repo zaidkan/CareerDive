@@ -1,5 +1,8 @@
+import { RecordQueryTool } from "../../components/tools/RecordQueryTool.js";
+import { TeamChatTool } from "../../components/tools/TeamChatTool.js";
 import { useEffect, useRef } from "react";
 import {
+  sourceBundle,
   caseDispositionLabel,
   findingQuestions,
   findingText,
@@ -47,7 +50,7 @@ export function CaseWorkspace({
   mutationState: MutationState;
   focusRequestId?: number;
 }) {
-  const event = view.events.find((e) => e.id === eventId)!;
+  const event = view.events.find((e) => e.id === eventId);
   const questions = findingQuestions(eventId);
   const ticket = view.structuredTickets?.[`ticket-${eventId}`];
   const reasoning = {
@@ -56,13 +59,23 @@ export function CaseWorkspace({
   };
   const actions = view.caseActions?.filter((a) => a.eventId === eventId) ?? [];
   const draftAction = actions.find((a) => a.id === "update_ticket_notes");
-  const memoAction = actions.find((a) => a.id === "document_ticket");
+  const memoAction = actions.find((a) =>
+    ["document_ticket", "route_access_request", "resolve_login_help"].includes(
+      a.id,
+    ),
+  );
+  const finance = eventId === "access-request-1";
+  const rivera = eventId === "login-help-1";
+  const [interim, setInterim] = useTabDraft(
+    `case-interim:${view.sessionId}`,
+    false,
+  );
   const pending = Boolean(mutationState.pendingKey);
   const [questionId, setQuestionId] = useTabDraft(
     `case-question:${view.sessionId}:${eventId}`,
-    questions[0]!.id,
+    questions[0]?.id ?? "",
   );
-  const question = questions.find((q) => q.id === questionId) ?? questions[0]!;
+  const question = questions.find((q) => q.id === questionId) ?? questions[0];
   const [nextStep, setNextStep] = useTabDraft<string[]>(
     `case-next:${view.sessionId}:${eventId}`,
     reasoning.nextStep,
@@ -76,12 +89,52 @@ export function CaseWorkspace({
     reasoning.context,
   );
   const heading = useRef<HTMLHeadingElement>(null);
+  const board = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const element = board.current;
+    const panel = element?.closest<HTMLElement>(".workspace-panel");
+    if (!element || !panel || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      panel.style.setProperty(
+        "--case-board-height",
+        `${String(element.offsetHeight + 8)}px`,
+      );
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    measure();
+    return () => {
+      observer.disconnect();
+      panel.style.removeProperty("--case-board-height");
+    };
+  }, []);
   useEffect(() => {
     if (focusRequestId) heading.current?.focus({ preventScroll: true });
   }, [focusRequestId]);
   const selected = reasoningFromFindings(eventId, {
     ...reasoning,
-    nextStep,
+    nextStep: finance
+      ? decision === "route-with-interim"
+        ? ["finance-nextStep-1", "finance-nextStep-2"]
+        : decision === "route-to-owner"
+          ? ["finance-nextStep-1", ...(interim ? ["finance-nextStep-2"] : [])]
+          : decision === "route-to-director"
+            ? ["finance-nextStep-3"]
+            : decision === "self-approve"
+              ? ["finance-nextStep-4"]
+              : []
+      : rivera
+        ? [
+            ...(decision === "update-saved-password"
+              ? ["rivera-nextStep-1"]
+              : decision === "name-attacker"
+                ? ["rivera-nextStep-3"]
+                : decision === "grant-access"
+                  ? ["rivera-nextStep-4"]
+                  : []),
+            ...nextStep.filter((id) => id === "rivera-nextStep-2"),
+          ]
+        : nextStep,
     context,
   });
   const groups = view.reasoningOptions?.[eventId] ?? [];
@@ -101,29 +154,40 @@ export function CaseWorkspace({
     if (target) onOpenSystem(target.systemId, eventId);
   };
   const receipt = ticket?.decisionReasoning;
+  const latest = reasoning.caseFindings.at(-1);
+  if (!event || !question)
+    return <p>The selected case is unavailable. Choose a current case.</p>;
   return (
     <section className="case-workspace" aria-label="Build a case">
-      <header className="case-board" aria-label="Case argument">
+      <header ref={board} className="case-board" aria-label="Case argument">
         <h3 ref={heading} tabIndex={-1}>
           {event.title}
         </h3>
-        <p>
-          <strong>Question:</strong> Do the available records explain S-0741, or
-          does it need senior review?
-        </p>
-        {view.artifacts.find((a) => a.id === "handoff-email")?.observed && (
-          <small>
-            Inherited assignment: S-0741 / owner unverified / device check
-            unfinished. This is the previous analyst's handoff, not your
-            finding.
-          </small>
-        )}
         <p className="case-board-status">
           {caseDispositionLabel(event, ticket)}
-          {ticket ? ` · Memo revision ${ticket.revision}` : ""}
+          {ticket ? ` · Memo revision ${String(ticket.revision ?? 0)}` : ""}
         </p>
         <details>
           <summary>Saved findings · your recorded claims</summary>
+          <p>
+            <strong>Question:</strong>{" "}
+            {finance
+              ? "What request should reach which approver, while the project keeps moving?"
+              : rivera
+                ? "Which device-specific check tests Rivera's sign-in problem, and what does its result establish?"
+                : eventId === "routine-alert-1"
+                  ? "Does this exact activity match this run and approval, and what remains outside the match?"
+                  : "Do the available records explain S-0741, or does it need senior review?"}
+          </p>
+          {eventId === "suspicious-login-1" &&
+            view.artifacts.find((a) => a.id === "handoff-email")?.observed && (
+              <small>
+                Inherited assignment: S-0741 / owner unverified / device check
+                unfinished. This is the previous analyst's handoff, not your
+                finding.
+              </small>
+            )}
+
           {reasoning.caseFindings.length ? (
             <ul>
               {reasoning.caseFindings.map((f) => (
@@ -136,7 +200,12 @@ export function CaseWorkspace({
                       .map((r) => r.excerpt)
                       .join(" / ") || "No rows cited."}
                   </small>
-                  <button type="button" onClick={() => choose(f.questionId)}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      choose(f.questionId);
+                    }}
+                  >
                     Revisit {f.questionId}
                   </button>
                 </li>
@@ -145,15 +214,25 @@ export function CaseWorkspace({
           ) : (
             <p>No finding saved yet. Opening a record does not add a claim.</p>
           )}
+          <p>
+            {latest
+              ? `Last saved claim: ${findingText(eventId, latest)}`
+              : "Build a finding from rows in a source. You can investigate in any order."}
+          </p>
         </details>
-        <p>
-          {reasoning.caseFindings.at(-1)
-            ? `Last saved claim: ${findingText(eventId, reasoning.caseFindings.at(-1)!)}`
-            : "Build a finding from rows in a source. You can investigate in any order."}
-        </p>
+        {latest && (
+          <p className="case-last-finding">
+            Recorded: {findingText(eventId, latest)}
+          </p>
+        )}
         <label>
           Open question
-          <select value={question.id} onChange={(e) => choose(e.target.value)}>
+          <select
+            value={question.id}
+            onChange={(e) => {
+              choose(e.target.value);
+            }}
+          >
             {questions.map((q) => (
               <option key={q.id} value={q.id}>
                 {q.title}
@@ -169,11 +248,20 @@ export function CaseWorkspace({
             <p>{event.resolution}</p>
             <p>
               Recipient:{" "}
-              {ticket.disposition?.startsWith("escalate")
-                ? "senior reviewer"
-                : "case record; closure remains reviewable"}
-              . Revision {ticket.revision}. Session ownership is not established
-              by this operation.
+              {finance
+                ? ticket.disposition === "route-to-director"
+                  ? "deadline approver; finance data-owner authorization still pending"
+                  : ticket.disposition === "self-approve"
+                    ? "case record; unauthorized approval remains reviewable"
+                    : "finance data owner"
+                : rivera
+                  ? "Rivera and the troubleshooting record"
+                  : ticket.disposition?.startsWith("escalate")
+                    ? "senior reviewer"
+                    : "case record; closure remains reviewable"}
+              . Dispatch revision {ticket.decisionRevision ?? ticket.revision};
+              current memo revision {ticket.revision}. An operation does not
+              establish identity, approval, or general safety.
             </p>
             <p>
               References actually attached:{" "}
@@ -198,9 +286,27 @@ export function CaseWorkspace({
             </p>
           </section>
         ) : null}
-        {systemId === "ticket_queue" ? (
+        {rivera &&
+        receipt &&
+        (systemId === "email" || systemId === "ticket_queue") ? (
+          <RiveraResult
+            view={view}
+            ticket={ticket}
+            draftAction={draftAction}
+            pending={pending}
+            openSource={openSource}
+            onAction={onAction}
+          />
+        ) : systemId === "ticket_queue" ||
+          (finance && systemId === "team_chat") ? (
           <section aria-label="Case memo">
-            <h4>Memo from your saved findings</h4>
+            <h4>
+              {finance
+                ? "Routing packet from your saved scope"
+                : rivera
+                  ? "Choose a discriminating check"
+                  : "Memo from your saved findings"}
+            </h4>
             <p>
               Give the recipient what you recorded, its sources, and the next
               check. Empty or weak findings can still be sent.
@@ -218,41 +324,76 @@ export function CaseWorkspace({
               {labels("uncertainty").join(" ") ||
                 "No uncertainty boundary recorded."}
             </p>
-            <fieldset disabled={pending}>
-              <legend>Requested next check</legend>
-              {groups
-                .find((g) => g.id === "nextStep")
-                ?.options.map((o) => (
-                  <label key={o.id}>
-                    <input
-                      type="checkbox"
-                      checked={nextStep.includes(o.id)}
-                      onChange={() =>
-                        setNextStep((ids) =>
-                          ids.includes(o.id)
-                            ? ids.filter((id) => id !== o.id)
-                            : [...ids, o.id],
-                        )
-                      }
-                    />
-                    {o.label}
-                  </label>
-                ))}
-            </fieldset>
+            {labels("context").length > 0 && (
+              <p>
+                Reported context in this memo: {labels("context").join(" ")}
+              </p>
+            )}
+            {!finance && (
+              <fieldset disabled={pending}>
+                <legend>Requested next check</legend>
+                {groups
+                  .find((g) => g.id === "nextStep")
+                  ?.options.filter(
+                    (o) => !rivera || o.id === "rivera-nextStep-2",
+                  )
+                  .map((o) => (
+                    <label key={o.id}>
+                      <input
+                        type="checkbox"
+                        checked={nextStep.includes(o.id)}
+                        onChange={() => {
+                          setNextStep((ids) =>
+                            ids.includes(o.id)
+                              ? ids.filter((id) => id !== o.id)
+                              : [...ids, o.id],
+                          );
+                        }}
+                      />
+                      {o.label}
+                    </label>
+                  ))}
+              </fieldset>
+            )}
+            {finance && !receipt && (
+              <label>
+                <input
+                  type="checkbox"
+                  disabled={pending || decision !== "route-to-owner"}
+                  checked={interim}
+                  onChange={() => {
+                    setInterim((v) => !v);
+                  }}
+                />
+                Include an interim report request without granting a new role
+              </label>
+            )}
             {!receipt && (
               <fieldset disabled={pending}>
-                <legend>Judgment to dispatch</legend>
-                {memoAction?.decisionOptions?.map((o) => (
-                  <label key={o.id}>
-                    <input
-                      type="radio"
-                      name={`memo-${eventId}`}
-                      checked={decision === o.id}
-                      onChange={() => setDecision(o.id)}
-                    />
-                    {o.label}
-                  </label>
-                ))}
+                <legend>
+                  {finance
+                    ? "Recipient and response"
+                    : rivera
+                      ? "Check to request"
+                      : "Judgment to dispatch"}
+                </legend>
+                {memoAction?.decisionOptions
+                  ?.filter((o) => !finance || o.id !== "route-with-interim")
+                  .map((o) => (
+                    <label key={o.id}>
+                      <input
+                        type="radio"
+                        name={`memo-${eventId}`}
+                        checked={decision === o.id}
+                        onChange={() => {
+                          setDecision(o.id);
+                          if (finance && o.id !== "route-to-owner")
+                            setInterim(false);
+                        }}
+                      />
+                      {o.label}
+                    </label>
+                  ))}
               </fieldset>
             )}
             <p>
@@ -265,10 +406,10 @@ export function CaseWorkspace({
               <button
                 type="button"
                 disabled={pending || !draftAction}
-                onClick={() =>
-                  draftAction &&
-                  onAction({ ...draftAction, ticketPayload: payload })
-                }
+                onClick={() => {
+                  if (draftAction)
+                    onAction({ ...draftAction, ticketPayload: payload });
+                }}
               >
                 {receipt
                   ? "Save memo correction"
@@ -276,23 +417,38 @@ export function CaseWorkspace({
               </button>
               {!receipt && (
                 <ConfirmAction
-                  label="Dispatch case memo"
+                  label={
+                    finance
+                      ? "Send routing request"
+                      : rivera
+                        ? "Request check and receive result"
+                        : "Dispatch case memo"
+                  }
                   pending={pending}
                   disabled={!memoAction || !decision}
                   resetKey={JSON.stringify([selected, decision])}
-                  onConfirm={() =>
-                    memoAction &&
-                    onAction({
-                      ...memoAction,
-                      decisionOptionId: decision,
-                      ticketPayload: {
-                        ...payload,
-                        dispatch: decision.startsWith("close-")
-                          ? "dismiss_alert"
-                          : "escalate_alert",
-                      },
-                    })
-                  }
+                  onConfirm={() => {
+                    if (memoAction)
+                      onAction({
+                        ...memoAction,
+                        decisionOptionId:
+                          finance && decision === "route-to-owner" && interim
+                            ? "route-with-interim"
+                            : decision,
+                        ticketPayload: {
+                          ...payload,
+                          ...(memoAction.id === "document_ticket"
+                            ? {
+                                dispatch:
+                                  eventId === "routine-alert-1" ||
+                                  decision.startsWith("close-")
+                                    ? ("dismiss_alert" as const)
+                                    : ("escalate_alert" as const),
+                              }
+                            : {}),
+                        },
+                      });
+                  }}
                 >
                   <p>
                     {
@@ -317,7 +473,7 @@ export function CaseWorkspace({
               operation; support is evaluated in review.
             </p>
           </section>
-        ) : systemId === "email" ? (
+        ) : systemId === "email" && !finance ? (
           <section aria-label="Optional reported context">
             <h4>Reported and administrative context</h4>
             <p>
@@ -336,7 +492,7 @@ export function CaseWorkspace({
                       disabled={pending || !onWorkplaceInteraction}
                       type="button"
                       onClick={() => {
-                        void openSource(source!.id);
+                        if (source) void openSource(source.id);
                       }}
                     >
                       Open {source?.title}
@@ -348,13 +504,13 @@ export function CaseWorkspace({
                           <input
                             type="checkbox"
                             checked={context.includes(o.id)}
-                            onChange={() =>
+                            onChange={() => {
                               setContext((ids) =>
                                 ids.includes(o.id)
                                   ? ids.filter((id) => id !== o.id)
                                   : [...ids, o.id],
-                              )
-                            }
+                              );
+                            }}
                           />
                           Include this reported context in the memo
                         </label>
@@ -365,7 +521,9 @@ export function CaseWorkspace({
               })}
             <button
               type="button"
-              onClick={() => onOpenSystem("ticket_queue", eventId)}
+              onClick={() => {
+                onOpenSystem("ticket_queue", eventId);
+              }}
             >
               Review case memo
             </button>
@@ -373,20 +531,23 @@ export function CaseWorkspace({
         ) : systemId === "team_chat" ? (
           <section aria-label="Case follow-up">
             <h4>Recipient responses</h4>
-            {(view.teamMessages ?? [])
-              .filter((m) => m.eventId === eventId)
-              .map((m) => (
-                <p key={m.id}>
-                  <strong>{m.author}</strong> · {m.body}
-                </p>
-              ))}
+            <TeamChatTool
+              view={view}
+              eventId={eventId}
+              onOpenArtifact={openSource}
+              onAction={onAction}
+              mutationState={mutationState}
+              actions={actions.filter((a) => a.id === "ask_manager")}
+            />
             <p>
               The recipient can use your actual memo and ask for what is
               missing. Your saved findings stay on this case.
             </p>
             <button
               type="button"
-              onClick={() => onOpenSystem("ticket_queue", eventId)}
+              onClick={() => {
+                onOpenSystem("ticket_queue", eventId);
+              }}
             >
               Review case memo
             </button>
@@ -405,6 +566,13 @@ export function CaseWorkspace({
               if (!draftAction) return;
               const next = reasoningFromFindings(eventId, {
                 ...reasoning,
+                ...(rivera && receipt
+                  ? {
+                      phase: "initial" as const,
+                      nextStep: receipt.nextStep,
+                      context: receipt.context,
+                    }
+                  : {}),
                 caseFindings: [
                   ...reasoning.caseFindings.filter(
                     (f) => f.questionId !== finding.questionId,
@@ -426,10 +594,43 @@ export function CaseWorkspace({
           <button
             type="button"
             className="case-memo-link"
-            onClick={() => onOpenSystem("ticket_queue", eventId)}
+            onClick={() => {
+              onOpenSystem("ticket_queue", eventId);
+            }}
           >
-            Build judgment from saved findings
+            {finance
+              ? "Build routing request from saved scope"
+              : rivera
+                ? "Choose the device check"
+                : "Build judgment from saved findings"}
           </button>
+        )}
+        {finance && systemId === "team_chat" && (
+          <details>
+            <summary>Discuss this request with Morgan</summary>
+            <TeamChatTool
+              view={view}
+              eventId={eventId}
+              onOpenArtifact={openSource}
+              onAction={onAction}
+              mutationState={mutationState}
+              actions={actions.filter((a) => a.id === "ask_manager")}
+            />
+          </details>
+        )}
+        {actions.find((a) => a.id === "query_records") && (
+          <details>
+            <summary>Search deeper records (optional)</summary>
+            <RecordQueryTool
+              view={view}
+              queryAction={actions.find((a) => a.id === "query_records")}
+              onQueryRecords={(action, queryPayload) => {
+                onAction({ ...action, queryPayload });
+              }}
+              onInspectRecord={onWorkplaceInteraction}
+              mutationState={mutationState}
+            />
+          </details>
         )}
         <details className="case-library">
           <summary>More case records and procedure</summary>
@@ -535,20 +736,20 @@ function FindingEditor({
           <legend>{group.label}</legend>
           {group.multiple ? (
             group.rowIds.map((id) => {
-              const row = question.rows.find((r) => r.id === id)!;
-              const ready = view.artifacts.some(
-                (a) =>
-                  a.id === row.sourceId &&
-                  a.observed &&
-                  a.body?.includes(row.excerpt),
-              );
+              const row = question.rows.find((r) => r.id === id);
+              if (!row) return null;
+              const ready =
+                sourceBundle(row.sourceId, [
+                  ...view.artifacts.filter((a) => a.observed).map((a) => a.id),
+                  ...(view.workplace.inspectedRecordIds ?? []),
+                ]).length > 0;
               return (
                 <label key={id}>
                   <input
                     type="checkbox"
                     disabled={!ready}
                     checked={rows[index]?.includes(id) ?? false}
-                    onChange={() =>
+                    onChange={() => {
                       setRows((all) =>
                         all.map((values, i) =>
                           i === index
@@ -557,12 +758,12 @@ function FindingEditor({
                               : [...values, id]
                             : values,
                         ),
-                      )
-                    }
+                      );
+                    }}
                   />
                   {ready
                     ? row.excerpt
-                    : `Open ${view.artifacts.find((a) => a.id === row.sourceId)?.title} to read this row.`}
+                    : `Open ${view.artifacts.find((a) => a.id === row.sourceId)?.title ?? row.sourceId} to read this row.`}
                 </label>
               );
             })
@@ -571,7 +772,7 @@ function FindingEditor({
               {group.label}
               <select
                 value={rows[index]?.[0] ?? ""}
-                onChange={(e) =>
+                onChange={(e) => {
                   setRows((all) =>
                     all.map((values, i) =>
                       i === index
@@ -580,18 +781,20 @@ function FindingEditor({
                           : []
                         : values,
                     ),
-                  )
-                }
+                  );
+                }}
               >
                 <option value="">Choose a source row, or leave uncited</option>
                 {group.rowIds.map((id) => {
-                  const row = question.rows.find((r) => r.id === id)!;
-                  const ready = view.artifacts.some(
-                    (a) =>
-                      a.id === row.sourceId &&
-                      a.observed &&
-                      a.body?.includes(row.excerpt),
-                  );
+                  const row = question.rows.find((r) => r.id === id);
+                  if (!row) return null;
+                  const ready =
+                    sourceBundle(row.sourceId, [
+                      ...view.artifacts
+                        .filter((a) => a.observed)
+                        .map((a) => a.id),
+                      ...(view.workplace.inspectedRecordIds ?? []),
+                    ]).length > 0;
                   return (
                     <option key={id} value={id} disabled={!ready}>
                       {ready ? row.excerpt : `Open source to read ${id}`}
@@ -600,6 +803,14 @@ function FindingEditor({
                 })}
               </select>
             </label>
+          )}
+          {!group.multiple && rows[index]?.[0] && (
+            <blockquote className="case-row-excerpt">
+              {
+                question.rows.find((row) => row.id === rows[index]?.[0])
+                  ?.excerpt
+              }
+            </blockquote>
           )}
         </fieldset>
       ))}
@@ -620,7 +831,9 @@ function FindingEditor({
               type="radio"
               name={`claim-${question.id}`}
               checked={claim === c.id}
-              onChange={() => setClaim(c.id)}
+              onChange={() => {
+                setClaim(c.id);
+              }}
             />
             {c.label}
           </label>
@@ -657,5 +870,146 @@ function FindingEditor({
         </p>
       )}
     </form>
+  );
+}
+
+/** The test result is authored state; interpreting it is a separate saved claim. */
+function RiveraResult({
+  view,
+  ticket,
+  draftAction,
+  pending,
+  openSource,
+  onAction,
+}: {
+  view: ClientView;
+  ticket: NonNullable<ClientView["structuredTickets"]>[string];
+  draftAction?: AvailableAction | undefined;
+  pending: boolean;
+  openSource: (id: string) => Promise<void>;
+  onAction: (action: AvailableAction) => void;
+}) {
+  const receipt = view.artifacts.find((a) => a.id === "rivera-result-receipt");
+  const [claim, setClaim] = useTabDraft(
+    `rivera-result:${view.sessionId}:claim`,
+    "",
+  );
+  const [reopen, setReopen] = useTabDraft(
+    `rivera-result:${view.sessionId}:reopen`,
+    false,
+  );
+  const stored =
+    ticket.reasoning?.phase === "follow-up" ? ticket.reasoning : undefined;
+  return (
+    <section aria-label="Interpret Rivera's result">
+      <h4>What did the requested check establish?</h4>
+      <p>
+        The six-minute exchange contains the employee response and a bounded
+        retry check. A laptop/reset branch keeps the phone test unresolved.
+      </p>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => {
+          void openSource("rivera-result-receipt");
+        }}
+      >
+        Read the actual result receipt
+      </button>
+      {receipt?.observed && (
+        <blockquote className="case-source-body">{receipt.body}</blockquote>
+      )}
+      <fieldset disabled={pending}>
+        <legend>Interpret the actual result</legend>
+        <label>
+          <input
+            type="radio"
+            name="rivera-result"
+            checked={claim === "bounded"}
+            onChange={() => {
+              setClaim("bounded");
+            }}
+          />
+          Carry the receipt's actual result, including any untested phone check;
+          this does not predict every later sign-in.
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="rivera-result"
+            checked={claim === "borrow-laptop"}
+            onChange={() => {
+              setClaim("borrow-laptop");
+            }}
+          />
+          The 08:42 laptop success completes the phone-app check.
+        </label>
+      </fieldset>
+      <label>
+        <input
+          type="checkbox"
+          disabled={pending}
+          checked={reopen}
+          onChange={() => {
+            setReopen((v) => !v);
+          }}
+        />
+        Reopen on continued retries, an unfamiliar device, or unrecognized
+        activity; complete any untested phone check.
+      </label>
+      <button
+        type="button"
+        disabled={pending || !draftAction || !claim || !receipt?.observed}
+        onClick={() => {
+          if (!draftAction) return;
+          onAction({
+            ...draftAction,
+            ticketPayload: {
+              ticketId: ticket.ticketId,
+              reasoning: {
+                version: "desk-options-v1",
+                phase: "follow-up",
+                caseFindings: ticket.decisionReasoning?.caseFindings ?? [],
+                evidence: [
+                  "rivera-followup-evidence-1",
+                  ...(view.artifacts.some(
+                    (a) => a.id === "rivera-auth-summary" && a.observed,
+                  )
+                    ? ["rivera-followup-evidence-2"]
+                    : []),
+                ],
+                context: [],
+                uncertainty: [
+                  claim === "bounded"
+                    ? "rivera-followup-uncertainty-1"
+                    : "rivera-followup-uncertainty-2",
+                  ...(claim === "bounded"
+                    ? ["rivera-followup-uncertainty-3"]
+                    : []),
+                ],
+                nextStep: [
+                  ...(claim === "borrow-laptop"
+                    ? ["rivera-followup-nextStep-2"]
+                    : []),
+                  ...(reopen ? ["rivera-followup-nextStep-1"] : []),
+                ],
+              },
+            },
+          });
+        }}
+      >
+        Save result interpretation
+      </button>
+      {stored && (
+        <p role="status">
+          Result interpretation saved:{" "}
+          {stored.uncertainty.includes("rivera-followup-uncertainty-2")
+            ? "Laptop success was claimed as a completed phone check."
+            : "The actual receipt and its bounded limit are carried forward."}{" "}
+          Original request remains in the decision history; saved claims are
+          evaluated later.
+        </p>
+      )}
+    </section>
   );
 }

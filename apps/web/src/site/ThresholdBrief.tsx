@@ -23,6 +23,11 @@ export function ThresholdBrief({
         <h2 id="threshold-brief-title">
           A short simulated first shift as a {COMPANY.role} at {COMPANY.name}
         </h2>
+        <p className="threshold-brief-lede">
+          A-1042 created session S-0741 after failed checks. Decide whether the
+          available records explain it or warrant senior review. Your memo must
+          let the reviewer continue without repeating your checks.
+        </p>
         <details className="threshold-brief-guidance">
           <summary>Before you begin</summary>
           <p className="threshold-brief-lede">
@@ -35,9 +40,15 @@ export function ThresholdBrief({
         <ol className="briefing-beats" aria-label="What you will do">
           <li>Walk the floor map into Security Operations</li>
           <li>Sit at your desk and sign in</li>
-          <li>Work alerts, email, and tickets one step at a time</li>
+          <li>
+            Build source-backed findings, choose a response, and hand your work
+            forward
+          </li>
         </ol>
-        <p className="threshold-brief-note">{FIRST_SHIFT_DURATION}. A focused slice of selected tasks, followed by an evidence-based debrief.</p>
+        <p className="threshold-brief-note">
+          {FIRST_SHIFT_DURATION}. A focused slice of selected tasks, followed by
+          an evidence-based debrief.
+        </p>
         <div className="threshold-brief-actions">
           <button
             type="button"

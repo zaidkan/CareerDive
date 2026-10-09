@@ -261,14 +261,41 @@ export function availableActions(state: WorldState): AvailableAction[] {
 export function availableCaseActions(state: WorldState): AvailableAction[] {
   if (state.careerVersion !== "2.0.0") return [];
   return state.events.flatMap((event) => {
-    if (event.id !== "suspicious-login-1") return [];
+    if (
+      event.id === "handoff-1" &&
+      event.status === "active" &&
+      state.observedArtifactIds.includes("handoff-email")
+    )
+      return [target(state, state.rules, event, "acknowledge_handoff")];
+    if (
+      event.id === "status-check-1" &&
+      ["active", "resolved"].includes(event.status)
+    )
+      return [target(state, state.rules, event, "send_status_update")];
+    if (
+      ![
+        "suspicious-login-1",
+        "routine-alert-1",
+        "access-request-1",
+        "login-help-1",
+      ].includes(event.id)
+    )
+      return [];
     if (!["active", "resolved", "escalated"].includes(event.status)) return [];
-    const ids: SimulationActionId[] = ["update_ticket_notes"];
+    const ids: SimulationActionId[] = ["update_ticket_notes", "ask_manager"];
     if (event.status === "active") {
-      ids.push("document_ticket", "query_records", "ask_manager");
+      ids.push(
+        event.id === "access-request-1"
+          ? "route_access_request"
+          : event.id === "login-help-1"
+            ? "resolve_login_help"
+            : "document_ticket",
+        "query_records",
+      );
       if (event.completedActionIds.includes("document_ticket"))
         ids.push(
-          state.flags.b1_terminal === "dismiss"
+          event.id === "routine-alert-1" ||
+            state.flags.b1_terminal === "dismiss"
             ? "dismiss_alert"
             : "escalate_alert",
         );

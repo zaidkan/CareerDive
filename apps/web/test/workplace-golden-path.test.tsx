@@ -90,7 +90,7 @@ function assertPublicView(view: ClientView) {
 }
 describe("rendered workplace golden path", () => {
   it.each(["os"] as const)(
-    "completes the same assessed shift through %s controls",
+    "replays the legacy procedural shift through %s controls",
     async (mode) => {
       const user = userEvent.setup();
       let state = createInitialWorldState("golden", 24, {}, pack);
@@ -219,8 +219,13 @@ describe("rendered workplace golden path", () => {
           .catch(() => undefined);
       const tree = (view: ClientView) => {
         assertPublicView(view);
+        // Preserve coverage of saved shifts using the earlier procedural contract.
+        // The source-backed workspace has its own rendered golden path.
+        const legacyView = structuredClone(view);
+        delete legacyView.caseActions;
+        delete legacyView.statusOptions;
         const props = {
-          view,
+          view: legacyView,
           onAction,
           onTaskAttempt,
           onWorkplaceInteraction,

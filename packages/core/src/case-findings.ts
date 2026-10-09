@@ -215,8 +215,306 @@ export const LOGIN_FINDING_QUESTIONS: FindingQuestion[] = [
   },
 ];
 
+export const SCANNER_FINDING_QUESTIONS: FindingQuestion[] = [
+  {
+    id: "scan-match",
+    title: "Which run and approval match this recorded activity?",
+    why: "Avoid unnecessary escalation with a traceable time, source and target match. Queue arrival is not event time.",
+    systemId: "alert_dashboard",
+    rows: [
+      {
+        id: "scan-time",
+        sourceId: "scanner-alert",
+        excerpt:
+          "Recorded activity: most recent completed Monday window, 10:18 office local.",
+      },
+      {
+        id: "scan-target",
+        sourceId: "scanner-alert",
+        excerpt: "Source: vuln-scan-03 · target: finance VLAN.",
+      },
+      {
+        id: "run031",
+        sourceId: "scanner-run-log",
+        excerpt:
+          "RUN-FIN-031 · scanner vuln-scan-03 · target finance VLAN · change reference SCAN-FIN-MON.",
+      },
+      {
+        id: "run-time",
+        sourceId: "scanner-run-log",
+        excerpt: "Most recent completed Monday: 10:05–10:32 office local.",
+      },
+      {
+        id: "run030",
+        sourceId: "scanner-prior-run",
+        excerpt: "RUN-FIN-030 · vuln-scan-03 · finance VLAN · SCAN-FIN-MON.",
+      },
+      {
+        id: "approved-window",
+        sourceId: "scanner-window",
+        excerpt:
+          "vuln-scan-03 is approved Mondays 10:00–12:00 for finance VLAN discovery.",
+      },
+    ],
+    rowGroups: [
+      {
+        label: "Activity rows to align",
+        rowIds: ["scan-time", "scan-target"],
+        multiple: true,
+      },
+      { label: "Run identity to compare", rowIds: ["run031", "run030"] },
+      { label: "Execution interval", rowIds: ["run-time"] },
+      { label: "Approval interval and scope", rowIds: ["approved-window"] },
+    ],
+    claims: [
+      {
+        id: "scan-aligned",
+        label:
+          "A-1180's Monday 10:18, source and target align with RUN-FIN-031 and SCAN-FIN-MON.",
+      },
+      {
+        id: "scan-prior",
+        label:
+          "RUN-FIN-030 verifies A-1180 because the scanner and schedule match.",
+      },
+      {
+        id: "scan-arrival",
+        label:
+          "Approval is missing because delivery happened outside the recorded Monday window.",
+      },
+      {
+        id: "scan-insufficient",
+        label: "I have not established this activity's run and approval match.",
+      },
+    ],
+  },
+  {
+    id: "scan-boundary",
+    title: "Which activity can this match close?",
+    why: "Bound the closure to this activity. A discovery connection is not a weakness-check finding.",
+    systemId: "knowledge_base",
+    rows: [
+      {
+        id: "run-limit",
+        sourceId: "scanner-run-log",
+        excerpt:
+          "Limit: discovery connections only, not weakness-check findings or proof every finance system is secure. Other source/network/time needs its own check; shared alert references are not independent measurements.",
+      },
+      {
+        id: "other-open",
+        sourceId: "scanner-other-notice",
+        excerpt:
+          "State: open. This notice is not A-1180 or its matched RUN-FIN-031.",
+      },
+    ],
+    rowGroups: [
+      {
+        label: "Scope and separate notice",
+        rowIds: ["run-limit", "other-open"],
+        multiple: true,
+      },
+    ],
+    claims: [
+      {
+        id: "scan-bounded",
+        label:
+          "Only A-1180's matched discovery activity can close; A-1214 and later activity keep their own checks.",
+      },
+      {
+        id: "scan-all-closed",
+        label:
+          "The completed run proves all finance systems secure and closes A-1214 too.",
+      },
+      {
+        id: "scan-no-later",
+        label:
+          "Because this run finished, no later scanner connections can occur in the approval window.",
+      },
+    ],
+  },
+];
+export const FINANCE_FINDING_QUESTIONS: FindingQuestion[] = [
+  {
+    id: "request-scope",
+    title: "What exactly is Sam asking the recipient to authorize?",
+    why: "Build a useful routing request from the actual resource, role and expiry.",
+    systemId: "email",
+    rows: [
+      {
+        id: "resource-expiry",
+        sourceId: "access-request-email",
+        excerpt: "Requested access: finance-reporting-prod, today until 17:00.",
+      },
+      {
+        id: "read-only",
+        sourceId: "access-request-email",
+        excerpt:
+          "I need the read-only reporting role to finish a board packet.",
+      },
+      {
+        id: "deadline",
+        sourceId: "access-request-email",
+        excerpt: "Director Chen approved the project deadline in chat.",
+      },
+    ],
+    rowGroups: [
+      { label: "Resource and expiry", rowIds: ["resource-expiry"] },
+      { label: "Requested role", rowIds: ["read-only"] },
+      {
+        label: "Reported business context",
+        rowIds: ["deadline"],
+        multiple: true,
+      },
+    ],
+    claims: [
+      {
+        id: "scope-preserved",
+        label:
+          "Sam requests finance-reporting-prod, read-only, until 17:00; deadline support is reported context.",
+      },
+      {
+        id: "scope-granted",
+        label:
+          "The deadline approval already grants the requested read-only role until 17:00.",
+      },
+      {
+        id: "scope-unspecified",
+        label: "I have not preserved the requested resource, role and expiry.",
+      },
+    ],
+  },
+  {
+    id: "approval-boundary",
+    title: "Whose decision is still missing?",
+    why: "Keep the project moving without bypassing the person responsible for the data.",
+    systemId: "knowledge_base",
+    rows: [
+      {
+        id: "data-owner",
+        sourceId: "access-approval-guide",
+        excerpt: "Only the finance data owner can approve this role.",
+      },
+      {
+        id: "keep-pending",
+        sourceId: "access-approval-guide",
+        excerpt: "Keep access pending until the owner records a decision.",
+      },
+      {
+        id: "reported-deadline",
+        sourceId: "access-request-email",
+        excerpt:
+          "Limit: Sam's reported deadline approval is not a recorded grant of the data role.",
+      },
+    ],
+    rowGroups: [
+      {
+        label: "Authority and pending state",
+        rowIds: ["data-owner", "keep-pending", "reported-deadline"],
+        multiple: true,
+      },
+    ],
+    claims: [
+      {
+        id: "owner-pending",
+        label:
+          "The finance data owner's decision is missing; Chen's deadline support grants no role.",
+      },
+      {
+        id: "director-authorizes",
+        label:
+          "Only Chen's confirmation remains because the director owns the deadline.",
+      },
+      {
+        id: "read-only-exempt",
+        label:
+          "Read-only scope and short expiry remove the need for owner authorization.",
+      },
+    ],
+  },
+];
+export const RIVERA_FINDING_QUESTIONS: FindingQuestion[] = [
+  {
+    id: "device-pattern",
+    title: "What differs between Rivera's phone and laptop?",
+    why: "Compare device results before choosing a discriminating check; failed sign-ins alone do not establish an attack.",
+    systemId: "alert_dashboard",
+    rows: [
+      {
+        id: "phone-retries",
+        sourceId: "rivera-auth-summary",
+        excerpt:
+          "08:36–08:41: corp-phone-rivera made five failed saved-password retries.",
+      },
+      {
+        id: "laptop-success",
+        sourceId: "rivera-auth-summary",
+        excerpt:
+          "08:42: corp-macbook-rivera completed a successful sign-in with the updated password.",
+      },
+      {
+        id: "phone-enrolled",
+        sourceId: "rivera-device-inventory",
+        excerpt:
+          "corp-phone-rivera — enrolled, active, assigned to a.rivera@example.com.",
+      },
+      {
+        id: "laptop-enrolled",
+        sourceId: "rivera-device-inventory",
+        excerpt:
+          "corp-macbook-rivera — enrolled, active, assigned to a.rivera@example.com.",
+      },
+      {
+        id: "pattern-limit",
+        sourceId: "rivera-auth-summary",
+        excerpt:
+          "Limit: these recorded device results do not identify a person, prove an attack or establish a completed phone-app fix.",
+      },
+    ],
+    rowGroups: [
+      {
+        label: "Affected-device result",
+        rowIds: ["phone-retries", "laptop-success"],
+      },
+      {
+        label: "Other-device result",
+        rowIds: ["laptop-success", "phone-retries"],
+      },
+      {
+        label: "Exact inventory and limit",
+        rowIds: ["phone-enrolled", "laptop-enrolled", "pattern-limit"],
+        multiple: true,
+      },
+    ],
+    claims: [
+      {
+        id: "phone-hypothesis",
+        label:
+          "An old saved phone password is a hypothesis; laptop success does not test the phone fix or identify either user.",
+      },
+      {
+        id: "phone-already-fixed",
+        label:
+          "The successful laptop sign-in proves the phone's saved password is already current.",
+      },
+      {
+        id: "phone-attacker",
+        label: "The enrolled phone's failed retries identify an attacker.",
+      },
+    ],
+  },
+];
+
 export function findingQuestions(eventId: string): FindingQuestion[] {
-  return eventId === "suspicious-login-1" ? LOGIN_FINDING_QUESTIONS : [];
+  return (
+    (
+      {
+        "suspicious-login-1": LOGIN_FINDING_QUESTIONS,
+        "routine-alert-1": SCANNER_FINDING_QUESTIONS,
+        "access-request-1": FINANCE_FINDING_QUESTIONS,
+        "login-help-1": RIVERA_FINDING_QUESTIONS,
+      } as Record<string, FindingQuestion[]>
+    )[eventId] ?? []
+  );
 }
 
 export function findingText(eventId: string, finding: CaseFinding): string {
@@ -234,37 +532,68 @@ export function reasoningFromFindings(
   eventId: string,
   selections: ReasoningSelection,
 ): ReasoningSelection {
-  if (!selections.caseFindings) return selections;
+  if (!selections.caseFindings || selections.phase === "follow-up")
+    return selections;
   const rows = selections.caseFindings.flatMap(
     (f) =>
       findingQuestions(eventId)
         .find((q) => q.id === f.questionId)
         ?.rows.filter((r) => f.rowIds.includes(r.id)) ?? [],
   );
-  const evidence =
-    eventId === "suspicious-login-1"
-      ? [
-          ["login-session-timeline", "login-evidence-1"],
-          ["vpn-context-1", "login-evidence-2"],
-          ["device-inventory-1", "login-evidence-3"],
-        ]
-          .filter(([source]) => rows.some((r) => r.sourceId === source))
-          .map(([, id]) => id ?? "")
-      : selections.evidence;
-  const uncertainty =
-    eventId === "suspicious-login-1"
-      ? selections.caseFindings.flatMap((f) =>
-          f.claimId === "failed-then-session"
-            ? ["login-uncertainty-2"]
-            : f.claimId === "device-unenrolled"
-              ? ["login-uncertainty-1"]
-              : f.claimId === "coverage-not-collected"
-                ? ["login-uncertainty-3"]
-                : f.claimId === "coverage-no-access"
-                  ? ["login-uncertainty-4"]
-                  : [],
-        )
-      : selections.uncertainty;
+  const prefix = (
+    {
+      "suspicious-login-1": "login",
+      "routine-alert-1": "scanner",
+      "access-request-1": "finance",
+      "login-help-1": "rivera",
+    } as Record<string, string>
+  )[eventId];
+  const sourceOptions: Record<string, string[][]> = {
+    login: [
+      ["login-session-timeline", "1"],
+      ["vpn-context-1", "2"],
+      ["device-inventory-1", "3"],
+    ],
+    scanner: [
+      ["scanner-alert", "1"],
+      ["scanner-run-log", "2"],
+      ["scanner-window", "3"],
+      ["scanner-prior-run", "4"],
+    ],
+    finance: [
+      ["access-request-email", "1"],
+      ["access-approval-guide", "2"],
+    ],
+    rivera: [
+      ["rivera-auth-summary", "1"],
+      ["rivera-device-inventory", "2"],
+    ],
+  };
+  const evidence = (sourceOptions[prefix ?? ""] ?? [])
+    .filter(([source]) => rows.some((r) => r.sourceId === source))
+    .map(([, id]) => `${prefix ?? ""}-evidence-${id ?? ""}`);
+  const mapped: Record<string, string[]> = {
+    "failed-then-session": ["login-uncertainty-2"],
+    "device-unenrolled": ["login-uncertainty-1"],
+    "coverage-not-collected": ["login-uncertainty-3"],
+    "coverage-no-access": ["login-uncertainty-4"],
+    "scan-bounded": ["scanner-uncertainty-1", "scanner-uncertainty-2"],
+    "scan-no-later": ["scanner-uncertainty-3"],
+    "scan-arrival": ["scanner-uncertainty-4"],
+    "owner-pending": ["finance-uncertainty-1", "finance-uncertainty-2"],
+    "director-authorizes": ["finance-uncertainty-3"],
+    "read-only-exempt": ["finance-uncertainty-4"],
+    "scope-granted": ["finance-uncertainty-4"],
+    "phone-hypothesis": [
+      "rivera-uncertainty-1",
+      "rivera-uncertainty-2",
+      "rivera-uncertainty-3",
+    ],
+    "phone-already-fixed": ["rivera-uncertainty-4"],
+  };
+  const uncertainty = [
+    ...new Set(selections.caseFindings.flatMap((f) => mapped[f.claimId] ?? [])),
+  ];
   return { ...selections, evidence, uncertainty };
 }
 
@@ -290,6 +619,7 @@ export function validateCaseFindings(
       (finding.rowSelections.length !== question.rowGroups.length ||
         finding.rowSelections.some(
           (ids, i) =>
+            new Set(ids).size !== ids.length ||
             (!question.rowGroups[i]?.multiple && ids.length > 1) ||
             ids.some((id) => !question.rowGroups[i]?.rowIds.includes(id)),
         ) ||
@@ -316,30 +646,77 @@ export function findingReviewGaps(
   eventId: string,
   findings: CaseFinding[],
 ): string[] {
-  if (eventId !== "suspicious-login-1") return [];
-  const expected = [
-    ["signal", "failed-then-session", ["failed-checks", "session-created"]],
-    ["route", "route-unmatched", ["s0731", "s0741", "v218"]],
-    [
-      "device",
-      "device-unenrolled",
-      ["flagged-device", "unknown-inventory", "inventory-limit"],
-    ],
-    ["coverage", "coverage-not-collected", ["export-limit"]],
-  ] as const;
+  const expected =
+    (
+      {
+        "suspicious-login-1": [
+          [
+            "signal",
+            "failed-then-session",
+            ["failed-checks", "session-created"],
+          ],
+          ["route", "route-unmatched", ["s0731", "s0741", "v218"]],
+          [
+            "device",
+            "device-unenrolled",
+            ["flagged-device", "unknown-inventory", "inventory-limit"],
+          ],
+          ["coverage", "coverage-not-collected", ["export-limit"]],
+        ],
+        "routine-alert-1": [
+          [
+            "scan-match",
+            "scan-aligned",
+            [
+              "scan-time",
+              "scan-target",
+              "run031",
+              "run-time",
+              "approved-window",
+            ],
+          ],
+          ["scan-boundary", "scan-bounded", ["run-limit", "other-open"]],
+        ],
+        "access-request-1": [
+          [
+            "request-scope",
+            "scope-preserved",
+            ["resource-expiry", "read-only"],
+          ],
+          [
+            "approval-boundary",
+            "owner-pending",
+            ["data-owner", "keep-pending", "reported-deadline"],
+          ],
+        ],
+        "login-help-1": [
+          [
+            "device-pattern",
+            "phone-hypothesis",
+            [
+              "phone-retries",
+              "laptop-success",
+              "phone-enrolled",
+              "laptop-enrolled",
+              "pattern-limit",
+            ],
+          ],
+        ],
+      } as Record<string, [string, string, string[]][]>
+    )[eventId] ?? [];
   return expected.flatMap(([id, claim, rows]) => {
     const finding = findings.find((f) => f.questionId === id);
     return !finding
       ? [
-          `No source-backed finding saved for ${LOGIN_FINDING_QUESTIONS.find((q) => q.id === id)?.title ?? id}`,
+          `No source-backed finding saved for ${findingQuestions(eventId).find((q) => q.id === id)?.title ?? id}`,
         ]
       : finding.claimId !== claim ||
           rows.some((row) => !finding.rowIds.includes(row)) ||
-          (id === "route" &&
-            finding.rowSelections !== undefined &&
-            ["s0731", "s0741", "v218"].some(
-              (row, index) => finding.rowSelections?.[index]?.[0] !== row,
-            ))
+          ((id === "route" || id === "device-pattern") &&
+            (id === "route"
+              ? ["s0731", "s0741", "v218"]
+              : ["phone-retries", "laptop-success"]
+            ).some((row, index) => finding.rowSelections?.[index]?.[0] !== row))
         ? [
             `Your saved claim needs more evidence: ${findingText(eventId, finding)}. Check its selected rows and scope.`,
           ]

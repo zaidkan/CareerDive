@@ -1,3 +1,4 @@
+import { sourceBundle } from "./reasoning-options.js";
 import type {
   DomainEffect,
   SimulationActionId,
@@ -18,7 +19,23 @@ export function activatePendingEvents(
   for (const pendingEvent of state.events) {
     if (
       pendingEvent.status === "pending" &&
-      state.simClock >= pendingEvent.triggeredAt
+      (state.simClock >= pendingEvent.triggeredAt ||
+        (pendingEvent.id === "shift-handoff-1" &&
+          Object.values(state.structuredTickets).some(
+            (t) => t.reasoning?.caseFindings !== undefined,
+          ) &&
+          [
+            "suspicious-login-1",
+            "routine-alert-1",
+            "access-request-1",
+            "login-help-1",
+          ].every((id) =>
+            state.events.some(
+              (e) =>
+                e.id === id &&
+                ["resolved", "escalated", "expired"].includes(e.status),
+            ),
+          )))
     ) {
       pendingEvent.status = "active";
       ensureNotificationsForEvent(state, pendingEvent.id);
@@ -122,15 +139,21 @@ export function applyDueCallbacks(
       callback.id.startsWith("b3-") &&
       state.workplace.handoffSourceArtifactIds
     ) {
-      const ids = state.workplace.handoffSourceArtifactIds;
-      const inspected = state.workplace.inspectedArtifactIds ?? [];
+      const ids = [
+        ...state.workplace.handoffSourceArtifactIds,
+        ...(state.workplace.handoffSourceRecordIds ?? []),
+      ];
+      const inspected = [
+        ...(state.workplace.inspectedArtifactIds ?? []),
+        ...(state.workplace.inspectedRecordIds ?? []),
+      ];
       const required = [
         "login-session-timeline",
         "vpn-context-1",
         "device-inventory-1",
       ];
-      const missing = required.filter((id) => !ids.includes(id));
-      body = `I received ${String(ids.length)} selected source reference${ids.length === 1 ? "" : "s"}. ${missing.length ? `The handoff does not include ${missing.map((id) => state.artifacts[id]?.title ?? id).join(", ")}; ${missing.some((id) => !inspected.includes(id)) ? "some of those sources were not opened during this shift" : "those sources were opened but not attached"}.` : "The timeline, VPN context, and device source are attached."} The saved disposition and follow-up request are available; session ownership still needs independent verification.`;
+      const missing = required.filter((id) => !sourceBundle(id, ids).length);
+      body = `I received ${String(ids.length)} selected source reference${ids.length === 1 ? "" : "s"}. ${missing.length ? `The handoff does not include ${missing.map((id) => state.artifacts[id]?.title ?? id).join(", ")}; ${missing.some((id) => !sourceBundle(id, inspected).length) ? "some of those sources were not opened during this shift" : "those sources were opened but not attached"}.` : "The timeline, VPN context, and device source are attached."} The saved disposition and follow-up request are available; session ownership still needs independent verification.`;
     }
     // The applied record also feeds the debrief; keep it identical to the received message.
     callback.body = body;

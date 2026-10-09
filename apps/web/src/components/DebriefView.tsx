@@ -133,6 +133,13 @@ const DECISIONS: Record<
   },
 };
 
+const FIELD_LABELS: Record<string, string> = {
+  evidence: "References recorded",
+  uncertainty: "Limits recorded",
+  nextStep: "Requested next check",
+  findings: "Source-backed findings",
+  context: "Reported context",
+};
 const OUTCOMES = {
   supported: "Supported",
   partially_supported: "Partly documented",
@@ -198,6 +205,39 @@ export function DebriefView({
           </ol>
         </nav>
       </header>
+      {review.statusReview && (
+        <section
+          className="decision-practical-example"
+          aria-label="Status communication review"
+        >
+          <h3>What Morgan received</h3>
+          <p>{review.statusReview.message}</p>
+          <p>
+            <strong>{OUTCOMES[review.statusReview.outcomeLabel]}</strong> · this
+            assesses the initial message, not delivery success.
+          </p>
+          {review.statusReview.excerpt && (
+            <figure>
+              <blockquote>{review.statusReview.excerpt}</blockquote>
+              <figcaption>{review.statusReview.sourceTitle}</figcaption>
+            </figure>
+          )}
+          {review.statusReview.gaps.map((gap) => (
+            <p key={gap}>{gap}</p>
+          ))}
+          <p>
+            <strong>Useful next check:</strong> {review.statusReview.nextCheck}
+          </p>
+          {review.statusReview.corrections.length > 0 && (
+            <details>
+              <summary>Later status corrections</summary>
+              {review.statusReview.corrections.map((text, i) => (
+                <p key={i}>{text}</p>
+              ))}
+            </details>
+          )}
+        </section>
+      )}
       <div className="decision-review-sequence">
         {review.decisions.map((item, index) => {
           const meta = DECISIONS[item.decisionId];
@@ -250,6 +290,14 @@ export function DebriefView({
                     aria-label="Your claim and its record"
                   >
                     <h4>What your work shows</h4>
+                    {item.practicalExample.response && (
+                      <p>
+                        <strong>
+                          Actual case response (authored simulation):
+                        </strong>{" "}
+                        {item.practicalExample.response}
+                      </p>
+                    )}
                     <p>
                       <strong>Your recorded claim:</strong>{" "}
                       {item.practicalExample.claim}
@@ -273,6 +321,31 @@ export function DebriefView({
                     </p>
                   </section>
                 )}
+                {item.followUpReview && (
+                  <section
+                    className="decision-practical-example"
+                    aria-label="Later result interpretation"
+                  >
+                    <h4>How you interpreted the response</h4>
+                    <p>
+                      {OUTCOMES[item.followUpReview.outcomeLabel]} · separate
+                      from your original check decision.
+                    </p>
+                    <blockquote>{item.followUpReview.excerpt}</blockquote>
+                    <ul>
+                      {item.followUpReview.selectedLabels.map((label) => (
+                        <li key={label}>{label}</li>
+                      ))}
+                    </ul>
+                    {item.followUpReview.gaps.map((gap) => (
+                      <p key={gap}>{gap}</p>
+                    ))}
+                    <p>
+                      <strong>Useful next check:</strong>{" "}
+                      {item.followUpReview.nextCheck}
+                    </p>
+                  </section>
+                )}
                 <details className="decision-review-reasoning">
                   <summary>Evidence and reasoning</summary>
                   <p>{item.explanation}</p>
@@ -285,7 +358,8 @@ export function DebriefView({
                   {item.fieldReviews?.map((field) => (
                     <details key={field.field}>
                       <summary>
-                        {field.field}: {OUTCOMES[field.outcomeLabel]}
+                        {FIELD_LABELS[field.field] ?? field.field}:{" "}
+                        {OUTCOMES[field.outcomeLabel]}
                       </summary>
                       <ul>
                         {field.selectedLabels.map((label) => (
@@ -305,7 +379,7 @@ export function DebriefView({
                       >
                         <span aria-hidden="true">{supported ? "✓" : "○"}</span>
                         {supported ? "Recorded: " : "Not established: "}
-                        {meta.signals[id] ?? id}
+                        {meta.signals[id] ?? FIELD_LABELS[id] ?? id}
                       </li>
                     ))}
                   </ul>

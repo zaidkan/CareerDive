@@ -95,6 +95,7 @@ export function HandoffBuilder({
               <strong>
                 {c.title}: {c.label}
               </strong>
+              {c.memo && <details><summary>Reuse saved memo · revision {c.memo.revision}</summary><ul>{c.memo.claims.map((claim, i) => <li key={i}>{claim}</li>)}</ul><p>Recorded unknowns: {c.memo.unknowns}</p><p>Requested next check: {c.memo.nextCheck}</p><p>References from this memo: {c.memo.sourceIds.map(id => view.artifacts.find(a => a.id === id)?.title ?? id).join(" · ") || "None"}</p></details>}
               {c.detail ? (
                 <details>
                   <summary>Recorded result</summary>

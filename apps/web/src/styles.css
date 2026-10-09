@@ -5735,8 +5735,8 @@ section[aria-labelledby="structured-title"],
   appearance: none; min-block-size: 44px;
   color: var(--paper); background: var(--desk);
 }
-/* Existing action styling uses !important; keep this override recovery-scoped. */
-[aria-label="Workplace recovery"] .action-primary { background: var(--desk) !important; }
+/* Preserve legacy recovery actions; the shared workspace uses its own tokens. */
+[aria-label="Workplace recovery"] .action-primary:not(.desk-workspace .action-primary) { background: var(--desk) !important; }
 
 .case-evidence, .handoff-builder { margin-block: 1.25rem; }
 .case-source-links { display: flex; flex-wrap: wrap; gap: .5rem; }

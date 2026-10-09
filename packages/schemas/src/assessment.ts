@@ -63,6 +63,22 @@ export const DebriefSchema = z.object({
   decisionReview: z
     .object({
       careerVersion: z.string(),
+      statusReview: z
+        .object({
+          message: z.string(),
+          outcomeLabel: z.enum([
+            "supported",
+            "partially_supported",
+            "needs_more_evidence",
+          ]),
+          gaps: z.array(z.string()),
+          corrections: z.array(z.string()),
+          claim: z.string().optional(),
+          excerpt: z.string().optional(),
+          sourceTitle: z.string().optional(),
+          nextCheck: z.string(),
+        })
+        .optional(),
       decisions: z.array(
         z.object({
           decisionId: z.string(),
@@ -96,8 +112,22 @@ export const DebriefSchema = z.object({
               }),
             )
             .optional(),
+          followUpReview: z
+            .object({
+              outcomeLabel: z.enum([
+                "supported",
+                "partially_supported",
+                "needs_more_evidence",
+              ]),
+              selectedLabels: z.array(z.string()),
+              gaps: z.array(z.string()),
+              excerpt: z.string(),
+              nextCheck: z.string(),
+            })
+            .optional(),
           practicalExample: z
             .object({
+              response: z.string().optional(),
               claim: z.string(),
               sourceId: z.string(),
               sourceTitle: z.string(),

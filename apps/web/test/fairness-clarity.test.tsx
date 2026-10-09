@@ -113,10 +113,12 @@ it("shows selected-case work while the queue objective concerns a different case
     scanner.id,
   );
   const next = screen.getByRole("region", { name: "Current objective" });
-  expect(next).toHaveTextContent("Check the relevant guide");
+  expect(next).toHaveTextContent(
+    "Which run and approval match this recorded activity?",
+  );
   expect(next).not.toHaveTextContent("Route request");
   expect(
-    within(next).getByRole("button", { name: "Go to Guides" }),
+    within(next).getByRole("button", { name: "Go to Alerts" }),
   ).toBeVisible();
   expect(
     screen.getByRole("button", { name: "Other work waiting: Finance" }),

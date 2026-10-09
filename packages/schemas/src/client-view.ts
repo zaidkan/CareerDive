@@ -59,6 +59,22 @@ export const ClientViewSchema = z.object({
   currentLocation: LocationSchema,
   events: z.array(ClientEventSchema),
   availableActions: z.array(AvailableActionSchema),
+  statusOptions: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        options: z.array(
+          z.object({
+            id: z.string(),
+            label: z.string(),
+            sourceId: z.string().optional(),
+            excerpt: z.string().optional(),
+          }),
+        ),
+      }),
+    )
+    .optional(),
   caseActions: z.array(AvailableActionSchema).optional(),
   operationalMessages: z.array(z.string()),
   consequenceUpdates: z

@@ -63,6 +63,7 @@ export {
 } from "./reasoning-options.js";
 
 export {
+  handoffReferences,
   handoffOptions,
   handoffOptionsForCases,
   validateHandoffSelections,
@@ -70,3 +71,10 @@ export {
 } from "./handoff-options.js";
 
 export { matchingGuides } from "./knowledge.js";
+
+export {
+  allStatusGroups,
+  statusGroups,
+  selectedStatus,
+  caseMemoLines,
+} from "./case-communication.js";

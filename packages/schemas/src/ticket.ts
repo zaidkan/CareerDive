@@ -35,6 +35,7 @@ export const StructuredTicketSchema = z
     uncertainty: z.string().max(2_000).optional(),
     reasoning: ReasoningSelectionSchema.optional(),
     decisionReasoning: ReasoningSelectionSchema.optional(),
+    decisionRevision: z.number().int().nonnegative().optional(),
     decisionSourceIds: z.array(z.string()).optional(),
     sourceRecordIds: z.array(z.string()).optional(),
     revision: z.number().int().nonnegative().optional(),

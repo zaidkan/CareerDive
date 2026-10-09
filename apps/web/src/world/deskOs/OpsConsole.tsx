@@ -1,3 +1,5 @@
+import { ConfirmAction } from "../../components/tools/ConfirmAction.js";
+import { CaseCommunication } from "./CaseCommunication.js";
 import { updateWorkspacePresentation } from "./workspaceTransition.js";
 import type { AvailableAction, ClientView, WorkSystemId } from "@sim/schemas";
 import { useEffect } from "react";
@@ -243,8 +245,51 @@ export function OpsConsole({
                 otherWork.label}
             </button>
           ) : null}
-          {eventId === "suspicious-login-1" && view.caseActions ? (
+          {view.caseActions &&
+            systemId === "team_chat" &&
+            view.availableActions.some((a) => a.id === "complete_shift") && (
+              <ConfirmAction
+                label="Finish shift"
+                pending={Boolean(mutationState.pendingKey)}
+                onConfirm={() => {
+                  const finish = view.availableActions.find(
+                    (a) => a.id === "complete_shift",
+                  );
+                  if (finish) onAction(finish);
+                }}
+              >
+                <p>
+                  Open the evidence-based review of your recorded decisions,
+                  claims and corrections.
+                </p>
+              </ConfirmAction>
+            )}
+          {eventId &&
+          ["handoff-1", "status-check-1", "shift-handoff-1"].includes(
+            eventId,
+          ) &&
+          view.caseActions ? (
+            <CaseCommunication
+              key={eventId}
+              focusRequestId={state.workspace?.requestId ?? 0}
+              view={view}
+              eventId={eventId}
+              systemId={systemId}
+              pending={Boolean(mutationState.pendingKey)}
+              onAction={onAction}
+              onOpenSystem={openTool}
+              onWorkplaceInteraction={onWorkplaceInteraction}
+            />
+          ) : eventId &&
+            [
+              "suspicious-login-1",
+              "routine-alert-1",
+              "access-request-1",
+              "login-help-1",
+            ].includes(eventId) &&
+            view.caseActions ? (
             <CaseWorkspace
+              key={eventId}
               view={view}
               eventId={eventId}
               systemId={systemId}

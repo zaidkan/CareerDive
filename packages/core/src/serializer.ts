@@ -1,3 +1,4 @@
+import { statusGroups } from "./case-communication.js";
 import { handoffOptions } from "./handoff-options.js";
 import { reasoningGroups } from "./reasoning-options.js";
 import type {
@@ -156,7 +157,19 @@ export function toClientView(state: WorldState): ClientView {
       ),
     availableActions: actions,
     ...(state.careerVersion === "2.0.0"
-      ? { caseActions: availableCaseActions(state) }
+      ? {
+          caseActions: availableCaseActions(state),
+          statusOptions: statusGroups(state).map((g) => ({
+            ...g,
+            options: g.options.map((o) => ({
+              ...o,
+              excerpt:
+                o.sourceId && state.observedArtifactIds.includes(o.sourceId)
+                  ? o.excerpt
+                  : undefined,
+            })),
+          })),
+        }
       : {}),
     operationalMessages,
     consequenceUpdates: state.ledger

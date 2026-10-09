@@ -7,7 +7,24 @@ export function handoffOptionsForCases(cases: Cases) {
   const login = cases.find((c) => c.eventId === "suspicious-login-1");
   const finance = cases.find((c) => c.eventId === "access-request-1");
   const scanner = cases.find((c) => c.eventId === "routine-alert-1");
+  const rivera = cases.find((c) => c.eventId === "login-help-1" && c.memo);
   const options = [
+    ...(rivera
+      ? [
+          {
+            id: "carry-rivera",
+            label: rivera.label.startsWith("bounded")
+              ? "Rivera's phone check completed within its bounded result; reopen on new retries, unfamiliar devices or unrecognized activity."
+              : "Rivera's phone-specific follow-up remains untested; carry the actual result and next check.",
+            sourceArtifactIds: [
+              ...new Set([
+                "rivera-result-receipt",
+                ...(rivera.memo?.sourceIds ?? []),
+              ]),
+            ],
+          },
+        ]
+      : []),
     ...(login
       ? [
           {
@@ -17,7 +34,12 @@ export function handoffOptionsForCases(cases: Cases) {
               : login.label.includes("closed")
                 ? "S-0741 was closed; who used it and what activity is missing remain unverified."
                 : "S-0741 still needs senior review of who used it and what activity is missing.",
-            sourceArtifactIds: ["login-session-timeline"],
+            sourceArtifactIds: [
+              ...new Set([
+                "login-session-timeline",
+                ...(login.memo?.sourceIds ?? []),
+              ]),
+            ],
           },
         ]
       : []),
@@ -39,8 +61,11 @@ export function handoffOptionsForCases(cases: Cases) {
                         ? "Finance access is still waiting for the data owner; the interim report granted no new role."
                         : "Finance access is still waiting for the data owner; no new role has been granted.",
             sourceArtifactIds: [
-              "access-request-email",
-              "access-approval-guide",
+              ...new Set([
+                "access-request-email",
+                "access-approval-guide",
+                ...(finance.memo?.sourceIds ?? []),
+              ]),
             ],
           },
         ]
@@ -56,7 +81,13 @@ export function handoffOptionsForCases(cases: Cases) {
                 : scanner.label.startsWith("closed")
                   ? "A-1180 closure is recorded; its run/window support still needs review."
                   : "A-1180 remains open; match its run and approval before deciding whether to close it.",
-            sourceArtifactIds: ["scanner-run-log", "scanner-window"],
+            sourceArtifactIds: [
+              ...new Set([
+                "scanner-run-log",
+                "scanner-window",
+                ...(scanner.memo?.sourceIds ?? []),
+              ]),
+            ],
           },
         ]
       : []),
@@ -153,4 +184,20 @@ export function reviewHandoffSelections(
     gaps,
     selectedLabels: selectedOptions.map((o) => o.label),
   };
+}
+
+export function handoffReferences(
+  selected: HandoffSelection,
+  inspected: readonly string[],
+): string[] {
+  const cases = JSON.parse(selected.stateKey) as Cases;
+  return [
+    ...new Set(
+      handoffOptionsForCases(cases)
+        .options.filter((o) => selected.optionIds.includes(o.id))
+        .flatMap((o) =>
+          o.sourceArtifactIds.flatMap((id) => sourceBundle(id, inspected)),
+        ),
+    ),
+  ];
 }

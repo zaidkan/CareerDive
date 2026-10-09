@@ -1,3 +1,4 @@
+import { selectedStatus, caseMemoLines } from "./case-communication.js";
 import {
   validateHandoffSelections,
   reviewHandoffSelections,
@@ -59,10 +60,66 @@ function validateTicketPayload(
       "update_ticket_notes",
       "route_access_request",
       "resolve_login_help",
+      "send_status_update",
+      "acknowledge_handoff",
     ].includes(action.id)
   )
     throw new ActionUnavailableError(action.id);
   const payload = TicketUpdatePayloadSchema.parse(action.ticketPayload);
+  if (payload.ownershipCaseId !== undefined) {
+    if (
+      action.id !== "acknowledge_handoff" ||
+      eventId !== "handoff-1" ||
+      payload.ticketId !== "ticket-handoff-1" ||
+      !["suspicious-login-1", "routine-alert-1"].includes(
+        payload.ownershipCaseId,
+      ) ||
+      !state.observedArtifactIds.includes("handoff-email") ||
+      Object.keys(payload).some(
+        (k) => !["ticketId", "ownershipCaseId"].includes(k),
+      )
+    )
+      throw new ActionUnavailableError(
+        "Ownership needs the inspected incoming handoff and an actual assigned case.",
+      );
+    return payload;
+  }
+  if (payload.statusOptionIds !== undefined) {
+    if (
+      action.id !== "send_status_update" ||
+      eventId !== "status-check-1" ||
+      payload.ticketId !== "ticket-status-check-1" ||
+      Object.keys(payload).some(
+        (k) => !["ticketId", "statusOptionIds"].includes(k),
+      )
+    )
+      throw new ActionUnavailableError(
+        "Status selections belong to the team status message.",
+      );
+    const options = selectedStatus(state, payload.statusOptionIds);
+    const inspected = [
+      ...state.observedArtifactIds,
+      ...(state.workplace.inspectedRecordIds ?? []),
+    ];
+    const refs = [
+      ...new Set(
+        options.flatMap((o) =>
+          o.sourceId ? sourceBundle(o.sourceId, inspected) : [],
+        ),
+      ),
+    ];
+    return {
+      ...payload,
+      verifiedEvidence:
+        options.map((o) => o.label).join("\n") || "No claims selected.",
+      uncertainty:
+        "These are the player's recorded claims, not a validated case conclusion.",
+      sourceArtifactIds: refs.filter((id) => state.artifacts[id]),
+      sourceRecordIds: refs.filter((id) => !state.artifacts[id]),
+    };
+  }
+  if (["send_status_update", "acknowledge_handoff"].includes(action.id))
+    throw new ActionUnavailableError(action.id);
   if (
     payload.dispatch &&
     (action.id !== "document_ticket" || !payload.reasoning?.caseFindings)
@@ -153,6 +210,7 @@ function updateTicket(
     ...(previous?.decisionReasoning
       ? {
           decisionReasoning: previous.decisionReasoning,
+          decisionRevision: previous.decisionRevision,
           decisionSourceIds: previous.decisionSourceIds,
         }
       : {}),
@@ -197,7 +255,25 @@ export function applyAction(
     return applyQueryRecords(currentState, action);
   }
 
+  if (
+    action.ticketPayload?.ownershipCaseId &&
+    action.eventId === "handoff-1" &&
+    !currentState.events
+      .find((e) => e.id === "handoff-1")
+      ?.completedActionIds.includes("read_handoff")
+  ) {
+    validateTicketPayload(currentState, action, "handoff-1");
+    const read = applyAction(currentState, {
+      id: "read_handoff",
+      eventId: "handoff-1",
+      actorId: action.actorId,
+    });
+    const owned = applyAction(read.state, action);
+    return { state: owned.state, effects: [...read.effects, ...owned.effects] };
+  }
   const caseWorkspace =
+    action.ticketPayload?.statusOptionIds !== undefined ||
+    action.ticketPayload?.ownershipCaseId !== undefined ||
     action.ticketPayload?.reasoning?.caseFindings !== undefined ||
     currentState.structuredTickets[`ticket-${action.eventId ?? ""}`]?.reasoning
       ?.caseFindings !== undefined;
@@ -280,7 +356,9 @@ export function applyAction(
     allowedAction.taskId &&
     !(action.id === "document_ticket" && ticketPayload) &&
     !handoff &&
-    !ticketPayload?.reasoning
+    !ticketPayload?.reasoning &&
+    ticketPayload?.statusOptionIds === undefined &&
+    !ticketPayload?.ownershipCaseId
   ) {
     // P1-T03: released bindings never gate, even if a taskId is present
     // (availability omits it; this covers any divergent caller state).
@@ -335,8 +413,26 @@ export function applyAction(
   const effects: DomainEffect[] = [
     { type: "action_applied", actionId: action.id },
   ];
+  if (ticketPayload?.ownershipCaseId)
+    state.flags.d1_triage =
+      ticketPayload.ownershipCaseId === "routine-alert-1"
+        ? "routine-first"
+        : "login-first";
+  if (ticketPayload?.statusOptionIds) {
+    if (!state.flags.d9_status)
+      state.flags.d9_status = ticketPayload.statusOptionIds.includes(
+        "confirmed-sequence",
+      )
+        ? "sequence"
+        : ticketPayload.statusOptionIds.includes("confirmed-source")
+          ? "source-only"
+          : "unsupported-claim";
+  }
   if (handoff) {
     state.workplace.handoffSourceArtifactIds = [...handoff.sourceArtifactIds];
+    state.workplace.handoffSourceRecordIds = [
+      ...(handoff.sourceRecordIds ?? []),
+    ];
     if (!state.flags.b3_choice)
       state.flags.b3_choice = handoff.selections
         ? reviewHandoffSelections(
@@ -359,8 +455,9 @@ export function applyAction(
     const dispositions = handoffCaseLines(
       state.events,
       state.structuredTickets,
-    ).map(({ title, label, detail }) =>
-      detail ? `${title}: ${label}. ${detail}` : `${title}: ${label}.`,
+    ).map(
+      ({ title, label, detail, memo }) =>
+        `${title}: ${label}.${detail ? ` ${detail}` : ""}${memo ? ` Recorded memo revision ${String(memo.revision)}: ${memo.claims.join(" ") || "No findings."} Unknowns: ${memo.unknowns} Requested next check: ${memo.nextCheck}` : ""}`,
     );
     const open = handoffFollowUps(state.events);
     const caseTicket = state.structuredTickets["ticket-suspicious-login-1"];
@@ -482,9 +579,17 @@ export function applyAction(
           .reduce(
             (minutes, f) =>
               minutes +
-              ({ signal: 10, route: 10, device: 10, coverage: 10 }[
-                f.questionId
-              ] ?? 0),
+              ({
+                signal: 10,
+                route: 10,
+                device: 10,
+                coverage: 10,
+                "scan-match": 10,
+                "scan-boundary": 10,
+                "request-scope": 4,
+                "approval-boundary": 4,
+                "device-pattern": 6,
+              }[f.questionId] ?? 0),
             0,
           )
       : 0;
@@ -501,6 +606,28 @@ export function applyAction(
       event.completedActionIds.push(action.id);
     }
     const effect = resolveActionEffect(state, event, action.id);
+    if (
+      caseWorkspace &&
+      ["dismiss_alert", "escalate_alert"].includes(action.id)
+    ) {
+      const memo = state.structuredTickets[`ticket-${event.id}`];
+      effect.resolution =
+        action.id === "escalate_alert"
+          ? `Escalated — senior review pending. The reviewer received your recorded memo with ${String(memo?.decisionSourceIds?.length ?? memo?.sourceArtifactIds?.length ?? 0)} attached sources; session ownership remains unverified.`
+          : event.id === "routine-alert-1"
+            ? "A-1180 closed with your recorded run/window claim; its support is evaluated in review. A-1214 and later activity remain separate checks."
+            : "S-0741 closed on your recorded judgment. Closure does not verify the session user, route, device or activity; its support is evaluated in review.";
+      if (effect.consequence)
+        effect.consequence.description = effect.resolution;
+    }
+    if (ticketPayload?.statusOptionIds) {
+      effect.resolution =
+        "Morgan received your status message. Receipt confirms delivery; its claims have not been verified.";
+      if (effect.consequence)
+        effect.consequence.description =
+          "Morgan received the recorded claims and current case memo. Remaining questions stay with their recorded owners.";
+      effect.callbacks = [];
+    }
     applyResolvedEffect({ state, event, action, effect, effects });
   }
   if (
@@ -528,6 +655,45 @@ export function applyAction(
     )
       savedTicket.disposition = action.decisionOptionId;
   }
+  if (ticketPayload?.statusOptionIds) {
+    state.teamMessages ??= [];
+    const packet = caseMemoLines(state)
+      .map(
+        (c) =>
+          `${c.title}: ${c.label}. Your recorded findings: ${c.claims.join(" ") || "None."} Remaining: ${c.unknowns} Next check: ${c.nextCheck}`,
+      )
+      .join("\n");
+    state.teamMessages.push({
+      id: `${state.sessionId}-status-${String(state.teamMessages.length + 1)}`,
+      eventId: targetEventId,
+      author: "player",
+      actionId: action.id,
+      simMinutes: state.simClock,
+      body: `${ticketPayload.verifiedEvidence ?? "No claims selected."}\nCurrent case memos (recorded claims, not verification):\n${packet}`,
+    });
+    state.teamMessages.push({
+      id: `${state.sessionId}-status-${String(state.teamMessages.length + 1)}`,
+      eventId: targetEventId,
+      author: "morgan",
+      actionId: action.id,
+      simMinutes: state.simClock,
+      body: "Status received with your recorded case memos. Delivery does not certify their claims. Each pending review/approval keeps its actual recipient; missing claims and corrections stay in the review record.",
+    });
+  }
+  if (ticketPayload?.ownershipCaseId) {
+    state.teamMessages ??= [];
+    const owned = state.events.find(
+      (e) => e.id === ticketPayload.ownershipCaseId,
+    );
+    state.teamMessages.push({
+      id: `${state.sessionId}-ownership-${String(state.teamMessages.length + 1)}`,
+      eventId: ticketPayload.ownershipCaseId,
+      author: "morgan",
+      actionId: action.id,
+      simMinutes: state.simClock,
+      body: `You own ${owned?.title ?? "this case"}. Inherited handoff: A-1042 owner unverified, device check unfinished; scanner approval reference was omitted. These are assignment context, not findings you have established.`,
+    });
+  }
   const dialogueTicket = state.structuredTickets[`ticket-${targetEventId}`];
   if (action.id === "document_ticket" && dialogueTicket) {
     const ticket = dialogueTicket;
@@ -549,6 +715,10 @@ export function applyAction(
   }
 
   const finalTicket = state.structuredTickets[`ticket-${targetEventId}`];
+  if (finalTicket && action.id === "route_access_request")
+    finalTicket.status = "in_progress";
+  if (finalTicket && action.id === "resolve_login_help")
+    finalTicket.status = "closed";
   if (finalTicket && ["dismiss_alert", "escalate_alert"].includes(action.id)) {
     finalTicket.status =
       action.id === "dismiss_alert" ? "closed" : "pending_review";
@@ -565,6 +735,7 @@ export function applyAction(
       "resolve_login_help",
     ].includes(action.id)
   ) {
+    finalTicket.decisionRevision = finalTicket.revision;
     finalTicket.decisionReasoning = structuredClone(finalTicket.reasoning);
     finalTicket.decisionSourceIds = [
       ...(finalTicket.sourceArtifactIds ?? []),
@@ -595,11 +766,12 @@ export function applyAction(
 
   if (ticketPayload?.dispatch) {
     const expected =
+      targetEventId === "routine-alert-1" ||
       state.flags.b1_terminal === "dismiss"
         ? "dismiss_alert"
         : "escalate_alert";
     if (
-      targetEventId !== "suspicious-login-1" ||
+      !["suspicious-login-1", "routine-alert-1"].includes(targetEventId) ||
       ticketPayload.dispatch !== expected
     )
       throw new ActionUnavailableError(

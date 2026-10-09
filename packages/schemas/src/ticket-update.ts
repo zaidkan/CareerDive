@@ -13,6 +13,8 @@ export const TicketUpdatePayloadSchema = z
   .object({
     ticketId: z.string().min(1),
     status: TicketStatusSchema.optional(),
+    statusOptionIds: z.array(z.string().min(1)).max(3).optional(),
+    ownershipCaseId: z.string().min(1).optional(),
     entityRefs: z.array(z.string()).optional(),
     attachEvidenceFactIds: z.array(z.string()).optional(),
     detachEvidenceFactIds: z.array(z.string()).optional(),

@@ -79,7 +79,7 @@ it("keeps a case across tools, shows a short navigation cue, and never chooses a
   );
   expect(
     screen.getByRole("region", { name: "Current objective" }),
-  ).toHaveTextContent("Read the previous shift's handoff");
+  ).toHaveTextContent("Which unfinished case will you take ownership of?");
   await user.click(screen.getByRole("button", { name: "Tickets" }));
   expect(screen.getByRole("combobox", { name: "Current case" })).toHaveValue(
     "handoff-1",
