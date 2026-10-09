@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { ClientView } from "@sim/schemas";
 import { getOptionalShiftHints } from "../../guidance.js";
+import { useOptionalOsSession } from "../deskOs/osSession.js";
 export type ShiftHint = { id: string; title: string; subtitle?: string };
 /** A bounded latest-work queue. Never interrupt a decision acknowledgement. */
 export function enqueueHint(queue: ShiftHint[], next: ShiftHint): ShiftHint[] {
@@ -15,13 +16,15 @@ export function ShiftHints({
   phase: string;
   paused?: boolean;
 }) {
-  const optionalHints = getOptionalShiftHints(view, phase);
+  const osSession = useOptionalOsSession();
+  const eventId = osSession?.state.workspace?.eventId;
+  const optionalHints = getOptionalShiftHints(view, phase, eventId);
   const [hintIndex, setHintIndex] = useState<number | null>(null);
   const hintId = useId();
   const hintButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     setHintIndex(null);
-  }, [view.sessionId, phase]);
+  }, [view.sessionId, phase, eventId]);
   useEffect(() => {
     if (paused || !optionalHints.length) return;
     const onHint = (event: KeyboardEvent) => {
@@ -79,7 +82,8 @@ export function ShiftHints({
           hints.push({
             id: "arrival",
             title: "YOUR FIRST SHIFT",
-            subtitle: "Your workstation is on the operations floor.",
+            subtitle:
+              "Follow the workstation marker through the open aisle to your chair.",
           });
         if (phase === "seated_monitor" && before.phase === "desk_login")
           hints.push({
@@ -104,13 +108,14 @@ export function ShiftHints({
           hints.push({
             id: "inbox",
             title: "CHECK YOUR INBOX",
-            subtitle: `${incoming.at(-1)?.author === "morgan" ? "Morgan" : "A coworker"} sent additional context in Team Chat.`,
+            subtitle: `${incoming.at(-1)?.author === "morgan" ? "Morgan" : "A coworker"} sent a message. Open Team chat to read it; a new message is context, not a new decision.`,
           });
         if (handoff && !before.handoff)
           hints.push({
             id: "handoff",
             title: "HANDOFF READY",
-            subtitle: "Review what you are passing to the next analyst.",
+            subtitle:
+              "Open Team chat to select the open work and sources the next analyst needs.",
           });
       }
     }
@@ -151,12 +156,13 @@ export function ShiftHints({
             ref={hintButton}
             aria-controls={hintId}
             aria-expanded={hintIndex !== null}
+            title="Show optional help for your current case. Press H to show or cycle hints."
             aria-keyshortcuts="H"
             onClick={() => {
               setHintIndex((index) => (index === null ? 0 : null));
             }}
           >
-            {hintIndex === null ? "Hint · H" : "Hide hint · H for next"}
+            {hintIndex === null ? "Need a hint? (H)" : "Hide hint (H for next)"}
           </button>
           {hintIndex !== null ? (
             <div

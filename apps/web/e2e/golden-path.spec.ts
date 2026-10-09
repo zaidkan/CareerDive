@@ -16,7 +16,11 @@ import { DESK_LOGIN } from "../src/world/deskLogin.js";
 const WEB_ORIGIN = process.env.WEB_ORIGIN ?? "http://localhost:5173";
 const API_ORIGIN = process.env.API_ORIGIN ?? "http://localhost:3001";
 
-type SessionCreateCall = { url: string; sessionKind: string | undefined; status: number };
+type SessionCreateCall = {
+  url: string;
+  sessionKind: string | undefined;
+  status: number;
+};
 type MovementCall = { request: Request; status: number };
 
 const TRPC_SESSION_CREATE_PATH = "/trpc/session.create";
@@ -29,7 +33,10 @@ const TRPC_WORKPLACE_PATH = "/trpc/simulation.performWorkplaceInteraction";
  * prose like "the structured summary" in verified canonical content does not
  * cause a false alarm.
  */
-const STALE_CONCEPTS: ReadonlyArray<{ phrase: string; scope: "all-text" | "controls" }> = [
+const STALE_CONCEPTS: ReadonlyArray<{
+  phrase: string;
+  scope: "all-text" | "controls";
+}> = [
   { phrase: "Practice shift", scope: "all-text" },
   { phrase: "Skip practice", scope: "all-text" },
   { phrase: "Start real shift", scope: "all-text" },
@@ -81,7 +88,10 @@ async function scanStaleConcepts(page: Page): Promise<string[]> {
     .evaluateAll((els) =>
       els.map((el) => {
         const label = el.getAttribute("aria-label");
-        return `${label ?? ""} ${el.textContent}`.trim().replace(/\s+/g, " ").toLowerCase();
+        return `${label ?? ""} ${el.textContent}`
+          .trim()
+          .replace(/\s+/g, " ")
+          .toLowerCase();
       }),
     );
 
@@ -119,15 +129,18 @@ async function advanceArrivalFilmToDoors(page: Page): Promise<boolean> {
 async function workstationFitsViewport(page: Page): Promise<boolean> {
   return page.locator(".desk-os-laptop").evaluate((laptop) => {
     const frame = laptop.getBoundingClientRect();
-    const navBottom = document.querySelector(".site-nav")?.getBoundingClientRect().bottom ?? 0;
-    return frame.top >= navBottom - 1 && frame.left >= 0 &&
-      frame.right <= window.innerWidth && frame.bottom <= window.innerHeight;
+    const navBottom =
+      document.querySelector(".site-nav")?.getBoundingClientRect().bottom ?? 0;
+    return (
+      frame.top >= navBottom - 1 &&
+      frame.left >= 0 &&
+      frame.right <= window.innerWidth &&
+      frame.bottom <= window.innerHeight
+    );
   });
 }
 
-test("entry → walk → sit → login → Desk OS continuity", async ({
-  page,
-}) => {
+test("entry → walk → sit → login → Desk OS continuity", async ({ page }) => {
   // Includes HUD help clicks before walking; allow slow software-rendered 3D input.
   test.setTimeout(360_000);
 
@@ -139,15 +152,23 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
   const consoleErrors: string[] = [];
 
   page.on("request", (request) => {
-    if (request.method() === "POST" && request.url().endsWith(TRPC_WORKPLACE_PATH)) {
-      const body = request.postDataJSON() as { interaction?: { type?: string } } | undefined;
-      if (body?.interaction?.type === "movement_exertion") movementCalls.push({ request, status: 0 });
+    if (
+      request.method() === "POST" &&
+      request.url().endsWith(TRPC_WORKPLACE_PATH)
+    ) {
+      const body = request.postDataJSON() as
+        | { interaction?: { type?: string } }
+        | undefined;
+      if (body?.interaction?.type === "movement_exertion")
+        movementCalls.push({ request, status: 0 });
     }
     if (
       request.method() === "POST" &&
       request.url().endsWith(TRPC_SESSION_CREATE_PATH)
     ) {
-      const body = request.postDataJSON() as { sessionKind?: string } | undefined;
+      const body = request.postDataJSON() as
+        | { sessionKind?: string }
+        | undefined;
       sessionCreates.push({
         url: request.url(),
         sessionKind: body?.sessionKind,
@@ -159,26 +180,38 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
     for (const create of sessionCreates) {
       if (create.url === response.url()) create.status = response.status();
     }
-    const movement = movementCalls.find(({ request }) => request === response.request());
+    const movement = movementCalls.find(
+      ({ request }) => request === response.request(),
+    );
     if (movement) movement.status = response.status();
-    if (response.status() >= 400 && response.url().startsWith(`${API_ORIGIN}/`)) {
+    if (
+      response.status() >= 400 &&
+      response.url().startsWith(`${API_ORIGIN}/`)
+    ) {
       failedApiResponses.push(
         `${String(response.status())} ${response.request().method()} ${response.url()}`,
       );
     }
-    if (response.status() >= 400 && response.url().startsWith(`${WEB_ORIGIN}/`)) {
+    if (
+      response.status() >= 400 &&
+      response.url().startsWith(`${WEB_ORIGIN}/`)
+    ) {
       failedAssets.push(`${String(response.status())} ${response.url()}`);
     }
   });
   page.on("requestfailed", (request) => {
     if (request.url().startsWith(`${API_ORIGIN}/`)) {
-      failedApiResponses.push(`NETWORK ${request.method()} ${request.url()}: ${request.failure()?.errorText ?? "unknown"}`);
+      failedApiResponses.push(
+        `NETWORK ${request.method()} ${request.url()}: ${request.failure()?.errorText ?? "unknown"}`,
+      );
     }
     const expectedMediaSeekAbort =
       /\.(mp4|webm)(?:\?|$)/.test(request.url()) &&
       request.failure()?.errorText === "net::ERR_ABORTED";
     if (request.url().startsWith(`${WEB_ORIGIN}/`) && !expectedMediaSeekAbort) {
-      failedAssets.push(`NETWORK ${request.url()}: ${request.failure()?.errorText ?? "unknown"}`);
+      failedAssets.push(
+        `NETWORK ${request.url()}: ${request.failure()?.errorText ?? "unknown"}`,
+      );
     }
   });
   page.on("pageerror", (error) => pageErrors.push(String(error)));
@@ -188,7 +221,8 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
 
   const assertQuiet = () => {
     const unexpected = consoleErrors.filter(
-      (text) => !CONSOLE_ERROR_ALLOWLIST.some((allowed) => text.includes(allowed)),
+      (text) =>
+        !CONSOLE_ERROR_ALLOWLIST.some((allowed) => text.includes(allowed)),
     );
     expect(failedApiResponses, "no failed tRPC/API calls").toEqual([]);
     expect(failedAssets, "no missing web assets").toEqual([]);
@@ -199,18 +233,29 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
   await test.step("1 · landing loads and the start action works", async () => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect(
-      page.getByRole("heading", { name: "Try a slice of the work. See how you'd make the call." }),
+      page.getByRole("heading", {
+        name: "Try a slice of the work. See how you'd make the call.",
+      }),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: /Start your first day/ }).first()).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: /Start your first day/ }).first(),
+    ).toBeVisible();
     expect(await scanStaleConcepts(page)).toEqual([]);
   });
 
   await test.step("2 · start navigates into the arrival film", async () => {
-    await page.getByRole("link", { name: /Start your first day/ }).first().click();
+    await page
+      .getByRole("link", { name: /Start your first day/ })
+      .first()
+      .click();
     await expect(
-      page.getByRole("heading", { name: "Short preview film before your first shift" }),
+      page.getByRole("heading", {
+        name: "Short preview film before your first shift",
+      }),
     ).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByRole("button", { name: "Play arrival film" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Play arrival film" }),
+    ).toBeVisible();
   });
 
   await test.step("3 · arrival film plays and reaches the door HUD", async () => {
@@ -220,14 +265,17 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
     // media resolves through the film error path, which opens the same door.
     const doorHudRegion = page.getByRole("region", { name: /Verdaly doors/ });
     await expect
-      .poll(async () => {
-        await advanceArrivalFilmToDoors(page);
-        try {
-          return await doorHudRegion.isVisible();
-        } catch {
-          return false;
-        }
-      }, { timeout: 30_000, intervals: [200, 400, 800, 1200] })
+      .poll(
+        async () => {
+          await advanceArrivalFilmToDoors(page);
+          try {
+            return await doorHudRegion.isVisible();
+          } catch {
+            return false;
+          }
+        },
+        { timeout: 30_000, intervals: [200, 400, 800, 1200] },
+      )
       .toBe(true);
     await expect(
       page.getByRole("button", { name: "Start your first day" }),
@@ -241,7 +289,9 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
     // Threshold: the doors open onto the day-one brief, not straight to the
     // floor. The brief is ephemeral presentation with no session of its own.
     await expect(
-      page.getByRole("heading", { name: /^A short simulated first shift as a .+ at Verdaly$/ }),
+      page.getByRole("heading", {
+        name: /^A short simulated first shift as a .+ at Verdaly$/,
+      }),
     ).toBeVisible({ timeout: 30_000 });
     expect(sessionCreates.length, "brief creates no session").toBe(0);
     await page.getByRole("button", { name: "Continue to floor" }).click();
@@ -256,51 +306,85 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
 
   await test.step("5 · exactly one ASSESSED session is created", async () => {
     expect(sessionCreates.length, "exactly one session.create call").toBe(1);
-    expect(sessionCreates[0]?.sessionKind, "sessionKind is assessed").toBe("assessed");
+    expect(sessionCreates[0]?.sessionKind, "sessionKind is assessed").toBe(
+      "assessed",
+    );
     expect(sessionCreates[0]?.url).toContain("/trpc/session.create");
   });
 
   await test.step("6 · spatial workplace renders", async () => {
-    await page.getByRole("button", { name: /Security Operations/ }).click({ force: true });
-    await expect(page.getByRole("region", { name: "Workplace space" })).toBeVisible({ timeout: 30_000 });
-    await expect(page.locator('section[aria-label="Workplace space"] .room-canvas canvas')).toBeVisible({ timeout: 30_000 });
-    await expect(page.locator("body")).toContainText("press E to sit", { timeout: 30_000 });
-    await page.getByRole("button", { name: "Hint · H", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Optional hint" })).toContainText("Ready prompt");
+    await page
+      .getByRole("button", { name: /Security Operations/ })
+      .click({ force: true });
+    await expect(
+      page.getByRole("region", { name: "Workplace space" }),
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(
+      page.locator('section[aria-label="Workplace space"] .room-canvas canvas'),
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator("body")).toContainText("press E to sit", {
+      timeout: 30_000,
+    });
+    await page
+      .getByRole("button", { name: "Need a hint? (H)", exact: true })
+      .click();
+    await expect(
+      page.getByRole("status").filter({ hasText: "Optional hint" }),
+    ).toContainText("Ready prompt");
     await page.getByRole("button", { name: "Dismiss hint" }).click();
   });
 
   await test.step("7 · walk with WASD to the workstation", async () => {
-    await page.locator('section[aria-label="Workplace space"] .room-canvas canvas').click({ position: { x: 100, y: 100 } });
+    await page
+      .locator('section[aria-label="Workplace space"] .room-canvas canvas')
+      .click({ position: { x: 100, y: 100 } });
     await page.getByRole("button", { name: "Show controls" }).click();
     await page.getByRole("button", { name: "Close", exact: true }).click();
     // Closing help leaves a HUD button focused. Movement must work immediately.
-    expect(await page.evaluate(() => document.hasFocus()), "browser receives keyboard input").toBe(true);
+    expect(
+      await page.evaluate(() => document.hasFocus()),
+      "browser receives keyboard input",
+    ).toBe(true);
     await page.keyboard.down("w");
     try {
-      await expect.poll(
-        async () => {
-          // Canvas can appear before PlayerController's keyboard effect mounts.
-          // Real held keyboards repeat keydown; Playwright's down() does not.
-          await page.keyboard.down("w");
-          return movementCalls.length;
-        },
-        { timeout: 45_000, intervals: [100] },
-      ).toBeGreaterThan(0);
+      await expect
+        .poll(
+          async () => {
+            // Canvas can appear before PlayerController's keyboard effect mounts.
+            // Real held keyboards repeat keydown; Playwright's down() does not.
+            await page.keyboard.down("w");
+            return movementCalls.length;
+          },
+          { timeout: 45_000, intervals: [100] },
+        )
+        .toBeGreaterThan(0);
       // First 5m bucket fires before the chair's south approach. Continue
       // a short distance, then turn east. A 450ms hold overshoots the clear
       // south approach on a hardware renderer before the eastward walk.
       await page.waitForTimeout(150);
-    } finally { await page.keyboard.up("w"); }
-    await expect.poll(() => movementCalls[0]?.status, { timeout: 10_000 }).toBe(200);
+    } finally {
+      await page.keyboard.up("w");
+    }
+    await expect
+      .poll(() => movementCalls[0]?.status, { timeout: 10_000 })
+      .toBe(200);
     await page.keyboard.down("d");
     try {
-      await expect.poll(async () => {
-        // Match real held-key repeat, just as the northward walk does above.
-        await page.keyboard.down("d");
-        return page.getByRole("button", { name: "Sit at computer" }).isVisible();
-      }, { timeout: 20_000, intervals: [100] }).toBe(true);
-    } finally { await page.keyboard.up("d"); }
+      await expect
+        .poll(
+          async () => {
+            // Match real held-key repeat, just as the northward walk does above.
+            await page.keyboard.down("d");
+            return page
+              .getByRole("button", { name: "Sit at computer" })
+              .isVisible();
+          },
+          { timeout: 20_000, intervals: [100] },
+        )
+        .toBe(true);
+    } finally {
+      await page.keyboard.up("d");
+    }
   });
 
   await test.step("8 · sit and sign in", async () => {
@@ -312,27 +396,55 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
     await expect(page.locator(".site-footer")).toBeHidden();
     await expect.poll(() => workstationFitsViewport(page)).toBe(true);
     await page.getByTestId("login-surface").click();
-    await expect(page.getByRole("heading", { name: "Sign in to Verdaly" })).toBeVisible();
-    await page.getByRole("textbox", { name: "Username" }).fill(DESK_LOGIN.username);
-    await page.getByRole("textbox", { name: "Password" }).fill(DESK_LOGIN.password);
+    await expect(
+      page.getByRole("heading", { name: "Sign in to Verdaly" }),
+    ).toBeVisible();
+    await page
+      .getByRole("textbox", { name: "Username" })
+      .fill(DESK_LOGIN.username);
+    await page
+      .getByRole("textbox", { name: "Password" })
+      .fill(DESK_LOGIN.password);
     await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page.getByRole("navigation", { name: "Workstation tools" })).toBeVisible();
-    await expect(page.getByRole("group", { name: "Verdaly workstation ready" })).toBeFocused();
+    await expect(
+      page.getByRole("navigation", { name: "Workstation tools" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("group", { name: "Verdaly workstation ready" }),
+    ).toBeFocused();
     await expect(page.locator('[data-desk-os="true"]')).toBeVisible();
     await expect.poll(() => workstationFitsViewport(page)).toBe(true);
     expect(sessionCreates.length, "login creates no extra session").toBe(1);
     await page.keyboard.press("h");
-    await expect(page.getByRole("status").filter({ hasText: "Optional hint" })).toContainText("Record comparison");
+    await expect(
+      page.getByRole("status").filter({ hasText: "Optional hint" }),
+    ).toContainText("Open Email");
     await page.getByRole("button", { name: "Dismiss hint" }).click();
     await page.keyboard.press("f");
-    await expect.poll(() => page.evaluate(() => Boolean(document.fullscreenElement?.classList.contains("desk-os-laptop")))).toBe(true);
-    await page.getByRole("button", { name: "Hint · H", exact: true }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Optional hint" })).toContainText("Record comparison");
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          Boolean(
+            document.fullscreenElement?.classList.contains("desk-os-laptop"),
+          ),
+        ),
+      )
+      .toBe(true);
+    await page
+      .getByRole("button", { name: "Need a hint? (H)", exact: true })
+      .click();
+    await expect(
+      page.getByRole("status").filter({ hasText: "Optional hint" }),
+    ).toContainText("Open Email");
     await page.getByRole("button", { name: "Next hint" }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Optional hint" })).toContainText("07:30 = 450");
+    await expect(
+      page.getByRole("status").filter({ hasText: "Optional hint" }),
+    ).toContainText("Clear selections");
     await page.getByRole("button", { name: "Dismiss hint" }).click();
     await page.keyboard.press("f");
-    await expect.poll(() => page.evaluate(() => document.fullscreenElement === null)).toBe(true);
+    await expect
+      .poll(() => page.evaluate(() => document.fullscreenElement === null))
+      .toBe(true);
   });
 
   await test.step("9 · leave, walk away, return, and resume Desk OS state", async () => {
@@ -430,14 +542,21 @@ test("entry → walk → sit → login → Desk OS continuity", async ({
     );
     expect(await scanStaleConcepts(page)).toEqual([]);
     // A selectable experience-mode screen would surface as radio/select controls.
-    await expect(page.getByRole("combobox", { name: "Current case" })).toHaveCount(1);
+    await expect(
+      page.getByRole("combobox", { name: "Current case" }),
+    ).toHaveCount(1);
     expect(await page.locator("select").count()).toBe(1);
     expect(await page.locator('[role="radio"]').count()).toBe(0);
     expect(sessionCreates.length).toBe(1);
     expect(sessionCreates[0]?.status).toBe(200);
-    expect(movementCalls.some(({ status }) => status === 200), "walk submitted successfully").toBe(true);
+    expect(
+      movementCalls.some(({ status }) => status === 200),
+      "walk submitted successfully",
+    ).toBe(true);
     assertQuiet();
   });
 
-  console.log(`Browser QA: session.create=${String(sessionCreates.length)}, sessionKind=${sessionCreates[0]?.sessionKind ?? "missing"}, successful movement calls=${String(movementCalls.filter(({ status }) => status === 200).length)}, API errors=${String(failedApiResponses.length)}, asset errors=${String(failedAssets.length)}, page errors=${String(pageErrors.length)}, console errors=${String(consoleErrors.length)}`);
+  console.log(
+    `Browser QA: session.create=${String(sessionCreates.length)}, sessionKind=${sessionCreates[0]?.sessionKind ?? "missing"}, successful movement calls=${String(movementCalls.filter(({ status }) => status === 200).length)}, API errors=${String(failedApiResponses.length)}, asset errors=${String(failedAssets.length)}, page errors=${String(pageErrors.length)}, console errors=${String(consoleErrors.length)}`,
+  );
 });
