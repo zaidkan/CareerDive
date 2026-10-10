@@ -1,20 +1,36 @@
-import { launchEvent } from "../analytics.js";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { getCareerBySlug } from "../careers/careers.js";
 import { SiteChrome } from "./SiteChrome.js";
 import { parseRoute, type SitePath, type SiteRoute } from "./routes.js";
 import { useRouteMeta } from "./seo.js";
 import { LandingPage } from "./pages/LandingPage.js";
-import { CareersPage } from "./pages/CareersPage.js";
-import { CareerDetailPage } from "./pages/CareerDetailPage.js";
-import { FaqPage } from "./pages/FaqPage.js";
 import { NotFoundPage } from "./pages/NotFoundPage.js";
-import { StartPage } from "./pages/StartPage.js";
-import { TrustPage } from "./pages/TrustPage.js";
 import "./site.css";
 import "./v2.css";
 import "./art-direction.css";
 import "./home.css";
+
+// Keep the landing heading on the initial path; other pages and their assets
+// load only when selected, without pulling the career workshop into every visit.
+const CareersPage = lazy(() =>
+  import("./pages/CareersPage.js").then((mod) => ({
+    default: mod.CareersPage,
+  })),
+);
+const CareerDetailPage = lazy(() =>
+  import("./pages/CareerDetailPage.js").then((mod) => ({
+    default: mod.CareerDetailPage,
+  })),
+);
+const FaqPage = lazy(() =>
+  import("./pages/FaqPage.js").then((mod) => ({ default: mod.FaqPage })),
+);
+const StartPage = lazy(() =>
+  import("./pages/StartPage.js").then((mod) => ({ default: mod.StartPage })),
+);
+const TrustPage = lazy(() =>
+  import("./pages/TrustPage.js").then((mod) => ({ default: mod.TrustPage })),
+);
 
 /** Removed route: map to home first, then rewrite the history entry (no push, no popstate dispatch). */
 function resolveInitialRoute(pathname: string): SiteRoute {
@@ -97,9 +113,19 @@ export function SiteApp({ initialRoute }: { initialRoute?: SitePath }) {
   }, [route, initialRoute]);
 
   useEffect(() => {
-    if (route.kind === "home") launchEvent("landing");
-    if (route.kind === "career")
-      launchEvent("career_viewed", getCareerBySlug(route.slug)?.id);
+    // Optional analytics must not put simulation schemas on the public site's
+    // critical path, especially when event collection is disabled entirely.
+    if (import.meta.env.VITE_LAUNCH_ANALYTICS_ENABLED !== "true") return;
+    if (route.kind !== "home" && route.kind !== "career") return;
+    void import("../analytics.js")
+      .then(({ launchEvent }) => {
+        if (route.kind === "home") launchEvent("landing");
+        if (route.kind === "career")
+          launchEvent("career_viewed", getCareerBySlug(route.slug)?.id);
+      })
+      .catch(() => {
+        // Best effort: an analytics chunk failure must not block navigation.
+      });
   }, [route]);
   useRouteMeta(route);
   const selectedCareer =
@@ -107,16 +133,25 @@ export function SiteApp({ initialRoute }: { initialRoute?: SitePath }) {
 
   return (
     <SiteChrome route={route}>
-      {route.kind === "home" ? <LandingPage /> : null}
-      {route.kind === "careers" ? <CareersPage /> : null}
-      {selectedCareer ? <CareerDetailPage career={selectedCareer} /> : null}
-      {route.kind === "not-found" ||
-      (route.kind === "career" && !selectedCareer) ? (
-        <NotFoundPage />
-      ) : null}
-      {route.kind === "trust" ? <TrustPage /> : null}
-      {route.kind === "faq" ? <FaqPage /> : null}
-      {route.kind === "start" ? <StartPage /> : null}
+      <Suspense
+        key={route.kind === "career" ? route.slug : route.kind}
+        fallback={
+          <p className="page-section" role="status">
+            Loading…
+          </p>
+        }
+      >
+        {route.kind === "home" ? <LandingPage /> : null}
+        {route.kind === "careers" ? <CareersPage /> : null}
+        {selectedCareer ? <CareerDetailPage career={selectedCareer} /> : null}
+        {route.kind === "not-found" ||
+        (route.kind === "career" && !selectedCareer) ? (
+          <NotFoundPage />
+        ) : null}
+        {route.kind === "trust" ? <TrustPage /> : null}
+        {route.kind === "faq" ? <FaqPage /> : null}
+        {route.kind === "start" ? <StartPage /> : null}
+      </Suspense>
     </SiteChrome>
   );
 }
