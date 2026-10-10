@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import type { SimulationClient } from "../../client.js";
 import { ArrivalFilm } from "../ArrivalFilm.js";
 import { ThresholdBrief } from "../ThresholdBrief.js";
+import { enterFloorFullscreen } from "../../world/useFullscreen.js";
 import { navigate } from "../routes.js";
 
 const App = lazy(async () => {
@@ -45,6 +46,7 @@ export function StartPage({ client }: { client?: SimulationClient }) {
   }
 
   function handleContinueToSim() {
+    void enterFloorFullscreen();
     writeGate("sim");
     setPhase("sim");
   }

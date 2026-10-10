@@ -9,6 +9,18 @@ export function isTypingTarget(target: EventTarget | null): boolean {
   return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
 }
 
+/** Request during the entry click, before the asynchronously loaded stage exists. */
+export async function enterFloorFullscreen(): Promise<void> {
+  if (document.fullscreenElement) return;
+  try {
+    if (typeof document.documentElement.requestFullscreen === "function") {
+      await document.documentElement.requestFullscreen();
+    }
+  } catch {
+    /* Fullscreen is optional: unsupported or denied browsers still enter the floor. */
+  }
+}
+
 export function useFullscreen(target: RefObject<HTMLElement | null>): {
   active: boolean;
   toggle: () => Promise<void>;
@@ -17,10 +29,16 @@ export function useFullscreen(target: RefObject<HTMLElement | null>): {
 
   const sync = useCallback(() => {
     const el = target.current;
-    setActive(Boolean(el && document.fullscreenElement === el));
+    setActive(
+      Boolean(
+        document.fullscreenElement === document.documentElement ||
+          (el && document.fullscreenElement?.contains(el)),
+      ),
+    );
   }, [target]);
 
   useEffect(() => {
+    sync();
     document.addEventListener("fullscreenchange", sync);
     return () => {
       document.removeEventListener("fullscreenchange", sync);
@@ -31,7 +49,7 @@ export function useFullscreen(target: RefObject<HTMLElement | null>): {
     const el = target.current;
     if (!el) return;
     try {
-      if (document.fullscreenElement === el) {
+      if (document.fullscreenElement?.contains(el)) {
         await document.exitFullscreen().catch(() => {
           /* Document may already be inactive during navigation. */
         });

@@ -366,6 +366,11 @@ describe("site routes", () => {
       respondToNotification: vi.fn(),
       getDebrief: vi.fn(),
     };
+    const requestFullscreen = vi.fn(() => Promise.resolve());
+    Object.defineProperty(document.documentElement, "requestFullscreen", {
+      configurable: true,
+      value: requestFullscreen,
+    });
     render(<StartPage client={client} />);
     expect(createSession).not.toHaveBeenCalled();
 
@@ -404,7 +409,11 @@ describe("site routes", () => {
     expect(
       screen.getByText(/walk the floor map into security operations/i),
     ).toBeVisible();
+    expect(requestFullscreen).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: /continue to floor/i }));
+    // Synchronous click handling, before lazy loading/session creation can consume activation.
+    expect(requestFullscreen).toHaveBeenCalledTimes(1);
+    Reflect.deleteProperty(document.documentElement, "requestFullscreen");
     await waitFor(() => {
       expect(createSession).toHaveBeenCalledTimes(1);
     });

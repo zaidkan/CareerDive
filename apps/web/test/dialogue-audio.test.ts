@@ -155,3 +155,16 @@ it("degrades silently when AudioContext construction is blocked", async () => {
   expect(start).not.toHaveBeenCalled();
   audio.setSimulationMuted(true);
 });
+
+
+it.each([null, "false", "true"])("uses fresh-user sound ON and honors saved mute preference %s", async (preference) => {
+  vi.resetModules();
+  localStorage.removeItem("career-expo:simulation-muted");
+  if (preference !== null) localStorage.setItem("career-expo:simulation-muted", preference);
+  const audio = await import("../src/world/dialogue/audio.js");
+  audio.unlockDialogueAudio();
+  audio.dialogueTick(0);
+  expect(start).toHaveBeenCalledTimes(preference === "true" ? 0 : 1);
+  audio.stopDialogueAudio();
+  localStorage.removeItem("career-expo:simulation-muted");
+});
