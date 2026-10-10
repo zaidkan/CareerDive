@@ -15,13 +15,16 @@ import { AmbientClockDriver, useAmbient } from "../props/ambientClock.js";
 import { DustMotes, VentPapers } from "../props/atmosphere.js";
 import {
   CeilingAC,
-  OfficeWindow,
+  FeatureWall,
+  FROSTED_PANE_HEIGHT,
+  FrostedGlassWall,
   Thermostat,
   WallPanel,
 } from "../props/building.js";
 import {
   AccentPoster,
   FramedCertificate,
+  HeroPlant,
   TallFloorPlant,
   WallArt,
   WallClock,
@@ -29,6 +32,7 @@ import {
 import { CarpetRunner, FloorTileGrid } from "../props/floor.js";
 import {
   CoatRack,
+  Credenza,
   DESK_SURFACE_Y,
   MonitorArmDesk,
   OfficeChair,
@@ -48,34 +52,46 @@ import { DeskSurfaceDetails } from "../props/WorkplaceDetails.js";
 import { Workstation } from "../Workstation.js";
 import { Wayfinder } from "../Wayfinder.js";
 import type { HotspotId } from "../worldTypes.js";
-import { BREAK_NOOK, GlassBreakNook } from "./GlassBreakNook.js";
+import { BREAK_NOOK, GlassBreakNook, insideBreakNook } from "./GlassBreakNook.js";
 import {
   ALERT_POS,
+  BACK_OFFICE_BINS,
   BASE_HOTSPOTS,
   BREAK_INTERIOR_HOTSPOTS,
   CHAIR_FACE_DESK,
+  COAT_RACK,
   COL,
+  CREDENZA,
+  ENTRY_BINS,
+  ENTRY_PLANTER,
+  FEATURE_WALL,
+  GLASS_SUITE,
+  HERO_PLANT,
   HOT_DESK,
   INNER,
+  LOCKERS,
   MORGAN_DESK,
+  PARTS_CABINETS,
   PLAYER_DESK,
   PLAYER_SEAT_CAM,
   PLAYER_SEAT_LOOK,
   PLAYER_SPAWN,
   ROOM,
-  ROW,
   SAMIR_DESK,
   SEAT,
+  SERVER_RACK_XS,
+  SHREDDER,
+  TEAM_DESK,
   hotspotAnchor,
   socColliders,
 } from "./socLayout.js";
 
 /**
- * Parallel grid layout (enlarged room):
- * - Center aisle on X=0
- * - North desk row: You (east) + Morgan (west), mirrored
- * - Mid desk: empty desk on WEST only — far south of Morgan
- * - East corridor clear for break access
+ * Film layout, from the entry looking north:
+ * - Left: frosted-glass suite meeting the 04 feature wall, credenza, plant
+ * - Right half: two cubicle rows; You (front, east) with Morgan behind
+ * - Back office behind the 04 wall: alert boards, racks, Samir, parts
+ * - Break room in the south-east corner, beside the entry
  *
  * Every coordinate lives in socLayout.ts so the reachability test can guard it.
  */
@@ -293,10 +309,7 @@ export function SocRoom({
 
   function handlePosition(next: [number, number, number]) {
     playerPos.current = next;
-    const isInside =
-      next[0] > BREAK_NOOK.cornerX &&
-      next[2] < BREAK_NOOK.cornerZ &&
-      next[2] > BREAK_NOOK.wallZ;
+    const isInside = insideBreakNook(next[0], next[2]);
     if (insideBreakRoom.current && !isInside) onBreakRoomExit();
     insideBreakRoom.current = isInside;
     const near = nearestHotspot(next, hotspots, nearbyId.current);
@@ -338,27 +351,20 @@ export function SocRoom({
       </mesh>
       {!seated ? <FloorTileGrid rangeX={10} rangeZ={8} step={1.7} /> : null}
 
-      {/* Parallel carpets: center aisle + matching desk pads */}
+      {/* Main aisle runner past the 04 wall, desk pads, break-room rug */}
       <CarpetRunner
-        position={[0, 0, 0.4]}
-        size={[2.4, floorD - 3]}
+        position={[0.85, 0, 0]}
+        size={[2.3, floorD - 3]}
         color="#4a3228"
       />
-      <CarpetRunner
-        position={[COL.east, 0, ROW.north + 0.35]}
-        size={[2.8, 3.6]}
-        color="#5a3a2e"
-      />
-      <CarpetRunner
-        position={[COL.west, 0, ROW.north + 0.35]}
-        size={[2.8, 3.6]}
-        color="#5a3a2e"
-      />
-      <CarpetRunner
-        position={[COL.west, 0, ROW.mid + 0.35]}
-        size={[2.8, 3.6]}
-        color="#5a3a2e"
-      />
+      {[PLAYER_DESK, HOT_DESK, MORGAN_DESK, TEAM_DESK].map((desk) => (
+        <CarpetRunner
+          key={`${String(desk[0])}:${String(desk[2])}`}
+          position={[desk[0], 0, desk[2] + 0.35]}
+          size={[2.8, 3.6]}
+          color="#5a3a2e"
+        />
+      ))}
       <CarpetRunner
         position={[
           (BREAK_NOOK.cornerX + BREAK_NOOK.wallX) / 2,
@@ -367,7 +373,7 @@ export function SocRoom({
         ]}
         size={[
           BREAK_NOOK.wallX - BREAK_NOOK.cornerX - 0.35,
-          BREAK_NOOK.cornerZ - BREAK_NOOK.wallZ - 0.35,
+          BREAK_NOOK.wallZ - BREAK_NOOK.cornerZ - 0.35,
         ]}
         color="#4a3a32"
       />
@@ -389,18 +395,16 @@ export function SocRoom({
         <>
           <CeilingFixture light={false} position={[0, 3.2, 4]} />
           <CeilingFixture light={false} position={[8, 3.2, -5]} />
-          <CeilingFixture light={false} position={[-8, 3.2, 2.5]} />
+          <CeilingFixture light={false} position={[-9.2, 3.2, -1.9]} />
           <CeilingFixture light={false} position={[-8, 3.2, -4.5]} />
           <CeilingFixture light={false} position={[4.5, 3.2, 4.5]} />
-          <CeilingFixture light={false} position={[-4, 3.2, 5.5]} />
+          <CeilingFixture light={false} position={[-1.8, 3.2, 3.2]} />
           <CeilingFixture light={false} position={[8.5, 3.2, 1.5]} />
         </>
       ) : null}
+      {/* Services stay in the back office so the entry ceiling reads clean */}
       {!seated ? (
-        <>
-          <CeilingAC position={[0, 3.12, -0.5]} />
-          <CeilingAC position={[-5, 3.12, 2.5]} rotationY={Math.PI / 2} />
-        </>
+        <CeilingAC position={[-6.5, 3.12, -3.6]} rotationY={Math.PI / 2} />
       ) : null}
 
       <WallPanel position={[0, 1.65, -ROOM.halfZ]} size={[floorW, 3.3, 0.3]} />
@@ -439,52 +443,99 @@ export function SocRoom({
       {!seated ? (
         <>
           <SecurityCamera
-            position={[-ROOM.halfX + 1.1, 2.85, ROOM.halfZ - 1.5]}
-            rotationY={Math.PI * 0.65}
+            position={[GLASS_SUITE.glassX + 0.6, 2.85, ROOM.halfZ - 1.1]}
+            rotationY={Math.PI * 0.8}
           />
           <SecurityCamera
-            position={[ROOM.halfX - 1.1, 2.85, ROOM.halfZ - 1.5]}
-            rotationY={-Math.PI * 0.65}
+            position={[BREAK_NOOK.cornerX - 0.6, 2.85, ROOM.halfZ - 1.1]}
+            rotationY={-Math.PI * 0.8}
           />
         </>
       ) : null}
 
-      <WallClock position={[0, 2.55, -ROOM.halfZ + 0.3]} />
-      {/* Clear of the whiteboard's west edge at x=2.4 */}
-      <Thermostat position={[1.55, 1.55, -ROOM.halfZ + 0.25]} />
-
-      {/* West wall: window sits north of Samir, clear of the parts cabinets */}
-      <OfficeWindow
-        position={[-ROOM.halfX + 0.16, 1.85, -2.3]}
+      {/* Entry-left: frosted suite glass meets the 04 feature wall */}
+      <FrostedGlassWall
+        position={[
+          GLASS_SUITE.glassX,
+          0,
+          (FEATURE_WALL.z + FEATURE_WALL.depth / 2 + GLASS_SUITE.maxZ) / 2,
+        ]}
+        length={GLASS_SUITE.maxZ - (FEATURE_WALL.z + FEATURE_WALL.depth / 2)}
         rotationY={Math.PI / 2}
-        width={2.6}
-        height={1.9}
       />
-      {/* Flush to the wall face, and clear of the window casing on both sides */}
-      <FramedCertificate
-        position={[INNER.minX + 0.015, 1.8, -4.3]}
+      {/* Suite's north wall, seen only from the back office */}
+      <mesh
+        position={[
+          (INNER.minX + GLASS_SUITE.glassX) / 2,
+          FROSTED_PANE_HEIGHT / 2,
+          GLASS_SUITE.minZ + FEATURE_WALL.depth / 2,
+        ]}
+        receiveShadow
+      >
+        <boxGeometry
+          args={[
+            GLASS_SUITE.glassX - INNER.minX,
+            FROSTED_PANE_HEIGHT,
+            FEATURE_WALL.depth,
+          ]}
+        />
+        <meshStandardMaterial color="#e2dbcf" roughness={0.92} />
+      </mesh>
+      <FeatureWall {...FEATURE_WALL} />
+      <Credenza
+        position={[CREDENZA.x, 0, CREDENZA.z]}
+        width={CREDENZA.width}
+        depth={CREDENZA.depth}
+        height={CREDENZA.height}
+      />
+      <HeroPlant position={HERO_PLANT} />
+      {/* Back-office perimeter glazing behind Samir */}
+      <FrostedGlassWall
+        position={[INNER.minX + 0.02, 0, (INNER.minZ + GLASS_SUITE.minZ) / 2]}
+        length={GLASS_SUITE.minZ - INNER.minZ}
         rotationY={Math.PI / 2}
+      />
+
+      {/* Back office north wall, between the racks and the alert boards */}
+      <WallClock position={[-7.1, 2.45, -ROOM.halfZ + 0.3]} />
+      <Thermostat position={[-7.1, 1.5, -ROOM.halfZ + 0.25]} />
+      <AccentPoster position={[-1.95, 1.7, -ROOM.halfZ + 0.25]} color="#2a4840" />
+      {/* Suite wall, above the bins and beside the shredder */}
+      <FramedCertificate
+        position={[-10.05, 1.75, GLASS_SUITE.minZ - 0.015]}
+        rotationY={Math.PI}
         title="SOC TIER-1"
       />
       <FramedCertificate
-        position={[INNER.minX + 0.015, 1.8, 0]}
-        rotationY={Math.PI / 2}
+        position={[-9.45, 1.75, GLASS_SUITE.minZ - 0.015]}
+        rotationY={Math.PI}
         title="SECURE OPS"
         accent="#4fd0c8"
       />
-      {/* Art on the long east wall, south of the break glass */}
       <WallArt
-        position={[INNER.maxX - 0.03, 1.85, 2.6]}
-        rotationY={-Math.PI / 2}
-        width={1.35}
-        height={0.95}
-      />
-      {/* North wall, in the gap between the alert boards and the poster */}
-      <WallArt
-        position={[-1.4, 1.8, -ROOM.halfZ + 0.27]}
+        position={[-5.2, 1.8, GLASS_SUITE.minZ - 0.03]}
+        rotationY={Math.PI}
         variant={1}
         width={1.15}
         height={0.85}
+      />
+      {/* Back of the 04 wall faces the back office */}
+      <group
+        position={[-2.6, 1.6, FEATURE_WALL.z - FEATURE_WALL.depth / 2 - 0.03]}
+        rotation={[0, Math.PI, 0]}
+      >
+        <Whiteboard position={[0, 0, 0]} />
+      </group>
+      <WallCalendar
+        position={[-1.15, 1.85, FEATURE_WALL.z - FEATURE_WALL.depth / 2 - 0.025]}
+        rotationY={Math.PI}
+      />
+      {/* Entry wall, between the corner planter and the door */}
+      <WallArt
+        position={[-2.35, 1.85, INNER.maxZ - 0.03]}
+        rotationY={Math.PI}
+        width={1.35}
+        height={0.95}
       />
 
       {/* Mirrored desk row — same facing, clear east corridor to break */}
@@ -552,7 +603,7 @@ export function SocRoom({
         target={highlightHotspotId === "morgan_station"}
       />
 
-      {/* Empty desk — west mid row, well south of Morgan */}
+      {/* Empty desk beside yours, by the east glazing */}
       <Workstation
         position={HOT_DESK}
         showLamp={false}
@@ -569,15 +620,31 @@ export function SocRoom({
         position={[HOT_DESK[0], 0, HOT_DESK[2] + SEAT]}
         rotationY={CHAIR_FACE_DESK}
       />
-      <VentPapers animated={!seated} position={[-3.85, 0.824, 3.55]} />
+      <VentPapers
+        animated={!seated}
+        position={[HOT_DESK[0] + 0.55, 0.824, HOT_DESK[2] + 0.15]}
+      />
 
-      {/* Priya stands across the aisle, well clear of the player cubicle */}
+      {/* Unassigned desk completing the back row beside Morgan */}
+      <Workstation
+        position={TEAM_DESK}
+        showLamp={false}
+        deskColor="#2a221c"
+        clutterVariant={0}
+        leftEmissive="#4fd0c8"
+      />
+      <OfficeChair
+        position={[TEAM_DESK[0], 0, TEAM_DESK[2] + SEAT]}
+        rotationY={CHAIR_FACE_DESK + 0.35}
+      />
+
+      {/* Priya by the east glazing, out of the entry shot */}
       <Figure
         activity="idle"
         animated={!seated}
         lookAtRef={lookAtRef}
-        position={[-1.65, 0, 2.5]}
-        rotationY={2.2}
+        position={[9.3, 0, -1.0]}
+        rotationY={-1.9}
         primary="#8a7a68"
         secondary="#32281e"
         accent="#6ea8fe"
@@ -585,7 +652,7 @@ export function SocRoom({
         seed={2}
       />
 
-      {/* Samir on west wall — clear of storage */}
+      {/* Samir on the back-office wall, behind the 04 wall */}
       <MonitorArmDesk position={SAMIR_DESK} rotationY={Math.PI / 2} />
       <OfficeChair
         position={[SAMIR_DESK[0] + 1.05, 0, SAMIR_DESK[2]]}
@@ -606,10 +673,10 @@ export function SocRoom({
       />
 
       <AlertWall animated={!seated} />
-      {/* Racks read front-on from the aisle, so they belong on the north wall */}
-      <ServerRack position={[-9.8, 0.9, -6.92]} />
-      <ServerRack position={[-9.0, 0.9, -6.92]} />
-      <ServerRack position={[-8.2, 0.9, -6.92]} />
+      {/* Racks read front-on from the back office, on its north wall */}
+      {SERVER_RACK_XS.map((x) => (
+        <ServerRack key={x} position={[x, 0.9, -6.92]} />
+      ))}
       {quality.dustMul > 0 ? (
         <>
           <DustMotes
@@ -629,42 +696,40 @@ export function SocRoom({
           />
         </>
       ) : null}
-      <Whiteboard position={[COL.east - 0.8, 1.8, -ROOM.halfZ + 0.25]} />
-      <WallCalendar position={[COL.east + 1.0, 1.85, -ROOM.halfZ + 0.25]} />
-      <AccentPoster position={[0, 1.7, -ROOM.halfZ + 0.25]} color="#2a4840" />
-
-      {/* Only CABLES + ADAPTERS — south of Samir, flush to the west wall */}
-      <StorageCabinet
-        position={[-10.42, 0.78, 4.0]}
-        label="CABLES"
-        rotationY={Math.PI / 2}
-        open={openCabinet !== null}
-      />
-      <StorageCabinet
-        position={[-10.42, 0.78, 5.2]}
-        label="ADAPTERS"
-        rotationY={Math.PI / 2}
-        open={openCabinet !== null}
-      />
+      {/* CABLES + ADAPTERS back onto the suite wall and open into the office */}
+      {(["CABLES", "ADAPTERS"] as const).map((label, i) => (
+        <StorageCabinet
+          key={label}
+          position={[PARTS_CABINETS.xs[i] ?? PARTS_CABINETS.xs[0], 0.78, PARTS_CABINETS.z]}
+          label={label}
+          rotationY={Math.PI}
+          open={openCabinet !== null}
+        />
+      ))}
       <MeshLabel
         text="PARTS"
-        position={[-10.05, 1.78, 4.6]}
-        rotationY={Math.PI / 2}
+        position={[
+          (PARTS_CABINETS.xs[0] + PARTS_CABINETS.xs[1]) / 2,
+          1.85,
+          GLASS_SUITE.minZ - 0.012,
+        ]}
+        rotationY={Math.PI}
         width={0.45}
         height={0.11}
       />
-      <DocumentShredder position={[-10.45, 0, 3.0]} rotationY={Math.PI / 2} />
+      <DocumentShredder position={SHREDDER} rotationY={Math.PI} />
       {/* Shared bins live along the walls, never inside a cubicle footprint */}
-      <TrashBin position={[-10.5, 0, 1.8]} />
-      <TrashBin position={[-10.5, 0, 2.32]} recycling />
+      {BACK_OFFICE_BINS.map((bin, i) => (
+        <TrashBin key={bin[0]} position={bin} recycling={i === 1} />
+      ))}
 
-      {/* Entrance: coat/lockers east; planters tucked to south-wall corners */}
-      <CoatRack position={[7.2, 0, ROW.south - 0.15]} />
-      <PersonalLockers position={[8.8, 0.95, ROW.south - 0.15]} />
-      <TrashBin position={[6.2, 0, ROW.south - 0.15]} />
-      <TrashBin position={[5.8, 0, ROW.south - 0.15]} recycling />
-      <TallFloorPlant position={[-3.6, 0, ROOM.halfZ - 0.85]} scale={0.95} />
-      <TallFloorPlant position={[5.15, 0, ROOM.halfZ - 0.85]} scale={0.95} />
+      {/* Entry wall east of the door: coat rack, lockers, bins */}
+      <CoatRack position={COAT_RACK} />
+      <PersonalLockers position={LOCKERS} rotationY={Math.PI} />
+      {ENTRY_BINS.map((bin, i) => (
+        <TrashBin key={bin[0]} position={bin} recycling={i === 1} />
+      ))}
+      <TallFloorPlant position={ENTRY_PLANTER} scale={0.95} />
 
       <GlassBreakNook
         animated={!seated}

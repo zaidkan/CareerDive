@@ -31,7 +31,7 @@ export function SocLighting({
       <pointLight
         intensity={seated ? 0.85 : 1.45}
         distance={seated ? 8 : 18}
-        position={seated ? [COL.east, 2.1, ROW.north] : [7, 2.5, -4.5]}
+        position={seated ? [COL.east, 2.1, ROW.north] : [7, 2.5, 4.5]}
         color="#ffd49b"
       />
     </>

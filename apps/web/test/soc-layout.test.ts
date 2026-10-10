@@ -1,11 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { nearestHotspot } from "../src/world/Hotspot.js";
-import { BREAK_NOOK } from "../src/world/rooms/GlassBreakNook.js";
+import {
+  BREAK_NOOK,
+  insideBreakNook,
+} from "../src/world/rooms/GlassBreakNook.js";
 import {
   BASE_HOTSPOTS,
   BREAK_INTERIOR_HOTSPOTS,
   CLAMP,
+  CREDENZA,
   cubicleCollider,
+  FEATURE_WALL,
+  GLASS_SUITE,
+  HERO_PLANT,
+  HOT_DESK,
   INNER,
   isStandable,
   PLAYER_DESK,
@@ -77,13 +85,23 @@ function reachablePointsWithin(
   });
 }
 
+function reachableWhere(
+  reachable: Set<string>,
+  test: (x: number, z: number) => boolean,
+): boolean {
+  return [...reachable].some((k) => {
+    const [gx, gz] = k.split(":").map(Number) as [number, number];
+    return test(gx * STEP, gz * STEP);
+  });
+}
+
 describe("SOC layout reachability", () => {
   it("keeps E on Jules across tiny movements in the shared coffee area", () => {
     expect(
-      nearestHotspot([7.5, 1.6, -6.3], BREAK_INTERIOR_HOTSPOTS, "jules")?.id,
+      nearestHotspot([7.5, 1.6, 6.3], BREAK_INTERIOR_HOTSPOTS, "jules")?.id,
     ).toBe("jules");
     expect(
-      nearestHotspot([7.5, 1.6, -6.3], BREAK_INTERIOR_HOTSPOTS, "fridge")?.id,
+      nearestHotspot([7.5, 1.6, 6.3], BREAK_INTERIOR_HOTSPOTS, "fridge")?.id,
     ).toBe("coffee");
   });
 
@@ -134,20 +152,36 @@ describe("SOC layout reachability", () => {
   );
 
   it("only reaches the break room interior when the door is open", () => {
-    const inside = (reachable: Set<string>) =>
-      [...reachable].some((k) => {
-        const [gx, gz] = k.split(":").map(Number) as [number, number];
-        const x = gx * STEP;
-        const z = gz * STEP;
-        return (
-          x > BREAK_NOOK.cornerX + 0.2 &&
-          z < BREAK_NOOK.cornerZ - 0.2 &&
-          z > BREAK_NOOK.wallZ
-        );
-      });
+    const inside = (x: number, z: number) => insideBreakNook(x, z, 0.2);
 
-    expect(inside(openReachable)).toBe(true);
-    expect(inside(closedReachable)).toBe(false);
+    expect(reachableWhere(openReachable, inside)).toBe(true);
+    expect(reachableWhere(closedReachable, inside)).toBe(false);
+  });
+
+  it("treats the frosted glass as a solid wall with a sealed suite behind it", () => {
+    const behindGlass = (x: number, z: number) =>
+      x < GLASS_SUITE.glassX && z > GLASS_SUITE.minZ;
+
+    expect(reachableWhere(openReachable, behindGlass)).toBe(false);
+    for (const z of [0, 2, 4, 6]) {
+      expect(isStandable(GLASS_SUITE.glassX, z, socColliders(true))).toBe(false);
+    }
+  });
+
+  it("gives the 04 wall, credenza and plant real colliders", () => {
+    const boxes = socColliders(false);
+    const featureMidX = (FEATURE_WALL.minX + FEATURE_WALL.maxX) / 2;
+
+    expect(isStandable(featureMidX, FEATURE_WALL.z, boxes)).toBe(false);
+    expect(isStandable(CREDENZA.x, CREDENZA.z, boxes)).toBe(false);
+    expect(isStandable(HERO_PLANT[0], HERO_PLANT[2], boxes)).toBe(false);
+  });
+
+  it("walks straight north from the spawn past the 04 wall", () => {
+    const boxes = socColliders(false);
+    for (let z = PLAYER_SPAWN[2]; z >= -1.2; z -= STEP) {
+      expect(isStandable(PLAYER_SPAWN[0], z, boxes)).toBe(true);
+    }
   });
 
   it("clamps the player capsule clear of every wall face", () => {
@@ -157,12 +191,12 @@ describe("SOC layout reachability", () => {
     expect(-CLAMP.z - PLAYER_RADIUS).toBeGreaterThan(INNER.minZ);
   });
 
-  it("keeps a walkable lane between the player cubicle and the break glass", () => {
-    const cubicle = cubicleCollider(PLAYER_DESK);
-    const laneMin = cubicle.maxX + PLAYER_RADIUS;
-    const laneMax = BREAK_NOOK.cornerX - 0.08 - PLAYER_RADIUS;
-
-    expect(laneMax - laneMin).toBeGreaterThan(0.6);
+  it("keeps a walkable lane between the desk row and the break glass", () => {
+    const laneMax = BREAK_NOOK.cornerZ - 0.08 - PLAYER_RADIUS;
+    for (const desk of [PLAYER_DESK, HOT_DESK]) {
+      const laneMin = cubicleCollider(desk).maxZ + PLAYER_RADIUS;
+      expect(laneMax - laneMin).toBeGreaterThan(0.6);
+    }
   });
 
   it("keeps the desk interior solid", () => {

@@ -717,3 +717,75 @@ export function TrashBin({
     </group>
   );
 }
+
+const CREDENZA_DOORS = [-1, 0, 1] as const;
+
+/**
+ * Low walnut credenza: three doors with slim black pulls under a cream stone
+ * top, dressed with a reed vase and a small book stack. Fronts face +Z.
+ */
+export function Credenza({
+  position,
+  width,
+  depth,
+  height,
+}: {
+  position: [number, number, number];
+  width: number;
+  depth: number;
+  height: number;
+}) {
+  const walnut = useMemo(() => makeWoodTexture("#94603a"), []);
+  const plinth = 0.07;
+  const top = 0.05;
+  const bodyH = height - plinth - top;
+  const doorW = (width - 0.06) / CREDENZA_DOORS.length;
+  return (
+    <group position={position}>
+      <mesh position={[0, plinth / 2, -0.03]} receiveShadow>
+        <boxGeometry args={[width - 0.1, plinth, depth - 0.1]} />
+        <meshStandardMaterial color="#1f1712" roughness={0.85} />
+      </mesh>
+      <mesh position={[0, plinth + bodyH / 2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[width, bodyH, depth]} />
+        <meshStandardMaterial map={walnut} roughness={0.55} />
+      </mesh>
+      {CREDENZA_DOORS.map((slot) => (
+        <group key={slot} position={[slot * (doorW + 0.012), plinth + bodyH / 2, depth / 2]}>
+          <mesh position={[0, 0, 0.006]}>
+            <boxGeometry args={[doorW, bodyH - 0.035, 0.012]} />
+            <meshStandardMaterial map={walnut} roughness={0.48} />
+          </mesh>
+          <mesh position={[0, bodyH / 2 - 0.1, 0.02]}>
+            <boxGeometry args={[0.2, 0.012, 0.014]} />
+            <meshStandardMaterial color="#121212" metalness={0.5} roughness={0.35} />
+          </mesh>
+        </group>
+      ))}
+      <mesh position={[0, height - top / 2, 0.01]} castShadow receiveShadow>
+        <boxGeometry args={[width + 0.04, top, depth + 0.03]} />
+        <meshStandardMaterial color="#dad3c6" roughness={0.62} />
+      </mesh>
+      <group position={[-width / 2 + 0.32, height, -0.02]}>
+        <mesh position={[0, 0.11, 0]} castShadow>
+          <cylinderGeometry args={[0.045, 0.055, 0.22, 16]} />
+          <meshStandardMaterial color="#f1eee8" roughness={0.4} />
+        </mesh>
+        <mesh position={[0.02, 0.36, 0]} rotation={[0, 0, -0.12]}>
+          <cylinderGeometry args={[0.004, 0.004, 0.32, 4]} />
+          <meshStandardMaterial color="#5a4632" />
+        </mesh>
+      </group>
+      <group position={[width / 2 - 0.55, height, 0.02]}>
+        <mesh position={[0, 0.012, 0]} castShadow>
+          <boxGeometry args={[0.3, 0.024, 0.2]} />
+          <meshStandardMaterial color="#f2f0ea" roughness={0.7} />
+        </mesh>
+        <mesh position={[0.01, 0.034, 0]}>
+          <boxGeometry args={[0.28, 0.02, 0.18]} />
+          <meshStandardMaterial color="#1c1c1e" roughness={0.6} />
+        </mesh>
+      </group>
+    </group>
+  );
+}
