@@ -38,3 +38,8 @@ scripts/brain/
 scripts/tests/brain/
 docs/coordination/
 docs/superpowers/
+
+# Internal agent task reports and assistant instructions.
+.superpowers/
+CLAUDE.md
+GEMINI.md
