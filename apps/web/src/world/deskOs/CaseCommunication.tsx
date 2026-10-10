@@ -1,7 +1,7 @@
 import { ArtifactOpenButton } from "../../components/tools/ArtifactOpenButton.js";
 import { useEffect, useRef } from "react";
 import { TeamChatTool } from "../../components/tools/TeamChatTool.js";
-import { caseDispositionLabel, findingText } from "@sim/core";
+import { caseDispositionLabel, findingText, sourceBundle } from "@sim/core";
 import type { AvailableAction, ClientView, WorkSystemId } from "@sim/schemas";
 import { useTabDraft } from "../../useTabDraft.js";
 import type { WorkplaceInteractionHandler } from "../../components/shared.js";
@@ -62,6 +62,24 @@ export function CaseCommunication({
   const statusIds = Object.values(status).filter((id) =>
     view.statusOptions?.some((g) => g.options.some((o) => o.id === id)),
   );
+  const inspected = [
+    ...view.artifacts.filter((a) => a.observed).map((a) => a.id),
+    ...(view.workplace.inspectedRecordIds ?? []),
+  ];
+  const missingStatusSources = [
+    ...new Set(
+      view.statusOptions?.flatMap((g) =>
+        g.options
+          .filter(
+            (o) =>
+              statusIds.includes(o.id) &&
+              o.sourceId &&
+              !sourceBundle(o.sourceId, inspected).length,
+          )
+          .flatMap((o) => (o.sourceId ? [o.sourceId] : [])),
+      ) ?? [],
+    ),
+  ];
   return (
     <section className="case-workspace" aria-label="Case communication">
       <header className="case-board">
@@ -289,16 +307,32 @@ export function CaseCommunication({
                 travel with this update.
               </p>
             </section>
+            {missingStatusSources.length > 0 && (
+              <p role="status">
+                Open{" "}
+                {missingStatusSources
+                  .map(
+                    (id) =>
+                      view.artifacts.find((a) => a.id === id)?.title ??
+                      "the selected claim’s source",
+                  )
+                  .join(" and ")}{" "}
+                before sending these status claims. Use the source buttons
+                above, or leave those claims out.
+              </p>
+            )}
             {action && (
               <ConfirmAction
+                disabled={missingStatusSources.length > 0}
                 label={
                   event?.status === "resolved"
                     ? "Send status correction"
                     : "Send status to your manager"
                 }
                 pending={pending}
-                resetKey={JSON.stringify(statusIds)}
+                resetKey={JSON.stringify([statusIds, missingStatusSources])}
                 onConfirm={() => {
+                  if (missingStatusSources.length) return;
                   onAction({
                     ...action,
                     ticketPayload: {

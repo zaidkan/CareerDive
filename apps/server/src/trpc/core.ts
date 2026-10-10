@@ -1,5 +1,5 @@
 import { initTRPC, TRPCError } from "@trpc/server";
-import { WorkplaceInteractionError } from "@sim/core";
+import { StatusSelectionError, WorkplaceInteractionError } from "@sim/core";
 import { NotFoundError, SessionConflictError } from "../domain/errors.js";
 import type { AppContext } from "../domain/session.js";
 
@@ -34,7 +34,11 @@ export const authenticatedProcedure = t.procedure.use(async ({ ctx, next }) => {
       message: result.error.cause.message,
     });
   }
-  if (!result.ok && result.error.cause instanceof WorkplaceInteractionError) {
+  if (
+    !result.ok &&
+    (result.error.cause instanceof WorkplaceInteractionError ||
+      result.error.cause instanceof StatusSelectionError)
+  ) {
     throw new TRPCError({
       code: "BAD_REQUEST",
       message: result.error.cause.message,

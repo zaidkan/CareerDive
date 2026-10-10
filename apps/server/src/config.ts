@@ -45,3 +45,8 @@ export function describeListenFailure(port: number, error: unknown): string {
   }
   return error instanceof Error ? error.message : String(error);
 }
+
+/** Preserve Render's existing one-hop boundary; never trust forwarded hops beyond ingress. */
+export function trustOneProxyHop(_address: string, hop: number): boolean {
+  return hop === 0;
+}

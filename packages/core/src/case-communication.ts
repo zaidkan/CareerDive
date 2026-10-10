@@ -4,6 +4,14 @@ import { handoffCaseLines } from "./handoff-summary.js";
 import { findingText } from "./case-findings.js";
 import { sourceBundle } from "./reasoning-options.js";
 
+/** Expected player-input failure; safe to show through the API. */
+export class StatusSelectionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "StatusSelectionError";
+  }
+}
+
 /** The authored status catalog, presented as one message rather than sequential gates. */
 export function allStatusGroups(state: WorldState) {
   return (
@@ -66,7 +74,9 @@ export function selectedStatus(state: WorldState, ids: string[]) {
     ids.some((id) => !groups.some((g) => g.options.some((o) => o.id === id))) ||
     groups.some((g) => g.options.filter((o) => ids.includes(o.id)).length > 1)
   )
-    throw new Error("Unknown or duplicate status selection.");
+    throw new StatusSelectionError(
+      "Choose no more than one current claim in each status group.",
+    );
   const options = groups.flatMap((g) =>
     g.options.filter((o) => ids.includes(o.id)),
   );
@@ -75,14 +85,13 @@ export function selectedStatus(state: WorldState, ids: string[]) {
     ...(state.workplace.inspectedRecordIds ?? []),
   ];
   for (const o of options) {
-    if (
-      o.sourceId &&
-      (!sourceBundle(o.sourceId, inspected).length ||
-        !state.artifacts[o.sourceId]?.body.includes(o.excerpt ?? ""))
-    )
-      throw new Error(
-        "Open the status claim's actual source before citing it.",
+    if (!o.sourceId) continue;
+    if (!sourceBundle(o.sourceId, inspected).length)
+      throw new StatusSelectionError(
+        `Open ${state.artifacts[o.sourceId]?.title ?? "the selected claim’s source"} before sending this status claim.`,
       );
+    if (!state.artifacts[o.sourceId]?.body.includes(o.excerpt ?? ""))
+      throw new Error("The authored status source excerpt is unavailable.");
   }
   return options;
 }
