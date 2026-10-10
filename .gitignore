@@ -43,3 +43,8 @@ docs/superpowers/
 .superpowers/
 CLAUDE.md
 GEMINI.md
+
+# Internal planning/handoff docs (agent-process; keep private)
+docs/product/workplace-systems-overhaul-design.md
+docs/product/workplace-systems-overhaul-plan.md
+docs/planning/desk-os-audit/
