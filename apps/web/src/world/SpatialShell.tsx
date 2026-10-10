@@ -453,7 +453,7 @@ function SpatialShellStage({
         className={`spatial-shell${atDesk ? " spatial-shell-engaged" : ""}`}
         aria-label="Workplace space"
         aria-hidden={isFloorMap ? true : undefined}
-        {...(isFloorMap ? { inert: "" } : {})}
+        {...(isFloorMap ? { inert: true } : {})}
         style={
           isFloorMap
             ? { position: "absolute", opacity: 0, pointerEvents: "none", zIndex: -1 }
