@@ -118,7 +118,7 @@ it("marks baseline evidence in two records, keeps citations, then submits a caut
   await user.click(screen.getByRole("button", { name: "Submit findings" }));
   expect(
     screen.getByRole("region", { name: "Compare source records" }),
-  ).toHaveTextContent("Typical weekday logins");
+  ).toHaveTextContent("Typical weekdays");
   await user.click(
     screen.getByLabelText(
       "Both the device and network differ from the usual pattern.",

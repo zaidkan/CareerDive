@@ -77,15 +77,16 @@ describe("day-one journey", () => {
     expect(step.target).toEqual({ kind: "hotspot", hotspotId: "desk_player" });
   });
 
-  it("invites the player to sit back down once the desk has been used", () => {
+  it("keeps the actual work objective when away from a visited desk", () => {
     const step = getJourneyStep({
       phase: "room_walk",
       view: baseView,
       visitedDesk: true,
     });
 
-    expect(step.id).toBe("find_desk");
-    expect(step.title).toMatch(/sit back down/i);
+    expect(step.id).toBe("ready");
+    expect(step.title).toMatch(/Read shift handoff/);
+    expect(step.body).toMatch(/take a break/);
   });
 
   it("asks for credentials on the lock screen", () => {

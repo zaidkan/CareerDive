@@ -117,7 +117,8 @@ describe("shift evidence coverage", () => {
     expect(task).toBeDefined();
     if (!task) throw new Error("Missing run comparison");
     expect(task.options.every((option) => option.source)).toBe(true);
-    expect(JSON.stringify(toClientView(state))).not.toContain("RUN-FIN-031");
+    expect(toClientView(state).artifacts.find((a) => a.id === "scanner-run-log")?.body).toBeUndefined();
+    expect(toClientView(state).reasoningOptions?.["routine-alert-1"]?.flatMap((g) => g.options).some((o) => o.label.includes("RUN-FIN-031"))).toBe(true);
     expect(
       task.options
         .filter((o) => o.source?.artifactId === "scanner-run-log")

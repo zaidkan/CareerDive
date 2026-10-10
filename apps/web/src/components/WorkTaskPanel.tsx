@@ -204,6 +204,15 @@ function EventTaskPanel({
           })}
         </fieldset>
       )}
+      <button
+        type="button"
+        disabled={!selected.length || submitting || globallyPending}
+        onClick={() => {
+          setSelected([]);
+        }}
+      >
+        Clear selections
+      </button>
       <div className="work-task-footer">
         {task.kind === "build_summary" && selected.length > 0 ? (
           <section

@@ -47,28 +47,25 @@ it("keeps recorded case dispositions and excludes future work and handoff bookke
 
 it("preserves unresolved follow-up obligations after a work item is resolved", () => {
   expect(
-    handoffFollowUps(
-      [
-        { id: "open", title: "Scanner", status: "active" },
-        {
-          id: "access",
-          title: "Access",
-          status: "resolved",
-          resolution: "Owner approval remains pending. No access was granted.",
-        },
-        {
-          id: "login",
-          title: "Login",
-          status: "resolved",
-          resolution: "The confirmed fix worked.",
-        },
-        { id: "future", title: "Future work", status: "pending" },
-      ],
-      [],
-    ),
+    handoffFollowUps([
+      { id: "open", title: "Scanner", status: "active" },
+      {
+        id: "access-request-1",
+        title: "Access",
+        status: "resolved",
+        resolution: "Owner approval remains pending. No access was granted.",
+      },
+      {
+        id: "login",
+        title: "Login",
+        status: "resolved",
+        resolution: "The confirmed fix worked.",
+      },
+      { id: "future", title: "Future work", status: "pending" },
+    ]),
   ).toEqual([
     "Scanner still needs a final decision.",
-    "Access: Owner approval remains pending.",
+    "Access: finance data-owner authorization or business need still needs follow-up.",
   ]);
 });
 
@@ -91,7 +88,7 @@ it("labels finance routing, unauthorized approval, rejection, and scanner closur
     {},
   );
   expect(cases[0]?.label).toBe("routed — approval pending");
-  expect(cases[1]?.label).toContain("closed as expected");
+  expect(cases[1]?.label).toContain("run/window support still needs review");
   for (const [resolution, label] of [
     [
       "Access was approved without the data owner's authorization; review pending.",

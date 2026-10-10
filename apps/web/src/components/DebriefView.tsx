@@ -58,6 +58,10 @@ const DECISIONS: Record<
     reflection:
       "Would handling this alert immediately, snoozing it, or finishing the login check first change what the next analyst needed from your notes?",
     choices: {
+      "expected-close": "Close the matched run",
+      "expected-close-with-monitoring":
+        "Close matched run; keep routine monitoring",
+      "close-low-priority": "Close without a matched run",
       handle: "Handled it immediately",
       snooze: "Snoozed the interruption",
       continue: "Continued the current case",
@@ -82,6 +86,8 @@ const DECISIONS: Record<
       "route-with-interim": "Routed with an interim report",
       "self-approve": "Approved access directly",
       "reject-as-attack": "Rejected as an attack",
+      "route-to-director":
+        "Sent to deadline approver; role authorization pending",
     },
     signals: {
       reviewed_approval_owner: "Opened the approval guide",
@@ -127,14 +133,23 @@ const DECISIONS: Record<
   },
 };
 
+const FIELD_LABELS: Record<string, string> = {
+  evidence: "References recorded",
+  uncertainty: "Limits recorded",
+  nextStep: "Requested next check",
+  findings: "Source-backed findings",
+  context: "Reported context",
+};
 const OUTCOMES = {
-  supported: "Supported by the record",
+  supported: "Supported",
   partially_supported: "Partly documented",
   needs_more_evidence: "Needs more evidence",
 };
 const PROFILE_STATES = {
-  strong: "Strong",
-  developing: "Developing",
+  strong: "Supported",
+  supported: "Supported",
+  developing: "Partly documented",
+  partially_supported: "Partly documented",
   needs_more_evidence: "Needs more evidence",
 };
 
@@ -190,6 +205,39 @@ export function DebriefView({
           </ol>
         </nav>
       </header>
+      {review.statusReview && (
+        <section
+          className="decision-practical-example"
+          aria-label="Status communication review"
+        >
+          <h3>What your manager received</h3>
+          <p>{review.statusReview.message}</p>
+          <p>
+            <strong>{OUTCOMES[review.statusReview.outcomeLabel]}</strong> · this
+            assesses the initial message, not delivery success.
+          </p>
+          {review.statusReview.excerpt && (
+            <figure>
+              <blockquote>{review.statusReview.excerpt}</blockquote>
+              <figcaption>{review.statusReview.sourceTitle}</figcaption>
+            </figure>
+          )}
+          {review.statusReview.gaps.map((gap) => (
+            <p key={gap}>{gap}</p>
+          ))}
+          <p>
+            <strong>Useful next check:</strong> {review.statusReview.nextCheck}
+          </p>
+          {review.statusReview.corrections.length > 0 && (
+            <details>
+              <summary>Later status corrections</summary>
+              {review.statusReview.corrections.map((text, i) => (
+                <p key={i}>{text}</p>
+              ))}
+            </details>
+          )}
+        </section>
+      )}
       <div className="decision-review-sequence">
         {review.decisions.map((item, index) => {
           const meta = DECISIONS[item.decisionId];
@@ -216,9 +264,11 @@ export function DebriefView({
                     item.userChoiceId === "self-approve"
                       ? "finance-reporting-prod · role approved directly"
                       : item.decisionId === "finance_access" &&
-                          item.userChoiceId === "reject-as-attack"
-                        ? "finance-reporting-prod · request rejected; business need unresolved"
-                        : meta.recordLine}
+                          item.userChoiceId === "route-to-director"
+                        ? "Deadline approver contacted; data-owner authorization still pending."
+                        : item.userChoiceId === "reject-as-attack"
+                          ? "finance-reporting-prod · request rejected; business need unresolved"
+                          : meta.recordLine}
                   </p>
                 </div>
                 <div className="decision-review-choice">
@@ -234,9 +284,93 @@ export function DebriefView({
                     {OUTCOMES[item.outcomeLabel]}
                   </span>
                 </div>
+                {item.practicalExample && (
+                  <section
+                    className="decision-practical-example"
+                    aria-label="Your claim and its record"
+                  >
+                    <h4>What your work shows</h4>
+                    {item.practicalExample.response && (
+                      <p>
+                        <strong>
+                          Actual case response (authored simulation):
+                        </strong>{" "}
+                        {item.practicalExample.response}
+                      </p>
+                    )}
+                    <p>
+                      <strong>Your recorded claim:</strong>{" "}
+                      {item.practicalExample.claim}
+                    </p>
+                    <figure>
+                      <blockquote>{item.practicalExample.excerpt}</blockquote>
+                      <figcaption>
+                        {item.practicalExample.sourceTitle} ·{" "}
+                        {item.practicalExample.referenceStatus === "cited"
+                          ? "row cited in your finding"
+                          : "inspected record; row was not cited in your finding"}
+                      </figcaption>
+                    </figure>
+                    <p>
+                      <strong>Support and limit:</strong>{" "}
+                      {item.practicalExample.support}
+                    </p>
+                    <p>
+                      <strong>Useful next check:</strong>{" "}
+                      {item.practicalExample.nextCheck}
+                    </p>
+                  </section>
+                )}
+                {item.followUpReview && (
+                  <section
+                    className="decision-practical-example"
+                    aria-label="Later result interpretation"
+                  >
+                    <h4>How you interpreted the response</h4>
+                    <p>
+                      {OUTCOMES[item.followUpReview.outcomeLabel]} · separate
+                      from your original check decision.
+                    </p>
+                    <blockquote>{item.followUpReview.excerpt}</blockquote>
+                    <ul>
+                      {item.followUpReview.selectedLabels.map((label) => (
+                        <li key={label}>{label}</li>
+                      ))}
+                    </ul>
+                    {item.followUpReview.gaps.map((gap) => (
+                      <p key={gap}>{gap}</p>
+                    ))}
+                    <p>
+                      <strong>Useful next check:</strong>{" "}
+                      {item.followUpReview.nextCheck}
+                    </p>
+                  </section>
+                )}
                 <details className="decision-review-reasoning">
                   <summary>Evidence and reasoning</summary>
                   <p>{item.explanation}</p>
+                  {item.evaluationMode === "limited-text-evaluation" ? (
+                    <p>
+                      Limited-text-evaluation · saved text meaning was not
+                      assessed.
+                    </p>
+                  ) : null}
+                  {item.fieldReviews?.map((field) => (
+                    <details key={field.field}>
+                      <summary>
+                        {FIELD_LABELS[field.field] ?? field.field}:{" "}
+                        {OUTCOMES[field.outcomeLabel]}
+                      </summary>
+                      <ul>
+                        {field.selectedLabels.map((label) => (
+                          <li key={label}>{label}</li>
+                        ))}
+                      </ul>
+                      {field.gaps.map((gap) => (
+                        <p key={gap}>{gap}</p>
+                      ))}
+                    </details>
+                  ))}
                   <ul>
                     {item.rubricSignals.map(({ id, supported }) => (
                       <li
@@ -245,7 +379,7 @@ export function DebriefView({
                       >
                         <span aria-hidden="true">{supported ? "✓" : "○"}</span>
                         {supported ? "Recorded: " : "Not established: "}
-                        {meta.signals[id] ?? id}
+                        {meta.signals[id] ?? FIELD_LABELS[id] ?? id}
                       </li>
                     ))}
                   </ul>
@@ -262,7 +396,7 @@ export function DebriefView({
                   {item.reasoningAnalysis?.correctionHistory.map(
                     (entry, correctionIndex) => (
                       <p key={correctionIndex}>
-                        <strong>Initial handoff:</strong>{" "}
+                        <strong>Initial record:</strong>{" "}
                         {describeHandoff(entry.initialOptionIds)}.
                         {entry.correctedOptionIds ? (
                           <>

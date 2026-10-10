@@ -1,19 +1,9 @@
 import type { AvailableAction, ClientView } from "@sim/schemas";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import "./workspace.css";
 import { LockScreen } from "./LockScreen.js";
 import { OpsConsole } from "./OpsConsole.js";
-import { BrowserApp } from "./os/BrowserApp.js";
-import { Desktop } from "./os/Desktop.js";
-import { FileExplorer, type OpenableFile } from "./os/FileExplorer.js";
-import { Notes } from "./os/Notes.js";
-import { Taskbar } from "./os/Taskbar.js";
-import { WindowFrame } from "./os/WindowFrame.js";
-import type { OsAppId } from "./os/browserState.js";
 import { OsIcon } from "./os/Icons.js";
-import { MAX_OPEN_WINDOWS, canOpenWindow, fitWindowBounds, type WindowBounds, type WorkspaceSize } from "./os/windows.js";
-import { useOsSession } from "./osSession.js";
-import { ConsequenceUpdates } from "../../components/ConsequenceUpdates.js";
-import { NotificationBanner } from "../../components/NotificationBanner.js";
 import type {
   NotificationHandler,
   TaskAttemptHandler,
@@ -53,192 +43,59 @@ export function DeskOs({
   mutationState?: MutationState;
   onRetryMutation?: () => void;
 }) {
-  const { state, dispatch } = useOsSession();
   const workspaceRef = useRef<HTMLDivElement>(null);
   const wasLockedRef = useRef(phase === "desk_login");
-  const [currentWorkspace, setCurrentWorkspace] = useState<WorkspaceSize>({ w: 0, h: 0 });
-  const [windowNotice, setWindowNotice] = useState("");
-  useEffect(() => {
-    const workspace = workspaceRef.current;
-    if (!workspace || typeof ResizeObserver === "undefined") return;
-    const measure = () => {
-      const w = workspace.clientWidth;
-      const h = workspace.clientHeight;
-      setCurrentWorkspace((previous) => previous.w === w && previous.h === h ? previous : { w, h });
-    };
-    const observer = new ResizeObserver(measure);
-    observer.observe(workspace);
-    measure();
-    return () => { observer.disconnect(); };
-  }, []);
-  useEffect(() => {
-    if (!windowNotice) return;
-    const timer = window.setTimeout(() => { setWindowNotice(""); }, 4000);
-    return () => { window.clearTimeout(timer); };
-  }, [windowNotice]);
-  const workspaceSize = (): WorkspaceSize => ({
-    w: workspaceRef.current?.clientWidth || 1024,
-    h: workspaceRef.current?.clientHeight || 720,
-  });
-  const displayBounds = (bounds: WindowBounds): WindowBounds =>
-    currentWorkspace.w > 0 && currentWorkspace.h > 0
-      ? fitWindowBounds(bounds, currentWorkspace)
-      : bounds;
-  const launch = (app: OsAppId) => {
-    if (!canOpenWindow(state.windows, app)) {
-      setWindowNotice(state.windows.windows.length >= MAX_OPEN_WINDOWS
-        ? "Up to 4 windows can be open at once. Close one to open another."
-        : "Browser already has 2 windows open.");
-      return;
-    }
-    setWindowNotice("");
-    dispatch({ type: "open_window", app, workspace: workspaceSize() });
-  };
-  const selectPinned = (app: OsAppId) => {
-    const existing = state.windows.windows.find((window) => window.app === app);
-    if (existing) dispatch({ type: "restore_window", id: existing.id });
-    else launch(app);
-  };
-  const respondToNotification: NotificationHandler = async (notification, response) => {
-    if (!onNotification) return;
-    if (response !== "handle") {
-      if (state.notificationTarget?.notificationId === notification.id) {
-        dispatch({ type: "clear_notification_target", requestId: state.notificationTarget.requestId });
-      }
-      await onNotification(notification, response);
-      return;
-    }
-    const browser = state.windows.windows.find((window) => window.id === state.windows.focusedWindowId && window.app === "browser")
-      ?? state.windows.windows.filter((window) => window.app === "browser").sort((a, b) => b.z - a.z)[0];
-    if (!browser && !canOpenWindow(state.windows, "browser")) {
-      setWindowNotice("Up to 4 windows can be open at once. Close one to open another.");
-      return;
-    }
-    const requestId = state.nextNotificationRequestId;
-    dispatch({ type: "queue_notification_target", notificationId: notification.id, windowId: browser?.id ?? null, eventId: notification.eventId, systemId: notification.systemId });
-    await onNotification(notification, response, () => {
-      dispatch({ type: "route_notification_target", requestId, workspace: workspaceSize() });
-    });
-  };
-  // Opened files live at session level so they survive overlay unmount/remount.
-  const openFile = state.openFile;
-  const setOpenFile = (file: OpenableFile | null) => {
-    dispatch({ type: "set_open_file", file });
-  };
   const locked = phase === "desk_login";
-
   useEffect(() => {
-    if (wasLockedRef.current && !locked) workspaceRef.current?.focus({ preventScroll: true });
+    if (wasLockedRef.current && !locked)
+      workspaceRef.current?.focus({ preventScroll: true });
     wasLockedRef.current = locked;
   }, [locked]);
 
-  const openFileInNotes = (file: OpenableFile) => {
-    setOpenFile(file);
-    launch("notes");
-  };
-  const windowLabel = (id: string, app: "browser" | "files" | "notes") => {
-    if (app !== "browser") return app === "files" ? "Files" : "Notes";
-    const ordinal = state.windows.windows.filter((entry) => entry.app === "browser").findIndex((entry) => entry.id === id) + 1;
-    return ordinal > 1 ? `Browser ${String(ordinal)}` : "Browser";
-  };
-
-  const opsConsole = (windowId: string) => (
-    <OpsConsole
-      windowId={windowId}
-      phase={phase}
-      view={view}
-      onAction={onAction}
-      {...(onTaskAttempt ? { onTaskAttempt } : {})}
-      {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
-      mutationState={mutationState}
-      {...(onRetryMutation ? { onRetryMutation } : {})}
-    />
-  );
-
   return (
     <div
-      className={`desk-os${maximized ? " desk-os-max" : ""}${osFullscreen ? " desk-os-os-fs" : ""}${locked ? " desk-os-locked" : " desk-os-shell"}${!locked && view.consequenceUpdates?.length ? " desk-os-has-followups" : ""}`}
+      className={`desk-os desk-workspace${maximized ? " desk-os-max" : ""}${osFullscreen ? " desk-os-os-fs" : ""}${locked ? " desk-os-locked" : " desk-os-shell"}`}
       data-desk-os="true"
     >
-      {!locked ? <ConsequenceUpdates view={view} /> : null}
-      <div aria-label="Verdaly workstation ready" className="os-workspace" hidden={locked} ref={workspaceRef} role="group" tabIndex={-1}>
-        <Desktop onOpen={launch} />
-        {state.windows.windows.filter((window) => !window.minimized).map((window) => (
-          <WindowFrame
-            key={window.id}
-            id={window.id}
-            app={window.app}
-            title={windowLabel(window.id, window.app)}
-            active={state.windows.focusedWindowId === window.id}
-            maximized={window.maximized}
-            bounds={displayBounds(window.bounds)}
-            z={window.z}
-            onFocus={() => { dispatch({ type: "focus_window", id: window.id }); }}
-            onMove={(x, y) => { dispatch({ type: "move_window", id: window.id, x, y, workspace: workspaceSize() }); }}
-            onMinimize={() => { dispatch({ type: "minimize_window", id: window.id }); }}
-            onToggleMaximize={() => {
-              if (window.maximized) {
-                dispatch({ type: "restore_maximized_window", id: window.id, workspace: workspaceSize() });
-              } else {
-                dispatch({ type: "maximize_window", id: window.id });
-              }
-            }}
-            onClose={() => { dispatch({ type: "close_window", id: window.id }); }}
+      <header className="workspace-header">
+        <strong>
+          Verdaly <span>· Analyst workspace</span>
+        </strong>
+        <div className="workspace-controls">
+          <button
+            aria-pressed={osFullscreen}
+            className="desk-os-ghost"
+            onClick={onOsFullscreen}
+            type="button"
           >
-            {window.app === "browser" ? <BrowserApp opsConsole={opsConsole(window.id)} windowId={window.id} />
-              : window.app === "files" ? <FileExplorer onOpenFile={openFileInNotes} />
-              : <Notes openFile={openFile} />}
-          </WindowFrame>
-        ))}
-        {!locked && view.notifications.some(({ status }) => status === "unread") ? (
-          <aside aria-label="Work notification" className="os-notification-host">
-            <NotificationBanner notifications={view.notifications} {...(onNotification ? { onNotification: respondToNotification } : {})} mutationState={mutationState} />
-          </aside>
-        ) : null}
-        {windowNotice ? (
-          <p aria-atomic="true" className="os-window-notice" role="status">
-            <OsIcon name="info" size={15} />
-            {windowNotice}
-          </p>
+            <OsIcon name="expand" size={16} /> Expand workstation
+          </button>
+          <button className="desk-os-ghost" onClick={onStand} type="button">
+            <OsIcon name="exit" size={16} /> Leave desk
+          </button>
+        </div>
+      </header>
+      <div
+        aria-label="Verdaly workstation ready"
+        className="workspace-content"
+        hidden={locked}
+        ref={workspaceRef}
+        role="group"
+        tabIndex={-1}
+      >
+        {!locked ? (
+          <OpsConsole
+            view={view}
+            onAction={onAction}
+            {...(onTaskAttempt ? { onTaskAttempt } : {})}
+            {...(onNotification ? { onNotification } : {})}
+            {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
+            mutationState={mutationState}
+            {...(onRetryMutation ? { onRetryMutation } : {})}
+          />
         ) : null}
       </div>
-      {locked ? (
-        <div className="desk-os-body">
-          <div className="desk-os-window-actions">
-            <button
-              aria-pressed={osFullscreen}
-              className="desk-os-ghost"
-              onClick={onOsFullscreen}
-              type="button"
-            >
-              <OsIcon name="expand" size={14} />
-              Expand workstation
-            </button>
-            <button className="desk-os-ghost" onClick={onStand} type="button">
-              <OsIcon name="exit" size={14} />
-              Leave desk
-            </button>
-          </div>
-          <LockScreen onLoginSuccess={onLoginSuccess} />
-        </div>
-      ) : (
-        <Taskbar
-          simClock={view.simClock}
-          attention={view.notifications.some(({ status }) => status === "unread")}
-          osFullscreen={osFullscreen}
-          onLaunch={selectPinned}
-          windows={state.windows.windows.map((window) => ({
-            key: window.id,
-            app: window.app,
-            label: windowLabel(window.id, window.app),
-            active: state.windows.focusedWindowId === window.id,
-            minimized: window.minimized,
-          }))}
-          onSelectWindow={(id) => { dispatch({ type: "select_taskbar_window", id }); }}
-          onOsFullscreen={onOsFullscreen}
-          onStand={onStand}
-        />
-      )}
+      {locked ? <LockScreen onLoginSuccess={onLoginSuccess} /> : null}
     </div>
   );
 }

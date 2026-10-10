@@ -522,17 +522,17 @@ scenario:
               label: The export ends at 07:45 and has no file-access or mailbox activity; what was accessed remains unverified.
               source:
                 artifactId: login-session-timeline
-                quote: "Collection ends at 07:45. This export has no file-access or mailbox activity and cannot establish what was accessed."
+                quote: "Limit: collection ends 07:45; no file/mail activity collected. A-1042 and login-context-1 summarize this same source, not independent corroboration."
             - id: shared-source-limit
               label: A-1042 and login-context-1 summarize the same source, so they are not independent confirmations.
               source:
                 artifactId: login-session-timeline
-                quote: "A-1042 and login-context-1 summarize this same source; counting them separately does not create independent corroboration."
+                quote: "Limit: collection ends 07:45; no file/mail activity collected. A-1042 and login-context-1 summarize this same source, not independent corroboration."
             - id: session-refresh-only
               label: Include only the later session refresh.
               source:
                 artifactId: login-session-timeline
-                quote: "07:43 · S-0741 · account portal session refresh."
+                quote: "Limit: collection ends 07:45; no file/mail activity collected. A-1042 and login-context-1 summarize this same source, not independent corroboration."
           requiredOptionIds: [collection-coverage-limit, shared-source-limit]
           coachOnFailure: A session refresh describes activity, but not the export's coverage. Find what was not collected and which summaries share a source; missing activity records do not prove nothing was accessed.
           successText: Your handoff now states the collection gap without claiming a data-access outcome.
@@ -646,7 +646,7 @@ scenario:
               label: The alert event time to compare with the approved window.
               source:
                 artifactId: scanner-alert
-                quote: "Recorded activity: most recent completed Monday window, 10:18 office local; compare this event time, not the notification arrival time."
+                quote: "Limit: priority is not approval. Match this source, target and recorded time to RUN-FIN-031 and SCAN-FIN-MON before bounded closure."
             - id: delivery-time
               label: Use delivery to this shift as the time of the scan.
               source:
@@ -701,7 +701,7 @@ scenario:
               label: RUN-FIN-031 records discovery connections only; it does not establish vulnerability findings or prove every finance system is secure.
               source:
                 artifactId: scanner-run-log
-                quote: "Coverage: this log records discovery connections only; it does not establish vulnerability findings or prove every finance system is secure."
+                quote: "Limit: discovery connections only, not weakness-check findings or proof every finance system is secure. Other source/network/time needs its own check; shared alert references are not independent measurements."
             - id: run-completion-only
               label: Use the completed run status as the whole closure finding.
               source:
@@ -766,12 +766,12 @@ scenario:
                 artifactId: access-approval-guide
                 quote: "Only the finance data owner can approve this role."
             - id: self-approve
-              label: Approve it yourself because the project deadline is urgent.
+              label: Give temporary read-only access until 17:00 while the owner reviews it.
               source:
                 artifactId: access-request-email
                 quote: "Director Chen approved the project deadline in chat."
-            - id: reject-as-attack
-              label: Reject it as malicious because an urgent request is suspicious.
+            - id: route-to-director
+              label: Ask the director who approved the deadline to approve the role as well.
               source:
                 artifactId: access-approval-guide
                 quote: "Urgency does not change the approval owner."
@@ -792,11 +792,11 @@ scenario:
               setFlags: { b2_choice: self-approve }
               resolution: Access was approved without the data owner's authorization; the decision remains recorded for review.
               feedback: Your approval was committed. The authorization boundary will be reviewed.
-            - id: reject-as-attack
-              selectedOptionIds: [reject-as-attack]
-              setFlags: { b2_choice: reject-as-attack }
-              resolution: The request was rejected as suspicious; the business request remains unresolved.
-              feedback: Rejection recorded. The coworker still needs a route for the request.
+            - id: route-to-director
+              selectedOptionIds: [route-to-director]
+              setFlags: { b2_choice: route-to-director }
+              resolution: The request was sent to the deadline approver rather than the finance data owner; role authorization remains pending and no access has been granted.
+              feedback: Wrong-owner routing recorded. Finance data-owner authorization remains pending.
           coachOnFailure: Choose one response.
           successText: Access decision recorded.
 
@@ -812,7 +812,9 @@ scenario:
           title: Compare the device activity
           prompt: Identify what the login records actually show.
           instruction: Select both observations that explain why more troubleshooting is appropriate.
-          relatedArtifactIds: [rivera-login-email, rivera-auth-summary]
+          relatedArtifactIds:
+            - rivera-login-email
+            - rivera-auth-summary
           minSelections: 2
           maxSelections: 2
           options:
@@ -830,21 +832,29 @@ scenario:
               label: The employee reports that the managed laptop still works.
               source:
                 artifactId: rivera-login-email
-                quote: "I can still sign in on my work laptop."
+                quote: I can still sign in on my work laptop.
             - id: attack-confirmed
-              label: Five failures confirm that another person has the password.
+              label: The new password worked on the laptop, so the phone's saved password is already current.
               source:
                 artifactId: rivera-login-email
-                quote: "I can still sign in on my work laptop."
-          requiredOptionIds: [phone-retries, laptop-success]
+                quote: I can still sign in on my work laptop.
+          requiredOptionIds:
+            - phone-retries
+            - laptop-success
           outcomes:
             - id: record-comparison
-              selectedOptionIds: [phone-retries, laptop-success]
-              setFlags: { d8_login_help: compared-records }
+              selectedOptionIds:
+                - phone-retries
+                - laptop-success
+              setFlags:
+                d8_login_help: compared-records
               feedback: Device records compared.
             - id: report-comparison
-              selectedOptionIds: [phone-retries, employee-device-report]
-              setFlags: { d8_login_help: employee-report }
+              selectedOptionIds:
+                - phone-retries
+                - employee-device-report
+              setFlags:
+                d8_login_help: employee-report
               feedback: Employee report recorded; the laptop sign-in record remains available to verify.
           coachOnFailure: Compare which known device failed and which known device succeeded. Attempt counts alone do not identify a person.
           successText: You found a device-specific pattern instead of treating every failure as an attack.
@@ -852,28 +862,44 @@ scenario:
           title: Record the bounded next step
           prompt: Choose a troubleshooting step that fits the evidence while leaving room to reassess.
           instruction: Use the approved guide and preserve what is still uncertain.
-          relatedArtifactIds: [login-troubleshooting-guide, ticket-login-help]
+          relatedArtifactIds:
+            - login-troubleshooting-guide
+            - ticket-login-help
           minSelections: 1
           maxSelections: 1
           options:
             - id: update-saved-password
-              label: Ask the employee to update the saved password in the phone app, then monitor for retries.
-              source:
-                artifactId: login-troubleshooting-guide
-                quote: "A working sign-in on one known device plus repeated retries from another known device can indicate a stale saved password."
+              label: Ask Rivera to update the saved password in the phone app, then check for further retries.
             - id: name-attacker
-              label: Record an attacker as the confirmed cause of the failed attempts.
-              source:
-                artifactId: login-troubleshooting-guide
-                quote: "Failed attempts do not identify an attacker."
+              label: Update the laptop's saved password first, then check whether the phone retries stop.
             - id: grant-access
-              label: Change the employee's access role so the phone can sign in.
-              source:
-                artifactId: ticket-login-help
-                quote: "No access-role change is requested or supported by these records."
-          requiredOptionIds: [update-saved-password]
+              label: Reset the account password again before checking the phone's saved password.
+          requiredOptionIds:
+            - update-saved-password
           coachOnFailure: Use the least disruptive step that tests the ordinary explanation. Keep monitoring if the retries continue.
           successText: The ticket records a safe troubleshooting step and a reason to reopen if the pattern continues.
+          outcomes:
+            - id: update-saved-password
+              selectedOptionIds:
+                - update-saved-password
+              setFlags:
+                rivera_choice: update-saved-password
+              resolution: The phone app's saved password was updated; the employee confirmed sign-in works and no further retries occurred in this bounded check.
+              feedback: Phone check recorded; reopen if retries continue or unfamiliar activity appears.
+            - id: wrong-device
+              selectedOptionIds:
+                - name-attacker
+              setFlags:
+                rivera_choice: wrong-device
+              resolution: The laptop password check was selected; the phone's saved password has not been tested and follow-up remains open.
+              feedback: Laptop check recorded; the phone still needs a bounded test.
+            - id: reset-again
+              selectedOptionIds:
+                - grant-access
+              setFlags:
+                rivera_choice: reset-again
+              resolution: Another account-password reset was selected; the phone's saved credential has not been checked and follow-up remains open.
+              feedback: Reset request recorded; phone-specific hypothesis still untested.
 
     - id: morgan-midshift-update
       eventTemplateId: morgan_status_check
@@ -905,7 +931,7 @@ scenario:
               label: A-1042 confirms who controlled the session.
               source:
                 artifactId: suspicious-login-alert
-                quote: "Location is an estimate associated with a network address, not verified travel or a person's identity."
+                quote: "Limit: network estimate, not verified travel or identity. Alert and context summarize the same timeline. Compare earlier S-0731's route separately; priority is not proof of compromise."
           requiredOptionIds: [confirmed-sequence]
           outcomes:
             - id: confirmed-sequence
@@ -930,12 +956,12 @@ scenario:
               label: The records do not establish who controlled S-0741 or what data was accessed.
               source:
                 artifactId: login-session-timeline
-                quote: "Collection ends at 07:45. This export has no file-access or mailbox activity and cannot establish what was accessed."
+                quote: "Limit: collection ends 07:45; no file/mail activity collected. A-1042 and login-context-1 summarize this same source, not independent corroboration."
             - id: nothing-accessed
               label: The export proves that no files or mail were accessed.
               source:
                 artifactId: login-session-timeline
-                quote: "Missing fields may require a fuller record from the reviewer."
+                quote: "Limit: collection ends 07:45; no file/mail activity collected. A-1042 and login-context-1 summarize this same source, not independent corroboration."
           requiredOptionIds: [identity-uncertain]
           coachOnFailure: Missing activity fields are a collection gap, not proof that nothing happened.
           successText: Morgan can see the boundary between evidence and inference.
@@ -943,7 +969,7 @@ scenario:
           title: Name the next action
           prompt: Finish with the concrete work you will do next.
           instruction: Choose the step that preserves evidence and keeps authority with the reviewer.
-          relatedArtifactIds: [ticket-suspicious-login]
+          relatedArtifactIds: [login-session-timeline]
           minSelections: 1
           maxSelections: 1
           options:
@@ -956,21 +982,21 @@ scenario:
                 - flag: b1_choice
                   notEquals: escalate-with-comparisons
               source:
-                artifactId: ticket-suspicious-login
-                quote: "Next step: name the review you are requesting and the question it should resolve."
+                artifactId: login-session-timeline
+                quote: "Limit: collection ends 07:45; no file/mail activity collected. A-1042 and login-context-1 summarize this same source, not independent corroboration."
             - id: review-in-progress
               label: Senior review of the escalated session is in progress; ownership stays unverified.
               when:
                 - flag: b1_choice
                   equals: escalate-with-comparisons
               source:
-                artifactId: ticket-suspicious-login
-                quote: "Case references to preserve after comparison: A-1042, the two session identifiers, the exact inventory label, and the route-catalogue and work-travel coverage limits."
+                artifactId: login-session-timeline
+                quote: "Limit: collection ends 07:45; no file/mail activity collected. A-1042 and login-context-1 summarize this same source, not independent corroboration."
             - id: close-on-location
               label: Close the case because the displayed city explains the session.
               source:
-                artifactId: ticket-suspicious-login
-                quote: "Uncertainty: distinguish the location estimate and working explanation from what is independently supported."
+                artifactId: login-session-timeline
+                quote: "Limit: collection ends 07:45; no file/mail activity collected. A-1042 and login-context-1 summarize this same source, not independent corroboration."
           requiredOptionIds: [document-and-review]
           conditionalRequiredOptionIds:
             - when: [{ flag: b1_choice, equals: escalate-with-comparisons }]
@@ -998,7 +1024,7 @@ scenario:
               label: A-1042 was compared with the exact device, session route, employee report, and record-coverage limits.
               source:
                 artifactId: ticket-suspicious-login
-                quote: "Case references to preserve after comparison: A-1042, the two session identifiers, the exact inventory label, and the route-catalogue and work-travel coverage limits."
+                quote: "Limit: saving findings keeps the case open; sending the memo in Tickets carries out the chosen response."
             - id: scanner-checked
               label: A-1180 matched RUN-FIN-031 and the approved finance scanning window.
               source:
@@ -1008,7 +1034,7 @@ scenario:
               label: The scanner run proves every finance system is secure.
               source:
                 artifactId: scanner-run-log
-                quote: "Coverage: this log records discovery connections only; it does not establish vulnerability findings or prove every finance system is secure."
+                quote: "Limit: discovery connections only, not weakness-check findings or proof every finance system is secure. Other source/network/time needs its own check; shared alert references are not independent measurements."
             - id: checks-omitted
               label: Leave the completed checks out of the first handoff draft.
               source:
@@ -1044,7 +1070,7 @@ scenario:
               label: Escalation proves an attacker controlled S-0741.
               source:
                 artifactId: login-session-timeline
-                quote: "The summary groups attempts by account and source; it does not identify a person."
+                quote: "Limit: collection ends 07:45; no file/mail activity collected. A-1042 and login-context-1 summarize this same source, not independent corroboration."
             - id: closure-review-question
               label: If A-1042 was closed, preserve why the session owner still merits later review.
               source:
@@ -1576,9 +1602,9 @@ scenario:
             - id: b2-reject-response
               decisionId: finance_access
               delayMinutes: 15
-              when: [{ flag: b2_choice, equals: reject-as-attack }]
+              when: [{ flag: b2_choice, equals: route-to-director }]
               author: employee
-              body: This is a real project request. Who can review the access need now that it was rejected?
+              body: Deadline approval does not authorize this data role. The finance data owner still needs to review the request.
               acknowledgement: A request response will follow.
               requiredAtCompletion: true
           hidden:
@@ -1714,7 +1740,7 @@ scenario:
       deadlineMinutes: 320
       initialStatus: pending
       managerGuidance: >
-        A strong handoff does not pretend every question is closed. Preserve the source
+        A clear handoff does not pretend every question is closed. Preserve the source
         references, say what remains under review, and name who should act next.
       progression:
         kind: linear
@@ -1781,16 +1807,12 @@ scenario:
       title: Sign-in timeline · A-1042
       summary: Session sequence and collection limits · office-local times
       body: |
-        07:31 · S-0731 · successful sign-in through V-218; source 198.51.100.20; corp-macbook-patel. See the prior-session record for the route and extra identity check.
-        07:38:02–07:40:51 · six failed extra identity checks associated with source 203.0.113.44. The summary groups attempts by account and source; it does not identify a person.
-        07:41:09 · S-0741 · password accepted; successful session created. Extra-check result: not present in this export. Do not translate password success into successful MFA.
+        07:31 · S-0731: corp-macbook-patel; V-218; 198.51.100.20; password and extra identity check succeeded.
+        07:38:02–07:40:51: six failed extra identity checks from 203.0.113.44; grouped by account/source, not person.
+        07:41:09 · S-0741: password accepted; session created; extra-check result absent.
         S-0741: source 203.0.113.44; VPN connection ID absent; device label unknown-laptop-17.
-        07:43 · S-0741 · account portal session refresh. A refresh continues a session; it does not independently verify who controls it.
-
-        Collection ends at 07:45. This export has no file-access or mailbox activity and cannot establish what was accessed. Missing fields may require a fuller record from the reviewer.
-        A-1042 and login-context-1 summarize this same source; counting them separately does not create independent corroboration.
-
-        Why session identifiers matter: they distinguish connections even when the account or displayed city is the same.
+        07:43 · S-0741 · account portal session refresh, not identity verification.
+        Limit: collection ends 07:45; no file/mail activity collected. A-1042 and login-context-1 summarize this same source, not independent corroboration.
       eventIds: [suspicious-login-1, status-check-1, shift-handoff-1]
       relatedArtifactIds:
         [suspicious-login-alert, prior-session-1, vpn-context-1]
@@ -1801,14 +1823,13 @@ scenario:
       title: Earlier session · S-0731
       summary: A prior sign-in for comparison · 07:31 office local
       body: |
-        Account: j.patel@example.com · session S-0731 · 07:31 office local.
+        Account: j.patel@example.com · S-0731 · 07:31 office local.
         S-0731 used corp-macbook-patel through VPN connection V-218, exiting at 198.51.100.20.
-        Password accepted; extra identity check completed. Managed-device certificate matched the inventory record at sign-in.
+        Password accepted; extra identity check completed.
+        Managed-device certificate matched inventory at sign-in.
         Displayed city: Montreal (network estimate).
-
-        Why this record is here: it is a known connection to test against a surprising location estimate. The route record, not the city label, links this session to the approved private connection.
-        Match V-218 against the route catalogue, then compare S-0741 in the timeline. A shared browser, account, or city does not make the session identifiers interchangeable.
-      eventIds: [suspicious-login-1]
+        Limit: this earlier session does not verify S-0741's route, device or user; matching account/city does not make sessions interchangeable.
+      eventIds: [suspicious-login-1, shift-handoff-1]
       relatedArtifactIds:
         [
           account-history-1,
@@ -1823,15 +1844,11 @@ scenario:
       title: Office VPN route catalogue
       summary: Approved private connection reference · current morning snapshot
       body: |
-        Route catalogue NET-VPN-04 · snapshot 07:45 office local.
+        NET-VPN-04 · snapshot 07:45 office local.
         V-218 maps to exit 198.51.100.20; this office's only approved VPN exit in this snapshot.
-        Exit hosting location: Montreal. Assigned office: Toronto. The earlier S-0731 session carries V-218 in its connection record.
-        203.0.113.44 is not an approved exit in this snapshot. An absent connection ID alone does not establish a route; compare both the identifier and address.
-
-        Coverage: organization-provided VPN only. This catalogue does not enumerate personal connections or prove where a person was physically located.
-        If a session cannot be matched, preserve the mismatch and request route verification through the case review. Do not invent a VPN match to reconcile two city labels.
-
-        What a VPN exit address means: traffic routes through the exit, so a location estimate may describe that exit rather than the employee.
+        Exit hosting location: Montreal; assigned office: Toronto.
+        S-0731 carries V-218; S-0741's 203.0.113.44 is absent.
+        Limit: organization-provided VPN only, not personal connections or physical location. Missing connection ID alone does not establish a route; compare both identifier and address.
       eventIds: [suspicious-login-1]
       relatedArtifactIds: [prior-session-1, login-session-timeline]
       searchableText: VPN private connection route exit location estimate
@@ -1841,13 +1858,11 @@ scenario:
       title: Work-travel register · case reference
       summary: HR administrative extract · 08:00 · office local
       body: |
-        Reference HR-TR-08 · account j.patel@example.com · current shift date · extract 08:00 office local.
+        HR-TR-08 · j.patel@example.com · current shift date · extract 08:00 office local.
         Assigned office: Toronto.
         Approved work trips for this date: no entry found.
         This register covers approved work trips only; it does not record personal travel, live location, or requests awaiting approval.
-
-        Compare this limited result with the employee's own response and the network records. No entry is not proof of no travel, and neither record identifies the user of S-0741.
-        Keep only the case-relevant coverage and result in the ticket; there is no need to request personal itinerary details.
+        Limit: absence of an approved trip does not verify physical location or explain the S-0741 route/device.
       eventIds: [suspicious-login-1]
       relatedArtifactIds: [employee-login-reply]
       searchableText: work travel register coverage HR
@@ -1857,15 +1872,11 @@ scenario:
       title: Uncertain sign-in · follow-up procedure
       summary: Approved case-handling reference · evidence gaps and review
       body: |
-        Purpose: keep an uncertain sign-in under review while making the next check specific. Looking up this procedure leaves the case open; it does not contact a reviewer or contain an account.
-
-        If the route is unclear: compare the flagged session identifier and source with the earlier-session record and office VPN catalogue. Record a mismatch or a missing field without inventing its cause.
-        If device ownership is unclear: use the exact inventory identifier, note the inventory coverage, and compare the employee's report. A browser/platform label is self-reported, not an ownership certificate.
-        If travel is being used as an explanation: check what the administrative register covers. An empty entry and a city estimate cannot establish physical location.
-
-        Save the unanswered question and the next record to check in the ticket before switching work. Morgan can clarify procedure; asking for guidance does not transfer ownership or supply missing technical facts.
-        Escalation: hand the reviewer the session references, verified comparisons, and remaining gaps for a containment decision. Do not claim containment happened merely because it was requested.
-        Closure: document evidence supporting expected activity. If a proposed explanation does not cover the session under review, keep the gap visible rather than treating closure as confirmation.
+        Route: compare S-0741's identifier/address with S-0731 and NET-VPN-04; preserve mismatches.
+        Device: check exact unknown-laptop-17 against managed inventory and reported employee context.
+        Activity: export stops 07:45; request missing file/mail coverage through senior review.
+        Contact: verify the employee's report through the usual work channel.
+        Limit: a containment-review request is not containment performed. Asking Morgan for procedural guidance does not transfer ownership or establish technical facts.
       eventIds: [suspicious-login-1]
       searchableText: uncertain login evidence gap follow up procedure
     - id: suspicious-login-alert
@@ -1874,19 +1885,12 @@ scenario:
       title: Unfamiliar successful login
       summary: Alert A-1042 · high priority
       body: |
-        Review purpose: reconstruct the sequence, then compare it with the account's usual activity.
-
-        Alert A-1042 · sign-in monitoring · office-local record times
+        A-1042 · high priority · j.patel@example.com.
         07:38–07:40: Source IP 203.0.113.44 reported 6 failed MFA challenges.
-        07:41: One successful password login for j.patel@example.com from the same source.
-        MFA means an extra identity check beyond a password. This summary does not establish who completed the sign-in.
-
-        Device label: unknown-laptop-17 · reported browser/platform: Chrome/Windows.
-        Network: residential internet provider. Geo hint: Montreal metro.
-        Location is an estimate associated with a network address, not verified travel or a person's identity.
-
-        Keep the alert reference with your notes. A high-priority label asks for attention; it is not a finding of compromise.
-        The expanded timeline separates earlier S-0731 from flagged S-0741. Compare those session identifiers before carrying an explanation from one sign-in to the other.
+        07:41: password accepted; flagged session S-0741; extra-check result absent.
+        Device: unknown-laptop-17 · reported Chrome/Windows · residential network.
+        Geo hint: Montreal metro.
+        Limit: network estimate, not verified travel or identity. Alert and context summarize the same timeline. Compare earlier S-0731's route separately; priority is not proof of compromise.
       eventIds: [suspicious-login-1, status-check-1]
       relatedArtifactIds:
         [
@@ -1905,16 +1909,12 @@ scenario:
       title: Login context · j.patel
       summary: Device, network, and MFA context for the flagged session
       body: |
-        Device name unknown-laptop-17. User agent Chrome/Windows. ASN residential ISP.
-        No prior successful sessions from this ASN in 90 days. Travel calendar empty.
-
-        Read alongside A-1042, not as a second independent confirmation of the same sign-in.
-        A user agent is the browser and operating-system description a connection reports; it is not device ownership proof.
-        ASN identifies a network operator; ISP means internet service provider. A residential network can have ordinary uses.
-
-        The 90-day lookback covers successful sessions in this record, not every possible use of the account.
-        An empty travel calendar means no entry is shown here. Compare account history and the employee's report before concluding why the pattern changed.
-        Flagged session reference: S-0741. See the sign-in timeline for collection limits and the earlier-session record for a route comparison.
+        Flagged session: S-0741 · j.patel@example.com.
+        Device name unknown-laptop-17. User agent Chrome/Windows.
+        ASN residential ISP.
+        No prior successful sessions from this ASN in 90 days.
+        Travel calendar: no entry shown; see the work-travel register's narrower coverage.
+        Limit: successful-session lookback only. Browser/platform is self-reported, not ownership proof. This and A-1042 summarize the timeline, not independent confirmation.
       eventIds: [suspicious-login-1]
       relatedArtifactIds: [suspicious-login-alert]
       searchableText: unknown laptop residential ISP
@@ -1924,15 +1924,12 @@ scenario:
       title: Account history · j.patel
       summary: Recent authentication pattern
       body: |
-        Typical weekday logins from HQ Wi-Fi and enrolled MacBook.
-        Two VPN sessions last week from Toronto office. No password resets in 30 days.
-
-        Baseline means the repeated pattern used for comparison, not a guarantee that every different sign-in is unsafe.
-        HQ is headquarters. An enrolled device is registered for organizational support and management.
-        VPN is an organization-provided private connection; compare its use with the recorded context rather than treating the label as proof of safety.
-
-        Keep the lookback limits in your notes: this is recent account history, not a complete record of the employee's movements or intentions.
-        Today's earlier session S-0731 is available separately. Its route identifiers let you test whether the same explanation fits the flagged session; the usual pattern alone cannot answer that.
+        Account: j.patel@example.com · recent authentication history.
+        Typical weekdays: HQ Wi-Fi and enrolled MacBook.
+        Two VPN sessions last week from Toronto office.
+        No password resets in 30 days.
+        Today's earlier connection: S-0731, available separately with route identifiers.
+        Limit: a baseline describes recent sign-ins, not movements or intentions. Familiar history does not establish who used S-0741 or whether its route matches.
       eventIds: [suspicious-login-1]
       searchableText: HQ Wi-Fi MacBook Toronto VPN
     - id: device-inventory-1
@@ -1941,19 +1938,11 @@ scenario:
       title: Device inventory · j.patel
       summary: Enrolled devices for the account owner
       body: |
-        Enrolled: corp-macbook-patel (active), corp-phone-patel (active).
-        unknown-laptop-17 is not enrolled and has never checked into MDM.
-
-        Account owner: J. Patel · lookup scope: organization-managed devices assigned to this account.
-        corp-macbook-patel — corporate MacBook, active assignment.
-        corp-phone-patel — corporate phone, active assignment.
-        unknown-laptop-17 — exact identifier from the flagged session; no enrollment or check-in record in this inventory.
-
-        MDM means mobile device management, the system used to register and manage work devices.
-        A device label is not a person's identity. A missing record is a follow-up observation, not proof of who used the device.
-        Preserve the exact identifier and the inventory result for the reviewer; do not substitute a similar device name.
-        Inventory snapshot: 07:45 office local. corp-macbook-patel last checked in at 07:30; the managed-device certificate used by S-0731 matches this record.
-        Inventory covers registered work devices, not every device an employee may own. The absence of unknown-laptop-17 does not identify its owner or establish what data was accessed.
+        J. Patel · organization-managed inventory · snapshot 07:45 office local.
+        corp-macbook-patel: active; last check-in 07:30; certificate matches S-0731.
+        corp-phone-patel: active assignment.
+        unknown-laptop-17: no enrollment or MDM check-in record.
+        Limit: registered work devices only, not all personally owned devices. A missing record does not identify the owner, user or accessed data. Preserve the exact identifier.
       eventIds: [suspicious-login-1]
       searchableText: MDM enrolled macbook phone
       # Approved public lookup index; enrollment findings remain in the body.
@@ -1966,13 +1955,9 @@ scenario:
       summary: From night analyst · 07:55 · office local · inbox
       body: |
         Still watching the unfamiliar login thread. Did not finish device inventory check.
-        A routine scanner alert may appear, but I forgot to include the approved schedule reference. Ping Morgan if the login expands.
-
-        For the next analyst: A-1042 is the open sign-in item. The location estimate is only a lead; I have not confirmed who signed in.
-        Please reply in the team channel with what you are picking up first, and leave a short next step in the ticket before switching tools.
-        The scanner notice may be a delayed monitoring delivery. Compare the event time in that record with the approved window, not just the time it reaches our queue.
-
-        Thanks for taking ownership. Keep anything I did not finish visible rather than assuming silence means it was checked.
+        A routine scanner alert may appear, but I forgot to include the approved schedule reference.
+        A-1042: session owner unconfirmed. Ping Morgan if the login expands.
+        Limit: scanner delivery may be delayed; compare its recorded event time with approval, not queue arrival.
       eventIds: [handoff-1]
       searchableText: handoff incomplete login routine
     - id: employee-login-reply
@@ -1983,11 +1968,9 @@ scenario:
       body: |
         No. I am not traveling, and I did not use a Windows laptop this morning.
         My work MacBook and phone are both with me.
-
-        I recognize those as my work devices, but I do not recognize the laptop name in your message.
-        Please let me know the next step through our usual work channel. I have not shared a password or approval code in this reply.
-
-        Analyst note: record this as the account owner's report. It adds context but does not independently identify the person behind the session.
+        I do not recognize unknown-laptop-17.
+        Please use our usual work channel for the next step; no password or approval code is included.
+        Limit: employee-reported context, not independent route/device verification or identification of the session user.
       eventIds: [suspicious-login-1]
       searchableText: employee reply no travel windows laptop
     - id: scanner-alert
@@ -1996,13 +1979,11 @@ scenario:
       title: Scanner connection alert
       summary: Alert A-1180 · low priority
       body: |
-        Alert A-1180 · connection monitoring · delayed delivery to this shift
-        Recorded activity: most recent completed Monday window, 10:18 office local; compare this event time, not the notification arrival time.
-        Vulnerability scanner vuln-scan-03 opened connections across the finance VLAN during the published scanning window.
-
-        A vulnerability scanner checks systems for weaknesses. VLAN means a separately managed network segment; here the target is the finance network.
-        This alert summarizes connection activity, not confirmed exploitation or data access.
-        Before closing, compare source, time, and target scope with the approved reference and leave that match in the ticket.
+        A-1180 · connection monitoring · low priority.
+        Recorded activity: most recent completed Monday window, 10:18 office local.
+        Source: vuln-scan-03 · target: finance VLAN.
+        Delivery: delayed to this shift; event time is not arrival time.
+        Limit: priority is not approval. Match this source, target and recorded time to RUN-FIN-031 and SCAN-FIN-MON before bounded closure.
       eventIds: [routine-alert-1, shift-handoff-1]
       relatedArtifactIds: [scanner-window, scanner-run-log]
       searchableText: vuln-scan finance VLAN
@@ -2014,19 +1995,27 @@ scenario:
       title: Scanner run log · A-1180
       summary: Recorded execution and collection coverage for the scanner alert
       body: |
-        Purpose: compare what the scanner recorded doing with the approved maintenance entry. Approval alone does not establish that an observed connection belonged to that run.
-
         RUN-FIN-031 · scanner vuln-scan-03 · target finance VLAN · change reference SCAN-FIN-MON.
-        Recorded interval: most recent completed Monday, 10:05–10:32 office local. A-1180 refers to connection activity at 10:18 within this run.
-        Run status: completed.
-        Delivery: monitoring forwarded the saved alert to the current shift after a queue delay.
-
-        Coverage: this log records discovery connections only; it does not establish vulnerability findings or prove every finance system is secure.
-        Correlation: match the alert's source, target, and event time to the run and approved entry. The shared alert reference links the records; it does not turn the alert summary into an independent measurement.
-        Closure applies to A-1180 only. A different source, target, or time needs its own review; this maintenance record does not explain the unrelated login case.
+        Most recent completed Monday: 10:05–10:32 office local.
+        A-1180 refers to connection activity at 10:18 within this run.
+        Run status: completed. Delivery: monitoring forwarded the saved alert to the current shift after a queue delay.
+        Limit: discovery connections only, not weakness-check findings or proof every finance system is secure. Other source/network/time needs its own check; shared alert references are not independent measurements.
       eventIds: [routine-alert-1, shift-handoff-1]
       relatedArtifactIds: [scanner-alert, scanner-window]
       searchableText: scanner run execution correlation coverage
+    - id: scanner-prior-run
+      systemId: alert_dashboard
+      kind: login_record
+      title: Prior Monday run · RUN-FIN-030
+      summary: Prior-week run, not the activity behind A-1180
+      body: |
+        RUN-FIN-030 · vuln-scan-03 · finance VLAN · SCAN-FIN-MON.
+        Prior Monday run; completed; discovery connections only.
+        Prior-week rows carry no office-local time on this shift.
+        This record predates RUN-FIN-031 and A-1180's most recent completed Monday activity.
+        Limit: matching scanner, target and recurring approval do not make two runs interchangeable. It cannot verify A-1180's 10:18 connection in RUN-FIN-031.
+      eventIds: [routine-alert-1, shift-handoff-1]
+      searchableText: prior week scanner RUN-FIN-030
     - id: scanner-window
       systemId: knowledge_base
       kind: kb_document
@@ -2034,20 +2023,26 @@ scenario:
       summary: Change calendar · weekly
       body: |
         vuln-scan-03 is approved Mondays 10:00–12:00 for finance VLAN discovery.
-        Close matching alerts after documenting the window reference.
-
-        Reference: SCAN-FIN-MON · recurring maintenance entry · times are office local.
+        Reference: SCAN-FIN-MON · recurring entry · office-local times.
         Schedule owner: infrastructure operations.
-        Purpose: let the team distinguish scheduled discovery from unexplained connection activity.
-        In scope: scanner vuln-scan-03, finance network, and the stated Monday window.
-        Out of scope: a different source, a different network, or activity outside that window. Do not extend this approval to another alert just because it looks routine.
-
-        Record the scanner, event time, target network, and reference in the closure note.
-        Compare the alert's recorded event time even when monitoring delivers the notice later.
-        Corroborate the source, time, and scope with the scanner run log. An approval describes permitted activity; it does not prove that a particular run occurred.
-        If a detail does not match, keep the uncertainty visible and ask Morgan for procedural guidance.
-      eventIds: [routine-alert-1]
+        Match A-1180's recorded event time, source and target with RUN-FIN-031; delivery can be later.
+        Limit: approval describes permitted discovery, not proof a run occurred. It grants no finance data-access role and does not cover a different source, network or time.
+      eventIds: [routine-alert-1, access-request-1, shift-handoff-1]
       searchableText: approved scanner window finance
+    - id: scanner-other-notice
+      systemId: alert_dashboard
+      kind: alert
+      title: Other finance notice · A-1214
+      summary: Separate activity sharing SCAN-FIN-MON
+      body: |
+        A-1214 · vuln-scan-03 · finance VLAN · SCAN-FIN-MON.
+        State: open. This notice is not A-1180 or its matched RUN-FIN-031.
+        Source note: approved scanner is still running; monitor until the window ends.
+        Limit: a shared schedule reference does not establish each notice's run, event time or closure. Check this activity against its own records; A-1180's bounded match cannot close it automatically.
+      eventIds: [routine-alert-1]
+      relatedArtifactIds: [scanner-window, scanner-alert]
+      searchableText: scanner finance A-1214 ongoing monitoring
+
     - id: access-request-email
       systemId: email
       kind: email
@@ -2055,9 +2050,10 @@ scenario:
       summary: From Sam Lee · 08:20 · urgent project request
       body: |
         Requested access: finance-reporting-prod, today until 17:00.
-        I need the read-only reporting role to finish a board packet. Director Chen approved the project deadline in chat.
-
-        I know this is late notice. Please approve it if you can, or tell me who owns the decision. I have not included a password or approval code.
+        I need the read-only reporting role to finish a board packet.
+        Director Chen approved the project deadline in chat.
+        Please approve it if you can, or tell me who owns the decision. No password or approval code included.
+        Limit: Sam's reported deadline approval is not a recorded grant of the data role.
       eventIds: [access-request-1]
       relatedArtifactIds: [access-approval-guide]
       searchableText: access request finance reporting approval
@@ -2068,9 +2064,10 @@ scenario:
       summary: Role boundary and routing procedure
       body: |
         Only the finance data owner can approve this role.
-        Security analysts may verify the requested resource, duration, and business contact, then route the request to that owner. Keep access pending until the owner records a decision.
-
-        A manager's support for a project is not approval for a data role. Urgency does not change the approval owner. A request can be legitimate and still require the normal process.
+        Security analysts may verify the requested resource, duration, and business contact, then route the request to that owner.
+        Keep access pending until the owner records a decision.
+        Urgency does not change the approval owner. A legitimate request still requires the normal process.
+        Limit: a manager's project support or scanner approval is not authorization for a data role.
       eventIds: [access-request-1]
       relatedArtifactIds: [access-request-email]
       searchableText: finance access approval owner urgent
@@ -2080,8 +2077,11 @@ scenario:
       title: Phone keeps asking for my password
       summary: From A. Rivera · 08:45 · help request
       body: |
-        My work phone keeps asking for my password after I changed it this morning. I can still sign in on my work laptop.
-        The phone is corp-phone-rivera and the laptop is corp-macbook-rivera. I have not sent the password; I only need help knowing what to update.
+        My work phone keeps asking for my password after I changed it this morning.
+        I can still sign in on my work laptop.
+        The phone is corp-phone-rivera and the laptop is corp-macbook-rivera.
+        I have not sent the password; I need help knowing what to update.
+        Limit: employee-reported context; compare the authentication records before treating either device result as verified.
       eventIds: [login-help-1]
       relatedArtifactIds: [rivera-auth-summary, login-troubleshooting-guide]
       searchableText: Rivera login phone password prompt
@@ -2094,7 +2094,9 @@ scenario:
         08:36–08:41: corp-phone-rivera made five failed saved-password retries.
         08:42: corp-macbook-rivera completed a successful sign-in with the updated password.
 
-        Both labels match enrolled devices in inventory. The grouped retries show a device pattern; they do not identify a person or prove an attack.
+        Both labels match enrolled devices in inventory.
+        The grouped retries show a device pattern.
+        Limit: these recorded device results do not identify a person, prove an attack or establish a completed phone-app fix.
       eventIds: [login-help-1]
       relatedArtifactIds: [rivera-login-email, rivera-device-inventory]
       searchableText: Rivera authentication phone laptop retries
@@ -2107,7 +2109,8 @@ scenario:
         corp-phone-rivera — enrolled, active, assigned to a.rivera@example.com.
         corp-macbook-rivera — enrolled, active, assigned to a.rivera@example.com.
 
-        Exact labels match the help request and authentication summary. Enrollment supports device context; it does not prove who was holding either device.
+        Exact managed-device labels match the help request and authentication summary.
+        Limit: enrollment supports managed-device context, not who held either device or whether a phone-app fix worked.
       eventIds: [login-help-1]
       relatedArtifactIds: [rivera-auth-summary]
       searchableText: Rivera inventory phone laptop
@@ -2119,10 +2122,11 @@ scenario:
       title: Repeated prompts after a password change
       summary: Beginner troubleshooting and escalation boundary
       body: |
-        A working sign-in on one known device plus repeated retries from another known device can indicate a stale saved password.
-        Ask the employee to update the saved password in the affected approved app, then check whether retries stop. Escalate if retries continue, an unknown device appears, or the employee reports activity they did not perform.
-
-        Failed attempts do not identify an attacker. Record the device labels, results, time range, and what would cause the ticket to reopen.
+        Working sign-in on one known device plus retries from another can indicate an old saved password; it remains a hypothesis.
+        Ask the employee to update the saved password in the affected approved app, then check whether retries stop.
+        Escalate if retries continue, an unknown device appears, or the employee reports activity they did not perform.
+        Record device labels, results, time range and reopening conditions.
+        Limit: failed attempts do not identify an attacker.
       eventIds: [login-help-1]
       relatedArtifactIds: [rivera-login-email, rivera-auth-summary]
       searchableText: password change stale saved password retries
@@ -2171,11 +2175,7 @@ scenario:
       title: "#soc-day · Morgan"
       summary: Manager channel
       body: |
-        Morgan · shift start: Welcome. Start with the handoff and tell me what you will own first. An unfinished check is useful information, not something to hide.
-
-        Morgan · investigation guidance: Separate what a record shows from what you think it means. When asking for help, name the record, the mismatch, and the question you need answered. Do not paste passwords or approval codes.
-
-        Morgan · handoff guidance: Keep verified evidence, uncertainty, and the next step distinct. A reviewer should be able to follow your note without guessing what you opened. I can guide the procedure, but your tools and records remain the basis for the decision.
+        Welcome. Keep one current case in view; ask me when its next step is unclear.
       eventIds: [handoff-1, suspicious-login-1, status-check-1, shift-handoff-1]
       searchableText: Morgan team chat guidance
 
@@ -2185,15 +2185,11 @@ scenario:
       title: "Ticket · unfamiliar login"
       summary: Investigation notes
       body: |
-        Capture evidence, uncertainty, and the decision path before escalation or dismissal.
-
-        Verified evidence: cite the alert and exact device record you checked. Keep the employee's account in their own terms.
-        Uncertainty: distinguish the location estimate and working explanation from what is independently supported.
+        Verified evidence: select the records supporting this finding.
+        Uncertainty: keep the identity and collection limits visible.
         Next step: name the review you are requesting and the question it should resolve.
-
-        Investigation notes are your separate working draft. Save them before switching work; the structured summary records the selected findings for handoff.
-        Do not include passwords, approval codes, or claims about the employee's intentions.
-        Case references to preserve after comparison: A-1042, the two session identifiers, the exact inventory label, and the route-catalogue and work-travel coverage limits. These references are a review checklist, not a finding.
+        Keep A-1042, S-0741/S-0731 and exact device/route references.
+        Limit: saving findings keeps the case open; sending the memo in Tickets carries out the chosen response.
       eventIds: [suspicious-login-1, status-check-1, shift-handoff-1]
       searchableText: ticket investigation notes
 

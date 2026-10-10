@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { matchingGuides } from "@sim/core";
 import type { AvailableAction, ClientView } from "@sim/schemas";
 import {
   ArtifactDetail,
@@ -19,6 +20,7 @@ export function GuideSearch({
   mutationState = EMPTY_MUTATION_STATE,
   canonicalSearchAction,
   onCanonicalSearch,
+  eventId,
 }: {
   view: ClientView;
   selectedId?: string | undefined;
@@ -28,19 +30,40 @@ export function GuideSearch({
   mutationState?: MutationState;
   canonicalSearchAction?: AvailableAction | undefined;
   onCanonicalSearch?: (action: AvailableAction, query: string) => void;
+  eventId?: string | undefined;
 }) {
-  const [query, setQuery] = useState(() => view.kbQuery);
+  // A prior case's search must not hide the current case's guides on arrival.
+  const [query, setQuery] = useState("");
   useEffect(() => {
     setQuery(view.kbQuery);
-  }, [view.sessionId, view.kbQuery]);
-  const docs = filterKnowledgeBase(view, query);
-  const selected = docs.find(({ id }) => id === selectedId) ?? docs[0];
-  const isLoginFollowUp = view.events.some(
-    (event) =>
-      event.id === canonicalSearchAction?.eventId &&
-      event.category === "main_case",
+  }, [view.kbQuery]);
+  useEffect(() => {
+    setQuery("");
+  }, [view.sessionId, eventId]);
+  const docs = filterKnowledgeBase(view, query).sort(
+    (a, b) =>
+      Number(b.eventIds.includes(eventId ?? "")) -
+      Number(a.eventIds.includes(eventId ?? "")),
   );
-
+  const inventory = view.availableActions.some(
+    (a) => a.id === "check_device_inventory" && a.eventId === eventId,
+  );
+  const selected =
+    docs.find(
+      (a) => a.id === selectedId && (!eventId || a.eventIds.includes(eventId)),
+    ) ??
+    (inventory ? docs.find((a) => a.id === "device-inventory-1") : undefined) ??
+    docs[0];
+  const relevant = matchingGuides(
+    view.artifacts,
+    query,
+    canonicalSearchAction?.eventId,
+  );
+  const canRecord = Boolean(query.trim() && relevant.length);
+  const followUp = view.events.some(
+    (e) =>
+      e.id === canonicalSearchAction?.eventId && e.category === "main_case",
+  );
   return (
     <div className="tool-split">
       <div>
@@ -48,66 +71,57 @@ export function GuideSearch({
           className="kb-search"
           onSubmit={(event) => {
             event.preventDefault();
+            if (canonicalSearchAction && onCanonicalSearch && canRecord)
+              onCanonicalSearch(canonicalSearchAction, query);
           }}
         >
           <label htmlFor="guide-local-query">Find a guide</label>
           <input
             id="guide-local-query"
-            onChange={(event) => {
-              setQuery(event.target.value);
-            }}
-            placeholder="Try login, device, or scanner"
             type="search"
+            placeholder="Short keyword: scanner, device, or approval"
             value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+            }}
           />
           {query ? (
             <button
+              type="button"
               onClick={() => {
                 setQuery("");
               }}
-              type="button"
             >
               Clear search
             </button>
           ) : null}
+          {canonicalSearchAction && onCanonicalSearch ? (
+            <>
+              <p>
+                Use a short keyword, not a full question. Only a match relevant
+                to this case can record the procedure check. Open the guide to
+                inspect its content.
+              </p>
+              <button
+                type="submit"
+                data-action-id={canonicalSearchAction.id}
+                data-event-id={canonicalSearchAction.eventId}
+                disabled={!canRecord || Boolean(mutationState.pendingKey)}
+              >
+                {followUp
+                  ? `Need more evidence? ${canonicalSearchAction.label}`
+                  : canonicalSearchAction.label}
+              </button>
+              {query.trim() && !relevant.length ? (
+                <p role="status">
+                  No relevant guide matches this query. Try a shorter keyword.
+                  Your procedure step has not advanced.
+                </p>
+              ) : null}
+              {followUp ? <p>Follow-up checks; the case stays open.</p> : null}
+            </>
+          ) : null}
         </form>
-        {canonicalSearchAction && onCanonicalSearch ? (
-          <form
-            className="kb-search kb-canonical-search"
-            onSubmit={(event) => {
-              event.preventDefault();
-              const data = new FormData(event.currentTarget);
-              const raw = data.get("query");
-              onCanonicalSearch(
-                canonicalSearchAction,
-                typeof raw === "string" ? raw : "",
-              );
-            }}
-          >
-            <label htmlFor="kb-query">Search guides</label>
-            <input
-              defaultValue={view.kbQuery}
-              key={`${view.sessionId}:${view.kbQuery}`}
-              id="kb-query"
-              name="query"
-              placeholder="Describe the check you need help with"
-              type="search"
-            />
-            <button
-              data-action-id={canonicalSearchAction.id}
-              data-event-id={canonicalSearchAction.eventId}
-              disabled={Boolean(mutationState.pendingKey)}
-              type="submit"
-            >
-              {isLoginFollowUp
-                ? `Need more evidence? ${canonicalSearchAction.label}`
-                : canonicalSearchAction.label}
-            </button>
-            {isLoginFollowUp ? (
-              <p>Follow-up checks; the case stays open.</p>
-            ) : null}
-          </form>
-        ) : null}
         {docs.length === 0 && query.trim() ? (
           <p role="status">No guides match “{query.trim()}”.</p>
         ) : (

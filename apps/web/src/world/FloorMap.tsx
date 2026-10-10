@@ -89,12 +89,14 @@ export function FloorMap({
   hint,
   stepLabel,
   title,
+  returning = false,
 }: {
   onEnterRoom: (roomId: RoomId) => void;
   highlightRoomId?: RoomId;
   hint?: string;
   stepLabel?: string;
   title?: string;
+  returning?: boolean;
 }) {
   const [marker, setMarker] = useState<Point>(LOBBY);
   const [traveling, setTraveling] = useState(false);
@@ -134,15 +136,25 @@ export function FloorMap({
     });
   }
 
-  const kicker = stepLabel ? `DAY ONE · ${stepLabel.toUpperCase()}` : "DAY ONE · STEP 1 OF 7";
+  const kicker = returning
+    ? "CURRENT SHIFT · FLOOR MAP"
+    : stepLabel
+      ? `DAY ONE · ${stepLabel.toUpperCase()}`
+      : "DAY ONE · STEP 1 OF 7";
   const showingActiveRoute = route.length > 1;
-  const plannedRoom = highlightRoomId ? ROOMS.find((room) => room.id === highlightRoomId) : undefined;
+  const plannedRoom = highlightRoomId
+    ? ROOMS.find((room) => room.id === highlightRoomId)
+    : undefined;
   // Presentation only: the destination route stays legible before the walk starts.
-  const plannedRoute = !showingActiveRoute && plannedRoom ? expandAxisPath(plannedRoom.path) : [];
+  const plannedRoute =
+    !showingActiveRoute && plannedRoom ? expandAxisPath(plannedRoom.path) : [];
   const visibleRoute = showingActiveRoute ? route : plannedRoute;
 
   return (
-    <section className="floor-map floor-map--theater" aria-labelledby="floor-map-title">
+    <section
+      className="floor-map floor-map--theater"
+      aria-labelledby="floor-map-title"
+    >
       <div className="floor-map-copy">
         <div className="floor-map-meta">
           <p className="floor-kicker">{kicker}</p>
@@ -157,7 +169,7 @@ export function FloorMap({
 
         <dl className="floor-facts">
           <div className="floor-fact floor-fact-origin">
-            <dt>You are here</dt>
+            <dt>{returning ? "Map reference" : "You are here"}</dt>
             <dd>Lobby</dd>
           </div>
           <div className="floor-fact floor-fact-destination">
@@ -178,14 +190,23 @@ export function FloorMap({
 
         <div className="floor-action">
           <p className="floor-action-label">Action</p>
-          <p className="floor-action-text">Walk the marked route and enter the SOC.</p>
+          <p className="floor-action-text">
+            {returning
+              ? "Choose Security Operations to return to your work area."
+              : "Walk the marked route into Security Operations."}
+          </p>
         </div>
 
         {highlightRoomId ? (
-          <p className="floor-guide-callout">Go here next — highlighted Security Operations door on the plan</p>
+          <p className="floor-guide-callout">
+            Go here next — highlighted Security Operations door on the plan
+          </p>
         ) : null}
 
-        <ul className="floor-legend floor-legend-compact" aria-label="Map legend">
+        <ul
+          className="floor-legend floor-legend-compact"
+          aria-label="Map legend"
+        >
           <li>
             <span className="legend-you" aria-hidden="true" />
             You — Lobby
@@ -209,7 +230,9 @@ export function FloorMap({
             Walking to the door…
           </p>
         ) : (
-          <p className="floor-hint">{hint ?? "Tip: choose Security Operations — your desk is inside."}</p>
+          <p className="floor-hint">
+            {hint ?? "Tip: choose Security Operations — your desk is inside."}
+          </p>
         )}
       </div>
 
@@ -224,7 +247,9 @@ export function FloorMap({
 
           {/* Lobby vestibule — path starts here */}
           <div className="floor-vestibule">
-            <span className="floor-vestibule-tag" aria-hidden="true">You are here</span>
+            <span className="floor-vestibule-tag" aria-hidden="true">
+              You are here
+            </span>
             <span>Lobby</span>
             <small>Entrance</small>
           </div>
@@ -241,7 +266,9 @@ export function FloorMap({
               }}
             >
               <span className="floor-door-leaf" />
-              <span className="floor-door-label">{room.unlocked ? "OPEN" : "LOCKED"}</span>
+              <span className="floor-door-label">
+                {room.unlocked ? "OPEN" : "LOCKED"}
+              </span>
             </div>
           ))}
 
@@ -252,7 +279,9 @@ export function FloorMap({
                 const vertical = from.x === to.x;
                 const midX = (from.x + to.x) / 2;
                 const midY = (from.y + to.y) / 2;
-                const len = vertical ? Math.abs(to.y - from.y) : Math.abs(to.x - from.x);
+                const len = vertical
+                  ? Math.abs(to.y - from.y)
+                  : Math.abs(to.x - from.x);
                 const isPlanned = !showingActiveRoute;
                 return (
                   <span
@@ -295,7 +324,9 @@ export function FloorMap({
             >
               <strong>{room.label}</strong>
               <small>{room.hint}</small>
-              {highlightRoomId === room.id ? <span className="floor-room-target-chip">Go here next</span> : null}
+              {highlightRoomId === room.id ? (
+                <span className="floor-room-target-chip">Go here next</span>
+              ) : null}
               <span className="floor-room-doorhint" aria-hidden="true">
                 {room.unlocked ? "→ door" : "locked"}
               </span>

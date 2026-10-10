@@ -1,4 +1,12 @@
 export { availableActions } from "./availability.js";
+export { availableCaseActions } from "./availability.js";
+export {
+  findingQuestions,
+  findingText,
+  reasoningFromFindings,
+  findingReviewGaps,
+} from "./case-findings.js";
+export type { FindingQuestion } from "./case-findings.js";
 export { createInitialWorldState } from "./world.js";
 export {
   ActionUnavailableError,
@@ -32,7 +40,10 @@ export {
   canOpenArtifact,
 } from "./workplace.js";
 
-export { missingLoginComparisonSteps } from "./login-comparison.js";
+export {
+  missingLoginComparisonSteps,
+  hasLoginRouteComparison,
+} from "./login-comparison.js";
 
 export { resolveActionEffect } from "./effects.js";
 
@@ -42,3 +53,28 @@ export {
   managerRecap,
   ticketSourceAcknowledgement,
 } from "./morgan.js";
+
+export {
+  reasoningGroups,
+  validateReasoning,
+  reviewReasoning,
+  sourceBundle,
+  inspectedSourceBundle,
+} from "./reasoning-options.js";
+
+export {
+  handoffReferences,
+  handoffOptions,
+  handoffOptionsForCases,
+  validateHandoffSelections,
+  reviewHandoffSelections,
+} from "./handoff-options.js";
+
+export { matchingGuides } from "./knowledge.js";
+
+export {
+  allStatusGroups,
+  statusGroups,
+  selectedStatus,
+  caseMemoLines,
+} from "./case-communication.js";

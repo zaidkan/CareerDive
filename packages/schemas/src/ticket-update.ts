@@ -1,33 +1,20 @@
+import { ReasoningSelectionSchema } from "./reasoning.js";
 import { z } from "zod";
 
 import { TicketStatusSchema } from "./ticket.js";
 
 /**
- * P4-T01: structured ticket-update payload, paired with the `document_ticket`
- * simulation action envelope.
- *
- * Mirrors `QueryRecordsPayloadSchema` (P2-T01) and its legality pairing
- * `query_records`/`queryPayload`: the envelope carries an optional
- * `ticketPayload` for `document_ticket`, with pairing legality
- * (required iff `id === "document_ticket"`) enforced in the reducer —
- * never here — keeping the envelope back-compatible.
- *
- * Legality has TWO phases split exactly the way Phase 2 split them:
- * - envelope: `ticketPayload` optional, back-compatible (this file);
- * - reducer: strict verified pairing + every legality/jurisdiction rule
- *   (undiscovered Evidence Fact ID reject, closed-terminal status reject,
- *   no grading vocabulary — P4-11e/11d) enforced BEFORE any mutation.
- *
- * TICKET vocabulary ONLY — canonical truth stays in the reducer's canonical
- * ticket store (`state.structuredTickets`, keyed by ticketId, winner-takes-all
- * like `queryHistory`). `entityRefs`/`attachEvidenceFactIds`/`noteText`/
- * `disposition`/`followUp` land on the CANONICAL store after legality; free
- * text is annotation only and never mutates facts.
+ * Versioned selections produce the assessed note and inspected references.
+ * Text fields remain for saved-shift replay and limited legacy evaluation.
+ * The reducer validates action pairing and references before any mutation;
+ * it owns revisions and recorded dispositions.
  */
 export const TicketUpdatePayloadSchema = z
   .object({
     ticketId: z.string().min(1),
     status: TicketStatusSchema.optional(),
+    statusOptionIds: z.array(z.string().min(1)).max(3).optional(),
+    ownershipCaseId: z.string().min(1).optional(),
     entityRefs: z.array(z.string()).optional(),
     attachEvidenceFactIds: z.array(z.string()).optional(),
     detachEvidenceFactIds: z.array(z.string()).optional(),
@@ -36,6 +23,10 @@ export const TicketUpdatePayloadSchema = z
     followUp: z.string().max(500).optional(),
     verifiedEvidence: z.string().max(2_000).optional(),
     uncertainty: z.string().max(2_000).optional(),
+    reasoning: ReasoningSelectionSchema.optional(),
+    /** One memo dispatch, including the existing consequential alert action. */
+    dispatch: z.enum(["escalate_alert", "dismiss_alert"]).optional(),
+    sourceRecordIds: z.array(z.string()).optional(),
     sourceArtifactIds: z.array(z.string()).optional(),
   })
   .strict();

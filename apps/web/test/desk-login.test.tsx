@@ -361,7 +361,7 @@ describe("same-session return veil", () => {
       vi.advanceTimersByTime(1);
     });
     expect(screen.queryByTestId("login-veil")).toBeNull();
-    expect(screen.getByRole("toolbar", { name: "Taskbar" })).toBeVisible();
+    expect(screen.getByRole("navigation", { name: "Workstation tools" })).toBeVisible();
     expect(onLoginSuccess).not.toHaveBeenCalled();
   });
 
@@ -377,6 +377,6 @@ describe("same-session return veil", () => {
     vi.useFakeTimers();
     renderWorkstation("seated_monitor");
     expect(screen.queryByTestId("login-veil")).toBeNull();
-    expect(screen.getByRole("toolbar", { name: "Taskbar" })).toBeVisible();
+    expect(screen.getByRole("navigation", { name: "Workstation tools" })).toBeVisible();
   });
 });

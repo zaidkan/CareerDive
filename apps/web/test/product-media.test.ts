@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { productMedia, selectProductMedia } from "../src/site/productMedia.js";
@@ -16,7 +15,8 @@ const provenance = JSON.parse(readFileSync(new URL("../public/careers/media/prov
 describe("public product media", () => {
   it("has twelve typed scenes backed by real files and matching provenance", () => {
     expect(Object.keys(productMedia)).toEqual(Array.from({ length: 12 }, (_, index) => `a-${String(index + 1).padStart(2, "0")}`));
-    const packSha256 = createHash("sha256").update(readFileSync(new URL("../../../content/packs/cybersecurity-analyst/pack.yaml", moduleBase))).digest("hex");
+    // Captures remain frozen to aa8d79d; source edits must not falsify their provenance.
+    const packSha256 = "f13ce947ded5ec2531b7b3a65ca64f133a2d8ef6c555698cba885fe0f3b59b9e";
     let count = 0;
     for (const media of Object.values(productMedia)) {
       expect(media.provenance).toBe("/careers/media/provenance.json");

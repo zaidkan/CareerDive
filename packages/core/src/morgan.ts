@@ -1,3 +1,5 @@
+import { findingQuestions, findingText } from "./case-findings.js";
+import { caseDispositionLabel } from "./handoff-summary.js";
 import type { ClientView } from "@sim/schemas";
 
 export function managerQuestionRelevant(question: string): boolean {
@@ -124,6 +126,28 @@ export function managerIntentReply(
             ? eventId === "login-help-1"
             : true;
   const intent = supported ? requested : "unknown";
+  const ticket = view.structuredTickets?.[`ticket-${eventId}`];
+  const event = view.events.find((e) => e.id === eventId);
+  if (
+    event &&
+    ticket?.reasoning?.caseFindings &&
+    [
+      "context",
+      "uncertainty",
+      "handoff",
+      "route",
+      "device",
+      "scanner",
+      "approval",
+      "help",
+    ].includes(intent)
+  ) {
+    const question = findingQuestions(eventId).find(
+      (q) =>
+        !ticket.reasoning?.caseFindings?.some((f) => f.questionId === q.id),
+    );
+    return `${caseDispositionLabel(event, ticket)}. Your recorded claims (not yet verified): ${ticket.reasoning.caseFindings.map((f) => findingText(eventId, f)).join(" ") || "None."} ${event.status === "active" ? (question ? `Open question: ${question.title}` : "What judgment and next check will your memo carry?") : "Keep the actual result, references and remaining recipient obligations in the handoff; any correction keeps the original decision in history."}`;
+  }
   const inspected = new Set(view.workplace.inspectedArtifactIds ?? []);
   switch (intent) {
     case "device":

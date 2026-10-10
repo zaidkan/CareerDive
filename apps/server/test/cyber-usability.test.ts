@@ -160,12 +160,12 @@ describe("current Cyber shift usability and truthful provenance", () => {
     run.action("escalate_alert");
     const review = buildDecisionReview(run.state, run.log).decisions[0];
     expect(review?.outcomeLabel).toBe("partially_supported");
-    expect(review?.explanation).toContain("using Record this comparison");
+    expect(review?.explanation).toContain("or select both records together in the saved case note");
     expect(review?.explanation).not.toContain("Attach the");
     expect(
       run.state.pendingCallbacks.find(({ id }) => id === "b1-comparison-review")
         ?.body,
-    ).toContain("reading or attaching them alone does not save that step");
+    ).toContain("or select both records together in the saved case note");
     expect(run.state.flags.d3_vpn).toBe("not-recorded");
   });
   it("opening two records alone is not a comparison; explicit comparison is preserved before decision", () => {
@@ -330,8 +330,8 @@ describe("current Cyber shift usability and truthful provenance", () => {
         note: "I checked VPN (typed claim only).",
       },
     });
-    const body = run.state.teamMessages?.find(({ id }) =>
-      id.endsWith("-handoff"),
+    const body = run.state.teamMessages?.find(({ actionId }) =>
+      actionId === "submit_shift_handoff",
     )?.body;
     expect(body).toContain(
       "Scanner connection alert review still needs a final decision",

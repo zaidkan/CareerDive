@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { OpsConsole } from "../src/world/deskOs/OpsConsole.js";
+import { OsSessionProvider } from "../src/world/deskOs/osSession.js";
 import { afterEach, expect, it, vi } from "vitest";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import {
@@ -71,45 +74,69 @@ it("uses the sent handoff's dispositions for every preview case and outcome hist
   expect(preview).toHaveTextContent("closed as expected");
   expect(screen.getByText("Recorded outcomes (3)")).toBeVisible();
 });
-it("shows selected-case work while the queue objective concerns a different case", () => {
-  const view = fixture();
-  const original = toClientView(
-    createInitialWorldState("action", 7, {}, loadDefaultCybersecurityPack()),
-  ).availableActions[0];
-  if (!original) throw new Error("Missing original action fixture");
-  const scanner = view.events[1];
-  if (!scanner) throw new Error("Missing scanner fixture");
-  scanner.status = "active";
-  delete scanner.resolution;
-  view.availableActions = [
-    {
-      ...original,
-      id: "search_knowledge_base",
-      label: "Check scanner window",
-      description: "Compare scanner event time with approved window.",
-      eventId: scanner.id,
-      systemId: "knowledge_base",
-    },
-  ];
-  render(
-    <SystemApp
-      view={view}
-      systemId="alert_dashboard"
-      onAction={vi.fn()}
-      guidance={{
-        headline: "Route request to the data owner",
-        detail: "Approval pending",
-        systemId: "team_chat",
-      }}
-      onOpenSystem={vi.fn()}
-    />,
+it("shows selected-case work while the queue objective concerns a different case", async () => {
+  const user = userEvent.setup();
+  // Finance is genuinely waiting while the player investigates the scanner.
+  // Derive both availability lists from the same canonical state.
+  const state = createInitialWorldState(
+    "cross-case",
+    7,
+    {},
+    loadDefaultCybersecurityPack(),
   );
-  const next = screen.getByRole("region", { name: "Selected case next step" });
-  expect(next).toHaveTextContent("Check scanner window");
+  const finance = state.events.find((event) => event.id === "access-request-1");
+  const scanner = state.events.find((event) => event.id === "routine-alert-1");
+  if (!finance || !scanner) throw new Error("Missing cross-case fixtures");
+  state.events = [
+    { ...finance, title: "Finance", status: "active" },
+    { ...scanner, title: "Scanner", status: "active" },
+    ...state.events
+      .filter((event) => event.id !== finance.id && event.id !== scanner.id)
+      .map((event) => ({ ...event, status: "resolved" as const })),
+  ];
+  const view = toClientView(state);
+  const onAction = vi.fn();
+  render(
+    <OsSessionProvider>
+      <OpsConsole view={view} onAction={onAction} />
+    </OsSessionProvider>,
+  );
+  expect(screen.getByRole("combobox", { name: "Current case" })).toHaveValue(
+    finance.id,
+  );
+  expect(screen.getByRole("button", { name: "Email" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await user.selectOptions(
+    screen.getByRole("combobox", { name: "Current case" }),
+    scanner.id,
+  );
+  expect(screen.getByRole("button", { name: "Email" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  const next = screen.getByRole("region", { name: "Current objective" });
+  expect(next).toHaveTextContent(
+    "Which run and approval match this recorded activity?",
+  );
   expect(next).not.toHaveTextContent("Route request");
   expect(
-    within(next).getByRole("button", { name: "Open Guides for this case" }),
+    within(next).getByRole("button", { name: "Go to Alerts" }),
   ).toBeVisible();
+  expect(
+    screen.getByRole("button", { name: "Other work waiting: Finance" }),
+  ).toBeVisible();
+  await user.click(within(next).getByRole("button", { name: "Go to Alerts" }));
+  expect(screen.getByRole("combobox", { name: "Current case" })).toHaveValue(
+    scanner.id,
+  );
+  expect(screen.getByRole("button", { name: "Alerts" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  expect(screen.getByRole("heading", { name: "Scanner" })).toHaveFocus();
+  expect(onAction).not.toHaveBeenCalled();
 });
 it("does not repeat pre-resolution scanner summary or show its old deadline", () => {
   const view = fixture();

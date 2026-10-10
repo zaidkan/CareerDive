@@ -1,3 +1,4 @@
+import { findingQuestions } from "./case-findings.js";
 import { ticketSourceAcknowledgement } from "./morgan.js";
 import { handoffFollowUps } from "./handoff-summary.js";
 import type {
@@ -56,7 +57,7 @@ function currentWorkReply(
   if (!contextEvent)
     return {
       speaker: "Jules",
-      text: `No active case decision remains on your desk. ${handoffFollowUps(state.events, state.teamMessages).join(" ")} Keep recorded follow-ups in the handoff; check the queue for any remaining shift step.`,
+      text: `No active case decision remains on your desk. ${handoffFollowUps(state.events).join(" ")} Keep recorded follow-ups in the handoff; check the queue for any remaining shift step.`,
       nextSystemId: "team_chat",
     };
   const available = new Set(
@@ -74,6 +75,17 @@ function currentWorkReply(
       nextSystemId: "team_chat",
     };
   const ticket = state.structuredTickets?.[`ticket-${contextEvent.id}`];
+  if (ticket?.reasoning?.caseFindings) {
+    const unresolved = findingQuestions(contextEvent.id).find(
+      (q) =>
+        !ticket.reasoning?.caseFindings?.some((f) => f.questionId === q.id),
+    );
+    return {
+      speaker: "Jules",
+      text: `You saved a case argument for ${contextEvent.title}. Your recorded claims have not been verified. ${unresolved ? `The unanswered question is: ${unresolved.title}` : "What judgment and next check will you send with those findings?"}`,
+      nextSystemId: unresolved?.systemId ?? "ticket_queue",
+    };
+  }
   if (ticket)
     return {
       speaker: "Jules",

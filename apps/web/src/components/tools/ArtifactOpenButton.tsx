@@ -11,7 +11,9 @@ export function ArtifactOpenButton({
   label,
   onOpenArtifact,
   mutationState = EMPTY_MUTATION_STATE,
+  disabled = false,
 }: {
+  disabled?: boolean;
   artifactId: string;
   label: string;
   onOpenArtifact?: ((id: string) => Promise<unknown>) | undefined;
@@ -20,19 +22,26 @@ export function ArtifactOpenButton({
   const pendingRef = useRef(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState(false);
+  const [opened, setOpened] = useState(false);
   const opening =
     pending ||
     mutationState.pendingKey ===
       workplaceMutationKey({ type: "open_artifact", artifactId });
 
   async function open() {
-    if (!onOpenArtifact || pendingRef.current || mutationState.pendingKey)
+    if (
+      disabled ||
+      !onOpenArtifact ||
+      pendingRef.current ||
+      mutationState.pendingKey
+    )
       return;
     pendingRef.current = true;
     setPending(true);
     setError(false);
     try {
       await onOpenArtifact(artifactId);
+      setOpened(true);
     } catch {
       setError(true);
     } finally {
@@ -48,14 +57,18 @@ export function ArtifactOpenButton({
         type="button"
         data-interaction-id="open_artifact"
         data-artifact-id={artifactId}
+        data-source-id={artifactId}
         disabled={
-          !onOpenArtifact || pending || Boolean(mutationState.pendingKey)
+          disabled ||
+          !onOpenArtifact ||
+          pending ||
+          Boolean(mutationState.pendingKey)
         }
         onClick={() => {
           void open();
         }}
       >
-        {opening ? "Opening…" : label}
+        {opening ? "Opening…" : opened ? `Opened · ${label}` : label}
       </button>
       {error ? <p role="alert">Could not open this item. Try again.</p> : null}
     </>

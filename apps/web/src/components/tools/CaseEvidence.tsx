@@ -1,3 +1,4 @@
+import { hasLoginRouteComparison } from "@sim/core";
 import type { ClientView, WorkplaceInteraction } from "@sim/schemas";
 import { useTabDraft } from "../../useTabDraft.js";
 
@@ -6,6 +7,8 @@ export function CaseEvidence({
   eventId,
   onInspect,
   pending,
+  bodyShownElsewhere = [],
+  comparisonInNote = false,
 }: {
   view: ClientView;
   eventId: string;
@@ -13,6 +16,8 @@ export function CaseEvidence({
     | ((interaction: WorkplaceInteraction) => Promise<unknown>)
     | undefined;
   pending: boolean;
+  bodyShownElsewhere?: string[];
+  comparisonInNote?: boolean;
 }) {
   const sources = view.artifacts.filter((source) =>
     source.eventIds.includes(eventId),
@@ -37,10 +42,9 @@ export function CaseEvidence({
       comparison.length === 2,
   );
   const routePair = ["login-session-timeline", "vpn-context-1"];
-  const routeRecorded = view.workplace.comparisons?.some(
-    (item) =>
-      item.eventId === eventId &&
-      routePair.every((id) => item.artifactIds.includes(id)),
+  const routeRecorded = hasLoginRouteComparison(
+    view.workplace.comparisons,
+    eventId,
   );
   return (
     <section className="case-evidence" aria-label="Case evidence">
@@ -57,14 +61,12 @@ export function CaseEvidence({
           </p>
         </details>
       ) : null}
-      {eventId === "suspicious-login-1" ? (
+      {eventId === "suspicious-login-1" && !comparisonInNote ? (
         <section aria-label="Required route comparison">
           <h4>Record the session route comparison</h4>
           <p>
-            Reading or attaching sources does not record a comparison. Open the
-            session timeline (S-0741 and S-0731) and VPN catalogue NET-VPN-04,
-            compare their routes, then record this pair before sending a review
-            request with comparisons.
+            Compare S-0741/S-0731 with NET-VPN-04. Record this pair here, or
+            select the timeline and VPN catalogue together in your case note.
           </p>
           <p role="status">
             {routeRecorded
@@ -97,6 +99,34 @@ export function CaseEvidence({
         </section>
       ) : null}
       <h4>Sources for this case</h4>
+      <details>
+        <summary>Record terms</summary>
+        <dl>
+          <dt>MFA</dt>
+          <dd>An extra identity check beyond a password.</dd>
+          <dt>VPN</dt>
+          <dd>
+            A private connection; its exit address may differ from a person's
+            location.
+          </dd>
+          <dt>ASN / ISP</dt>
+          <dd>
+            A network operator / internet provider; its label does not identify
+            a person.
+          </dd>
+          <dt>VLAN</dt>
+          <dd>
+            A separately managed network segment, such as the finance network.
+          </dd>
+          <dt>HQ</dt>
+          <dd>Headquarters: the organization's main office.</dd>
+          <dt>Enrolled device / MDM</dt>
+          <dd>
+            A device registered for work support and management, not proof of
+            who held it.
+          </dd>
+        </dl>
+      </details>
       <p className="source-count">
         {sources.filter(({ id }) => inspected.includes(id)).length} of{" "}
         {sources.length} inspected
@@ -162,7 +192,9 @@ export function CaseEvidence({
           </div>
         </details>
       ) : null}
-      {source?.observed && source.body ? (
+      {source?.observed &&
+      source.body &&
+      !bodyShownElsewhere.includes(source.id) ? (
         <article aria-label={`Inspected source: ${source.title}`}>
           <h5>{source.title}</h5>
           <pre className="artifact-body">{source.body}</pre>

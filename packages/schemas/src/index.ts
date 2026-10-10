@@ -30,3 +30,5 @@ export * from "./extension-points.js";
 
 export * from "./launch.js";
 export * from "./public-key.js";
+
+export * from "./reasoning.js";

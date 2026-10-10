@@ -1,3 +1,4 @@
+import { caseActionFeedback, sourceFeedback } from "./caseFeedback.js";
 import { launchEvent } from "./analytics.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
@@ -29,6 +30,7 @@ import {
 } from "./useMutationCoordinator.js";
 import "./styles.css";
 import "./desk-os-polish.css";
+import "./world/deskOs/workspace.css";
 import { readTabValue, writeTabValue } from "./useTabDraft.js";
 // Route changes retain the pending creation promise as well as its confirmed session.
 const liveSessions = new WeakMap<
@@ -291,14 +293,7 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
             "cybersecurity-analyst",
             session.sessionId,
           );
-        const success =
-          action.id === "update_ticket_notes"
-            ? "Investigation notes saved."
-            : action.id === "update_notebook"
-              ? "Notebook saved."
-              : action.id === "search_knowledge_base"
-                ? "Guide search updated."
-                : `${action.label} completed.`;
+        const success = caseActionFeedback(action, nextView, view);
         return {
           result: nextView,
           view: nextView,
@@ -431,7 +426,16 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
           view: result.view,
           ...(interaction.type === "movement_exertion"
             ? {}
-            : { success: "Workplace updated." }),
+            : {
+                success:
+                  interaction.type === "open_artifact"
+                    ? sourceFeedback(
+                        result.view,
+                        interaction.artifactId,
+                        result.feedback,
+                      )
+                    : "Workplace updated.",
+              }),
         };
       } catch (cause) {
         const detail =

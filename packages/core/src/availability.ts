@@ -26,8 +26,11 @@ function stateNoteFor(
   actionId: SimulationActionId,
 ): string | undefined {
   const observed = new Set(state.observedArtifactIds);
-  const alreadyOpened = resolveActionEffect(state, event, actionId)
-    .observeArtifactIds.filter((artifactId) => observed.has(artifactId));
+  const alreadyOpened = resolveActionEffect(
+    state,
+    event,
+    actionId,
+  ).observeArtifactIds.filter((artifactId) => observed.has(artifactId));
   if (alreadyOpened.length === 0) return undefined;
   const titles = alreadyOpened.map(
     (artifactId) => state.artifacts[artifactId]?.title ?? artifactId,
@@ -62,7 +65,11 @@ function target(
     simulatedMinutes: definition.simulatedMinutes,
     ...(stateNote ? { stateNote } : {}),
     ...(gated ? { taskId: task.id } : {}),
-    ...(definition.id === "document_ticket" && finalStep?.outcomes.length
+    ...([
+      "document_ticket",
+      "route_access_request",
+      "resolve_login_help",
+    ].includes(definition.id) && finalStep?.outcomes.length
       ? {
           decisionOptions: finalStep.options
             .filter(({ id }) =>
@@ -176,6 +183,27 @@ function actionsForEvent(
   );
 }
 
+function correctionActions(state: WorldState): AvailableAction[] {
+  const actions = state.events
+    .filter(
+      (event) =>
+        ["resolved", "escalated"].includes(event.status) &&
+        state.structuredTickets[`ticket-${event.id}`]?.reasoning,
+    )
+    .map((event) => target(state, state.rules, event, "update_ticket_notes"));
+  const handoff = state.events.find(
+    (event) => event.id === "shift-handoff-1" && event.status === "resolved",
+  );
+  if (
+    handoff &&
+    state.teamMessages?.some(
+      (message) => message.actionId === "submit_shift_handoff",
+    )
+  )
+    actions.push(target(state, state.rules, handoff, "submit_shift_handoff"));
+  return actions;
+}
+
 export function availableActions(state: WorldState): AvailableAction[] {
   const activeEvents = state.events.filter(({ status }) => status === "active");
   if (
@@ -200,6 +228,7 @@ export function availableActions(state: WorldState): AvailableAction[] {
         description: complete.description,
         simulatedMinutes: complete.simulatedMinutes,
       },
+      ...correctionActions(state),
     ];
   }
   const eventActions = activeEvents.flatMap((event) =>
@@ -223,5 +252,54 @@ export function availableActions(state: WorldState): AvailableAction[] {
       simulatedMinutes: notebook.simulatedMinutes,
     });
   }
-  return eventActions;
+  return [...eventActions, ...correctionActions(state)];
+}
+
+/** Alternate presentation of existing authored operations, without read/check gates.
+ * Legacy action availability and recorded shifts keep their original contract.
+ */
+export function availableCaseActions(state: WorldState): AvailableAction[] {
+  if (state.careerVersion !== "2.0.0") return [];
+  return state.events.flatMap((event) => {
+    if (
+      event.id === "handoff-1" &&
+      event.status === "active" &&
+      state.observedArtifactIds.includes("handoff-email")
+    )
+      return [target(state, state.rules, event, "acknowledge_handoff")];
+    if (
+      event.id === "status-check-1" &&
+      ["active", "resolved"].includes(event.status)
+    )
+      return [target(state, state.rules, event, "send_status_update")];
+    if (
+      ![
+        "suspicious-login-1",
+        "routine-alert-1",
+        "access-request-1",
+        "login-help-1",
+      ].includes(event.id)
+    )
+      return [];
+    if (!["active", "resolved", "escalated"].includes(event.status)) return [];
+    const ids: SimulationActionId[] = ["update_ticket_notes", "ask_manager"];
+    if (event.status === "active") {
+      ids.push(
+        event.id === "access-request-1"
+          ? "route_access_request"
+          : event.id === "login-help-1"
+            ? "resolve_login_help"
+            : "document_ticket",
+        "query_records",
+      );
+      if (event.completedActionIds.includes("document_ticket"))
+        ids.push(
+          event.id === "routine-alert-1" ||
+            state.flags.b1_terminal === "dismiss"
+            ? "dismiss_alert"
+            : "escalate_alert",
+        );
+    }
+    return ids.map((id) => target(state, state.rules, event, id));
+  });
 }

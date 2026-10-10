@@ -25,12 +25,15 @@ export const WorkplaceStateSchema = z.object({
   julesConsultations: z
     .array(z.object({ eventId: z.string(), topic: JulesTopicSchema }))
     .optional(),
+  handoffSourceRecordIds: z.array(z.string()).optional(),
   handoffSourceArtifactIds: z.array(z.string()).optional(),
   emergencyRecoveryUsed: z.boolean(),
   lastInspectedArtifactId: z.string().optional(),
   inspectedArtifactIds: z.array(z.string()).optional(),
   inspectedRecordIds: z.array(z.string()).optional(),
-  inspectedRecordIdsByEvent: z.record(z.string(), z.array(z.string())).optional(),
+  inspectedRecordIdsByEvent: z
+    .record(z.string(), z.array(z.string()))
+    .optional(),
   comparisons: z
     .array(
       z.object({

@@ -1,3 +1,6 @@
+import { statusGroups } from "./case-communication.js";
+import { handoffOptions } from "./handoff-options.js";
+import { reasoningGroups } from "./reasoning-options.js";
 import type {
   ClientView,
   QueryResultView,
@@ -5,7 +8,7 @@ import type {
   WorldState,
 } from "@sim/schemas";
 import { DatasetRecordSchema, InventoryLookupKeysSchema } from "@sim/schemas";
-import { availableActions } from "./availability.js";
+import { availableActions, availableCaseActions } from "./availability.js";
 import { conditionsMet } from "./conditions.js";
 import { taskProgressKey } from "./tasks.js";
 import { alertRecordSource, canOpenArtifact } from "./workplace.js";
@@ -153,6 +156,21 @@ export function toClientView(state: WorldState): ClientView {
         },
       ),
     availableActions: actions,
+    ...(state.careerVersion === "2.0.0"
+      ? {
+          caseActions: availableCaseActions(state),
+          statusOptions: statusGroups(state).map((g) => ({
+            ...g,
+            options: g.options.map((o) => ({
+              ...o,
+              excerpt:
+                o.sourceId && state.observedArtifactIds.includes(o.sourceId)
+                  ? o.excerpt
+                  : undefined,
+            })),
+          })),
+        }
+      : {}),
     operationalMessages,
     consequenceUpdates: state.ledger
       .filter(
@@ -248,6 +266,12 @@ export function toClientView(state: WorldState): ClientView {
         return preview;
       }),
     ticketNotes: state.ticketNotes,
+    handoffOptions: handoffOptions(state),
+    reasoningOptions: Object.fromEntries(
+      state.events
+        .filter((e) => e.status !== "pending")
+        .map((e) => [e.id, reasoningGroups(state, e.id)]),
+    ),
     structuredTickets: state.structuredTickets,
     teamMessages: state.teamMessages ?? [],
     notebook: state.notebook,
@@ -289,6 +313,7 @@ function projectQueryResults(state: WorldState): QueryResultView[] {
       return parsed.success ? [parsed.data] : [];
     });
     return {
+      ...(entry.actorEventId ? { actorEventId: entry.actorEventId } : {}),
       queryId: entry.queryId,
       datasetId: entry.datasetId,
       records,

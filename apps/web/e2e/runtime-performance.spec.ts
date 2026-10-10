@@ -1,10 +1,10 @@
 import { expect, test } from "@playwright/test";
 
-test("landing defers simulation code until Start", async ({ page }) => {
+test("landing defers simulation runtime until Start", async ({ page }) => {
   await page.goto("/");
   await expect(
     page.getByRole("heading", {
-      name: "Know the work before you choose the career.",
+      name: "Try a slice of the work. See how you'd make the call.",
     }),
   ).toBeVisible();
   const scripts = await page.evaluate(() =>
@@ -16,8 +16,11 @@ test("landing defers simulation code until Start", async ({ page }) => {
       )
       .map((entry) => entry.name),
   );
+  // StartPage is the eager arrival shell; the simulation runtime stays lazy.
   expect(
-    scripts.some((url) => /StartPage|RoomCanvas|SpatialShell/.test(url)),
+    scripts.some((url) =>
+      /RoomCanvas|SpatialShell|\/src\/index\.tsx/.test(url),
+    ),
   ).toBe(false);
   await page
     .getByRole("link", { name: /Start your first day/ })
@@ -25,7 +28,7 @@ test("landing defers simulation code until Start", async ({ page }) => {
     .click();
   await expect(
     page.getByRole("heading", {
-      name: "Short preview film before your first day",
+      name: "Short preview film before your first shift",
     }),
   ).toBeVisible();
 });
@@ -56,7 +59,7 @@ test("unconfirmed session creation stays paused across reload", async ({
   await page.addInitScript(() => {
     sessionStorage.setItem("first-shift-start-gate", "sim");
   });
-  await page.route("**/health", async (route) => {
+  await page.route("**/ready", async (route) => {
     await route.fulfill({ json: { status: "ok" } });
   });
   await page.route("**/trpc/session.create", async (route) => {

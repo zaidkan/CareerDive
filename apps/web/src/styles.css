@@ -3502,128 +3502,10 @@ section[aria-labelledby="structured-title"],
   min-height: 0;
 }
 
-.desk-os-locked .desk-os-window-actions {
-  grid-row: 2;
-  justify-content: flex-end;
-  padding: 0.55rem 0.75rem;
-  border-top: 1px solid var(--line);
-  background: var(--ink-lift);
-}
-
 .desk-os-max {
   box-shadow:
     0 1px 2px rgb(0 0 0 / 30%),
     0 16px 40px rgb(0 0 0 / 35%);
-}
-
-/* The console is an application, not a second browser: one header carrying
-   the wordmark, the app tabs, and the managed route. */
-.desk-os-app-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  min-width: 0;
-  padding: 0.5rem 0.75rem;
-  background: var(--ink-lift);
-  border-bottom: 1px solid var(--line);
-}
-
-.desk-os-app-name {
-  flex: none;
-  color: var(--paper);
-  font-family: var(--font-display);
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-}
-
-.desk-os-app-route {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  min-width: 0;
-  padding: 0.22rem 0.55rem;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--desk) 55%, transparent);
-  color: var(--mute);
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.desk-os-app-route svg {
-  flex: none;
-  color: var(--signal);
-}
-
-.desk-os-tabs {
-  display: flex;
-  gap: 0.15rem;
-  overflow-x: auto;
-  min-width: 0;
-  scrollbar-width: thin;
-}
-
-.desk-os-tab {
-  flex: 0 0 auto;
-  padding: 0.45rem 0.75rem;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--mute);
-  font: inherit;
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.desk-os-tab:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-.desk-os-tab-active {
-  color: var(--paper);
-  background: color-mix(in srgb, var(--panel) 78%, transparent);
-  box-shadow: inset 0 -2px 0 var(--cta);
-}
-
-.desk-os-tab-target {
-  color: var(--paper);
-  background: color-mix(in srgb, var(--phosphor) 12%, transparent);
-  border-color: color-mix(in srgb, var(--phosphor) 38%, transparent);
-  box-shadow: inset 0 -2px 0 var(--phosphor);
-}
-
-.desk-os-tab-dot {
-  display: inline-block;
-  width: 0.34rem;
-  height: 0.34rem;
-  margin-left: 0.35rem;
-  border-radius: 50%;
-  background: var(--phosphor);
-  vertical-align: middle;
-}
-
-.desk-os-window-actions {
-  display: flex;
-  gap: 0.35rem;
-  padding-bottom: 0.5rem;
-}
-
-.desk-os-window-actions .desk-os-ghost {
-  gap: 0.35rem;
-  padding: 0.35rem 0.55rem;
-  border-radius: 6px;
-  font-size: 0.72rem;
-  white-space: nowrap;
 }
 
 
@@ -3736,9 +3618,7 @@ section[aria-labelledby="structured-title"],
   border-radius: 8px;
 }
 
-.desk-os-body > .desk-os-system,
-.desk-os-body > .desk-os-home,
-.desk-os-body > .desk-os-calendar {
+.desk-os-body > .desk-os-system, .desk-os-body > .desk-os-calendar {
   grid-row: 2;
   min-height: 0;
   overflow-y: auto;
@@ -3826,11 +3706,7 @@ section[aria-labelledby="structured-title"],
   text-transform: uppercase;
 }
 
-.desk-os-lock-card h2,
-.desk-os-home h2,
-.desk-os-detail h3,
-.desk-os-calendar h3,
-.desk-os-guidance h3 {
+.desk-os-lock-card h2, .desk-os-detail h3, .desk-os-calendar h3 {
   margin: 0 0 0.4rem;
   color: var(--paper);
   font-family: var(--font-display);
@@ -3888,50 +3764,6 @@ section[aria-labelledby="structured-title"],
   gap: 0.45rem;
 }
 
-.desk-os-home {
-  display: grid;
-  gap: 0.8rem;
-  align-content: start;
-  padding: 0.15rem 0.1rem 0.4rem;
-}
-
-.desk-os-home-hero {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1.25rem;
-  padding: 1.1rem 1.25rem;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel);
-  box-shadow:
-    0 1px 2px rgb(0 0 0 / 30%),
-    0 8px 24px rgb(0 0 0 / 25%);
-}
-
-.desk-os-home-hero-copy {
-  display: grid;
-  gap: 0.35rem;
-  min-width: 0;
-}
-
-.desk-os-home-hero-copy .eyebrow {
-  margin-bottom: 0;
-}
-
-.desk-os-home-hero-copy h2 {
-  margin-bottom: 0;
-  font-size: 1.35rem;
-}
-
-.desk-os-home-hero-copy p {
-  margin: 0;
-  max-width: 56ch;
-  color: var(--fog);
-  font-size: 0.9rem;
-  line-height: 1.55;
-}
-
 .desk-os-clock {
   display: grid;
   flex: 0 0 auto;
@@ -3960,86 +3792,6 @@ section[aria-labelledby="structured-title"],
   font-size: 1.4rem;
   font-weight: 600;
   letter-spacing: 0.01em;
-}
-
-.desk-os-guidance {
-  display: grid;
-  gap: 0.45rem;
-  padding: 0.95rem 1.05rem;
-  border: 1px solid color-mix(in srgb, var(--phosphor) 30%, var(--line));
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--phosphor) 6%, var(--panel));
-  box-shadow: var(--shadow-soft);
-}
-
-.desk-os-guidance .eyebrow {
-  margin-bottom: 0;
-}
-
-.desk-os-guidance h3 {
-  margin-bottom: 0;
-}
-
-.desk-os-guidance .desk-os-primary {
-  justify-self: start;
-  margin-top: 0.15rem;
-}
-
-.desk-os-tiles {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.6rem;
-}
-
-.desk-os-tile {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  gap: 0.1rem 0.65rem;
-  align-items: center;
-  align-content: start;
-  min-height: 4.75rem;
-  padding: 0.75rem 0.85rem;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--panel);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 25%);
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.desk-os-tile-icon {
-  grid-row: 1 / span 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid color-mix(in srgb, var(--phosphor) 22%, transparent);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--phosphor) 12%, transparent);
-  color: var(--phosphor);
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.desk-os-tile strong {
-  color: var(--paper);
-  font-size: 0.86rem;
-  font-weight: 600;
-  line-height: 1.3;
-}
-
-.desk-os-tile span {
-  color: var(--mute);
-  font-size: 0.72rem;
-  line-height: 1.4;
-}
-
-.desk-os-tile-count {
-  color: var(--phosphor);
-  font-weight: 700;
 }
 
 .desk-os-system {
@@ -4147,8 +3899,6 @@ section[aria-labelledby="structured-title"],
   font-size: 0.74rem;
   font-weight: 700;
 }
-
-/* —— Desk OS workspace and taskbar —— */
 .desk-os-shell {
   grid-template-rows: minmax(0, 1fr) auto;
 }
@@ -4165,27 +3915,8 @@ section[aria-labelledby="structured-title"],
   min-height: 0;
 }
 
-
-.desk-os-console {
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-  background: var(--desk);
-}
-
 /* Same backdrop family as the finished sign-in surface: one workstation,
    one ambient light. Calm and quiet — the windows carry the depth. */
-.os-desktop {
-  height: 100%;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 1.35rem 1.5rem;
-  background:
-    radial-gradient(120% 90% at 25% 12%, rgb(110 168 254 / 10%), transparent 60%),
-    linear-gradient(165deg, #1a2027, #101317 70%);
-}
 
 .os-icons {
   display: grid;
@@ -4223,71 +3954,6 @@ section[aria-labelledby="structured-title"],
   border-radius: 12px;
   background: color-mix(in srgb, var(--panel) 88%, transparent);
   box-shadow: var(--shadow-soft);
-  color: var(--phosphor);
-}
-
-.os-desktop-hint {
-  margin: 1.75rem 0 0;
-  color: #c3c9d1;
-  font-size: 0.78rem;
-}
-
-.os-taskbar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 0.85rem;
-  align-items: center;
-  padding: 0.42rem 0.65rem;
-  border-top: 1px solid var(--line);
-  background: var(--ink-lift);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 3%);
-}
-
-.os-taskbar-apps {
-  display: flex;
-  gap: 0.3rem;
-  min-width: 0;
-  overflow-x: auto;
-}
-
-.os-taskbar-pinned,
-.os-taskbar-windows {
-  display: flex;
-  gap: 0.3rem;
-  align-items: center;
-}
-
-.os-taskbar-pinned {
-  padding-right: 0.4rem;
-  border-right: 1px solid var(--line);
-}
-
-/* Status toast: the workspace talks back quietly — one line, one icon. */
-.os-window-notice {
-  position: absolute;
-  z-index: 10000;
-  bottom: 0.75rem;
-  left: 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  max-width: min(28rem, calc(100% - 1.5rem));
-  margin: 0;
-  padding: 0.6rem 0.85rem;
-  border: 1px solid var(--line-bright);
-  border-radius: 8px;
-  background: var(--panel);
-  color: var(--paper);
-  font-size: 0.78rem;
-  line-height: 1.45;
-  box-shadow:
-    0 2px 6px rgb(0 0 0 / 30%),
-    0 14px 32px rgb(0 0 0 / 34%);
-  pointer-events: none;
-}
-
-.os-window-notice svg {
-  flex: none;
   color: var(--phosphor);
 }
 
@@ -4329,284 +3995,12 @@ section[aria-labelledby="structured-title"],
   color: #fff;
 }
 
-.os-taskbar-btn {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.42rem;
-  padding: 0.42rem 0.72rem;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--mute);
-  font-size: 0.76rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.os-taskbar-btn-active {
-  border-color: var(--line-bright);
-  background: var(--panel);
-  color: var(--paper);
-  box-shadow: inset 0 2px 0 var(--cta);
-}
-
-.os-taskbar-clock {
-  padding: 0.28rem 0.6rem;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--desk) 55%, transparent);
-  color: var(--paper);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.os-taskbar-actions {
-  display: flex;
-  gap: 0.35rem;
-}
-
-.os-taskbar-actions .desk-os-ghost {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.38rem 0.6rem;
-  border-radius: 6px;
-  font-size: 0.72rem;
-  white-space: nowrap;
-}
-
-.os-window {
-  display: grid;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-  background: var(--desk);
-}
-
-/* —— Multi-window frame system (W1 visual foundation) —— */
-
-/* Depth is declared once: background windows sit flat on a hairline, and
-   only the focused window earns the lift. */
-.os-window-frame {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  height: 100%;
-  min-height: 0;
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-  max-height: 100%;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--desk);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 22%);
-}
-
-/* Focused window: brighter frame, lift, paper title. */
-.os-window-frame-active {
-  border-color: var(--line-bright);
-  box-shadow:
-    0 2px 6px rgb(0 0 0 / 28%),
-    0 22px 48px rgb(0 0 0 / 38%);
-}
-
-.os-window-frame-active .os-window-identity strong {
-  color: var(--paper);
-}
-
-/* Maximized window: full bleed, square corners. */
-.os-window-frame-maximized {
-  border-radius: 0;
-  border-left: 0;
-  border-right: 0;
-  box-shadow: none;
-}
-
-/* Minimized windows render no frame; the taskbar carries the state. */
-.os-window-frame[data-minimized="true"] {
-  display: none;
-}
-
-.os-window-bar {
-  min-width: 0;
-  border-bottom: 1px solid var(--line);
-  background: var(--ink-lift);
-}
-
-.os-window-frame-active .os-window-bar {
-  background: color-mix(in srgb, var(--panel) 65%, var(--ink-lift));
-}
-
-.os-window-bar-main {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  min-width: 0;
-  padding: 0.38rem 0.42rem 0.38rem 0.65rem;
-  touch-action: none;
-}
-
 .os-app-glyph {
   flex: none;
   color: var(--phosphor-dim);
 }
 
-.os-window-frame-active .os-app-glyph {
-  color: var(--phosphor);
-}
-
-.os-window-identity {
-  display: flex;
-  align-items: baseline;
-  gap: 0.55rem;
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.os-window-identity strong {
-  color: var(--fog);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.os-window-identity small {
-  color: var(--mute);
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.os-window-controls {
-  flex: none;
-  display: flex;
-  gap: 0.2rem;
-  margin-left: auto;
-}
-
-.os-window-control {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.15rem;
-  height: 1.75rem;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--mute);
-  cursor: pointer;
-}
-
-.os-window-control:hover {
-  border-color: var(--line-bright);
-  background: var(--panel);
-  color: var(--paper);
-}
-
-.os-window-control-close:hover {
-  border-color: color-mix(in srgb, var(--signal-hot) 55%, transparent);
-  background: color-mix(in srgb, var(--signal-hot) 16%, transparent);
-  color: var(--paper);
-}
-
-.os-window-toolbar {
-  display: flex;
-  gap: 0.4rem;
-  align-items: center;
-  padding: 0.35rem 0.6rem;
-  border-top: 1px solid var(--line);
-  overflow-x: auto;
-}
-
-.os-window-body {
-  min-height: 0;
-  min-width: 0;
-  overflow: hidden;
-  display: grid;
-}
-
-.os-window-body > * {
-  min-height: 0;
-  min-width: 0;
-}
-
 /* Taskbar window entries: running dot, active bar, minimized dim. */
-.os-taskbar-btn {
-  position: relative;
-}
-
-.os-taskbar-glyph {
-  display: inline-flex;
-  color: var(--phosphor-dim);
-}
-
-.os-taskbar-btn-active .os-taskbar-glyph {
-  color: var(--phosphor);
-}
-
-.os-taskbar-btn[data-running="true"]::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: 2px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--mute);
-  transform: translateX(-50%);
-}
-
-.os-taskbar-btn-active[data-running="true"]::after {
-  background: var(--phosphor);
-}
-
-.os-taskbar-attention {
-  display: inline-block;
-  width: 0.4rem;
-  height: 0.4rem;
-  margin-left: 0.35rem;
-  border: 1px solid var(--paper);
-  border-radius: 50%;
-  background: var(--signal-hot);
-  vertical-align: middle;
-}
-
-.os-taskbar-btn[data-minimized="true"] {
-  opacity: 0.62;
-}
-
-.os-taskbar-btn[data-minimized="true"]::after {
-  background: transparent;
-  border: 1px solid var(--mute);
-}
-
-.os-browser {
-  grid-template-rows: auto auto minmax(0, 1fr);
-}
-
-.os-browser-bar {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.5rem;
-  align-items: center;
-  padding: 0.45rem 0.6rem;
-  border-bottom: 1px solid var(--line);
-  background: var(--ink-lift);
-}
-
-.os-browser-nav {
-  display: flex;
-  gap: 0.25rem;
-}
 
 .os-nav-btn {
   width: 1.9rem;
@@ -4666,34 +4060,6 @@ section[aria-labelledby="structured-title"],
 .os-address-field:focus-within {
   border-color: color-mix(in srgb, var(--phosphor) 55%, transparent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--phosphor) 18%, transparent);
-}
-
-.os-bookmarks {
-  display: flex;
-  gap: 0.3rem;
-  padding: 0.35rem 0.6rem;
-  border-bottom: 1px solid var(--line);
-  background: var(--ink-lift);
-  overflow-x: auto;
-}
-
-.os-bookmark {
-  flex: 0 0 auto;
-  padding: 0.35rem 0.65rem;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--mute);
-  font-size: 0.74rem;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.os-bookmark-active {
-  border-color: color-mix(in srgb, var(--phosphor) 40%, transparent);
-  background: color-mix(in srgb, var(--phosphor) 12%, transparent);
-  color: var(--paper);
 }
 
 .os-page {
@@ -4786,20 +4152,6 @@ section[aria-labelledby="structured-title"],
 .os-files {
   grid-template-rows: auto minmax(0, 1fr) auto auto;
   gap: 0;
-}
-
-.os-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  padding: 0.5rem 0.7rem;
-  border-bottom: 1px solid var(--line);
-  background: var(--ink-lift);
-}
-
-.os-toolbar .desk-os-ghost:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 
 .os-path {
@@ -5086,18 +4438,7 @@ section[aria-labelledby="structured-title"],
   color: var(--paper);
 }
 
-.os-desktop,
-.os-folders,
-.os-file-list,
-.os-notes,
-.os-intranet,
-.os-blocked,
-.os-taskbar-apps,
-.desk-os-tabs,
-.desk-os-queue,
-.desk-os-detail,
-.desk-os-system,
-.os-notification-host {
+.os-folders, .os-file-list, .os-notes, .os-intranet, .os-blocked, .desk-os-queue, .desk-os-detail, .desk-os-system, .os-notification-host {
   scrollbar-width: thin;
   scrollbar-color: var(--line-bright) transparent;
 }
@@ -5119,12 +4460,7 @@ section[aria-labelledby="structured-title"],
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .os-icon,
-  .os-taskbar-btn,
-  .os-bookmark,
-  .os-folder,
-  .os-file,
-  .os-nav-btn {
+  .os-icon, .os-folder, .os-file, .os-nav-btn {
     transition:
       background 160ms var(--ease-out),
       border-color 160ms var(--ease-out),
@@ -5135,12 +4471,6 @@ section[aria-labelledby="structured-title"],
 
   /* Never transition transform on the frame itself: pointer drag must stay
      pixel-true. Only the focus lift eases. */
-  .os-window-frame {
-    transition:
-      border-color 160ms var(--ease-out),
-      box-shadow 160ms var(--ease-out);
-    animation: os-window-settle 180ms var(--ease-out);
-  }
 
   .os-icon:hover {
     border-color: var(--line-bright);
@@ -5148,8 +4478,6 @@ section[aria-labelledby="structured-title"],
     transform: translateY(-1px);
   }
 
-  .os-taskbar-btn:hover,
-  .os-bookmark:hover,
   .os-nav-btn:not(:disabled):hover {
     background: rgb(255 255 255 / 5%);
     color: var(--paper);
@@ -5164,29 +4492,20 @@ section[aria-labelledby="structured-title"],
     background: var(--panel);
   }
 
-  .os-window-notice,
   .os-notification-host .work-notification {
     animation: os-toast-in 180ms var(--ease-out);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .os-icon:hover,
-  .os-taskbar-btn:hover,
-  .os-bookmark:hover,
-  .os-folder:hover,
-  .os-file:hover {
+  .os-icon:hover, .os-folder:hover, .os-file:hover {
     transform: none;
   }
 }
 
 /* —— Desk OS motion: static by default, enhanced only when allowed —— */
 @media (prefers-reduced-motion: no-preference) {
-  .desk-os-tab,
-  .desk-os-tile,
-  .desk-os-queue-item,
-  .desk-os-primary,
-  .desk-os-ghost {
+  .desk-os-queue-item, .desk-os-primary, .desk-os-ghost {
     transition:
       background 160ms var(--ease-out),
       border-color 160ms var(--ease-out),
@@ -5195,12 +4514,6 @@ section[aria-labelledby="structured-title"],
       color 160ms var(--ease-out);
   }
 
-  .desk-os-tab:hover {
-    color: var(--paper);
-    background: rgb(255 255 255 / 5%);
-  }
-
-  .desk-os-tile:hover,
   .desk-os-queue-item:hover {
     border-color: var(--line-bright);
     transform: translateY(-1px);
@@ -5225,49 +4538,6 @@ section[aria-labelledby="structured-title"],
   .desk-os-ghost:hover {
     border-color: var(--phosphor);
     background: rgb(110 168 254 / 8%);
-  }
-
-  .desk-os-tab-dot {
-    animation: desk-os-pulse-dot 2.2s ease-in-out infinite;
-  }
-}
-
-@keyframes desk-os-pulse-dot {
-  0%,
-  100% {
-    opacity: 1;
-  }
-
-  50% {
-    opacity: 0.45;
-  }
-}
-
-@keyframes os-window-settle {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes os-toast-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translate(0, 0);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .desk-os-tab-dot {
-    animation: none;
   }
 }
 
@@ -5297,15 +4567,6 @@ section[aria-labelledby="structured-title"],
     text-align: left;
   }
 
-  .desk-os-tiles {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .desk-os-home-hero {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
   .desk-os-clock {
     text-align: left;
   }
@@ -5323,15 +4584,6 @@ section[aria-labelledby="structured-title"],
   .desk-os-bezel-note {
     top: 0;
     transform: rotate(-3deg);
-  }
-
-  .os-taskbar {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .os-taskbar-actions {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
   }
 
   .os-files-body {
@@ -5364,10 +4616,6 @@ section[aria-labelledby="structured-title"],
   padding: 0.45rem 0.55rem;
   border: 1px solid var(--line);
   background: rgb(10 7 6 / 72%);
-}
-
-.desk-os-console .case-rail {
-  background: var(--panel);
 }
 
 .case-rail-active > summary {
@@ -5735,8 +4983,8 @@ section[aria-labelledby="structured-title"],
   appearance: none; min-block-size: 44px;
   color: var(--paper); background: var(--desk);
 }
-/* Existing action styling uses !important; keep this override recovery-scoped. */
-[aria-label="Workplace recovery"] .action-primary { background: var(--desk) !important; }
+/* Preserve legacy recovery actions; the shared workspace uses its own tokens. */
+[aria-label="Workplace recovery"] .action-primary:not(.desk-workspace .action-primary) { background: var(--desk) !important; }
 
 .case-evidence, .handoff-builder { margin-block: 1.25rem; }
 .case-source-links { display: flex; flex-wrap: wrap; gap: .5rem; }
@@ -5748,10 +4996,7 @@ section[aria-labelledby="structured-title"],
 .work-task-choice blockquote { margin: .5rem 0; font-size: .9rem; }
 @media (max-width: 700px) { .case-comparison { grid-template-columns: 1fr; } }
 
-.case-ticket-composer > label, .handoff-builder > label { display: grid; gap: .5rem; margin-block: .8rem; }
-.case-ticket-composer textarea, .handoff-builder textarea { box-sizing: border-box; width: 100%; min-height: 5rem; padding: .75rem; font: inherit; line-height: 1.5; color: inherit; background: var(--surface, transparent); border: 1px solid currentColor; border-radius: .4rem; }
 .case-ticket-composer fieldset label { display: flex; align-items: flex-start; gap: .6rem; padding-block: .5rem; }
-.case-ticket-composer small { display: block; margin-top: .25rem; }
 
 /* Simulation dialogue and orientation only; no Desk OS application redesign. */
 .coworker-dialogue,

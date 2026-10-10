@@ -1,3 +1,4 @@
+import { matchingGuides } from "@sim/core";
 import { useEffect, useRef, useState } from "react";
 import type { AvailableAction, ClientArtifact, ClientView } from "@sim/schemas";
 import { ArtifactOpenButton } from "./tools/ArtifactOpenButton.js";
@@ -90,14 +91,7 @@ export function ArtifactDetail({
         />
       ) : null}
       {artifact.observed && artifact.body ? (
-        artifact.kind === "kb_document" ? (
-          <details className="guide-reference">
-            <summary>Full reference</summary>
-            <pre className="artifact-body">{artifact.body}</pre>
-          </details>
-        ) : (
-          <pre className="artifact-body">{artifact.body}</pre>
-        )
+        <pre className="artifact-body">{artifact.body}</pre>
       ) : (
         <p className="artifact-unopened">Open record to inspect.</p>
       )}
@@ -223,12 +217,5 @@ export function filterKnowledgeBase(
   view: ClientView,
   query: string,
 ): ClientArtifact[] {
-  const normalized = query.trim().toLowerCase();
-  return view.artifacts.filter((artifact) => {
-    if (artifact.systemId !== "knowledge_base") return false;
-    if (!normalized) return true;
-    return `${artifact.title} ${artifact.summary} ${artifact.searchableText ?? ""}`
-      .toLowerCase()
-      .includes(normalized);
-  });
+  return matchingGuides(view.artifacts, query);
 }

@@ -1,7 +1,6 @@
-import { CaseNextStep } from "../../components/CaseNextStep.js";
 import { caseDispositionLabel } from "@sim/core";
 import type { AvailableAction, ClientView, WorkSystemId } from "@sim/schemas";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { SystemToolPanel } from "../../components/SystemToolPanel.js";
 import type { ShiftGuidance } from "../../guidance.js";
 import { systemLabel } from "../../systems.js";
@@ -25,7 +24,6 @@ export function SystemApp({
   focusEventId,
   guidance,
   focusRequestId = 0,
-  onSelectCase,
   onOpenSystem,
   mutationState = EMPTY_MUTATION_STATE,
 }: {
@@ -37,76 +35,28 @@ export function SystemApp({
   focusEventId?: string;
   guidance: ShiftGuidance | null;
   focusRequestId?: number;
-  onSelectCase?: (id: string) => void;
   onOpenSystem?: (systemId: WorkSystemId, eventId?: string) => void;
   mutationState?: MutationState;
 }) {
-  const [selectedEventIds, setSelectedEventIds] = useState<
-    Partial<Record<WorkSystemId, string>>
-  >({});
-  const [localFocusRequest, setLocalFocusRequest] = useState(0);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const consumedFocusRequestRef = useRef("0:0");
-  const selectedEventId = selectedEventIds[systemId];
+  const consumedFocusRequestRef = useRef(0);
+  const { selectedEvent, contextualActions, highlightActionId } =
+    deriveSystemState(view, systemId, {
+      selectedEventId: focusEventId,
+      guidance,
+    });
   useEffect(() => {
-    if (focusEventId) {
-      setSelectedEventIds((current) => ({
-        ...current,
-        [systemId]: focusEventId,
-      }));
-    }
-  }, [focusEventId, focusRequestId, systemId]);
-  const { systemEvents, selectedEvent, contextualActions, highlightActionId } =
-    deriveSystemState(view, systemId, { selectedEventId, guidance });
-
-  useEffect(() => {
-    if (focusRequestId === 0 && localFocusRequest === 0) return;
-    const request = `${String(focusRequestId)}:${String(localFocusRequest)}`;
-    if (consumedFocusRequestRef.current === request) return;
-    consumedFocusRequestRef.current = request;
+    if (
+      focusRequestId === 0 ||
+      consumedFocusRequestRef.current === focusRequestId
+    )
+      return;
+    consumedFocusRequestRef.current = focusRequestId;
     headingRef.current?.focus();
-  }, [focusRequestId, localFocusRequest, selectedEvent?.id, systemId]);
+  }, [focusRequestId, selectedEvent?.id, systemId]);
 
   return (
     <div className="desk-os-system">
-      <aside
-        className="desk-os-queue"
-        aria-label={`${systemLabel(systemId)} items`}
-      >
-        <p className="eyebrow">{systemLabel(systemId)}</p>
-        {systemEvents.length === 0 ? (
-          <p className="desk-os-empty">Nothing here right now.</p>
-        ) : (
-          systemEvents.map((event) => (
-            <button
-              aria-pressed={selectedEvent?.id === event.id}
-              className="desk-os-queue-item"
-              data-priority={event.priority}
-              key={event.id}
-              onClick={() => {
-                setSelectedEventIds((current) => ({
-                  ...current,
-                  [systemId]: event.id,
-                }));
-                onSelectCase?.(event.id);
-                setLocalFocusRequest((current) => current + 1);
-              }}
-              type="button"
-            >
-              <span>{event.title}</span>
-              <small>
-                {event.priority} ·{" "}
-                {event.status === "active"
-                  ? `due in ${String(remainingMinutes(event.deadlineAt, view.simClock))}m`
-                  : caseDispositionLabel(
-                      event,
-                      view.structuredTickets?.[`ticket-${event.id}`],
-                    )}
-              </small>
-            </button>
-          ))
-        )}
-      </aside>
       <div className="desk-os-detail">
         {selectedEvent ? (
           <>
@@ -137,12 +87,6 @@ export function SystemApp({
             {selectedEvent.resolution ? (
               <p className="desk-os-resolution">{selectedEvent.resolution}</p>
             ) : null}
-            <CaseNextStep
-              view={view}
-              eventId={selectedEvent.id}
-              systemId={systemId}
-              onOpenSystem={onOpenSystem}
-            />
             <SystemToolPanel
               actions={contextualActions}
               {...(highlightActionId ? { highlightActionId } : {})}

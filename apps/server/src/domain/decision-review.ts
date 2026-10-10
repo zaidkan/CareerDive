@@ -1,4 +1,12 @@
-import { missingLoginComparisonSteps, resolveActionEffect } from "@sim/core";
+import { statusReview } from "./status-review.js";
+import { caseExample } from "./case-example.js";
+import {
+  handoffReferences,
+  missingLoginComparisonSteps,
+  resolveActionEffect,
+  reviewReasoning,
+  reviewHandoffSelections,
+} from "@sim/core";
 import type {
   ActionLogEntry,
   Debrief,
@@ -52,7 +60,7 @@ const V2_CHOICES: Record<string, readonly string[]> = {
     "route-to-owner",
     "route-with-interim",
     "self-approve",
-    "reject-as-attack",
+    "route-to-director",
   ],
   shift_handoff: ["complete", "corrected", "thin"],
 };
@@ -265,7 +273,15 @@ function ticketGaps(
         }[field],
       );
   if (!ticket?.disposition?.trim()) gaps.push("a saved disposition");
-  if (expectedDisposition && ticket?.disposition !== expectedDisposition)
+  if (
+    expectedDisposition &&
+    ![
+      expectedDisposition,
+      ...(expectedDisposition === "expected-close"
+        ? ["expected-close-with-monitoring"]
+        : []),
+    ].includes(ticket?.disposition ?? "")
+  )
     gaps.push("an expected scanner closure disposition");
   return gaps;
 }
@@ -321,9 +337,43 @@ export function buildDecisionReview(
   state: WorldState,
   log: ActionLogEntry[],
 ): NonNullable<Debrief["decisionReview"]> {
+  // One logged memo transaction contains the same two canonical operations as
+  // the legacy save-then-send flow. Both retain its provenance sequence.
+  log = log.flatMap((entry) => {
+    if (
+      entry.interaction.type !== "action" ||
+      !entry.interaction.action.ticketPayload?.dispatch
+    )
+      return [entry];
+    const action = entry.interaction.action;
+    const dispatch = action.ticketPayload?.dispatch;
+    if (!dispatch) return [entry];
+    return [
+      entry,
+      {
+        ...entry,
+        interaction: {
+          type: "action" as const,
+          action: {
+            id: dispatch,
+            actorId: action.actorId,
+            eventId: action.eventId,
+          },
+        },
+      },
+    ];
+  });
   const v2 = state.careerVersion === "2.0.0";
   const choicesFor = (id: string) =>
-    v2 ? (V2_CHOICES[id] ?? []) : (REVIEW_CHOICES[id] ?? []);
+    v2
+      ? id === "finance_access"
+        ? (state.rules.tasks["access-authority-check"]?.steps
+            .at(-1)
+            ?.options.map((o) => o.id) ??
+          V2_CHOICES[id] ??
+          [])
+        : (V2_CHOICES[id] ?? [])
+      : (REVIEW_CHOICES[id] ?? []);
   const callbacksFor = (eventId: string) =>
     state.pendingCallbacks
       .filter((callback) => callback.eventId === eventId && callback.applied)
@@ -450,6 +500,13 @@ export function buildDecisionReview(
         "scanner-decision",
         "expected-close",
       )) ||
+      hasStep(
+        state,
+        SCANNER,
+        "scanner-ticket-summary",
+        "scanner-decision",
+        "expected-close-with-monitoring",
+      ) ||
       Object.values(state.structuredTickets).some(
         (ticket) =>
           ticket.linkedWorkItemIds.includes(SCANNER) &&
@@ -751,6 +808,8 @@ export function buildDecisionReview(
                 "You routed the request to the owner and offered an interim report without granting the requested role.",
               "self-approve":
                 "You approved the role directly. The record shows the finance data owner's authorization was not obtained.",
+              "route-to-director":
+                "You sent the role request to the deadline approver. Finance data-owner authorization remains pending; no role has been granted.",
               "reject-as-attack":
                 "You rejected the request as an attack. The urgency alone does not establish malicious intent, and the business request remains unresolved.",
             }[accessChoice] ?? "The access decision was recorded.")
@@ -817,59 +876,362 @@ export function buildDecisionReview(
             : "No end-of-shift handoff was recorded; the next analyst has no confirmed continuation point from this shift.",
     }),
   ];
-  const profile = [
-    [
-      "Evidence review",
-      caseEvidence.includes("device-inventory-1") &&
-        routeCompared &&
-        scannerChecked,
-      caseEvidence.length > 0 || scannerEvidence.length > 0,
-      "Tracks case and scanner records inspected before decisions.",
-    ],
-    [
-      "Handling uncertainty",
-      caseDocumented && handoffUncertainty,
-      caseDocumented || handoffUncertainty,
-      "Tracks whether unresolved identity and coverage limits stayed visible.",
-    ],
-    [
-      "Prioritization",
-      scannerChoice !== null &&
-        scannerClosed &&
-        scannerChecked &&
-        scannerDocumented,
-      scannerChoice !== null,
-      "Tracks interruption choice and later scanner work.",
-    ],
-    [
-      "Documentation",
-      caseDocumented && scannerDocumented,
-      caseDocumented || scannerDocumented,
-      `Tracks inspected, attached sources and complete fields; free-text meaning is not evaluated.${!caseDocumented ? ` Case gaps: ${caseGaps.join("; ")}.` : ""}${!scannerDocumented ? ` Scanner gaps: ${scannerGaps.join("; ")}.` : ""}`,
-    ],
-    [
-      "Role boundaries",
-      accessSupported,
-      accessChoice !== null,
-      "Tracks approval-guide use and the finance owner's authority.",
-    ],
-    [
-      "Handoff clarity",
-      handoffSupported,
-      handoffChoice !== null,
-      `Tracks checked facts, an open question, and the next owner.${handoffGaps.length ? ` Missing: ${handoffGaps.join("; ")}.` : ""}`,
-    ],
-  ].map(([dimension, strong, developing, explanation]) => ({
-    dimension: String(dimension),
-    state: strong
-      ? ("strong" as const)
-      : developing
-        ? ("developing" as const)
-        : ("needs_more_evidence" as const),
-    explanation: String(explanation),
+  // Assess the exact selections saved at the first consequential decision.
+  // Later corrections are separate revisions and never upgrade that decision.
+  const caseIds: Record<string, string> = {
+    suspicious_login: CASE,
+    scanner_interruption: SCANNER,
+    finance_access: ACCESS,
+    routine_login: LOGIN,
+    shift_handoff: HANDOFF,
+  };
+  const commitActions: Record<string, string[]> = {
+    [CASE]: ["escalate_alert", "dismiss_alert"],
+    [SCANNER]: ["dismiss_alert"],
+    [ACCESS]: ["route_access_request"],
+    [LOGIN]: ["resolve_login_help"],
+    [HANDOFF]: ["submit_shift_handoff"],
+  };
+  const allSources = [
+    ...Object.keys(state.artifacts),
+    ...Object.values(state.rules.datasets).flatMap((dataset) =>
+      dataset.records.map((record) => record.id),
+    ),
+  ];
+  for (const reviewed of decisions) {
+    const eventId = caseIds[reviewed.decisionId];
+    if (!eventId) continue;
+    const committed = firstAction(log, eventId, commitActions[eventId] ?? []);
+    const before = committed?.sequence ?? Infinity;
+    const writes = log.filter(
+      (entry) =>
+        entry.sequence <= before &&
+        entry.interaction.type === "action" &&
+        entry.interaction.action.eventId === eventId &&
+        entry.interaction.action.ticketPayload,
+    );
+    const saved = writes.at(-1);
+    const action =
+      saved?.interaction.type === "action"
+        ? saved.interaction.action
+        : undefined;
+    const dispositionAction = [...writes]
+      .reverse()
+      .find(
+        (entry) =>
+          entry.interaction.type === "action" &&
+          entry.interaction.action.id !== "update_ticket_notes" &&
+          entry.interaction.action.decisionOptionId,
+      );
+    const disposition =
+      dispositionAction?.interaction.type === "action"
+        ? dispositionAction.interaction.action.decisionOptionId
+        : undefined;
+    const selections = action?.ticketPayload?.reasoning;
+    const sourcesAtSave = evidenceBefore(
+      state,
+      log,
+      saved?.sequence ?? (eventId === HANDOFF ? before : -1),
+      allSources,
+    );
+    const handoff =
+      committed?.interaction.type === "action"
+        ? committed.interaction.action.handoffPayload?.selections
+        : undefined;
+    if (selections || handoff) {
+      reviewed.evaluationMode = "structured-selections";
+      if (selections)
+        reviewed.practicalExample = caseExample(
+          state,
+          eventId,
+          selections,
+          sourcesAtSave,
+        );
+      if (eventId === SCANNER && !reviewed.userChoiceId && disposition) {
+        reviewed.userChoiceId = disposition;
+        reviewed.availableChoiceIds =
+          state.rules.tasks["scanner-ticket-summary"]?.steps
+            .at(-1)
+            ?.outcomes.map((o) => o.id) ?? [];
+        reviewed.comparisonEligible = reviewed.availableChoiceIds.length >= 2;
+        if (reviewed.reasoningAnalysis) {
+          reviewed.reasoningAnalysis.choice = reviewed.userChoiceId;
+          reviewed.reasoningAnalysis.availableChoices =
+            reviewed.availableChoiceIds;
+        }
+      }
+      const reasoningAssessment = selections
+        ? reviewReasoning(eventId, selections, sourcesAtSave)
+        : undefined;
+      const assessed =
+        reasoningAssessment ??
+        (handoff
+          ? reviewHandoffSelections(
+              handoff,
+              evidenceBefore(state, log, before, allSources),
+              committed?.interaction.type === "action"
+                ? committed.interaction.action.handoffPayload?.followUp
+                : undefined,
+            )
+          : undefined);
+      if (!assessed) continue;
+      const boundary =
+        Boolean(committed) &&
+        (eventId === CASE
+          ? committed?.interaction.type === "action" &&
+            committed.interaction.action.id === "escalate_alert" &&
+            [
+              "escalate-with-comparisons",
+              "escalate-identifiers-only",
+              "escalate_alert",
+            ].includes(reviewed.userChoiceId ?? "")
+          : eventId === ACCESS
+            ? [
+                "route-to-owner",
+                "route-with-interim",
+                "route_access_request",
+              ].includes(
+                committed?.interaction.type === "action"
+                  ? (committed.interaction.action.decisionOptionId ??
+                      reviewed.userChoiceId ??
+                      "")
+                  : "",
+              )
+            : eventId === LOGIN
+              ? (committed?.interaction.type === "action"
+                  ? (committed.interaction.action.decisionOptionId ??
+                    "update-saved-password")
+                  : "") === "update-saved-password"
+              : eventId === SCANNER
+                ? ["expected-close", "expected-close-with-monitoring"].includes(
+                    disposition ?? "",
+                  )
+                : true);
+      reviewed.outcomeLabel = boundary
+        ? assessed.verdict
+        : "needs_more_evidence";
+      if (!committed) {
+        reviewed.userChoiceId = null;
+        if (reviewed.reasoningAnalysis)
+          reviewed.reasoningAnalysis.choice = null;
+      }
+      const gaps = [
+        ...assessed.gaps,
+        ...(!committed
+          ? ["No consequential case decision was recorded."]
+          : !boundary
+            ? [
+                "The recorded action does not preserve this case's session, device or authority boundary.",
+              ]
+            : []),
+      ];
+      reviewed.explanation = `Recorded action: ${committed?.interaction.type === "action" ? (committed.interaction.action.decisionOptionId ?? committed.interaction.action.id) : "none"}. Saved selections: ${assessed.selectedLabels.join("; ") || "none"}. ${gaps.length ? gaps.join(" ") : "Essential evidence, uncertainty and next-step groups are supported."}`;
+      if (eventId === LOGIN) {
+        const followup = log.find(
+          (entry) =>
+            entry.sequence > before &&
+            entry.interaction.type === "action" &&
+            entry.interaction.action.eventId === eventId &&
+            entry.interaction.action.ticketPayload?.reasoning?.phase ===
+              "follow-up",
+        );
+        const followupSelections =
+          followup?.interaction.type === "action"
+            ? followup.interaction.action.ticketPayload?.reasoning
+            : undefined;
+        if (followup && followupSelections) {
+          const assessedFollowup = reviewReasoning(
+            eventId,
+            followupSelections,
+            evidenceBefore(state, log, followup.sequence, allSources),
+          );
+          reviewed.followUpReview = {
+            outcomeLabel: assessedFollowup.verdict,
+            selectedLabels: assessedFollowup.selectedLabels,
+            gaps: assessedFollowup.gaps,
+            excerpt:
+              state.artifacts["rivera-result-receipt"]?.body ??
+              "No response receipt recorded.",
+            nextCheck:
+              "Carry the receipt's actual phone/laptop result. Complete any untested phone-app check; reopen on continued retries, an unfamiliar device or unrecognized activity.",
+          };
+        }
+      }
+      reviewed.fieldReviews = reasoningAssessment
+        ? Object.entries(reasoningAssessment.fields).map(([field, value]) => ({
+            field,
+            outcomeLabel: value.verdict,
+            selectedLabels: value.selectedLabels,
+            gaps: value.gaps,
+          }))
+        : [
+            {
+              field: "What carries forward",
+              outcomeLabel: assessed.verdict,
+              selectedLabels: assessed.selectedLabels,
+              gaps: assessed.gaps,
+            },
+          ];
+      reviewed.rubricSignals = reviewed.fieldReviews.map((field) => ({
+        id: field.field,
+        supported: field.outcomeLabel === "supported",
+      }));
+      if (reviewed.reasoningAnalysis) {
+        reviewed.reasoningAnalysis.whatSupportedIt = reviewed.fieldReviews
+          .filter((field) => field.outcomeLabel === "supported")
+          .map((field) => field.field);
+        reviewed.reasoningAnalysis.whatWeakenedIt = gaps;
+        reviewed.reasoningAnalysis.evidenceUsedBeforeDecision = sourcesAtSave;
+      }
+      reviewed.evidenceUsedIds = handoff
+        ? handoffReferences(handoff, sourcesAtSave)
+        : sourcesAtSave;
+      if (reviewed.reasoningAnalysis) {
+        const initialIds = selections
+          ? [
+              ...selections.evidence,
+              ...selections.context,
+              ...selections.uncertainty,
+              ...selections.nextStep,
+              ...(selections.caseFindings?.flatMap((f) => [
+                f.claimId,
+                ...f.rowIds,
+              ]) ?? []),
+            ]
+          : (handoff?.optionIds ?? []);
+        const corrections = log.filter(
+          (entry) =>
+            entry.sequence > before &&
+            entry.interaction.type === "action" &&
+            entry.interaction.action.eventId === eventId &&
+            (entry.interaction.action.ticketPayload?.reasoning ||
+              entry.interaction.action.handoffPayload?.selections),
+        );
+        reviewed.reasoningAnalysis.correctionHistory.push(
+          ...corrections.map((entry) => {
+            const correction =
+              entry.interaction.type === "action"
+                ? entry.interaction.action.ticketPayload?.reasoning
+                : undefined;
+            return {
+              stepId: `revision-${String(entry.sequence)}`,
+              initialOptionIds: initialIds,
+              correctedOptionIds: correction
+                ? [
+                    ...correction.evidence,
+                    ...correction.context,
+                    ...correction.uncertainty,
+                    ...correction.nextStep,
+                    ...(correction.caseFindings?.flatMap((f) => [
+                      f.claimId,
+                      ...f.rowIds,
+                    ]) ?? []),
+                  ]
+                : entry.interaction.type === "action"
+                  ? (entry.interaction.action.handoffPayload?.selections
+                      ?.optionIds ?? [])
+                  : [],
+            };
+          }),
+        );
+      }
+    } else {
+      reviewed.evaluationMode = "limited-text-evaluation";
+      if (reviewed.outcomeLabel === "supported")
+        reviewed.outcomeLabel = "partially_supported";
+      // A legacy text box only proves a note exists, not what its words mean.
+      const textClaims = new Set([
+        "documented_uncertainty",
+        "documented_closure",
+        "kept_open_question",
+      ]);
+      reviewed.rubricSignals = reviewed.rubricSignals.filter(
+        (signal) => !textClaims.has(signal.id),
+      );
+      if (reviewed.reasoningAnalysis) {
+        reviewed.reasoningAnalysis.whatSupportedIt =
+          reviewed.reasoningAnalysis.whatSupportedIt.filter(
+            (id) => !textClaims.has(id),
+          );
+        reviewed.reasoningAnalysis.whatWeakenedIt =
+          reviewed.reasoningAnalysis.whatWeakenedIt.filter(
+            (id) => !textClaims.has(id),
+          );
+      }
+      const legacyGaps =
+        eventId === CASE
+          ? [
+              ...caseGaps,
+              ...(!routeCompared
+                ? [
+                    "Record the session timeline (S-0741 / S-0731) + VPN catalogue NET-VPN-04 comparison, or select both records together in the saved case note.",
+                  ]
+                : []),
+            ]
+          : eventId === SCANNER
+            ? scannerGaps
+            : eventId === HANDOFF
+              ? handoffGaps.map((gap) =>
+                  gap.replace(
+                    "a source-backed case uncertainty note",
+                    "a complete legacy case note (text meaning not evaluated)",
+                  ),
+                )
+              : [];
+      reviewed.explanation = `Recorded action: ${committed?.interaction.type === "action" ? committed.interaction.action.id : "none"}. Limited-text-evaluation: this saved shift has no versioned selections. Inspected records and recorded actions can be traced; the meaning of free text is not evaluated.${legacyGaps.length ? ` Missing legacy fields/references: ${legacyGaps.join("; ")}.` : ""}`;
+    }
+  }
+  const profile: NonNullable<Debrief["decisionReview"]>["profile"] = [
+    "Evidence review",
+    "Handling uncertainty",
+    "Follow-through",
+    "Documentation",
+    "Role boundaries",
+    "Handoff clarity",
+  ].map((dimension) => ({
+    dimension,
+    state: "needs_more_evidence",
+    explanation: "",
   }));
+  const verdictRank = {
+    supported: 2,
+    partially_supported: 1,
+    needs_more_evidence: 0,
+  };
+  for (const item of profile) {
+    const relevant =
+      item.dimension === "Role boundaries"
+        ? decisions.filter((d) => d.decisionId === "finance_access")
+        : item.dimension === "Handoff clarity"
+          ? decisions.filter((d) => d.decisionId === "shift_handoff")
+          : item.dimension === "Follow-through"
+            ? decisions.filter((d) => d.decisionId === "scanner_interruption")
+            : decisions.filter((d) =>
+                [
+                  "suspicious_login",
+                  "scanner_interruption",
+                  "routine_login",
+                ].includes(d.decisionId),
+              );
+    const weakest = Math.min(
+      ...relevant.map((d) => verdictRank[d.outcomeLabel]),
+    );
+    item.state =
+      weakest === 2
+        ? "supported"
+        : weakest === 1
+          ? "partially_supported"
+          : "needs_more_evidence";
+    item.explanation =
+      item.dimension === "Follow-through"
+        ? "Records interruption response and later scanner follow-through, not general prioritization ability."
+        : `Evidence coverage of the saved selections; limited text and later corrections do not establish the original reasoning.${item.dimension === "Documentation" ? ` Gaps: ${relevant.flatMap((d) => d.fieldReviews?.flatMap((f) => f.gaps) ?? (d.decisionId === "suspicious_login" ? caseGaps : d.decisionId === "scanner_interruption" ? scannerGaps : [])).join("; ") || "No structured field gaps recorded."}` : ""}`;
+  }
   return {
     careerVersion: state.careerVersion ?? "unknown",
+    ...(statusReview(state, log)
+      ? { statusReview: statusReview(state, log) }
+      : {}),
     decisions,
     profile,
   };

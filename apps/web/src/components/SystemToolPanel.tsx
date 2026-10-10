@@ -1,3 +1,4 @@
+import { ConfirmAction } from "./tools/ConfirmAction.js";
 import { useState } from "react";
 import type {
   AvailableAction,
@@ -65,48 +66,82 @@ function ActionButtons({
 
   return (
     <div className="context-actions" aria-label="Workplace actions">
-      <button
-        className="action-primary"
-        data-action-id={highlighted.id}
-        data-event-id={highlighted.eventId}
-        disabled={pending || disableAction}
-        key={`${highlighted.id}:${highlighted.eventId}`}
-        onClick={() => {
-          onAction(highlighted);
-        }}
-        type="button"
-      >
-        <span>
-          {mutationState.pendingKey === highlightedKey
-            ? `Saving ${highlighted.label}…`
-            : highlighted.label}
-        </span>
-        <small>{highlighted.description}</small>
-        <small className="action-time">
-          Takes about {highlighted.simulatedMinutes} minutes
-        </small>
-      </button>
+      {["escalate_alert", "dismiss_alert"].includes(highlighted.id) ? (
+        <ConfirmAction
+          key={`${highlighted.id}:${highlighted.eventId}`}
+          label={highlighted.label}
+          actionId={highlighted.id}
+          eventId={highlighted.eventId}
+          pending={mutationState.pendingKey === highlightedKey}
+          disabled={pending || disableAction}
+          onConfirm={() => {
+            onAction(highlighted);
+          }}
+        >
+          <p>{highlighted.description}</p>
+        </ConfirmAction>
+      ) : (
+        <button
+          className="action-primary"
+          data-action-id={highlighted.id}
+          data-event-id={highlighted.eventId}
+          disabled={pending || disableAction}
+          key={`${highlighted.id}:${highlighted.eventId}`}
+          onClick={() => {
+            onAction(highlighted);
+          }}
+          type="button"
+        >
+          <span>
+            {mutationState.pendingKey === highlightedKey
+              ? `Saving ${highlighted.label}…`
+              : highlighted.label}
+          </span>
+          <small>{highlighted.description}</small>
+          <small className="action-time">
+            Takes about {highlighted.simulatedMinutes} minutes
+          </small>
+        </button>
+      )}
       {others.length > 0 ? (
         <details className="more-actions">
           <summary>
             {others.length} other option{others.length === 1 ? "" : "s"}
           </summary>
           <div className="more-actions-grid">
-            {others.map((action) => (
-              <button
-                data-action-id={action.id}
-                data-event-id={action.eventId}
-                disabled={pending || disableAction}
-                key={`${action.id}:${action.eventId}`}
-                onClick={() => {
-                  onAction(action);
-                }}
-                type="button"
-              >
-                <span>{action.label}</span>
-                <small>{action.description}</small>
-              </button>
-            ))}
+            {others.map((action) =>
+              ["escalate_alert", "dismiss_alert"].includes(action.id) ? (
+                <ConfirmAction
+                  key={`${action.id}:${action.eventId}`}
+                  label={action.label}
+                  actionId={action.id}
+                  eventId={action.eventId}
+                  disabled={pending || disableAction}
+                  pending={
+                    mutationState.pendingKey === actionMutationKey(action)
+                  }
+                  onConfirm={() => {
+                    onAction(action);
+                  }}
+                >
+                  <p>{action.description}</p>
+                </ConfirmAction>
+              ) : (
+                <button
+                  data-action-id={action.id}
+                  data-event-id={action.eventId}
+                  disabled={pending || disableAction}
+                  key={`${action.id}:${action.eventId}`}
+                  onClick={() => {
+                    onAction(action);
+                  }}
+                  type="button"
+                >
+                  <span>{action.label}</span>
+                  <small>{action.description}</small>
+                </button>
+              ),
+            )}
           </div>
         </details>
       ) : null}
@@ -133,6 +168,12 @@ function WorkInteraction({
   onOpenArtifact?: ((id: string) => Promise<unknown>) | undefined;
   mutationState?: MutationState;
 }) {
+  const converted = actions.filter(
+    (action) =>
+      ["route_access_request", "resolve_login_help"].includes(action.id) &&
+      view.reasoningOptions?.[action.eventId]?.length,
+  );
+  actions = actions.filter((action) => !converted.includes(action));
   const taskActions = actions.filter(({ taskId }) => taskId !== undefined);
   const tasks = taskActions.flatMap((action) => {
     const task = view.tasks.find(
@@ -154,6 +195,16 @@ function WorkInteraction({
   const ordinary = actions.filter(({ taskId }) => taskId === undefined);
   return (
     <>
+      {converted.map((action) => (
+        <TicketComposer
+          key={action.eventId}
+          view={view}
+          action={action}
+          onAction={onAction}
+          onOpenArtifact={onOpenArtifact}
+          mutationState={mutationState}
+        />
+      ))}
       {uniqueTasks.map((task) => (
         <TaskInteraction
           key={`${task.eventId}:${task.id}`}
@@ -261,15 +312,6 @@ export function SystemToolPanel({
     return (
       <div className="tool-panel" data-system={systemId}>
         <ToolChrome systemId={systemId} />
-        {selectedEventId && onWorkplaceInteraction ? (
-          <CaseEvidence
-            key={selectedEventId}
-            view={view}
-            eventId={selectedEventId}
-            onInspect={onWorkplaceInteraction}
-            pending={Boolean(mutationState.pendingKey)}
-          />
-        ) : null}
         <EmailTool
           artifacts={eventArtifacts}
           onOpenArtifact={openArtifact}
@@ -277,6 +319,26 @@ export function SystemToolPanel({
           selectedId={selectedArtifactId}
           mutationState={mutationState}
         />
+        {selectedEventId && onWorkplaceInteraction ? (
+          <section
+            className="workspace-related-sources"
+            aria-label="Related case sources"
+          >
+            <h4>Related case sources</h4>
+            <CaseEvidence
+              key={selectedEventId}
+              view={view}
+              eventId={selectedEventId}
+              onInspect={onWorkplaceInteraction}
+              bodyShownElsewhere={
+                selectedArtifactId
+                  ? [selectedArtifactId]
+                  : eventArtifacts.slice(0, 1).map(({ id }) => id)
+              }
+              pending={Boolean(mutationState.pendingKey)}
+            />
+          </section>
+        ) : null}
         <WorkInteraction
           onOpenArtifact={openArtifact}
           actions={workInteractionActions(actions)}
@@ -349,18 +411,22 @@ export function SystemToolPanel({
             pending={Boolean(mutationState.pendingKey)}
           />
         ) : null}
-        <RecordQueryTool
-          view={view}
-          queryAction={view.availableActions.find(
-            ({ id, eventId }) =>
-              id === "query_records" && eventId === selectedEventId,
-          )}
-          onQueryRecords={(action, payload) => {
-            onAction({ ...action, queryPayload: payload });
-          }}
-          onInspectRecord={onWorkplaceInteraction}
-          mutationState={mutationState}
-        />
+        {view.availableActions.some(
+          (a) => a.id === "query_records" && a.eventId === selectedEventId,
+        ) ? (
+          <RecordQueryTool
+            view={view}
+            queryAction={view.availableActions.find(
+              ({ id, eventId }) =>
+                id === "query_records" && eventId === selectedEventId,
+            )}
+            onQueryRecords={(action, payload) => {
+              onAction({ ...action, queryPayload: payload });
+            }}
+            onInspectRecord={onWorkplaceInteraction}
+            mutationState={mutationState}
+          />
+        ) : null}
       </div>
     );
   }
@@ -391,6 +457,7 @@ export function SystemToolPanel({
           view={view}
         />
         <GuideSearch
+          eventId={selectedEventId}
           canonicalSearchAction={
             searchAction && !searchAction.taskId ? searchAction : undefined
           }
@@ -426,6 +493,7 @@ export function SystemToolPanel({
               view={view}
               action={action}
               onAction={onAction}
+              onOpenArtifact={openArtifact}
               pending={Boolean(mutationState.pendingKey)}
             />
           ))}
@@ -442,22 +510,29 @@ export function SystemToolPanel({
           {...(onTaskAttempt ? { onTaskAttempt } : {})}
           view={view}
         />
-        {selectedEventId && onWorkplaceInteraction ? (
-          <CaseEvidence
-            key={selectedEventId}
-            view={view}
-            eventId={selectedEventId}
-            onInspect={onWorkplaceInteraction}
-            pending={Boolean(mutationState.pendingKey)}
-          />
-        ) : null}
         <TeamChatTool
+          eventId={selectedEventId}
           view={view}
           onOpenArtifact={openArtifact}
           mutationState={mutationState}
           actions={actions}
           onAction={onAction}
         />
+        {selectedEventId && onWorkplaceInteraction ? (
+          <section
+            className="workspace-related-sources"
+            aria-label="Related case sources"
+          >
+            <h4>Related case sources</h4>
+            <CaseEvidence
+              key={selectedEventId}
+              view={view}
+              eventId={selectedEventId}
+              onInspect={onWorkplaceInteraction}
+              pending={Boolean(mutationState.pendingKey)}
+            />
+          </section>
+        ) : null}
       </div>
     );
   }
@@ -471,7 +546,20 @@ export function SystemToolPanel({
       <div className="tool-panel" data-system={systemId}>
         <ToolChrome systemId={systemId} />
         {actions
-          .filter(({ id }) => id === "document_ticket")
+          .filter(
+            (action) =>
+              action.id === "document_ticket" ||
+              (action.id === "update_ticket_notes" &&
+                Boolean(
+                  view.structuredTickets?.[`ticket-${action.eventId}`]
+                    ?.reasoning,
+                ) &&
+                !actions.some(
+                  (other) =>
+                    other.id === "document_ticket" &&
+                    other.eventId === action.eventId,
+                )),
+          )
           .map((action) => (
             <TicketComposer
               key={action.eventId}
@@ -482,13 +570,15 @@ export function SystemToolPanel({
                   id === "update_ticket_notes" && eventId === action.eventId,
               )}
               onAction={onAction}
+              onOpenArtifact={openArtifact}
               mutationState={mutationState}
             />
           ))}
         <WorkInteraction
           onOpenArtifact={openArtifact}
           actions={workInteractionActions(actions).filter(
-            ({ id }) => id !== "document_ticket",
+            ({ id }) =>
+              id !== "document_ticket" && id !== "update_ticket_notes",
           )}
           {...(highlightActionId ? { highlightActionId } : {})}
           onAction={onAction}
@@ -503,6 +593,9 @@ export function SystemToolPanel({
             eventId={selectedEventId}
             onInspect={onWorkplaceInteraction}
             pending={Boolean(mutationState.pendingKey)}
+            comparisonInNote={Boolean(
+              view.reasoningOptions?.[selectedEventId]?.length,
+            )}
           />
         ) : null}
         <details className="case-files-disclosure">

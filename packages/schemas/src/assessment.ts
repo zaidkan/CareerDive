@@ -60,38 +60,127 @@ export const DebriefSchema = z.object({
     nextAction: z.string(),
   }),
   evidenceIds: z.array(z.string()),
-  decisionReview: z.object({
-    careerVersion: z.string(),
-    decisions: z.array(z.object({
-      decisionId: z.string(),
-      userChoiceId: z.string().nullable(),
-      availableChoiceIds: z.array(z.string()),
-      comparisonEligible: z.boolean(),
-      evidenceUsedIds: z.array(z.string()),
-      rubricSignals: z.array(z.object({ id: z.string(), supported: z.boolean() })),
-      outcomeLabel: z.enum(["supported", "partially_supported", "needs_more_evidence"]),
-      explanation: z.string(),
-      reasoningAnalysis: z.object({
-        decisionId: z.string(),
-        choice: z.string().nullable(),
-        availableChoices: z.array(z.string()),
-        evidenceUsedBeforeDecision: z.array(z.string()),
-        whatSupportedIt: z.array(z.string()),
-        whatWeakenedIt: z.array(z.string()),
-        callbackText: z.array(z.string()),
-        correctionHistory: z.array(z.object({
-          stepId: z.string(),
-          initialOptionIds: z.array(z.string()),
-          correctedOptionIds: z.array(z.string()).optional(),
-        })),
-      }).optional(),
-      cohort: z.discriminatedUnion("status", [
-        z.object({ status: z.literal("ready"), sampleSize: z.number().int(), counts: z.record(z.string(), z.number().int()), percentages: z.record(z.string(), z.number().int()) }),
-        z.object({ status: z.literal("insufficient") }),
-        z.object({ status: z.literal("unavailable") }),
-      ]),
-    })),
-    profile: z.array(z.object({ dimension: z.string(), state: z.enum(["strong", "developing", "needs_more_evidence"]), explanation: z.string() })),
-  }).optional(),
+  decisionReview: z
+    .object({
+      careerVersion: z.string(),
+      statusReview: z
+        .object({
+          message: z.string(),
+          outcomeLabel: z.enum([
+            "supported",
+            "partially_supported",
+            "needs_more_evidence",
+          ]),
+          gaps: z.array(z.string()),
+          corrections: z.array(z.string()),
+          claim: z.string().optional(),
+          excerpt: z.string().optional(),
+          sourceTitle: z.string().optional(),
+          nextCheck: z.string(),
+        })
+        .optional(),
+      decisions: z.array(
+        z.object({
+          decisionId: z.string(),
+          userChoiceId: z.string().nullable(),
+          availableChoiceIds: z.array(z.string()),
+          comparisonEligible: z.boolean(),
+          evidenceUsedIds: z.array(z.string()),
+          rubricSignals: z.array(
+            z.object({ id: z.string(), supported: z.boolean() }),
+          ),
+          outcomeLabel: z.enum([
+            "supported",
+            "partially_supported",
+            "needs_more_evidence",
+          ]),
+          explanation: z.string(),
+          evaluationMode: z
+            .enum(["structured-selections", "limited-text-evaluation"])
+            .optional(),
+          fieldReviews: z
+            .array(
+              z.object({
+                field: z.string(),
+                outcomeLabel: z.enum([
+                  "supported",
+                  "partially_supported",
+                  "needs_more_evidence",
+                ]),
+                selectedLabels: z.array(z.string()),
+                gaps: z.array(z.string()),
+              }),
+            )
+            .optional(),
+          followUpReview: z
+            .object({
+              outcomeLabel: z.enum([
+                "supported",
+                "partially_supported",
+                "needs_more_evidence",
+              ]),
+              selectedLabels: z.array(z.string()),
+              gaps: z.array(z.string()),
+              excerpt: z.string(),
+              nextCheck: z.string(),
+            })
+            .optional(),
+          practicalExample: z
+            .object({
+              response: z.string().optional(),
+              claim: z.string(),
+              sourceId: z.string(),
+              sourceTitle: z.string(),
+              excerpt: z.string(),
+              referenceStatus: z.enum(["cited", "inspected"]),
+              support: z.string(),
+              nextCheck: z.string(),
+            })
+            .optional(),
+          reasoningAnalysis: z
+            .object({
+              decisionId: z.string(),
+              choice: z.string().nullable(),
+              availableChoices: z.array(z.string()),
+              evidenceUsedBeforeDecision: z.array(z.string()),
+              whatSupportedIt: z.array(z.string()),
+              whatWeakenedIt: z.array(z.string()),
+              callbackText: z.array(z.string()),
+              correctionHistory: z.array(
+                z.object({
+                  stepId: z.string(),
+                  initialOptionIds: z.array(z.string()),
+                  correctedOptionIds: z.array(z.string()).optional(),
+                }),
+              ),
+            })
+            .optional(),
+          cohort: z.discriminatedUnion("status", [
+            z.object({
+              status: z.literal("ready"),
+              sampleSize: z.number().int(),
+              counts: z.record(z.string(), z.number().int()),
+              percentages: z.record(z.string(), z.number().int()),
+            }),
+            z.object({ status: z.literal("insufficient") }),
+            z.object({ status: z.literal("unavailable") }),
+          ]),
+        }),
+      ),
+      profile: z.array(
+        z.object({
+          dimension: z.string(),
+          state: z.enum([
+            "strong",
+            "developing",
+            "supported",
+            "partially_supported",
+            "needs_more_evidence",
+          ]),
+          explanation: z.string(),
+        }),
+      ),
+    })
+    .optional(),
 });
 export type Debrief = z.infer<typeof DebriefSchema>;

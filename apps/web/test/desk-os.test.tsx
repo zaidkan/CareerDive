@@ -3,7 +3,6 @@ import "@testing-library/jest-dom/vitest";
 import {
   act,
   cleanup,
-  fireEvent,
   render,
   screen,
   waitFor,
@@ -194,7 +193,6 @@ function makeClient(
 }
 
 async function enterDesk(user: ReturnType<typeof userEvent.setup>) {
-
   await user.click(
     await screen.findByRole(
       "button",
@@ -205,10 +203,8 @@ async function enterDesk(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole("button", { name: "Sit at desk" }));
   await user.click(await screen.findByTestId("login-surface"));
   await user.type(await screen.findByLabelText(/^Password$/i), "FirstDay!");
-  await user.click(
-    await screen.findByRole("button", { name: /^Sign in$/i }),
-  );
-  await screen.findByRole("heading", { name: "Your workstation" });
+  await user.click(await screen.findByRole("button", { name: /^Sign in$/i }));
+  await screen.findByRole("navigation", { name: "Workstation tools" });
 }
 
 function deskProps(view: ClientView) {
@@ -276,7 +272,7 @@ describe("Desk OS mutation coordination", () => {
     render(<App client={makeClient(initialView, { performAction })} />);
     await enterDesk(user);
     await user.click(
-      await screen.findByRole("tab", { name: /^Alerts/ }, { timeout: 6000 }),
+      await screen.findByRole("button", { name: /^Alerts/ }, { timeout: 6000 }),
     );
 
     const actionControls = screen.getByLabelText("Workplace actions");
@@ -321,7 +317,16 @@ describe("Desk OS mutation coordination", () => {
         },
       ],
     });
-    const createSession = vi.fn().mockResolvedValueOnce({ sessionId: previousView.sessionId, view: previousView }).mockResolvedValueOnce({ sessionId: assessedView.sessionId, view: assessedView });
+    const createSession = vi
+      .fn()
+      .mockResolvedValueOnce({
+        sessionId: previousView.sessionId,
+        view: previousView,
+      })
+      .mockResolvedValueOnce({
+        sessionId: assessedView.sessionId,
+        view: assessedView,
+      });
     const { rerender } = render(
       <App
         client={makeClient(previousView, {
@@ -332,7 +337,7 @@ describe("Desk OS mutation coordination", () => {
     );
     await enterDesk(user);
     await user.click(
-      await screen.findByRole("tab", { name: /^Alerts/ }, { timeout: 6000 }),
+      await screen.findByRole("button", { name: /^Alerts/ }, { timeout: 6000 }),
     );
     await user.click(
       within(screen.getByLabelText("Workplace actions")).getByRole("button", {
@@ -340,7 +345,9 @@ describe("Desk OS mutation coordination", () => {
       }),
     );
     rerender(<App client={makeClient(assessedView, { createSession })} />);
-    await waitFor(() => { expect(createSession).toHaveBeenCalledTimes(2); });
+    await waitFor(() => {
+      expect(createSession).toHaveBeenCalledTimes(2);
+    });
     await screen.findByRole("button", { name: "Security Operations" });
 
     await act(async () => {
@@ -349,7 +356,7 @@ describe("Desk OS mutation coordination", () => {
     });
     await enterDesk(user);
     await user.click(
-      await screen.findByRole("tab", { name: /^Alerts/ }, { timeout: 6000 }),
+      await screen.findByRole("button", { name: /^Alerts/ }, { timeout: 6000 }),
     );
 
     expect(
@@ -387,7 +394,16 @@ describe("Desk OS mutation coordination", () => {
         },
       ],
     });
-    const createSession = vi.fn().mockResolvedValueOnce({ sessionId: previousView.sessionId, view: previousView }).mockResolvedValueOnce({ sessionId: assessedView.sessionId, view: assessedView });
+    const createSession = vi
+      .fn()
+      .mockResolvedValueOnce({
+        sessionId: previousView.sessionId,
+        view: previousView,
+      })
+      .mockResolvedValueOnce({
+        sessionId: assessedView.sessionId,
+        view: assessedView,
+      });
     const performWorkplaceInteraction = vi
       .fn<SimulationClient["performWorkplaceInteraction"]>()
       .mockImplementationOnce(() => previousOpen.promise)
@@ -404,7 +420,7 @@ describe("Desk OS mutation coordination", () => {
         })}
       />,
     );
-  
+
     await user.click(
       await screen.findByRole(
         "button",
@@ -418,7 +434,9 @@ describe("Desk OS mutation coordination", () => {
     await user.click(screen.getByRole("button", { name: "Exit break room" }));
 
     rerender(<App client={makeClient(assessedView, { createSession })} />);
-    await waitFor(() => { expect(createSession).toHaveBeenCalledTimes(2); });
+    await waitFor(() => {
+      expect(createSession).toHaveBeenCalledTimes(2);
+    });
     await screen.findByRole("button", { name: "Security Operations" });
 
     await act(async () => {
@@ -438,7 +456,7 @@ describe("Desk OS mutation coordination", () => {
     });
 
     await enterDesk(user);
-    await user.click(screen.getByRole("tab", { name: /^Alerts/ }));
+    await user.click(screen.getByRole("button", { name: /^Alerts/ }));
     expect(
       screen.getByRole("heading", { name: "Current assessed case" }),
     ).toBeVisible();
@@ -455,7 +473,7 @@ describe("Desk OS mutation coordination", () => {
       .mockResolvedValueOnce(reviewedView);
     render(<App client={makeClient(initialView, { performAction })} />);
     await enterDesk(user);
-    await user.click(screen.getByRole("tab", { name: /^Alerts/ }));
+    await user.click(screen.getByRole("button", { name: /^Alerts/ }));
     await user.click(
       within(screen.getByLabelText("Workplace actions")).getByRole("button", {
         name: /Review alert/i,
@@ -527,9 +545,9 @@ describe("Desk OS mutation coordination", () => {
         <App client={makeClient(initialView, { respondToNotification })} />,
       );
       await enterDesk(user);
-      await user.click(screen.getByRole("tab", { name: "Dashboard" }));
+      await user.click(screen.getByRole("button", { name: "Alerts" }));
       expect(
-        screen.getByRole("heading", { name: "Your workstation" }),
+        screen.getByRole("navigation", { name: "Workstation tools" }),
       ).toBeVisible();
 
       await user.click(screen.getByRole("button", { name: "Handle now" }));
@@ -542,11 +560,10 @@ describe("Desk OS mutation coordination", () => {
         expect(respondToNotification).toHaveBeenCalledTimes(2);
       });
       expect(
-        screen.getByRole("heading", { name: "Your workstation" }),
+        screen.getByRole("navigation", { name: "Workstation tools" }),
       ).toBeVisible();
-      expect(screen.getByRole("tab", { name: "Email" })).toHaveAttribute(
-        "aria-selected",
-        "false",
+      expect(screen.getByRole("button", { name: "Email" })).not.toHaveAttribute(
+        "aria-current",
       );
       expect(
         screen.queryByRole("heading", { name: "Handle-linked email" }),
@@ -596,13 +613,13 @@ describe("Desk OS mutation coordination", () => {
       .mockImplementationOnce(() => retry.promise);
     render(<App client={makeClient(initialView, { respondToNotification })} />);
     await enterDesk(user);
-    await user.click(screen.getByRole("tab", { name: "Dashboard" }));
+    await user.click(screen.getByRole("button", { name: "Alerts" }));
     await user.click(screen.getByRole("button", { name: "Handle now" }));
 
     const error = await screen.findByRole("alert");
     await user.click(within(error).getByRole("button", { name: "Retry" }));
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.getByText("Saving…")).toBeVisible();
+    expect(screen.getByText("Recording your action…")).toBeVisible();
 
     await act(async () => {
       retry.resolve(handledView);
@@ -645,7 +662,7 @@ describe("Desk OS mutation coordination", () => {
     const firstError = await screen.findByRole("alert");
     await user.click(within(firstError).getByRole("button", { name: "Retry" }));
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.getByText("Saving…")).toBeVisible();
+    expect(screen.getByText("Recording your action…")).toBeVisible();
 
     await act(async () => {
       retry.reject(new Error("network down"));
@@ -690,7 +707,7 @@ describe("Desk OS mutation coordination", () => {
     const performAction = vi.fn(() => Promise.resolve(savedView));
     render(<App client={makeClient(initialView, { performAction })} />);
     await enterDesk(user);
-    await user.click(screen.getByRole("tab", { name: "Tickets" }));
+    await user.click(screen.getByRole("button", { name: "Tickets" }));
     await user.type(
       screen.getByLabelText("Investigation notes"),
       "Checked device inventory",
@@ -700,13 +717,13 @@ describe("Desk OS mutation coordination", () => {
     );
 
     expect(await screen.findByText("Investigation notes saved.")).toBeVisible();
-    await user.click(screen.getByRole("tab", { name: "Dashboard" }));
+    await user.click(screen.getByRole("button", { name: "Alerts" }));
     expect(screen.getByText("Investigation notes saved.")).toBeVisible();
   });
 });
 
 describe("Desk OS canonical state rendering", () => {
-  it("uses relative deadlines and keeps resolved work in collapsed history", async () => {
+  it("uses relative deadlines and keeps recorded work in the case picker", async () => {
     const user = userEvent.setup();
     const base = makeView();
     const view = makeView({
@@ -751,23 +768,16 @@ describe("Desk OS canonical state rendering", () => {
       </OsSessionProvider>,
     );
 
-    const rail = screen.getByRole("complementary", { name: "Current shift" });
-    expect(within(rail).getByText("2 open")).toBeVisible();
+    const picker = screen.getByRole("combobox", { name: "Current case" });
+    expect(
+      within(picker).getByRole("option", { name: "Resolved case · recorded" }),
+    ).toBeInTheDocument();
+    expect(
+      within(picker).getByRole("option", { name: "Expired case · recorded" }),
+    ).toBeInTheDocument();
     expect(screen.getAllByText("Due in 170m").length).toBeGreaterThan(0);
-    expect(
-      within(rail).queryByRole("button", { name: /Resolved case/i }),
-    ).toBeNull();
-    expect(
-      within(rail).queryByRole("button", { name: /Expired case/i }),
-    ).toBeNull();
-    expect(within(rail).getByText("Recorded outcomes (2)")).toBeVisible();
     expect(screen.queryByText("Hidden pending case")).toBeNull();
-
-    await user.click(
-      within(screen.getByLabelText("Alerts items")).getByRole("button", {
-        name: /Escalated case/i,
-      }),
-    );
+    await user.selectOptions(picker, "escalated-1");
     expect(screen.queryByText("Due in 0m")).toBeNull();
 
     const status = screen.getByLabelText("Workstation status");
@@ -803,11 +813,13 @@ describe("Desk OS canonical state rendering", () => {
         "alert-2": "Second canonical note",
       },
     });
+    let focusEventId = "alert-1";
     const renderSystem = () => (
       <SystemApp
         guidance={null}
         onAction={() => undefined}
         systemId="ticket_queue"
+        focusEventId={focusEventId}
         view={view}
       />
     );
@@ -825,7 +837,8 @@ describe("Desk OS canonical state rendering", () => {
       "Unsaved first draft",
     );
 
-    await user.click(screen.getByRole("button", { name: /Second case/i }));
+    focusEventId = "alert-2";
+    rendered.rerender(renderSystem());
     expect(screen.getByLabelText("Investigation notes")).toHaveValue(
       "Second canonical note",
     );
@@ -839,7 +852,8 @@ describe("Desk OS canonical state rendering", () => {
       "Second refreshed note",
     );
 
-    await user.click(screen.getByRole("button", { name: /Review alert/i }));
+    focusEventId = "alert-1";
+    rendered.rerender(renderSystem());
     expect(screen.getByLabelText("Investigation notes")).toHaveValue(
       "Unsaved first draft",
     );
@@ -951,7 +965,7 @@ describe("Desk OS canonical state rendering", () => {
       });
     render(<App client={makeClient(initialView, { submitTaskAttempt })} />);
     await enterDesk(user);
-    await user.click(screen.getByRole("tab", { name: /^Alerts/ }));
+    await user.click(screen.getByRole("button", { name: /^Alerts/ }));
     await user.click(screen.getByLabelText("Device identity"));
     await user.click(screen.getByRole("button", { name: "Save findings" }));
 
@@ -965,10 +979,13 @@ describe("Desk OS canonical state rendering", () => {
 
     const finalFeedback = await screen.findByText("Case update saved.");
     const feedbackPanel = finalFeedback.closest(".mutation-status");
-    if (!(feedbackPanel instanceof HTMLElement)) throw new Error("Missing feedback panel");
+    if (!(feedbackPanel instanceof HTMLElement))
+      throw new Error("Missing feedback panel");
     expect(feedbackPanel).toHaveFocus();
     await user.click(screen.getByText("Update details"));
-    expect(within(feedbackPanel).getByText("Evidence documented.")).toBeVisible();
+    expect(
+      within(feedbackPanel).getByText("Evidence documented."),
+    ).toBeVisible();
   });
 });
 
@@ -1051,7 +1068,7 @@ describe("notification focus parity", () => {
 });
 
 describe("Desk OS selection, task, and expansion reliability", () => {
-  it("moves focus to an app heading when opened from the Dashboard", async () => {
+  it("moves focus to the case heading when a tool opens", async () => {
     const user = userEvent.setup();
     const props = deskProps(makeView());
     const rendered = render(
@@ -1065,11 +1082,9 @@ describe("Desk OS selection, task, and expansion reliability", () => {
       </OsSessionProvider>,
     );
 
-    await user.click(
-      screen.getByRole("button", { name: /Tickets Case notes/i }),
-    );
+    await user.click(screen.getByRole("button", { name: "Tickets" }));
 
-    expect(screen.getByRole("heading", { name: "Tickets" })).toHaveFocus();
+    expect(screen.getByRole("heading", { name: "Review alert" })).toHaveFocus();
   });
 
   it("scopes selected events and artifacts per system and moves focus semantically", async () => {
@@ -1114,24 +1129,29 @@ describe("Desk OS selection, task, and expansion reliability", () => {
         <DeskOs {...deskProps(view)} />
       </OsSessionProvider>,
     );
-    await user.click(screen.getByRole("tab", { name: /^Alerts/ }));
-    await user.click(
-      within(screen.getByLabelText("Alerts items")).getByRole("button", {
-        name: /Second alert/i,
-      }),
+    await user.click(screen.getByRole("button", { name: /^Alerts/ }));
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Current case" }),
+      "alert-2",
     );
     await user.click(screen.getByRole("button", { name: /Alert A-2048/i }));
     expect(screen.getByRole("heading", { name: "Alert A-2048" })).toHaveFocus();
 
-    await user.click(screen.getByRole("tab", { name: "Email" }));
+    await user.click(screen.getByRole("button", { name: "Email" }));
     expect(screen.getByRole("heading", { name: "Second alert" })).toHaveFocus();
-    await user.click(within(screen.getByLabelText("Email items")).getByRole("button", { name: /Handoff email/ }));
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Current case" }),
+      "email-1",
+    );
     await user.click(
       screen.getByRole("button", { name: /Night shift handoff/i }),
     );
 
-    await user.click(screen.getByRole("tab", { name: /^Alerts/ }));
-    await user.click(within(screen.getByLabelText("Alerts items")).getByRole("button", { name: /Second alert/ }));
+    await user.click(screen.getByRole("button", { name: /^Alerts/ }));
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Current case" }),
+      "alert-2",
+    );
     expect(screen.getByRole("heading", { name: "Second alert" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Alert A-2048" })).toBeVisible();
   });
@@ -1209,100 +1229,5 @@ describe("Desk OS selection, task, and expansion reliability", () => {
     ).toBeNull();
     await user.click(first(controls));
     expect(onOsFullscreen).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("Desk OS W1 window shell", () => {
-  const pinned = (name: string) => within(screen.getByRole("group", { name: "Pinned apps" })).getByRole("button", { name });
-  const taskWindow = (name: string) => within(screen.getByRole("group", { name: "Open windows" })).getByRole("button", { name });
-
-  it("opens, focuses, drags once, minimizes, restores, maximizes, and closes without canonical calls", async () => {
-    const user = userEvent.setup();
-    const onAction = vi.fn();
-    const onTaskAttempt = vi.fn();
-    const onNotification = vi.fn();
-    const onWorkplaceInteraction = vi.fn();
-    const { container } = render(
-      <OsSessionProvider>
-        <DeskOs
-          {...deskProps(makeView())}
-          onAction={onAction}
-          onTaskAttempt={onTaskAttempt}
-          onNotification={onNotification}
-          onWorkplaceInteraction={onWorkplaceInteraction}
-        />
-      </OsSessionProvider>,
-    );
-    const frame = (id: string) => container.querySelector<HTMLElement>(`[data-window-id="${id}"]`);
-    expect(frame("window-1")).toHaveAttribute("data-maximized", "true");
-    await user.click(screen.getByRole("button", { name: "Restore Browser" }));
-    expect(frame("window-1")).toHaveAttribute("data-maximized", "false");
-    const bar = frame("window-1")?.querySelector<HTMLElement>(".os-window-bar");
-    expect(bar).toBeTruthy();
-    if (!bar) throw new Error("Window bar missing");
-    const pointer = (type: string, x: number, y: number) => {
-      const event = new MouseEvent(type, { bubbles: true, button: 0, clientX: x, clientY: y });
-      Object.defineProperty(event, "pointerId", { value: 1 });
-      fireEvent(bar, event);
-    };
-    pointer("pointerdown", 100, 100);
-    pointer("pointermove", 160, 140);
-    expect(frame("window-1")?.style.transform).toBe("translate(60px, 40px)");
-    expect(frame("window-1")?.style.left).toBe("24px");
-    pointer("pointerup", 160, 140);
-    expect(frame("window-1")?.style.left).toBe("84px");
-    expect(frame("window-1")?.style.top).toBe("60px");
-    await user.click(screen.getByRole("button", { name: "Maximize Browser" }));
-    expect(frame("window-1")).toHaveAttribute("data-maximized", "true");
-    await user.click(screen.getByRole("button", { name: "Restore Browser" }));
-    expect(frame("window-1")?.style.left).toBe("84px");
-
-    await user.click(pinned("Files"));
-    expect(frame("window-2")).toHaveAttribute("data-app", "files");
-    expect(Number(frame("window-2")?.style.zIndex)).toBeGreaterThan(Number(frame("window-1")?.style.zIndex));
-    await user.click(taskWindow("Browser, background"));
-    expect(frame("window-1")).toHaveAttribute("data-active", "true");
-    await user.click(taskWindow("Browser, active"));
-    expect(frame("window-1")).toBeNull();
-    expect(taskWindow("Browser, minimized")).toHaveAttribute("data-minimized", "true");
-    await user.click(taskWindow("Browser, minimized"));
-    expect(frame("window-1")).toHaveAttribute("data-active", "true");
-    await user.click(screen.getByRole("button", { name: "Close Browser" }));
-    expect(frame("window-1")).toBeNull();
-    expect(taskWindow("Files, active")).toBeVisible();
-    expect(onAction).not.toHaveBeenCalled();
-    expect(onTaskAttempt).not.toHaveBeenCalled();
-    expect(onNotification).not.toHaveBeenCalled();
-    expect(onWorkplaceInteraction).not.toHaveBeenCalled();
-  });
-
-  it("keeps singletons, opens two independent Browsers, and refuses fifth window", async () => {
-    const user = userEvent.setup();
-    const onAction = vi.fn();
-    const { container } = render(<OsSessionProvider><DeskOs {...deskProps(makeView())} onAction={onAction} /></OsSessionProvider>);
-    const frames = () => container.querySelectorAll("[data-window-id]");
-    await user.click(pinned("Files"));
-    await user.click(pinned("Files"));
-    expect(frames()).toHaveLength(2);
-    await user.click(pinned("Notes"));
-    await user.click(pinned("Notes"));
-    expect(frames()).toHaveLength(3);
-    await user.click(taskWindow("Notes, active"));
-    await user.click(taskWindow("Files, active"));
-    await user.click(taskWindow("Browser, active"));
-    await user.click(screen.getByRole("button", { name: "Open Browser" }));
-    expect(frames()).toHaveLength(1);
-    expect(frames()[0]).toHaveAttribute("data-window-id", "window-4");
-    expect(taskWindow("Browser 2, active")).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Company intranet" }));
-    expect(within(frames()[0] as HTMLElement).getByRole("heading", { name: "Company intranet" })).toBeVisible();
-    await user.click(taskWindow("Browser, minimized"));
-    expect(within(container.querySelector('[data-window-id="window-1"]') as HTMLElement).getByLabelText("Address bar")).toHaveValue("verdaly://ops");
-    await user.click(screen.getByRole("button", { name: "Minimize Browser" }));
-    await user.click(taskWindow("Browser 2, active"));
-    await user.click(screen.getByRole("button", { name: "Open Browser" }));
-    expect(screen.getByRole("status")).toHaveTextContent("Up to 4 windows can be open at once. Close one to open another.");
-    expect(within(screen.getByRole("group", { name: "Open windows" })).getAllByRole("button")).toHaveLength(4);
-    expect(onAction).not.toHaveBeenCalled();
   });
 });

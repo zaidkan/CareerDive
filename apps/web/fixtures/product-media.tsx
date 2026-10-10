@@ -12,6 +12,8 @@ import { OsSessionProvider } from "../src/world/deskOs/osSession.js";
 import { RoomCanvas } from "../src/world/RoomCanvas.js";
 import "../src/foundation.css";
 import "../src/styles.css";
+import "../src/desk-os-polish.css";
+import "../src/world/deskOs/workspace.css";
 import "./product-media.css";
 
 type Scene = "a-01" | "a-02" | "a-03" | "a-04" | "a-05" | "a-06" |

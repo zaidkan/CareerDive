@@ -1,3 +1,4 @@
+import { ReasoningGroupSchema } from "./reasoning.js";
 import { z } from "zod";
 
 import { AvailableActionSchema } from "./actions.js";
@@ -58,6 +59,23 @@ export const ClientViewSchema = z.object({
   currentLocation: LocationSchema,
   events: z.array(ClientEventSchema),
   availableActions: z.array(AvailableActionSchema),
+  statusOptions: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        options: z.array(
+          z.object({
+            id: z.string(),
+            label: z.string(),
+            sourceId: z.string().optional(),
+            excerpt: z.string().optional(),
+          }),
+        ),
+      }),
+    )
+    .optional(),
+  caseActions: z.array(AvailableActionSchema).optional(),
   operationalMessages: z.array(z.string()),
   consequenceUpdates: z
     .array(
@@ -73,6 +91,21 @@ export const ClientViewSchema = z.object({
   artifacts: z.array(ClientArtifactSchema),
   alertRecords: z.array(AlertRecordSchema).optional(),
   ticketNotes: z.record(z.string(), z.string()),
+  reasoningOptions: z
+    .record(z.string(), z.array(ReasoningGroupSchema))
+    .optional(),
+  handoffOptions: z
+    .object({
+      stateKey: z.string(),
+      options: z.array(
+        z.object({
+          id: z.string(),
+          label: z.string(),
+          sourceArtifactIds: z.array(z.string()),
+        }),
+      ),
+    })
+    .optional(),
   structuredTickets: z.record(z.string(), StructuredTicketSchema).optional(),
   teamMessages: z
     .array(
