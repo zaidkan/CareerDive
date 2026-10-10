@@ -48,3 +48,18 @@ GEMINI.md
 docs/product/workplace-systems-overhaul-design.md
 docs/product/workplace-systems-overhaul-plan.md
 docs/planning/desk-os-audit/
+
+# Local pre-launch QA scratch and generated assets.
+/qa-debug-redirect.mjs
+/qa-howitworks-shots.mjs
+/qa-nav-fix.mjs
+/qa-phase1a-redirect.mjs
+/qa-phase1b-faq.mjs
+/qa-ui0-faq.mjs
+/qa-ui2-home.mjs
+/qa-ui2-probe.mjs
+/qa-workshop-artifacts.mjs
+/qa-shots-ui2/
+/brag-output/
+/launch-film-assets/
+/logs/
