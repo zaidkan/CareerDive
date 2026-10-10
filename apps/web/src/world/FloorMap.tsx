@@ -85,6 +85,7 @@ function expandAxisPath(points: Point[]): Point[] {
 
 export function FloorMap({
   onEnterRoom,
+  onRequestFullscreen,
   highlightRoomId,
   hint,
   stepLabel,
@@ -92,6 +93,7 @@ export function FloorMap({
   returning = false,
 }: {
   onEnterRoom: (roomId: RoomId) => void;
+  onRequestFullscreen?: () => void;
   highlightRoomId?: RoomId;
   hint?: string;
   stepLabel?: string;
@@ -112,6 +114,7 @@ export function FloorMap({
 
   function enter(room: (typeof ROOMS)[number]) {
     if (!room.unlocked || traveling) return;
+    onRequestFullscreen?.();
     setTraveling(true);
     setActiveRoomId(room.id);
     const path = expandAxisPath(room.path);
