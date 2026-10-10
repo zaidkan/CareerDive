@@ -162,16 +162,13 @@ describe("finite break-room interaction loop", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders canonical energy without starting a wall-clock drain", async () => {
+  it("hides energy UI without starting a wall-clock drain", async () => {
     const user = userEvent.setup();
     render(<SpatialShell onAction={() => undefined} view={baseView} />);
 
     await enterSoc(user);
 
-    expect(screen.getByTestId("energy-meter")).toHaveAttribute(
-      "aria-valuenow",
-      "37",
-    );
+    expect(screen.queryByRole("meter", { name: "Energy" })).toBeNull();
     expect(requestAnimationFrame).not.toHaveBeenCalled();
   });
 
@@ -248,7 +245,7 @@ describe("finite break-room interaction loop", () => {
     expect(screen.getByRole("button", { name: "Close fridge" })).toBeVisible();
   });
 
-  it("keeps exact carried-bite controls available at the office desk", async () => {
+  it("keeps exact carried-bite recovery controls available after leaving the desk", async () => {
     const user = userEvent.setup();
     const onWorkplaceInteraction = vi
       .fn()
@@ -263,7 +260,9 @@ describe("finite break-room interaction loop", () => {
     await enterSoc(user);
     await user.click(screen.getByRole("button", { name: "Sit at desk" }));
 
-    await user.click(screen.getByText(/Desk resources · energy/));
+    expect(screen.queryByText(/Desk resources/)).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Leave desk" }));
+    await user.click(screen.getByText("Supplies"));
 
     for (const bites of [3, 2, 1] as const) {
       expect(
@@ -368,7 +367,7 @@ describe("finite break-room interaction loop", () => {
     );
     await enterSoc(user);
 
-    expect(screen.getByText(/Energy is empty/i)).toBeVisible();
+    expect(screen.queryByRole("meter", { name: "Energy" })).toBeNull();
     expect(
       screen.getByRole("button", { name: "Approach fridge" }),
     ).toBeVisible();

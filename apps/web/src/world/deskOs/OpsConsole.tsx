@@ -205,9 +205,6 @@ export function OpsConsole({
             aria-label="Workstation status"
           >
             <span>Shift {formatShiftClock(view.simClock)}</span>
-            <span>
-              Energy {view.workplace.energy.current}/{view.workplace.energy.max}
-            </span>
           </div>
         </nav>
         <div

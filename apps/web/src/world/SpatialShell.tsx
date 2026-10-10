@@ -23,7 +23,6 @@ import {
   BreakRoomPanel,
   CarriedSnackControl,
   EmergencyRecoveryControl,
-  EnergyMeter,
 } from "./BreakRoomPanel.js";
 import { coffeeControl, fridgeControl } from "./breakRoom.js";
 import { ControlsHelp } from "./ControlsHelp.js";
@@ -400,9 +399,6 @@ function SpatialShellStage({
       ? "At your chair — press E or Sit to use the computer"
       : `Near: ${nearbyLabel} · press E to ${nearbyHotspotId ? labelFor(nearbyHotspotId) : "interact"}`
     : undefined;
-  const energyLow =
-    view.workplace.energy.current / view.workplace.energy.max <= 0.28;
-  const energyEmpty = view.workplace.energy.current === 0;
   const highlightHotspotId: HotspotId | undefined =
     journey.target?.kind === "hotspot" ? journey.target.hotspotId : undefined;
   /** Spawning beside the exit should not bury the step the player is actually on. */
@@ -419,13 +415,9 @@ function SpatialShellStage({
       : undefined;
   const roomLabel = "Security Operations";
   const fullscreenLabel = fullscreen ? "Exit fullscreen" : "Fullscreen";
-  const compass = energyEmpty
-    ? "Energy empty · use a carried snack or visit the break-room fridge and coffee maker"
-    : energyLow
-      ? "Energy getting low · carry a snack or use the coffee maker in the break room"
-      : highlightHotspotId === "desk_player"
-        ? "Your desk · follow the blue marker · approach the open front of the cubicle"
-        : undefined;
+  const compass = highlightHotspotId === "desk_player"
+    ? "Your desk · follow the blue marker · approach the open front of the cubicle"
+    : undefined;
   const breakStation =
     nearbyHotspotId === "fridge" || nearbyHotspotId === "coffee"
       ? nearbyHotspotId
@@ -644,7 +636,6 @@ function SpatialShellStage({
               ) : null}
             </div>
             <div className="room-hud-status">
-              <EnergyMeter workplace={view.workplace} />
               <details className="room-hud-details">
                 <summary>Supplies</summary>
                 <EmergencyRecoveryControl
@@ -715,33 +706,6 @@ function SpatialShellStage({
           </div>
         ) : null}
       </div>
-      {atDesk ? (
-        <details className="room-desk-hud">
-          <summary>
-            Desk resources · energy {view.workplace.energy.current}/
-            {view.workplace.energy.max}
-          </summary>
-          <div>
-            {energyLow ? (
-              <p className="room-hud-compass">
-                Energy low · use a carried snack here, or stand and visit the
-                break room
-              </p>
-            ) : null}
-            <EnergyMeter workplace={view.workplace} />
-            <EmergencyRecoveryControl
-              workplace={view.workplace}
-              onSubmit={requestWorkplaceInteraction}
-              pending={resourcePending || !onWorkplaceInteraction}
-            />
-            <CarriedSnackControl
-              onSubmit={requestWorkplaceInteraction}
-              pending={resourcePending || !onWorkplaceInteraction}
-              workplace={view.workplace}
-            />
-          </div>
-        </details>
-      ) : null}
     </section>
     </>
   );

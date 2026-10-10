@@ -247,7 +247,7 @@ describe("spatial presentation", () => {
     );
     expect(screen.getByText(/Find your desk/i)).toBeVisible();
     expect(screen.getByText(/follow the blue marker/i)).toBeVisible();
-    expect(screen.getByTestId("energy-meter")).toBeVisible();
+    expect(screen.queryByRole("meter", { name: "Energy" })).toBeNull();
     expect(screen.getByText(/Click to look around/i)).toBeVisible();
     expect(screen.getByRole("button", { name: /^Fullscreen$/i })).toBeVisible();
 

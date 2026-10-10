@@ -361,7 +361,7 @@ describe("assessed shift and debrief", () => {
             type: "open_fridge",
         });
         expect(await screen.findByText("1 snack bar inside")).toBeVisible();
-        expect(screen.getByTestId("energy-meter")).toHaveAttribute("aria-valuenow", "63");
+        expect(screen.queryByRole("meter", { name: "Energy" })).toBeNull();
     });
     it("renders all eight debrief sections", () => {
         const debrief: Debrief = {

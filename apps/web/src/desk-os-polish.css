@@ -57,13 +57,6 @@
   font-size: 0.8rem;
   padding-block: 0.35rem;
 }
-.simulation-main .room-desk-hud {
-  background: var(--surface-base);
-  color: var(--text-primary);
-}
-.simulation-main .room-desk-hud p {
-  margin-block: 0.3rem;
-}
 .simulation-main .room-hud-brief {
   background: var(--surface-base);
   color: var(--text-primary);
@@ -642,13 +635,6 @@
 .simulation-main .room-hud-actions,
 .simulation-main .room-look-hint,
 .simulation-main .room-hud-status,
-.simulation-main .room-desk-hud {
-  color: var(--text-primary);
-  background: var(--surface-base);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  padding: 0.625rem 0.875rem;
-}
 .simulation-main .room-hud-actions button,
 .simulation-main .room-hud-actions label,
 .simulation-main .room-hud-status button,
@@ -755,25 +741,6 @@ body:has(.site-main-start .desk-os) :is(.site-nav, .site-footer),
 }
 .desk-os .desk-os-status-strip .desk-os-status-objective {
   color: var(--text-primary);
-}
-.simulation-main .room-desk-hud {
-  position: static;
-  width: auto;
-  max-width: none;
-  padding: 0.5rem 1rem;
-  border: 0;
-  border-bottom: 1px solid var(--border-subtle);
-  box-shadow: none;
-  font-size: 0.8125rem;
-}
-.simulation-main .room-desk-hud summary {
-  padding-block: 0.375rem;
-  cursor: pointer;
-  color: var(--text-secondary);
-}
-.simulation-main .room-desk-hud > div {
-  padding-block: 0.75rem;
-  max-width: 30rem;
 }
 .simulation-main .spatial-shell-engaged {
   margin: 0;
