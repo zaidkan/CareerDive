@@ -37,7 +37,7 @@ export function useFullscreen(target: RefObject<HTMLElement | null>): {
     try {
       await document.exitFullscreen();
       sync();
-      return !document.fullscreenElement || !el.contains(document.fullscreenElement);
+      return !el.contains(document.fullscreenElement);
     } catch {
       return false;
     }

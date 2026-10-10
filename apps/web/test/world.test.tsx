@@ -185,9 +185,13 @@ describe("spatial presentation", () => {
     ).toBeDisabled();
   });
 
-  it.each(["Floor map", "Exit room"])(
-    "exits fullscreen before exposing the floor map via %s",
-    async (label) => {
+  it.each([
+    { label: "Floor map", denied: false },
+    { label: "Exit room", denied: false },
+    { label: "Floor map", denied: true },
+  ])(
+    "keeps the map safe via $label (fullscreen exit denied: $denied)",
+    async ({ label, denied }) => {
       const user = userEvent.setup();
       let fullscreenElement: Element | null = null;
       let resolveExit!: () => void;
@@ -195,7 +199,9 @@ describe("spatial presentation", () => {
         fullscreenElement: Object.getOwnPropertyDescriptor(document, "fullscreenElement"),
         exitFullscreen: Object.getOwnPropertyDescriptor(document, "exitFullscreen"),
       };
-      const exitFullscreen = vi.fn(() => new Promise<void>((resolve) => {
+      const exitFullscreen = vi.fn(() => denied
+        ? Promise.reject(new Error("Fullscreen exit denied"))
+        : new Promise<void>((resolve) => {
         resolveExit = () => {
           fullscreenElement = null;
           document.dispatchEvent(new Event("fullscreenchange"));
@@ -209,10 +215,14 @@ describe("spatial presentation", () => {
           recoveryPresentation={{ current: { ...INITIAL_SPATIAL, phase: "room_walk", roomId: "soc" } }} />);
         await screen.findByRole("button", { name: "Exit room" });
         fullscreenElement = container.querySelector(".room-stage");
-        await user.click(screen.getByRole("button", { name: label, exact: true }));
+        await user.click(screen.getByRole("button", { name: label }));
         expect(exitFullscreen).toHaveBeenCalledTimes(1);
         expect(screen.queryByRole("button", { name: /Security Operations/i })).toBeNull();
         expect(screen.getByRole("button", { name: "Exit room" })).toBeVisible();
+        if (denied) {
+          expect(screen.getByText("Exit fullscreen with Esc, then try the floor map again.")).toBeVisible();
+          return;
+        }
         resolveExit();
         const room = await screen.findByRole("button", { name: /Security Operations/i });
         expect(fullscreenElement).toBeNull();
@@ -248,10 +258,12 @@ describe("spatial presentation", () => {
     expect(screen.getByText(/Find your desk/i)).toBeVisible();
     expect(screen.getByText(/follow the blue marker/i)).toBeVisible();
     expect(screen.queryByRole("meter", { name: "Energy" })).toBeNull();
+    expect(screen.queryByLabelText("Mouse sensitivity")).toBeNull();
     expect(screen.getByText(/Click to look around/i)).toBeVisible();
     expect(screen.getByRole("button", { name: /^Fullscreen$/i })).toBeVisible();
 
     await user.click(screen.getByRole("button", { name: /Sit at desk/i }));
+    expect(screen.queryByText(/Desk resources/)).toBeNull();
     expect(screen.getByTestId("login-curtain")).toBeVisible();
     expect(screen.getByTestId("login-clock")).toBeVisible();
     expect(
