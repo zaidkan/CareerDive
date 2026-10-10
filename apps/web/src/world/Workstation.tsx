@@ -8,7 +8,7 @@ import { DeskClutter, DualMonitor, KeyboardMouse } from "./props/tech.js";
 export function Workstation({
   position,
   rotationY = 0,
-  deskColor = "#2e251c",
+  deskColor = "#d2b48c",
   leftEmissive,
   rightEmissive,
   showLamp = true,
@@ -26,7 +26,7 @@ export function Workstation({
 }) {
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
-      <CubicleWalls position={[0, 0, 0.1]} width={2.95} depth={2.55} />
+      <CubicleWalls position={[0, 0, 0.1]} width={2.95} depth={2.55} height={1.18} />
       <DeskFrame position={[0, 0, -0.2]} color={deskColor} width={2.25} depth={1.1} />
       <DualMonitor
         position={[0, DESK_SURFACE_Y, -0.48]}

@@ -1,8 +1,38 @@
 /**
- * Ground surfaces — tiled floor plane and carpet runners.
+ * Ground surfaces — oak plank floor, tiled floor plane and carpet runners.
  */
 import { useMemo } from "react";
-import { makeCarpetTexture, makeFloorTileTexture } from "../textures.js";
+import {
+  makeCarpetTexture,
+  makeFloorTileTexture,
+  makeOakPlankTexture,
+} from "../textures.js";
+
+/** World size of one oak texture repeat (eight 0.2m boards, 3.2m long). */
+const OAK_REPEAT = { x: 1.6, z: 3.2 } as const;
+
+/** Light oak boards running front to back across the whole room. */
+export function OakFloor({
+  width,
+  depth,
+  receiveShadow = true,
+}: {
+  width: number;
+  depth: number;
+  receiveShadow?: boolean;
+}) {
+  const oak = useMemo(() => {
+    const tex = makeOakPlankTexture();
+    tex.repeat.set(width / OAK_REPEAT.x, depth / OAK_REPEAT.z);
+    return tex;
+  }, [depth, width]);
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow={receiveShadow}>
+      <planeGeometry args={[width, depth]} />
+      <meshStandardMaterial map={oak} roughness={0.58} metalness={0} />
+    </mesh>
+  );
+}
 
 /**
  * One tiled plane instead of a mesh per tile. The checkerboard lives in the

@@ -5,7 +5,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { makeWallTexture } from "../textures.js";
+import { makePlasterTexture } from "../textures.js";
 import { useAmbientMotion } from "./ambient.js";
 import { UNIT_BOX } from "./sharedMaterials.js";
 
@@ -22,12 +22,16 @@ export function InstancedBoxes({
   color = "#ffffff",
   roughness = 0.6,
   metalness = 0,
+  emissive = "#000000",
+  emissiveIntensity = 0,
   castShadow = false,
 }: {
   boxes: InstancedBox[];
   color?: string;
   roughness?: number;
   metalness?: number;
+  emissive?: string;
+  emissiveIntensity?: number;
   castShadow?: boolean;
 }) {
   const mesh = useRef<THREE.InstancedMesh>(null);
@@ -57,6 +61,8 @@ export function InstancedBoxes({
         color={color}
         roughness={roughness}
         metalness={metalness}
+        emissive={emissive}
+        emissiveIntensity={emissiveIntensity}
       />
     </instancedMesh>
   );
@@ -151,7 +157,7 @@ export function FrostedGlassWall({
           map={map}
           emissive="#ffffff"
           emissiveMap={map}
-          emissiveIntensity={0.32}
+          emissiveIntensity={0.12}
           roughness={0.3}
         />
       </mesh>
@@ -236,7 +242,13 @@ export function FeatureWall({
     <group>
       <mesh position={[(minX + maxX) / 2, height / 2, z]} castShadow receiveShadow>
         <boxGeometry args={[maxX - minX, height, depth]} />
-        <meshStandardMaterial color="#e7e0d4" roughness={0.92} />
+        {/* Faint self-light stands in for the spot track's wash on the face */}
+        <meshStandardMaterial
+          color="#e7e0d4"
+          emissive="#f3ece0"
+          emissiveIntensity={0.2}
+          roughness={0.92}
+        />
       </mesh>
       {/* Dark reveal reads as the shadow gap between slats */}
       <mesh position={[minX + slatWidth / 2, height / 2, faceZ + 0.002]}>
@@ -258,24 +270,21 @@ export function FeatureWall({
   );
 }
 
+/** Painted plaster perimeter wall in the film's warm cream. */
 export function WallPanel({
   position,
   size,
-  color = "#454a47",
+  color = "#e9e3d8",
 }: {
   position: [number, number, number];
   size: [number, number, number];
   color?: string;
 }) {
-  const wall = useMemo(() => {
-    const tex = makeWallTexture(color);
-    tex.repeat.set(Math.max(1, size[0] / 4), Math.max(1, size[1] / 3));
-    return tex;
-  }, [color, size]);
+  const wall = useMemo(() => makePlasterTexture(color), [color]);
   return (
     <mesh position={position} castShadow receiveShadow>
       <boxGeometry args={size} />
-      <meshStandardMaterial map={wall} roughness={0.9} />
+      <meshStandardMaterial map={wall} roughness={0.92} />
     </mesh>
   );
 }

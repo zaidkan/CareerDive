@@ -89,30 +89,73 @@ export function makeCarpetTexture(hex = "#5a3a2e"): THREE.CanvasTexture {
   });
 }
 
-export function makeWallTexture(base = "#2a221c"): THREE.CanvasTexture {
-  return canvasTexture(512, 256, (ctx, w, h) => {
+/** Smooth painted plaster: faint mottling only, no block joints. */
+export const makePlasterTexture = memoizeTexture((base: string = "#e8e2d7"): THREE.CanvasTexture =>
+  canvasTexture(256, 256, (ctx, w, h) => {
     ctx.fillStyle = base;
     ctx.fillRect(0, 0, w, h);
-    for (let i = 0; i < 1800; i += 1) {
-      const g = Math.round(28 + Math.random() * 18);
-      ctx.fillStyle = `rgba(${String(g + 8)},${String(g)},${String(g - 4)},0.22)`;
-      ctx.fillRect(Math.random() * w, Math.random() * h, 3, 3);
+    for (let i = 0; i < 2600; i += 1) {
+      ctx.fillStyle =
+        Math.random() > 0.5 ? "rgba(255,255,255,0.025)" : "rgba(120,108,92,0.025)";
+      ctx.fillRect(Math.random() * w, Math.random() * h, 2, 2);
     }
-    ctx.fillStyle = "rgba(0,0,0,0.12)";
-    for (let y = 0; y < h; y += 48) {
-      ctx.fillRect(0, y, w, 1);
+  }),
+);
+
+/**
+ * Wide light-oak planks along the texture's V axis, so on the floor they run
+ * front to back. Joints are staggered per board and wrap vertically, so the
+ * texture tiles without a seam. One repeat covers 1.6m x 3.2m.
+ */
+export const makeOakPlankTexture = memoizeTexture((): THREE.CanvasTexture => {
+  const texture = canvasTexture(1024, 2048, (ctx, w, h) => {
+    const boards = 8;
+    const boardW = w / boards;
+    const tones = ["#d8c8b0", "#d1bfa5", "#dccdb7", "#cdbb9f", "#d5c4aa", "#d9c9b2"] as const;
+    const span = (x: number, y: number, width: number, height: number) => {
+      const top = ((y % h) + h) % h;
+      ctx.fillRect(x, top, width, Math.min(height, h - top));
+      if (top + height > h) ctx.fillRect(x, 0, width, top + height - h);
+    };
+    for (let board = 0; board < boards; board += 1) {
+      const x0 = board * boardW;
+      let y = Math.random() * h;
+      const end = y + h;
+      while (y < end - 1) {
+        const length = Math.min(end - y, h * (0.45 + Math.random() * 0.35));
+        ctx.fillStyle = tones[Math.floor(Math.random() * tones.length)] ?? tones[0];
+        span(x0, y, boardW, length);
+        for (let streak = 0; streak < 34; streak += 1) {
+          const along = Math.random() * length * 0.8;
+          ctx.fillStyle = `rgba(118,94,70,${String(0.03 + Math.random() * 0.06)})`;
+          span(
+            x0 + 4 + Math.random() * (boardW - 8),
+            y + along,
+            0.8 + Math.random() * 1.8,
+            Math.min(length - along, 80 + Math.random() * 360),
+          );
+        }
+        ctx.fillStyle = "rgba(92,70,48,0.5)";
+        span(x0, y, boardW, 2);
+        y += length;
+      }
+      ctx.fillStyle = "rgba(92,70,48,0.45)";
+      ctx.fillRect(x0, 0, 2, h);
     }
   });
-}
+  texture.anisotropy = 8;
+  return texture;
+});
 
+/** Near-white weave; the cubicle material colour carries the hue. */
 export const makeCubicleFabricTexture = memoizeTexture((): THREE.CanvasTexture =>
   canvasTexture(128, 128, (ctx, w, h) => {
-    ctx.fillStyle = "#3d342a";
+    ctx.fillStyle = "#efefec";
     ctx.fillRect(0, 0, w, h);
     for (let y = 0; y < h; y += 2) {
       for (let x = 0; x < w; x += 2) {
         if ((x + y) % 4 === 0) {
-          ctx.fillStyle = "rgba(55,48,40,0.55)";
+          ctx.fillStyle = "rgba(60,64,60,0.08)";
           ctx.fillRect(x, y, 2, 2);
         }
       }

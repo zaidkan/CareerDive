@@ -29,7 +29,7 @@ import {
   WallArt,
   WallClock,
 } from "../props/decor.js";
-import { CarpetRunner, FloorTileGrid } from "../props/floor.js";
+import { CarpetRunner, OakFloor } from "../props/floor.js";
 import {
   CoatRack,
   Credenza,
@@ -40,7 +40,7 @@ import {
   StorageCabinet,
   TrashBin,
 } from "../props/furniture.js";
-import { CeilingFixture } from "../props/lighting.js";
+import { CeilingFixture, LinearPendants, SpotTrack } from "../props/lighting.js";
 import {
   MeshLabel,
   StationPlate,
@@ -49,6 +49,7 @@ import {
 } from "../props/signage.js";
 import { DocumentShredder, SecurityCamera, ServerRack } from "../props/tech.js";
 import { DeskSurfaceDetails } from "../props/WorkplaceDetails.js";
+import { makePlasterTexture } from "../textures.js";
 import { Workstation } from "../Workstation.js";
 import { Wayfinder } from "../Wayfinder.js";
 import type { HotspotId } from "../worldTypes.js";
@@ -60,11 +61,11 @@ import {
   BREAK_INTERIOR_HOTSPOTS,
   CHAIR_FACE_DESK,
   COAT_RACK,
-  COL,
   CREDENZA,
   ENTRY_BINS,
   ENTRY_PLANTER,
   FEATURE_WALL,
+  FEATURE_WALL_SPOTS,
   GLASS_SUITE,
   HERO_PLANT,
   HOT_DESK,
@@ -72,6 +73,8 @@ import {
   LOCKERS,
   MORGAN_DESK,
   PARTS_CABINETS,
+  PENDANT_HANG_Y,
+  PENDANT_RUNS,
   PLAYER_DESK,
   PLAYER_SEAT_CAM,
   PLAYER_SEAT_LOOK,
@@ -95,6 +98,11 @@ import {
  *
  * Every coordinate lives in socLayout.ts so the reachability test can guard it.
  */
+
+/** Pale daylight haze behind the glazing; matches the fog so edges never band. */
+const DAYLIGHT_HAZE = "#dfe5e8";
+/** Perimeter walls overlap the 3.35m ceiling so the bright haze never shows at the seam. */
+const WALL_H = 3.4;
 
 /**
  * Alert boards with a faint cosmetic screen-breathing pass.
@@ -247,10 +255,12 @@ export function SocRoom({
 
   const colliders = useMemo(() => socColliders(doorOpen), [doorOpen]);
 
+  // Neutral holds the cream/oak/sage palette; ACES skews bright creams orange.
   useEffect(() => {
-    gl.toneMapping = THREE.ACESFilmicToneMapping;
-    gl.toneMappingExposure = 1.45;
+    gl.toneMapping = THREE.NeutralToneMapping;
+    gl.toneMappingExposure = 1.0;
   }, [gl]);
+  const ceilingPlaster = useMemo(() => makePlasterTexture("#f4f2ed"), []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -334,10 +344,10 @@ export function SocRoom({
 
   return (
     <>
-      <color attach="background" args={["#20282b"]} />
+      <color attach="background" args={[DAYLIGHT_HAZE]} />
       <fog
         attach="fog"
-        args={["#20282b", seated ? 14 : 20, seated ? 28 : 38]}
+        args={[DAYLIGHT_HAZE, seated ? 14 : 20, seated ? 28 : 38]}
       />
       <AmbientClockDriver enabled={quality.ambientEnabled && !seated} />
       <SocLighting
@@ -345,26 +355,7 @@ export function SocRoom({
         directionalShadows={quality.directionalShadows}
       />
 
-      <mesh receiveShadow={!seated} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[floorW, floorD]} />
-        <meshStandardMaterial color="#2e261f" roughness={0.92} />
-      </mesh>
-      {!seated ? <FloorTileGrid rangeX={10} rangeZ={8} step={1.7} /> : null}
-
-      {/* Main aisle runner past the 04 wall, desk pads, break-room rug */}
-      <CarpetRunner
-        position={[0.85, 0, 0]}
-        size={[2.3, floorD - 3]}
-        color="#4a3228"
-      />
-      {[PLAYER_DESK, HOT_DESK, MORGAN_DESK, TEAM_DESK].map((desk) => (
-        <CarpetRunner
-          key={`${String(desk[0])}:${String(desk[2])}`}
-          position={[desk[0], 0, desk[2] + 0.35]}
-          size={[2.8, 3.6]}
-          color="#5a3a2e"
-        />
-      ))}
+      <OakFloor width={floorW} depth={floorD} receiveShadow={!seated} />
       <CarpetRunner
         position={[
           (BREAK_NOOK.cornerX + BREAK_NOOK.wallX) / 2,
@@ -375,31 +366,27 @@ export function SocRoom({
           BREAK_NOOK.wallX - BREAK_NOOK.cornerX - 0.35,
           BREAK_NOOK.wallZ - BREAK_NOOK.cornerZ - 0.35,
         ]}
-        color="#4a3a32"
+        color="#a3ab9c"
       />
 
       <mesh position={[0, 3.35, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <planeGeometry args={[floorW, floorD]} />
-        <meshStandardMaterial color="#454744" roughness={0.95} />
+        <meshStandardMaterial
+          map={ceilingPlaster}
+          emissive="#f1eee8"
+          emissiveIntensity={0.42}
+          roughness={0.95}
+        />
       </mesh>
-      {/* Fixtures are emissive panels only — extra point lights multiply fill cost. */}
+      {/* Open office: black linear pendants over the desks, spots on the 04 wall */}
+      <LinearPendants runs={PENDANT_RUNS} ceilingY={3.35} hangY={PENDANT_HANG_Y} />
+      <SpotTrack position={[FEATURE_WALL_SPOTS.x, 3.32, FEATURE_WALL_SPOTS.z]} />
+      {/* Back office keeps its service panels — emissive only, no point lights */}
       <CeilingFixture light={false} lit={!seated} animated={!seated} position={[-4, 3.2, -2]} />
-      <CeilingFixture light={false} lit animated={!seated} position={[0, 3.2, 0.5]} />
-      <CeilingFixture
-        light={false}
-        lit={!seated}
-        animated={!seated}
-        position={[COL.east, 3.2, -1.5]}
-      />
       {!seated ? (
         <>
-          <CeilingFixture light={false} position={[0, 3.2, 4]} />
-          <CeilingFixture light={false} position={[8, 3.2, -5]} />
           <CeilingFixture light={false} position={[-9.2, 3.2, -1.9]} />
           <CeilingFixture light={false} position={[-8, 3.2, -4.5]} />
-          <CeilingFixture light={false} position={[4.5, 3.2, 4.5]} />
-          <CeilingFixture light={false} position={[-1.8, 3.2, 3.2]} />
-          <CeilingFixture light={false} position={[8.5, 3.2, 1.5]} />
         </>
       ) : null}
       {/* Services stay in the back office so the entry ceiling reads clean */}
@@ -407,38 +394,23 @@ export function SocRoom({
         <CeilingAC position={[-6.5, 3.12, -3.6]} rotationY={Math.PI / 2} />
       ) : null}
 
-      <WallPanel position={[0, 1.65, -ROOM.halfZ]} size={[floorW, 3.3, 0.3]} />
-      <WallPanel position={[-ROOM.halfX, 1.65, 0]} size={[0.3, 3.3, floorD]} />
-      <WallPanel position={[ROOM.halfX, 1.65, 0]} size={[0.3, 3.3, floorD]} />
+      <WallPanel position={[0, WALL_H / 2, -ROOM.halfZ]} size={[floorW, WALL_H, 0.3]} />
+      <WallPanel position={[-ROOM.halfX, WALL_H / 2, 0]} size={[0.3, WALL_H, floorD]} />
+      <WallPanel position={[ROOM.halfX, WALL_H / 2, 0]} size={[0.3, WALL_H, floorD]} />
       {/* South wall split around exit doorway */}
       <WallPanel
-        position={[-(floorW / 4 + 0.55), 1.65, ROOM.halfZ]}
-        size={[floorW / 2 - 1.1, 3.3, 0.3]}
-        color="#26201a"
+        position={[-(floorW / 4 + 0.55), WALL_H / 2, ROOM.halfZ]}
+        size={[floorW / 2 - 1.1, WALL_H, 0.3]}
       />
       <WallPanel
-        position={[floorW / 4 + 0.55, 1.65, ROOM.halfZ]}
-        size={[floorW / 2 - 1.1, 3.3, 0.3]}
-        color="#26201a"
+        position={[floorW / 4 + 0.55, WALL_H / 2, ROOM.halfZ]}
+        size={[floorW / 2 - 1.1, WALL_H, 0.3]}
       />
       {/* Lintel over exit */}
-      <mesh position={[0, 2.85, ROOM.halfZ]} castShadow>
-        <boxGeometry args={[2.2, 0.9, 0.32]} />
-        <meshStandardMaterial color="#26201a" roughness={0.85} />
-      </mesh>
-
-      <mesh position={[0, 0.1, -ROOM.halfZ + 0.2]}>
-        <boxGeometry args={[floorW - 1, 0.2, 0.08]} />
-        <meshStandardMaterial color="#4a3a2c" />
-      </mesh>
-      <mesh position={[0, 2.7, -ROOM.halfZ + 0.2]}>
-        <boxGeometry args={[floorW - 1, 0.05, 0.05]} />
-        <meshStandardMaterial
-          color="#6ea8fe"
-          emissive="#6ea8fe"
-          emissiveIntensity={0.55}
-        />
-      </mesh>
+      <WallPanel
+        position={[0, (2.4 + WALL_H) / 2, ROOM.halfZ]}
+        size={[2.2, WALL_H - 2.4, 0.32]}
+      />
 
       {!seated ? (
         <>
@@ -567,7 +539,6 @@ export function SocRoom({
 
       <Workstation
         position={MORGAN_DESK}
-        deskColor="#26201a"
         leftEmissive="#6ea8fe"
         rightEmissive="#4fd0c8"
         showLamp={false}
@@ -607,7 +578,6 @@ export function SocRoom({
       <Workstation
         position={HOT_DESK}
         showLamp={false}
-        deskColor="#2a221c"
         clutterVariant={2}
         rightEmissive="#6ea8fe"
       />
@@ -629,7 +599,6 @@ export function SocRoom({
       <Workstation
         position={TEAM_DESK}
         showLamp={false}
-        deskColor="#2a221c"
         clutterVariant={0}
         leftEmissive="#4fd0c8"
       />
@@ -742,29 +711,23 @@ export function SocRoom({
         lookAtRef={lookAtRef}
       />
 
-      {/* Exit door — frame, leaf, and readable label */}
+      {/* Exit door — charcoal frame, oak leaf, and readable label */}
       <group position={[0, 0, ROOM.halfZ - 0.2]}>
         <mesh position={[-0.95, 1.25, 0]} castShadow>
           <boxGeometry args={[0.14, 2.5, 0.18]} />
-          <meshStandardMaterial color="#3a2c22" roughness={0.65} />
+          <meshStandardMaterial color="#2a2b2c" roughness={0.55} />
         </mesh>
         <mesh position={[0.95, 1.25, 0]} castShadow>
           <boxGeometry args={[0.14, 2.5, 0.18]} />
-          <meshStandardMaterial color="#3a2c22" roughness={0.65} />
+          <meshStandardMaterial color="#2a2b2c" roughness={0.55} />
         </mesh>
         <mesh position={[0, 2.55, 0]} castShadow>
           <boxGeometry args={[2.05, 0.14, 0.2]} />
-          <meshStandardMaterial color="#3a2c22" roughness={0.65} />
+          <meshStandardMaterial color="#2a2b2c" roughness={0.55} />
         </mesh>
         <mesh position={[0, 1.25, 0.02]} castShadow>
           <boxGeometry args={[1.7, 2.4, 0.08]} />
-          <meshStandardMaterial
-            color="#0f1716"
-            emissive="#4fd0c8"
-            emissiveIntensity={0.18}
-            roughness={0.45}
-            metalness={0.2}
-          />
+          <meshStandardMaterial color="#c9a97f" roughness={0.55} />
         </mesh>
         <mesh position={[0.65, 1.25, 0.08]}>
           <boxGeometry args={[0.06, 0.28, 0.05]} />
@@ -787,17 +750,17 @@ export function SocRoom({
         />
         <mesh position={[0, 0.04, -0.15]} receiveShadow>
           <boxGeometry args={[2.0, 0.06, 0.45]} />
-          <meshStandardMaterial color="#4a3a2c" roughness={0.8} />
+          <meshStandardMaterial color="#3b3c3b" roughness={0.8} />
         </mesh>
       </group>
 
       {quality.contactShadows ? (
         <ContactShadows
-          opacity={0.23}
+          opacity={0.28}
           scale={24}
           blur={2.4}
           far={4.5}
-          color="#1a1008"
+          color="#3a2c20"
           frames={1}
         />
       ) : null}

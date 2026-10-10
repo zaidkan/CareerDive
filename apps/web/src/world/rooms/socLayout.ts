@@ -111,6 +111,16 @@ export const HERO_PLANT: [number, number, number] = [-2.75, 0, 1.55];
 /** Smaller planter in the corner between the glass and the entry wall. */
 export const ENTRY_PLANTER: [number, number, number] = [-3.25, 0, 6.65];
 
+/** Underside of the linear pendants; the 04 wall and cubicles stay well below. */
+export const PENDANT_HANG_Y = 3.02;
+/** Long black pendants in parallel rows over the desk field, plus one entry run. */
+export const PENDANT_RUNS = [
+  ...[1.0, -1.0, -3.0, -5.0].map((z) => ({ x: 5.6, z, length: 9.4 })),
+  { x: 3.0, z: 3.4, length: 3.0 },
+] as const;
+/** LED spot track over the credenza, washing the 04 wall. */
+export const FEATURE_WALL_SPOTS = { x: CREDENZA.x, z: FEATURE_WALL_FACE_Z + 0.9 } as const;
+
 /** Back office behind the 04 wall: alert boards, racks, Samir, parts. */
 export const ALERT_POS: [number, number, number] = [-4.4, 0, -6.2];
 export const SAMIR_DESK: [number, number, number] = [-10.25, 0, -3.4];
