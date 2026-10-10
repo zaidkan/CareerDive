@@ -12,6 +12,7 @@ export function isTypingTarget(target: EventTarget | null): boolean {
 export function useFullscreen(target: RefObject<HTMLElement | null>): {
   active: boolean;
   toggle: () => Promise<void>;
+  exit: () => Promise<boolean>;
 } {
   const [active, setActive] = useState(false);
 
@@ -26,6 +27,21 @@ export function useFullscreen(target: RefObject<HTMLElement | null>): {
       document.removeEventListener("fullscreenchange", sync);
     };
   }, [sync]);
+
+  // Finish exiting before hiding the room: a hidden fullscreen child still
+  // covers the floor map and intercepts all its pointer input.
+  const exit = useCallback(async (): Promise<boolean> => {
+    const el = target.current;
+    if (!el || !document.fullscreenElement ||
+      !el.contains(document.fullscreenElement)) return true;
+    try {
+      await document.exitFullscreen();
+      sync();
+      return !document.fullscreenElement || !el.contains(document.fullscreenElement);
+    } catch {
+      return false;
+    }
+  }, [target, sync]);
 
   const toggle = useCallback(async () => {
     const el = target.current;
@@ -43,5 +59,5 @@ export function useFullscreen(target: RefObject<HTMLElement | null>): {
     }
   }, [target]);
 
-  return { active, toggle };
+  return { active, toggle, exit };
 }

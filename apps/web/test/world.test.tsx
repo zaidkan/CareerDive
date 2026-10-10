@@ -185,6 +185,49 @@ describe("spatial presentation", () => {
     ).toBeDisabled();
   });
 
+  it.each(["Floor map", "Exit room"])(
+    "exits fullscreen before exposing the floor map via %s",
+    async (label) => {
+      const user = userEvent.setup();
+      let fullscreenElement: Element | null = null;
+      let resolveExit!: () => void;
+      const descriptors = {
+        fullscreenElement: Object.getOwnPropertyDescriptor(document, "fullscreenElement"),
+        exitFullscreen: Object.getOwnPropertyDescriptor(document, "exitFullscreen"),
+      };
+      const exitFullscreen = vi.fn(() => new Promise<void>((resolve) => {
+        resolveExit = () => {
+          fullscreenElement = null;
+          document.dispatchEvent(new Event("fullscreenchange"));
+          resolve();
+        };
+      }));
+      Object.defineProperty(document, "fullscreenElement", { configurable: true, get: () => fullscreenElement });
+      Object.defineProperty(document, "exitFullscreen", { configurable: true, value: exitFullscreen });
+      try {
+        const { container } = render(<SpatialShell view={view} onAction={() => undefined}
+          recoveryPresentation={{ current: { ...INITIAL_SPATIAL, phase: "room_walk", roomId: "soc" } }} />);
+        await screen.findByRole("button", { name: "Exit room" });
+        fullscreenElement = container.querySelector(".room-stage");
+        await user.click(screen.getByRole("button", { name: label, exact: true }));
+        expect(exitFullscreen).toHaveBeenCalledTimes(1);
+        expect(screen.queryByRole("button", { name: /Security Operations/i })).toBeNull();
+        expect(screen.getByRole("button", { name: "Exit room" })).toBeVisible();
+        resolveExit();
+        const room = await screen.findByRole("button", { name: /Security Operations/i });
+        expect(fullscreenElement).toBeNull();
+        await user.click(room);
+        await screen.findByRole("button", { name: "Exit room" }, { timeout: 6000 });
+      } finally {
+        for (const key of ["fullscreenElement", "exitFullscreen"] as const) {
+          const descriptor = descriptors[key];
+          if (descriptor) Object.defineProperty(document, key, descriptor);
+          else Reflect.deleteProperty(document, key);
+        }
+      }
+    },
+  );
+
   it("guides the player to the room, then the desk, then the desk work", async () => {
     const user = userEvent.setup();
     render(<SpatialShell view={view} onAction={() => undefined} />);

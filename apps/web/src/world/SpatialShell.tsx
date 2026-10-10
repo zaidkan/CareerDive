@@ -129,7 +129,7 @@ function SpatialShellStage({
   const stageRef = useRef<HTMLDivElement>(null);
   const workplacePendingRef = useRef(false);
   const closeFridgeIntentRef = useRef(false);
-  const { active: fullscreen, toggle: toggleFullscreen } =
+  const { active: fullscreen, toggle: toggleFullscreen, exit: exitFullscreen } =
     useFullscreen(stageRef);
 
   useEffect(() => {
@@ -291,6 +291,19 @@ function SpatialShellStage({
     view.workplace.fridgeOpen,
   ]);
 
+  const leaveRoom = useCallback(async () => {
+    setJulesOpen(false);
+    requestFridgeCloseOnExit();
+    if (await exitFullscreen()) {
+      dispatch({ type: "leave_room" });
+    } else {
+      dispatch({
+        type: "set_flavor",
+        message: "Exit fullscreen with Esc, then try the floor map again.",
+      });
+    }
+  }, [exitFullscreen, requestFridgeCloseOnExit]);
+
   const handleInteract = useCallback(
     (id: HotspotId) => {
       unlockDialogueAudio();
@@ -300,9 +313,7 @@ function SpatialShellStage({
           dispatch({ type: "sit_desk" });
           break;
         case "door_exit":
-          setJulesOpen(false);
-          requestFridgeCloseOnExit();
-          dispatch({ type: "leave_room" });
+          void leaveRoom();
           break;
         case "break_door":
           window.dispatchEvent(new Event("soc-break-door"));
@@ -348,7 +359,7 @@ function SpatialShellStage({
           break;
       }
     },
-    [julesReply, requestFridgeCloseOnExit, requestWorkplaceInteraction, view],
+    [julesReply, leaveRoom, requestWorkplaceInteraction, view],
   );
 
   const journey = getJourneyStep({
@@ -693,9 +704,7 @@ function SpatialShellStage({
               <button
                 className="guidance-secondary"
                 onClick={() => {
-                  setJulesOpen(false);
-                  requestFridgeCloseOnExit();
-                  dispatch({ type: "leave_room" });
+                  void leaveRoom();
                 }}
                 type="button"
               >
