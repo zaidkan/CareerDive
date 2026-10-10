@@ -1,5 +1,9 @@
 import { apiOrigin, authHeaders } from "./transport.js";
-import { createTRPCUntypedClient, httpLink } from "@trpc/client";
+import {
+  createTRPCUntypedClient,
+  httpLink,
+  TRPCClientError,
+} from "@trpc/client";
 import {
   ClientViewSchema,
   DebriefSchema,
@@ -18,6 +22,24 @@ import {
 } from "@sim/schemas";
 import { z } from "zod";
 import { readTabValue, writeTabValue } from "./useTabDraft.js";
+
+/** Preserve only handled status validation guidance; unexpected errors stay generic. */
+export function actionFailureMessage(
+  cause: unknown,
+  actionId: SimulationActionId,
+): string {
+  if (actionId === "send_status_update" && cause instanceof TRPCClientError) {
+    const data: unknown = cause.data;
+    if (
+      data &&
+      typeof data === "object" &&
+      "code" in data &&
+      data.code === "BAD_REQUEST"
+    )
+      return cause.message;
+  }
+  return "That action could not be completed.";
+}
 
 export const PENDING_SESSION_KEY = "career-expo-start-pending";
 
@@ -129,7 +151,10 @@ export class HttpSimulationClient implements SimulationClient {
       }
     }
     // The default app preserves an ambiguous start across remounts/reloads.
-    if (this === defaultClient && readTabValue<boolean>(PENDING_SESSION_KEY, false)) {
+    if (
+      this === defaultClient &&
+      readTabValue<boolean>(PENDING_SESSION_KEY, false)
+    ) {
       throw new StartupFailure(false, "creation-unconfirmed");
     }
     // Stable createRequestId makes unknown outcomes safe to retry.

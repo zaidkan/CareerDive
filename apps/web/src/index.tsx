@@ -12,6 +12,7 @@ import type {
 } from "@sim/schemas";
 import {
   StartupFailure,
+  actionFailureMessage,
   PENDING_SESSION_KEY,
   defaultClient,
   type SimulationClient,
@@ -271,7 +272,7 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
             action.handoffPayload,
           );
         } catch (cause) {
-          throw new Error("That action could not be completed.", { cause });
+          throw new Error(actionFailureMessage(cause, action.id), { cause });
         }
         if (action.decisionOptionId)
           launchEvent(

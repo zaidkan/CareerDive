@@ -76,5 +76,6 @@ export {
   allStatusGroups,
   statusGroups,
   selectedStatus,
+  StatusSelectionError,
   caseMemoLines,
 } from "./case-communication.js";
