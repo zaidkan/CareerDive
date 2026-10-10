@@ -32,7 +32,11 @@ import {
 } from "./repository/career-requests.js";
 import { careerRequestRoutes } from "./routes/career-requests.js";
 import postgres from "postgres";
-import { allowedWebOrigins, describeListenFailure } from "./config.js";
+import {
+  allowedWebOrigins,
+  describeListenFailure,
+  trustOneProxyHop,
+} from "./config.js";
 
 const port = Number(process.env.PORT ?? 3001);
 const isProduction = process.env.NODE_ENV === "production";
@@ -72,7 +76,7 @@ const sql = process.env.DATABASE_URL
     })
   : undefined;
 const server = Fastify({
-  trustProxy: isProduction ? 1 : false,
+  trustProxy: isProduction ? trustOneProxyHop : false,
   logger: {
     redact: [
       "req.headers.authorization",
