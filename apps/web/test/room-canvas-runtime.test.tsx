@@ -33,7 +33,6 @@ it("stops hidden frames, resumes walking, and preserves demand rendering at the 
     onNearbyChange: vi.fn(),
     onInteract: vi.fn(),
     onBreakRoomExit: vi.fn(),
-    mouseSensitivity: 1,
   };
   const { rerender } = render(<RoomCanvas {...props} />);
   expect(canvas).toHaveBeenLastCalledWith("always");
