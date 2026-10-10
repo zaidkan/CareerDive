@@ -145,10 +145,7 @@ it("creates exactly one assessed session after arrival and preserves class-clien
     ),
   );
   await waitFor(() => {
-    expect(screen.getByTestId("energy-meter")).toHaveAttribute(
-      "aria-valuenow",
-      "99",
-    );
+    expect(requests).toHaveLength(2);
   });
   expect(requests[1]).toEqual({
     url: "http://localhost:3001/trpc/simulation.performWorkplaceInteraction",

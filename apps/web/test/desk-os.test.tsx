@@ -782,7 +782,7 @@ describe("Desk OS canonical state rendering", () => {
 
     const status = screen.getByLabelText("Workstation status");
     expect(status).toHaveTextContent("08:10");
-    expect(status).toHaveTextContent("Energy 73/100");
+    expect(status).not.toHaveTextContent("Energy");
   });
 
   it("keeps dirty notes per action and event while refreshing clean canonical values", async () => {

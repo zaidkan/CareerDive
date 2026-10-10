@@ -23,7 +23,6 @@ import {
   BreakRoomPanel,
   CarriedSnackControl,
   EmergencyRecoveryControl,
-  EnergyMeter,
 } from "./BreakRoomPanel.js";
 import { coffeeControl, fridgeControl } from "./breakRoom.js";
 import { ControlsHelp } from "./ControlsHelp.js";
@@ -49,13 +48,6 @@ import {
   workplaceMutationKey,
   type MutationState,
 } from "../useMutationCoordinator.js";
-import {
-  loadMouseSensitivity,
-  MAX_MOUSE_SENSITIVITY,
-  MIN_MOUSE_SENSITIVITY,
-  MOUSE_SENSITIVITY_STEP,
-  saveMouseSensitivity,
-} from "./mouseSensitivity.js";
 
 const loadRoomCanvas = () => import("./RoomCanvas.js");
 const RoomCanvas = lazy(async () => {
@@ -119,8 +111,6 @@ function SpatialShellStage({
   const [nearbyChoices, setNearbyChoices] = useState<HotspotId[]>([]);
   const [interactionMiss, setInteractionMiss] = useState(false);
   const [pointerLocked, setPointerLocked] = useState(false);
-  const [mouseSensitivity, setMouseSensitivity] =
-    useState(loadMouseSensitivity);
   const [workplacePending, setWorkplacePending] = useState(false);
   const [morganOpen, setMorganOpen] = useState(false);
   const [julesOpen, setJulesOpen] = useState(false);
@@ -129,7 +119,7 @@ function SpatialShellStage({
   const stageRef = useRef<HTMLDivElement>(null);
   const workplacePendingRef = useRef(false);
   const closeFridgeIntentRef = useRef(false);
-  const { active: fullscreen, toggle: toggleFullscreen } =
+  const { active: fullscreen, toggle: toggleFullscreen, exit: exitFullscreen } =
     useFullscreen(stageRef);
 
   useEffect(() => {
@@ -291,6 +281,19 @@ function SpatialShellStage({
     view.workplace.fridgeOpen,
   ]);
 
+  const leaveRoom = useCallback(async () => {
+    setJulesOpen(false);
+    requestFridgeCloseOnExit();
+    if (await exitFullscreen()) {
+      dispatch({ type: "leave_room" });
+    } else {
+      dispatch({
+        type: "set_flavor",
+        message: "Exit fullscreen with Esc, then try the floor map again.",
+      });
+    }
+  }, [exitFullscreen, requestFridgeCloseOnExit]);
+
   const handleInteract = useCallback(
     (id: HotspotId) => {
       unlockDialogueAudio();
@@ -300,9 +303,7 @@ function SpatialShellStage({
           dispatch({ type: "sit_desk" });
           break;
         case "door_exit":
-          setJulesOpen(false);
-          requestFridgeCloseOnExit();
-          dispatch({ type: "leave_room" });
+          void leaveRoom();
           break;
         case "break_door":
           window.dispatchEvent(new Event("soc-break-door"));
@@ -348,7 +349,7 @@ function SpatialShellStage({
           break;
       }
     },
-    [julesReply, requestFridgeCloseOnExit, requestWorkplaceInteraction, view],
+    [julesReply, leaveRoom, requestWorkplaceInteraction, view],
   );
 
   const journey = getJourneyStep({
@@ -389,9 +390,6 @@ function SpatialShellStage({
       ? "At your chair — press E or Sit to use the computer"
       : `Near: ${nearbyLabel} · press E to ${nearbyHotspotId ? labelFor(nearbyHotspotId) : "interact"}`
     : undefined;
-  const energyLow =
-    view.workplace.energy.current / view.workplace.energy.max <= 0.28;
-  const energyEmpty = view.workplace.energy.current === 0;
   const highlightHotspotId: HotspotId | undefined =
     journey.target?.kind === "hotspot" ? journey.target.hotspotId : undefined;
   /** Spawning beside the exit should not bury the step the player is actually on. */
@@ -408,13 +406,9 @@ function SpatialShellStage({
       : undefined;
   const roomLabel = "Security Operations";
   const fullscreenLabel = fullscreen ? "Exit fullscreen" : "Fullscreen";
-  const compass = energyEmpty
-    ? "Energy empty · use a carried snack or visit the break-room fridge and coffee maker"
-    : energyLow
-      ? "Energy getting low · carry a snack or use the coffee maker in the break room"
-      : highlightHotspotId === "desk_player"
-        ? "Your desk · follow the blue marker · approach the open front of the cubicle"
-        : undefined;
+  const compass = highlightHotspotId === "desk_player"
+    ? "Your desk · follow the blue marker · approach the open front of the cubicle"
+    : undefined;
   const breakStation =
     nearbyHotspotId === "fridge" || nearbyHotspotId === "coffee"
       ? nearbyHotspotId
@@ -482,7 +476,6 @@ function SpatialShellStage({
             onNearbyChange={onNearbyChange}
             seated={atDesk}
             workplace={view.workplace}
-            mouseSensitivity={mouseSensitivity}
             onWalkBlocked={() => {
               setWalkBlocked(true);
             }}
@@ -633,7 +626,6 @@ function SpatialShellStage({
               ) : null}
             </div>
             <div className="room-hud-status">
-              <EnergyMeter workplace={view.workplace} />
               <details className="room-hud-details">
                 <summary>Supplies</summary>
                 <EmergencyRecoveryControl
@@ -649,25 +641,6 @@ function SpatialShellStage({
               </details>
             </div>
             <div className="room-hud-actions">
-              <label className="room-sensitivity" htmlFor="mouse-sensitivity">
-                Mouse sensitivity
-                <input
-                  id="mouse-sensitivity"
-                  type="range"
-                  min={MIN_MOUSE_SENSITIVITY}
-                  max={MAX_MOUSE_SENSITIVITY}
-                  step={MOUSE_SENSITIVITY_STEP}
-                  value={mouseSensitivity}
-                  onChange={(event) => {
-                    const next = Number(event.currentTarget.value);
-                    setMouseSensitivity(next);
-                    saveMouseSensitivity(next);
-                  }}
-                />
-                <output htmlFor="mouse-sensitivity">
-                  {mouseSensitivity.toFixed(1)}×
-                </output>
-              </label>
               {nearbyHotspotId && !breakStation ? (
                 <button
                   className="start-shift"
@@ -693,9 +666,7 @@ function SpatialShellStage({
               <button
                 className="guidance-secondary"
                 onClick={() => {
-                  setJulesOpen(false);
-                  requestFridgeCloseOnExit();
-                  dispatch({ type: "leave_room" });
+                  void leaveRoom();
                 }}
                 type="button"
               >
@@ -706,33 +677,6 @@ function SpatialShellStage({
           </div>
         ) : null}
       </div>
-      {atDesk ? (
-        <details className="room-desk-hud">
-          <summary>
-            Desk resources · energy {view.workplace.energy.current}/
-            {view.workplace.energy.max}
-          </summary>
-          <div>
-            {energyLow ? (
-              <p className="room-hud-compass">
-                Energy low · use a carried snack here, or stand and visit the
-                break room
-              </p>
-            ) : null}
-            <EnergyMeter workplace={view.workplace} />
-            <EmergencyRecoveryControl
-              workplace={view.workplace}
-              onSubmit={requestWorkplaceInteraction}
-              pending={resourcePending || !onWorkplaceInteraction}
-            />
-            <CarriedSnackControl
-              onSubmit={requestWorkplaceInteraction}
-              pending={resourcePending || !onWorkplaceInteraction}
-              workplace={view.workplace}
-            />
-          </div>
-        </details>
-      ) : null}
     </section>
     </>
   );

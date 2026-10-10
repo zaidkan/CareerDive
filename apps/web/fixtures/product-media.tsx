@@ -29,7 +29,7 @@ const labels: Record<Scene, string> = {
 function ProductScene({ scene, view, debrief }: { scene: Scene; view: ClientView; debrief?: Debrief }) {
   const noAction = () => {};
   if (scene === "a-12") return <OsSessionProvider><div className="capture-desk"><DeskOs phase="seated_monitor" view={view} onAction={noAction} onLoginSuccess={noAction} onStand={noAction} onOsFullscreen={noAction} osFullscreen /></div></OsSessionProvider>;
-  if (scene === "a-11") return <div className="capture-room"><RoomCanvas enabled={false} onNearbyChange={noAction} onInteract={noAction} onBreakRoomExit={noAction} mouseSensitivity={1} workplace={view.workplace} /></div>;
+  if (scene === "a-11") return <div className="capture-room"><RoomCanvas enabled={false} onNearbyChange={noAction} onInteract={noAction} onBreakRoomExit={noAction} workplace={view.workplace} /></div>;
   if (scene === "a-10") return debrief ? <DebriefView debrief={debrief} /> : null;
   if (scene === "a-01") return <AlertRecords view={view} eventId="suspicious-login-1" />;
   if (["a-02", "a-03", "a-05", "a-09"].includes(scene)) return <RecordQueryTool view={view} queryAction={view.availableActions.find(({ id }) => id === "query_records")} onQueryRecords={noAction} />;

@@ -2,8 +2,6 @@ import type { ClientWorkplaceState, WorkplaceInteraction } from "@sim/schemas";
 import {
   coffeeControl,
   coffeeStageLabel,
-  energyPercent,
-  energyTone,
   fridgeControl,
   snackControl,
 } from "./breakRoom.js";
@@ -20,43 +18,6 @@ export function EmergencyRecoveryControl({ workplace, onSubmit, pending = false 
     workplace.coffeeServings !== 0 || workplace.coffeeStage !== "idle") return null;
   return <button type="button" disabled={pending} data-interaction-id="emergency_recovery"
     onClick={() => { onSubmit({ type: "emergency_recovery" }); }}>Use emergency recovery</button>;
-}
-
-export function EnergyMeter({
-  workplace,
-}: {
-  workplace: ClientWorkplaceState;
-}) {
-  const { current, max } = workplace.energy;
-  const tone = energyTone(workplace);
-  return (
-    <div
-      aria-label="Energy"
-      aria-valuemax={max}
-      aria-valuemin={0}
-      aria-valuenow={current}
-      className={`energy-meter energy-meter-${tone}`}
-      data-testid="energy-meter"
-      role="meter"
-    >
-      <span className="energy-meter-label">Energy</span>
-      <span className="energy-meter-value">
-        {current}/{max}
-      </span>
-      <span className="energy-meter-track">
-        <span
-          className="energy-meter-fill"
-          style={{ width: `${String(energyPercent(workplace))}%` }}
-        />
-      </span>
-      {current === 0 ? (
-        <span className="energy-recovery">
-          Energy is empty. Eat a carried snack or visit the break-room fridge
-          and coffee maker to recover.
-        </span>
-      ) : null}
-    </div>
-  );
 }
 
 export function CarriedSnackControl({

@@ -6,19 +6,6 @@ export type ResourceControl = {
   reason?: string;
 };
 
-export function energyTone(
-  workplace: ClientWorkplaceState,
-): "ok" | "low" | "critical" {
-  const ratio = workplace.energy.current / workplace.energy.max;
-  if (ratio <= 0.12) return "critical";
-  if (ratio <= 0.28) return "low";
-  return "ok";
-}
-
-export function energyPercent(workplace: ClientWorkplaceState): number {
-  return Math.round((workplace.energy.current / workplace.energy.max) * 100);
-}
-
 export function fridgeControl(
   workplace: ClientWorkplaceState,
 ): ResourceControl {
