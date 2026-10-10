@@ -2,7 +2,7 @@ import { ConfirmAction } from "../../components/tools/ConfirmAction.js";
 import { CaseCommunication } from "./CaseCommunication.js";
 import { updateWorkspacePresentation } from "./workspaceTransition.js";
 import type { AvailableAction, ClientView, WorkSystemId } from "@sim/schemas";
-import { useEffect } from "react";
+import { memo, useEffect } from "react";
 import { getShiftGuidance } from "../../guidance.js";
 import { ShiftCheckpoints } from "./ShiftCheckpoints.js";
 import { SystemApp } from "./SystemApp.js";
@@ -33,7 +33,7 @@ const TOOL_ICONS: Record<WorkSystemId, OsIconName> = {
 };
 
 /** One workspace, five tools. Navigation never submits a simulation action. */
-export function OpsConsole({
+export const OpsConsole = memo(function OpsConsole({
   view,
   onAction,
   onTaskAttempt,
@@ -59,7 +59,9 @@ export function OpsConsole({
   );
   const selectedCase =
     visibleCases.find(({ id }) => id === state.workspace?.eventId) ??
-    visibleCases.find(({ id }) => id === (guidance?.eventId ?? guidance?.action?.eventId)) ??
+    visibleCases.find(
+      ({ id }) => id === (guidance?.eventId ?? guidance?.action?.eventId),
+    ) ??
     visibleCases[0];
   const eventId = selectedCase?.id;
   useEffect(() => {
@@ -348,4 +350,4 @@ export function OpsConsole({
       </div>
     </div>
   );
-}
+});
