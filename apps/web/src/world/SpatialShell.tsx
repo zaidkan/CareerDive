@@ -371,22 +371,7 @@ function SpatialShellStage({
     }
   }, [atDesk, spatial.phase]);
 
-  if (spatial.phase === "floor_map") {
-    return (
-      <FloorMap
-        returning={Boolean(spatial.visitedDesk)}
-        hint={journey.body}
-        onEnterRoom={(roomId) => {
-          dispatch({ type: "enter_room", roomId });
-        }}
-        stepLabel={stepLabel}
-        title={journey.title}
-        {...(journey.target?.kind === "room"
-          ? { highlightRoomId: journey.target.roomId }
-          : {})}
-      />
-    );
-  }
+  const isFloorMap = spatial.phase === "floor_map";
 
   const nearbyHotspotId = spatial.nearbyHotspotId;
   const labelFor = (id: HotspotId): string =>
@@ -446,14 +431,39 @@ function SpatialShellStage({
     (canonicalMutationPending && !movementMutationPending);
 
   return (
-    <section
-      className={`spatial-shell${atDesk ? " spatial-shell-engaged" : ""}`}
-      aria-label="Workplace space"
-    >
-      <div
-        className={`room-stage${atDesk ? " room-stage-desk" : ""}${maximized ? " room-stage-desk-max" : ""}${fullscreen ? " room-stage-fs" : ""}`}
-        ref={stageRef}
+    <>
+      {isFloorMap ? (
+        <FloorMap
+          returning={Boolean(spatial.visitedDesk)}
+          hint={journey.body}
+          onEnterRoom={(roomId) => {
+            dispatch({ type: "enter_room", roomId });
+          }}
+          onRequestFullscreen={() => {
+            if (!fullscreen) void toggleFullscreen();
+          }}
+          stepLabel={stepLabel}
+          title={journey.title}
+          {...(journey.target?.kind === "room"
+            ? { highlightRoomId: journey.target.roomId }
+            : {})}
+        />
+      ) : null}
+      <section
+        className={`spatial-shell${atDesk ? " spatial-shell-engaged" : ""}`}
+        aria-label="Workplace space"
+        aria-hidden={isFloorMap ? true : undefined}
+        {...(isFloorMap ? { inert: true } : {})}
+        style={
+          isFloorMap
+            ? { position: "absolute", opacity: 0, pointerEvents: "none", zIndex: -1 }
+            : undefined
+        }
       >
+        <div
+          className={`room-stage${atDesk ? " room-stage-desk" : ""}${maximized ? " room-stage-desk-max" : ""}${fullscreen ? " room-stage-fs" : ""}`}
+          ref={stageRef}
+        >
         {!atDesk ? (
           <ShiftHints
             view={view}
@@ -724,6 +734,7 @@ function SpatialShellStage({
         </details>
       ) : null}
     </section>
+    </>
   );
 }
 
