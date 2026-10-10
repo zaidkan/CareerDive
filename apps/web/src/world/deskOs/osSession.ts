@@ -4,6 +4,7 @@ import {
   useContext,
   useReducer,
   useEffect,
+  useMemo,
   type Dispatch,
   type ReactNode,
 } from "react";
@@ -143,9 +144,10 @@ export function OsSessionProvider({
   useEffect(() => {
     if (sessionId) writeTabValue(`desk-os:${sessionId}`, state);
   }, [sessionId, state]);
+  const value = useMemo(() => ({ state, dispatch }), [state, dispatch]);
   return createElement(
     OsSessionContext.Provider,
-    { value: { state, dispatch } },
+    { value },
     children,
   );
 }

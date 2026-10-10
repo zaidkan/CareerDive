@@ -107,6 +107,8 @@ function SpatialShellStage({
     writeTabValue(`spatial:${view.sessionId}`, spatial);
   }, [recoveryPresentation, spatial, view.sessionId]);
   const { dispatch: osDispatch } = useOsSession();
+  // Retain camera/door state after entry; no WebGL on the initial map.
+  const [roomEntered, setRoomEntered] = useState(spatial.phase !== "floor_map");
   const [nearbyLabel, setNearbyLabel] = useState<string>();
   const [nearbyChoices, setNearbyChoices] = useState<HotspotId[]>([]);
   const [interactionMiss, setInteractionMiss] = useState(false);
@@ -122,9 +124,8 @@ function SpatialShellStage({
   const { active: fullscreen, toggle: toggleFullscreen, exit: exitFullscreen } =
     useFullscreen(stageRef);
 
-  useEffect(() => {
-    if (spatial.phase === "floor_map") void loadRoomCanvas().catch(() => {});
-  }, [spatial.phase]);
+  const onWalkBlocked = useCallback(() => { setWalkBlocked(true); }, []);
+  const onRecover = useCallback(() => { setWalkBlocked(false); }, []);
 
   useEffect(() => {
     if (spatial.phase === "floor_map") onRoomExit?.();
@@ -431,9 +432,13 @@ function SpatialShellStage({
           returning={Boolean(spatial.visitedDesk)}
           hint={journey.body}
           onEnterRoom={(roomId) => {
+            setRoomEntered(true);
             dispatch({ type: "enter_room", roomId });
           }}
           onRequestFullscreen={() => {
+            // Fetch during hallway travel, after explicit intent. Fullscreen
+            // stays in this synchronous click handler.
+            void loadRoomCanvas().catch(() => {});
             if (!fullscreen) void toggleFullscreen();
           }}
           stepLabel={stepLabel}
@@ -465,10 +470,11 @@ function SpatialShellStage({
             paused={julesOpen || morganOpen}
           />
         ) : null}
-        <Suspense
+        {roomEntered ? <Suspense
           fallback={<p className="room-loading">Entering {roomLabel}…</p>}
         >
           <RoomCanvas
+            active={!isFloorMap}
             enabled={walking && !playerMovementBlocked}
             {...(onAcceptedDistance ? { onAcceptedDistance } : {})}
             onBreakRoomExit={requestFridgeCloseOnExit}
@@ -476,15 +482,11 @@ function SpatialShellStage({
             onNearbyChange={onNearbyChange}
             seated={atDesk}
             workplace={view.workplace}
-            onWalkBlocked={() => {
-              setWalkBlocked(true);
-            }}
-            onRecover={() => {
-              setWalkBlocked(false);
-            }}
+            onWalkBlocked={onWalkBlocked}
+            onRecover={onRecover}
             {...(highlightHotspotId ? { highlightHotspotId } : {})}
           />
-        </Suspense>
+        </Suspense> : null}
         {atDesk && deskPhase ? (
           <LaptopOverlay
             maximized={maximized}
