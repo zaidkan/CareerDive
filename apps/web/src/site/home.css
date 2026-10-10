@@ -546,3 +546,17 @@
     padding: 0.75rem 0.85rem;
   }
 }
+
+/* —— Launch film: reserved geometry, manual playback, deferred media —— */
+.home-launch-chapter h2 {
+  margin: 0 0 2rem;
+}
+.home-launch-video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  background: var(--canvas);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}

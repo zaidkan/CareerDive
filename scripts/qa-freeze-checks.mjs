@@ -251,6 +251,11 @@ export function collectMetrics({ leakPatterns = [] } = {}) {
     navReport,
     workshopArtifactCount,
     workshopLabels,
+    homeLaunchManual: (() => {
+      const video = document.querySelector(".home-launch video");
+      return video instanceof HTMLVideoElement && video.controls &&
+        video.preload === "none" && !video.autoplay && video.paused;
+    })(),
     homeReflectLeft: document.querySelector(".home-reflect-content")?.getBoundingClientRect().left ?? null,
     homeShiftLeft: document.querySelector(".home-shift-chapter")?.getBoundingClientRect().left ?? null,
     homeSectionOrder: Array.from(document.querySelectorAll(".v2-home > section")).map((section) => section.className),
@@ -418,8 +423,9 @@ export function evaluateChecks({ route, theme, motion, metrics }) {
   if (route.key === "home") {
     const order = metrics.homeSectionOrder ?? [];
     push("home-feature-order", JSON.stringify(order) === JSON.stringify([
-      "home-hero", "home-place", "home-realwork", "home-analysis", "home-shift", "home-reflect", "home-faq", "home-final",
+      "home-hero", "home-place", "home-realwork", "home-analysis", "home-shift", "home-launch", "home-reflect", "home-faq", "home-final",
     ]), order);
+    push("home-launch-manual-playback", metrics.homeLaunchManual === true, metrics.homeLaunchManual);
     push("home-reflection-aligned", metrics.homeReflectLeft !== null &&
       metrics.homeShiftLeft !== null && Math.abs(metrics.homeReflectLeft - metrics.homeShiftLeft) <= 1,
       { reflect: metrics.homeReflectLeft, shift: metrics.homeShiftLeft });
