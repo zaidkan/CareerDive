@@ -4,6 +4,9 @@ export default defineConfig({
   test: {
     // Keep DOM-heavy integration tests within their real-time assertions.
     maxWorkers: 2,
+    // Spatial DOM waits allow 6s; leave room for a cold first render and the
+    // surrounding user interactions in the enclosing test's budget.
+    testTimeout: 15_000,
     include: [
       "packages/**/*.test.ts",
       "apps/**/*.test.ts",
