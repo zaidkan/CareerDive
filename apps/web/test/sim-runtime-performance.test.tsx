@@ -2,6 +2,7 @@
 import "@testing-library/jest-dom/vitest";
 import { useEffect, useRef } from "react";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -15,6 +16,27 @@ import { SpatialShell } from "../src/world/SpatialShell.js";
 import { OpsConsole } from "../src/world/deskOs/OpsConsole.js";
 import { OsSessionProvider } from "../src/world/deskOs/osSession.js";
 
+const fullscreenProperties = [
+  {
+    target: HTMLElement.prototype,
+    key: "requestFullscreen",
+    descriptor: Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "requestFullscreen",
+    ),
+  },
+  {
+    target: document,
+    key: "fullscreenElement",
+    descriptor: Object.getOwnPropertyDescriptor(document, "fullscreenElement"),
+  },
+  {
+    target: document,
+    key: "exitFullscreen",
+    descriptor: Object.getOwnPropertyDescriptor(document, "exitFullscreen"),
+  },
+];
+
 const probes = vi.hoisted(() => ({ mounts: vi.fn(), tool: vi.fn() }));
 vi.mock("../src/world/FloorMap.js", () => ({
   FloorMap: ({
@@ -27,7 +49,9 @@ vi.mock("../src/world/FloorMap.js", () => ({
     <button
       onClick={() => {
         onRequestFullscreen();
-        window.setTimeout(() => { onEnterRoom("soc"); }, 30);
+        window.setTimeout(() => {
+          onEnterRoom("soc");
+        }, 30);
       }}
     >
       Enter room
@@ -88,10 +112,34 @@ afterEach(() => {
   sessionStorage.clear();
   vi.clearAllMocks();
   vi.unstubAllGlobals();
+  for (const { target, key, descriptor } of fullscreenProperties) {
+    if (descriptor) Object.defineProperty(target, key, descriptor);
+    else Reflect.deleteProperty(target, key);
+  }
 });
 
 it("defers scene creation until entry, then retains it while pausing on map return", async () => {
-  const requestFullscreen = vi.fn().mockResolvedValue(undefined);
+  let fullscreenElement: Element | null = null;
+  let finishExit!: () => void;
+  const exitGate = new Promise<void>((resolve) => {
+    finishExit = resolve;
+  });
+  const requestFullscreen = vi.fn(() => {
+    fullscreenElement = document.querySelector(".room-stage");
+    return Promise.resolve();
+  });
+  const exitFullscreen = vi.fn(async () => {
+    await exitGate;
+    fullscreenElement = null;
+  });
+  Object.defineProperty(document, "fullscreenElement", {
+    configurable: true,
+    get: () => fullscreenElement,
+  });
+  Object.defineProperty(document, "exitFullscreen", {
+    configurable: true,
+    value: exitFullscreen,
+  });
   Object.defineProperty(HTMLElement.prototype, "requestFullscreen", {
     configurable: true,
     value: requestFullscreen,
@@ -105,26 +153,39 @@ it("defers scene creation until entry, then retains it while pausing on map retu
   // synchronous with room selection rather than waiting for asset loading.
   fireEvent.click(screen.getByRole("button", { name: "Enter room" }));
   expect(requestFullscreen).toHaveBeenCalledOnce();
-  await waitFor(() =>
-    { expect(screen.getByTestId("scene")).toHaveAttribute("data-active", "true"); },
-  );
+  expect(requestFullscreen.mock.contexts[0]).toBe(document.querySelector(".room-stage"));
+  await waitFor(() => {
+    expect(screen.getByTestId("scene")).toHaveAttribute("data-active", "true");
+  });
   expect(probes.mounts).toHaveBeenCalledOnce();
+  const scene = screen.getByTestId("scene");
   fireEvent.click(screen.getByRole("button", { name: "Exit room" }));
+  await waitFor(() => {
+    expect(exitFullscreen).toHaveBeenCalledOnce();
+  });
+  // A real pending Fullscreen API promise must keep the room visible/running.
+  expect(scene).toHaveAttribute("data-active", "true");
+  expect(screen.queryByRole("button", { name: "Enter room" })).toBeNull();
+  await act(async () => {
+    finishExit();
+    await exitGate;
+  });
   // Exiting the room now exits fullscreen before returning to the map, so the
   // leave_room transition resolves asynchronously. The scene stays mounted
   // (retained) but pauses once the floor map is shown.
-  await waitFor(() =>
-    { expect(screen.getByTestId("scene")).toHaveAttribute("data-active", "false"); },
-  );
-  expect(screen.getByTestId("scene")).toHaveTextContent("1");
+  await waitFor(() => {
+    expect(screen.getByTestId("scene")).toHaveAttribute("data-active", "false");
+  });
+  expect(screen.getByTestId("scene")).toBe(scene);
+  expect(document.fullscreenElement).toBeNull();
+  expect(scene).toHaveTextContent("1");
   fireEvent.click(screen.getByRole("button", { name: "Enter room" }));
-  await waitFor(() =>
-    { expect(screen.getByTestId("scene")).toHaveAttribute("data-active", "true"); },
-  );
+  await waitFor(() => {
+    expect(screen.getByTestId("scene")).toHaveAttribute("data-active", "true");
+  });
   expect(probes.mounts).toHaveBeenCalledOnce();
   expect(onAction).not.toHaveBeenCalled();
-  delete (HTMLElement.prototype as unknown as Record<string, unknown>)
-    .requestFullscreen;
+  expect(screen.getByTestId("scene")).toBe(scene);
 });
 
 it("skips unchanged workstation renders but propagates canonical and navigation changes", async () => {
