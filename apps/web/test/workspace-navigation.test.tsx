@@ -79,7 +79,7 @@ it("keeps a case across tools, shows a short navigation cue, and never chooses a
   );
   expect(
     screen.getByRole("region", { name: "Current objective" }),
-  ).toHaveTextContent("Which unfinished case will you take ownership of?");
+  ).toHaveTextContent("Read your first assignment, then pick a case");
   await user.click(screen.getByRole("button", { name: "Tickets" }));
   expect(screen.getByRole("combobox", { name: "Current case" })).toHaveValue(
     "handoff-1",
@@ -145,7 +145,7 @@ it("updates the objective after canonical progress without forcing a tool switch
   rerender(tree(note));
   expect(
     screen.getByRole("region", { name: "Current objective" }),
-  ).toHaveTextContent("What judgment and next check will your memo carry?");
+  ).toHaveTextContent("What should happen next, based on your findings?");
   expect(screen.getByRole("button", { name: "Alerts" })).toHaveAttribute(
     "aria-current",
     "page",
@@ -170,7 +170,7 @@ it("updates the objective after canonical progress without forcing a tool switch
     ],
   };
   expect(workspaceObjective(decision, "suspicious-login-1").objective).toBe(
-    "What judgment and next check will your memo carry?",
+    "What should happen next, based on your findings?",
   );
 });
 it("persists selected tool/case and unassessed scratchpad through a full provider remount", async () => {

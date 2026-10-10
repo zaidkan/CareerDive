@@ -1024,7 +1024,7 @@ scenario:
               label: A-1042 was compared with the exact device, session route, employee report, and record-coverage limits.
               source:
                 artifactId: ticket-suspicious-login
-                quote: "Limit: saving analysis proposes a disposition; send the explicit request or closure from Alerts."
+                quote: "Limit: saving findings keeps the case open; sending the memo in Tickets carries out the chosen response."
             - id: scanner-checked
               label: A-1180 matched RUN-FIN-031 and the approved finance scanning window.
               source:
@@ -2189,7 +2189,7 @@ scenario:
         Uncertainty: keep the identity and collection limits visible.
         Next step: name the review you are requesting and the question it should resolve.
         Keep A-1042, S-0741/S-0731 and exact device/route references.
-        Limit: saving analysis proposes a disposition; send the explicit request or closure from Alerts.
+        Limit: saving findings keeps the case open; sending the memo in Tickets carries out the chosen response.
       eventIds: [suspicious-login-1, status-check-1, shift-handoff-1]
       searchableText: ticket investigation notes
 

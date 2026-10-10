@@ -99,7 +99,7 @@ export function getJourneyStep({
   if (phase === "floor_map") {
     return step("find_room", {
       title: "Head to Security Operations",
-      body: "Your desk is inside the SOC. Walk the hall to the open door and step in.",
+      body: "Your desk is inside Security Operations. Walk the hall to the open door and step in.",
       target: { kind: "room", roomId: "soc" },
     });
   }

@@ -69,7 +69,9 @@ it("builds an uncited weak claim, carries it across tools, and dispatches one op
       ?.caseFindings?.[0]?.rowIds,
   ).toEqual([]);
   await user.click(
-    screen.getByRole("button", { name: "Choose a response from saved findings" }),
+    screen.getByRole("button", {
+      name: "Choose a response from saved findings",
+    }),
   );
   expect(screen.queryByText("Evidence reviewed")).toBeNull();
   expect(
@@ -95,4 +97,8 @@ it("builds an uncited weak claim, carries it across tools, and dispatches one op
   expect(
     screen.getByRole("region", { name: "Case response receipt" }),
   ).toHaveTextContent("does not certify");
+  expect(screen.queryByText(/Preview:/)).toBeNull();
+  expect(
+    screen.getByRole("button", { name: "Save memo correction" }),
+  ).toBeVisible();
 });

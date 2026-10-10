@@ -24,9 +24,10 @@ export function ThresholdBrief({
           A short simulated first shift as a {COMPANY.role} at {COMPANY.name}
         </h2>
         <p className="threshold-brief-lede">
-          A-1042 created session S-0741 after failed checks. Decide whether the
-          available records explain it or warrant senior review. Your memo must
-          let the reviewer continue without repeating your checks.
+          Alert A-1042 shows a sign-in connection, S-0741, after failed checks.
+          Decide whether the records explain it or need a more experienced
+          analyst’s review. Leave case notes that let the next analyst continue
+          without repeating your checks.
         </p>
         <details className="threshold-brief-guidance">
           <summary>Before you begin</summary>
@@ -41,8 +42,7 @@ export function ThresholdBrief({
           <li>Walk the floor map into Security Operations</li>
           <li>Sit at your desk and sign in</li>
           <li>
-            Build source-backed findings, choose a response, and hand your work
-            forward
+            Compare records, choose a response, and pass your case notes on
           </li>
         </ol>
         <p className="threshold-brief-note">

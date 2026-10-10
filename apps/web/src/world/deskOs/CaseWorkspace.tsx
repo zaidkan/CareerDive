@@ -9,6 +9,7 @@ import {
   findingQuestions,
   findingText,
   reasoningFromFindings,
+  reviewReasoning,
   type FindingQuestion,
 } from "@sim/core";
 import type {
@@ -306,11 +307,12 @@ export function CaseWorkspace({
             </p>
             <p>
               Requested next check:{" "}
-              {groups
-                .find((g) => g.id === "nextStep")
-                ?.options.filter((o) => receipt.nextStep.includes(o.id))
-                .map((o) => o.label)
-                .join(" ") || "No next check recorded."}
+              {reviewReasoning(
+                eventId,
+                receipt,
+                ticket.decisionSourceIds ?? [],
+              ).fields.nextStep?.selectedLabels.join(" ") ||
+                "No next check recorded."}
             </p>
             <p>
               Receiving a memo does not certify its claims. Corrections below
@@ -428,12 +430,14 @@ export function CaseWorkspace({
                   ))}
               </fieldset>
             )}
-            <p>
-              Preview:{" "}
-              {memoAction?.decisionOptions?.find((o) => o.id === decision)
-                ?.label ?? "No proposed judgment."}{" "}
-              {labels("nextStep").join(" ")}
-            </p>
+            {!receipt && (
+              <p>
+                Preview:{" "}
+                {memoAction?.decisionOptions?.find((o) => o.id === decision)
+                  ?.label ?? "No proposed judgment."}{" "}
+                {labels("nextStep").join(" ")}
+              </p>
+            )}
             <div className="case-operation-actions">
               <button
                 type="button"

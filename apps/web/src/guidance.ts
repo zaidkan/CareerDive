@@ -29,7 +29,7 @@ export function getShiftGuidance(view: ClientView): ShiftGuidance | null {
             ["status-check-1", "shift-handoff-1"].includes(e.id)),
       );
     if (!event) return null;
-    const action = view.caseActions.find(
+    const action = [...view.caseActions, ...view.availableActions].find(
       (a) =>
         a.eventId === event.id &&
         !["ask_manager", "query_records"].includes(a.id),
@@ -233,7 +233,7 @@ export function getOptionalShiftHints(
       "approval-boundary":
         "In Guides, compare the finance request and access approval guide. Who may authorize this role, and what stays pending until they do? Save the distinction before choosing where to send it.",
       "device-pattern":
-        "Open Rivera’s sign-in and device records in Email. Compare the laptop and phone separately, including successful sign-ins and retries. This is a different person’s case from Patel’s unfamiliar login.",
+        "In Alerts, open Rivera’s sign-in and device records for this question. Compare the laptop and phone separately, including successful sign-ins and retries. This is a different person’s case from Patel’s unfamiliar login.",
     };
     const first =
       eventId === "handoff-1"

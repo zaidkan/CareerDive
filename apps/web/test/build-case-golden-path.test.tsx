@@ -269,6 +269,14 @@ it("constructs sources/findings through real controls and router, survives faile
     screen.getByRole("checkbox", { name: /Reopen review if retries continue/ }),
   );
   await confirm("Request check and receive result");
+  const riveraReceipt = screen.getByRole("region", {
+    name: "Case response receipt",
+  });
+  expect(riveraReceipt).toHaveTextContent(
+    "Ask Rivera to update the saved password in the phone app",
+  );
+  expect(riveraReceipt).toHaveTextContent("Reopen review if retries continue");
+  expect(riveraReceipt).not.toHaveTextContent("No next check recorded");
   expect(workspaceObjective(current, "login-help-1").objective).toBe(
     "What did the requested device check establish?",
   );
@@ -280,6 +288,12 @@ it("constructs sources/findings through real controls and router, survives faile
     screen.getByRole("checkbox", { name: /Reopen on continued retries/ }),
   );
   await click("Save result interpretation");
+  // The follow-up is a new interpretation; it must not rewrite the request.
+  expect(
+    screen.getByRole("region", { name: "Case response receipt" }),
+  ).toHaveTextContent(
+    "Ask Rivera to update the saved password in the phone app",
+  );
   expect(
     screen.getByRole("region", { name: "Interpret Rivera's result" }),
   ).toHaveTextContent("Result interpretation saved");

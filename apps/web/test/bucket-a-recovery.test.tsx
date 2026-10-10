@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import { createInitialWorldState, toClientView } from "@sim/core";
 import { RecoveryWorkspace } from "../src/experience/RecoveryWorkspace.js";
@@ -55,22 +56,38 @@ it("recovery reuses five tools and shows finish guidance after the final handoff
 it.each(["floor_map", "room_walk"] as const)(
   "returning %s keeps the real objective and allows a break",
   (phase) => {
-    const view = fresh();
-    view.availableActions = [
-      {
-        id: "submit_shift_handoff",
-        eventId: "shift-handoff-1",
-        systemId: "team_chat",
-        label: "Send end-of-shift handoff",
-        description: "Carry work forward",
-        simulatedMinutes: 5,
-      },
-    ];
+    // Recovery must follow canonical progress, not an action-only fixture that
+    // still has the incoming assignment active.
+    const state = createInitialWorldState(
+      "returning-handoff",
+      7,
+      {},
+      loadDefaultCybersecurityPack(),
+    );
+    state.simClock = 90;
+    state.events = state.events.map((event) => ({
+      ...event,
+      status: event.id === "shift-handoff-1" ? "active" : "resolved",
+    }));
+    const view = toClientView(state);
+    expect(view.availableActions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "submit_shift_handoff",
+          eventId: "shift-handoff-1",
+        }),
+      ]),
+    );
     const step = getJourneyStep({ view, phase, visitedDesk: true });
-    expect(step.title).toMatch(/Send end-of-shift handoff/);
-    expect(step.body).toMatch(/select what still matters/);
+    expect(step.title).toBe("Leave the next analyst a handoff");
+    expect(step.body).toMatch(/actual case outcomes and open questions/);
     expect(step.body).toMatch(/take a break/);
-    expect(step.index).not.toBe(1);
+    expect(step.index).toBe(7);
+    expect(step.target).toEqual(
+      phase === "floor_map"
+        ? { kind: "room", roomId: "soc" }
+        : { kind: "hotspot", hotspotId: "desk_player" },
+    );
   },
 );
 it("case chat excludes unrelated case messages", () => {
@@ -98,4 +115,44 @@ it("case chat excludes unrelated case messages", () => {
   expect(screen.getByRole("status")).toHaveTextContent(
     "Current finance context",
   );
+});
+
+it("offers waiting end-handoff navigation from a recorded case without sending it", async () => {
+  const user = userEvent.setup();
+  const state = createInitialWorldState(
+    "waiting-handoff",
+    7,
+    {},
+    loadDefaultCybersecurityPack(),
+  );
+  state.simClock = 90;
+  state.events = state.events.map((event) => ({
+    ...event,
+    status: event.id === "shift-handoff-1" ? "active" : "resolved",
+  }));
+  const onAction = vi.fn();
+  render(<RecoveryWorkspace view={toClientView(state)} onAction={onAction} />);
+  await user.selectOptions(
+    screen.getByLabelText("Current case"),
+    "status-check-1",
+  );
+  expect(
+    screen.getByRole("region", { name: "Current objective" }),
+  ).toHaveTextContent("What did your message carry");
+  await user.click(
+    screen.getByRole("button", {
+      name: "Other work waiting: End-of-shift continuity",
+    }),
+  );
+  expect(screen.getByLabelText("Current case")).toHaveValue("shift-handoff-1");
+  expect(
+    screen.getByRole("region", { name: "Current objective" }),
+  ).toHaveTextContent("What should the next analyst know and check next?");
+  expect(
+    screen.getByRole("heading", { name: "End-of-shift continuity" }),
+  ).toHaveFocus();
+  expect(
+    screen.getByRole("button", { name: "Send handoff to next analyst" }),
+  ).toBeVisible();
+  expect(onAction).not.toHaveBeenCalled();
 });

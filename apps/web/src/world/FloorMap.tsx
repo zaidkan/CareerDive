@@ -193,7 +193,7 @@ export function FloorMap({
           <p className="floor-action-text">
             {returning
               ? "Choose Security Operations to return to your work area."
-              : "Walk the marked route and enter the SOC."}
+              : "Walk the marked route into Security Operations."}
           </p>
         </div>
 

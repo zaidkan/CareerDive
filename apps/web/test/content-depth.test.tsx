@@ -27,8 +27,8 @@ it("derives shift checkpoints from current visible work, not static future meeti
     const current = view();
     const { rerender } = render(<ShiftCheckpoints view={current} onOpenEmail={vi.fn()}/>);
     expect(screen.getByText("Shift handoff")).toBeVisible();
-    expect(screen.getByText(/Buddy check with Morgan/)).toBeVisible();
-    expect(screen.getByText(/Optional break with Jules/)).toBeVisible();
+    expect(screen.getByText(/Ask your manager · use Team chat/)).toBeVisible();
+    expect(screen.getByText(/Break with Jules, your coworker/)).toBeVisible();
     expect(screen.queryByText(/Priya|09:15|11:00|14:30|locked/)).toBeNull();
     rerender(<ShiftCheckpoints view={{
             ...current,
@@ -39,7 +39,7 @@ it("derives shift checkpoints from current visible work, not static future meeti
             availableActions: [],
         }} onOpenEmail={vi.fn()}/>);
     expect(screen.queryByText("Shift handoff")).toBeNull();
-    expect(screen.queryByText(/Buddy check|Optional break/)).toBeNull();
+    expect(screen.queryByText(/Ask your manager|Break with Jules/)).toBeNull();
     expect(screen.getByText(/No current work checkpoints/)).toBeVisible();
 });
 it.each(["resolved", "escalated"] as const)("keeps the canonical %s resolution visible in the shared case rail", (status) => {

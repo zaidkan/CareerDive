@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import {
@@ -16,6 +16,9 @@ import {
 } from "../src/guidance.js";
 import { CaseWorkspace } from "../src/world/deskOs/CaseWorkspace.js";
 import { CaseCommunication } from "../src/world/deskOs/CaseCommunication.js";
+import { OpsConsole } from "../src/world/deskOs/OpsConsole.js";
+import { OsSessionProvider } from "../src/world/deskOs/osSession.js";
+import { ShiftHints } from "../src/world/dialogue/ShiftHints.js";
 import { EMPTY_MUTATION_STATE } from "../src/useMutationCoordinator.js";
 const initial = () =>
   createInitialWorldState("audit", 7, {}, loadDefaultCybersecurityPack());
@@ -181,4 +184,61 @@ it("hints address the question the player chose, even when investigating out of 
       "route",
     )[0],
   ).toMatch(/earlier session, flagged session, and VPN/);
+});
+
+it("keeps visible help in sync with an out-of-order question across tools", async () => {
+  const user = userEvent.setup();
+  const state = initial();
+  const assignment = state.events.find((e) => e.id === "handoff-1");
+  if (!assignment) throw new Error("Missing assignment");
+  assignment.status = "resolved";
+  const rivera = state.events.find((e) => e.id === "login-help-1");
+  if (!rivera) throw new Error("Missing Rivera case");
+  rivera.status = "active";
+  const view = toClientView(state);
+  render(
+    <OsSessionProvider>
+      <ShiftHints view={view} phase="seated_monitor" />
+      <OpsConsole view={view} onAction={vi.fn()} />
+    </OsSessionProvider>,
+  );
+  await user.click(screen.getByRole("button", { name: "Need a hint? (H)" }));
+  const help = screen.getByText("Optional hint").closest("[role=status]");
+  expect(help).toHaveTextContent("Open the session timeline in Alerts");
+  await user.selectOptions(screen.getByLabelText("Open question"), "device");
+  expect(screen.getByRole("button", { name: "Guides" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  expect(help).toHaveTextContent("exact laptop label");
+  expect(help).not.toHaveTextContent("Open the session timeline");
+  await user.selectOptions(screen.getByLabelText("Open question"), "route");
+  expect(screen.getByRole("button", { name: "Alerts" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  expect(help).toHaveTextContent(
+    "earlier session, flagged session, and VPN connection rows",
+  );
+  await user.click(screen.getByRole("button", { name: "Dismiss hint" }));
+  expect(
+    screen.getByRole("button", { name: "Need a hint? (H)" }),
+  ).toHaveFocus();
+  expect(screen.queryByText("Optional hint")).toBeNull();
+  await user.selectOptions(screen.getByLabelText("Current case"), rivera.id);
+  await user.click(screen.getByRole("button", { name: "Need a hint? (H)" }));
+  expect(screen.getByRole("button", { name: "Alerts" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  expect(
+    screen.getByText("Optional hint").closest("[role=status]"),
+  ).toHaveTextContent("In Alerts, open Rivera’s sign-in and device records");
+  expect(
+    within(
+      screen.getByRole("form", {
+        name: "Construct finding: What differs between Rivera's phone and laptop?",
+      }),
+    ).getByRole("button", { name: "Open Authentication summary · A. Rivera" }),
+  ).toBeVisible();
 });

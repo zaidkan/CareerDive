@@ -13,6 +13,10 @@
   padding: 0.65rem 1.25rem;
   background: var(--surface-subtle);
   border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+.desk-os-laptop:has(> .optional-shift-hint) .workspace-header {
+  padding-block-start: 3.5rem;
 }
 .desk-workspace .workspace-header strong {
   font-size: 0.9rem;
@@ -24,6 +28,7 @@
 }
 .desk-workspace .workspace-controls {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 .desk-workspace .workspace-controls button {
@@ -499,6 +504,7 @@
   min-height: 28rem;
   display: block;
   overflow: hidden;
+  padding-block-start: 3.5rem;
 }
 .desk-workspace .option-source-reader {
   margin-block: 1rem;
@@ -666,4 +672,44 @@
 .desk-workspace .case-glossary dd {
   margin: 0.25rem 0 0.75rem;
   line-height: 1.6;
+}
+
+/* Small work panes need their full height for records and keyboard focus. */
+@media (max-width: 700px), (max-height: 700px) {
+  .desk-workspace .workspace-content,
+  .desk-os.desk-workspace.recovery-workspace {
+    overflow: auto;
+    scroll-padding-block: 1rem;
+  }
+  .desk-workspace .workspace-console {
+    height: auto;
+    display: block;
+  }
+  .desk-workspace .workspace-layout {
+    display: block;
+  }
+  .desk-workspace .workspace-rail {
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .desk-workspace .workspace-tool {
+    flex: 1 0 auto;
+    min-height: 44px;
+  }
+  .desk-workspace .workspace-shift-status {
+    flex-basis: 100%;
+    padding: 0.5rem;
+    margin: 0;
+  }
+  .desk-workspace .workspace-panel {
+    overflow: visible;
+  }
+  .desk-workspace .case-board {
+    position: static;
+  }
+  .desk-workspace .workspace-panel:has(.case-board) {
+    scroll-padding-block-start: 1rem;
+  }
 }

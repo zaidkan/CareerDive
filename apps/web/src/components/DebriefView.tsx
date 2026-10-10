@@ -210,7 +210,7 @@ export function DebriefView({
           className="decision-practical-example"
           aria-label="Status communication review"
         >
-          <h3>What Morgan received</h3>
+          <h3>What your manager received</h3>
           <p>{review.statusReview.message}</p>
           <p>
             <strong>{OUTCOMES[review.statusReview.outcomeLabel]}</strong> · this
