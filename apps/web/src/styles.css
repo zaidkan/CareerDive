@@ -3061,29 +3061,6 @@ section[aria-labelledby="structured-title"],
   font-size: 0.72rem;
 }
 
-.room-sensitivity {
-  display: grid;
-  grid-template-columns: auto minmax(7rem, 13rem) auto;
-  gap: 0.55rem;
-  align-items: center;
-  width: min(100%, 22rem);
-  margin-top: 0.55rem;
-  color: var(--mute);
-  font-family: var(--font-mono);
-  font-size: 0.68rem;
-}
-
-.room-sensitivity input {
-  min-width: 7rem;
-  accent-color: var(--signal);
-}
-
-.room-sensitivity output {
-  min-width: 2.2rem;
-  color: var(--paper);
-  text-align: right;
-}
-
 .break-room-panel {
   display: grid;
   gap: 0.35rem;

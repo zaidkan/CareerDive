@@ -55,7 +55,6 @@ export const RoomCanvas = memo(function RoomCanvas({
   seated = false,
   highlightHotspotId,
   workplace,
-  mouseSensitivity,
   onBreakRoomExit,
   onWalkBlocked,
   onRecover,
@@ -71,7 +70,6 @@ export const RoomCanvas = memo(function RoomCanvas({
   seated?: boolean;
   highlightHotspotId?: HotspotId;
   workplace: ClientWorkplaceState;
-  mouseSensitivity: number;
   onBreakRoomExit: () => void;
   onWalkBlocked?: () => void;
   onRecover?: (position: [number, number, number]) => void;
@@ -107,7 +105,7 @@ export const RoomCanvas = memo(function RoomCanvas({
               onNearbyChange={onNearbyChange}
               seated={seated}
               workplace={workplace}
-              mouseSensitivity={mouseSensitivity}
+
               {...(onWalkBlocked ? { onWalkBlocked } : {})}
               {...(onRecover ? { onRecover } : {})}
               {...(onAcceptedDistance ? { onAcceptedDistance } : {})}

@@ -48,13 +48,6 @@ import {
   workplaceMutationKey,
   type MutationState,
 } from "../useMutationCoordinator.js";
-import {
-  loadMouseSensitivity,
-  MAX_MOUSE_SENSITIVITY,
-  MIN_MOUSE_SENSITIVITY,
-  MOUSE_SENSITIVITY_STEP,
-  saveMouseSensitivity,
-} from "./mouseSensitivity.js";
 
 const loadRoomCanvas = () => import("./RoomCanvas.js");
 const RoomCanvas = lazy(async () => {
@@ -118,8 +111,6 @@ function SpatialShellStage({
   const [nearbyChoices, setNearbyChoices] = useState<HotspotId[]>([]);
   const [interactionMiss, setInteractionMiss] = useState(false);
   const [pointerLocked, setPointerLocked] = useState(false);
-  const [mouseSensitivity, setMouseSensitivity] =
-    useState(loadMouseSensitivity);
   const [workplacePending, setWorkplacePending] = useState(false);
   const [morganOpen, setMorganOpen] = useState(false);
   const [julesOpen, setJulesOpen] = useState(false);
@@ -485,7 +476,6 @@ function SpatialShellStage({
             onNearbyChange={onNearbyChange}
             seated={atDesk}
             workplace={view.workplace}
-            mouseSensitivity={mouseSensitivity}
             onWalkBlocked={() => {
               setWalkBlocked(true);
             }}
@@ -651,25 +641,6 @@ function SpatialShellStage({
               </details>
             </div>
             <div className="room-hud-actions">
-              <label className="room-sensitivity" htmlFor="mouse-sensitivity">
-                Mouse sensitivity
-                <input
-                  id="mouse-sensitivity"
-                  type="range"
-                  min={MIN_MOUSE_SENSITIVITY}
-                  max={MAX_MOUSE_SENSITIVITY}
-                  step={MOUSE_SENSITIVITY_STEP}
-                  value={mouseSensitivity}
-                  onChange={(event) => {
-                    const next = Number(event.currentTarget.value);
-                    setMouseSensitivity(next);
-                    saveMouseSensitivity(next);
-                  }}
-                />
-                <output htmlFor="mouse-sensitivity">
-                  {mouseSensitivity.toFixed(1)}×
-                </output>
-              </label>
               {nearbyHotspotId && !breakStation ? (
                 <button
                   className="start-shift"
