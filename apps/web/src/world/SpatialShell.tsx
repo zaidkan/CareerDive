@@ -18,6 +18,7 @@ import {
   julesDialogueFromClientView,
   type JulesDialogueReply,
 } from "@sim/core";
+import { ArrivalFilm } from "../site/ArrivalFilm.js";
 import { MutationStatus } from "../components/MutationStatus.js";
 import { BreakRoomPanel, EmergencyRecoveryControl } from "./BreakRoomPanel.js";
 import { coffeeControl } from "./breakRoom.js";
@@ -47,9 +48,8 @@ import {
   type MutationState,
 } from "../useMutationCoordinator.js";
 
-const loadRoomCanvas = () => import("./RoomCanvas.js");
 const RoomCanvas = lazy(async () => {
-  const mod = await loadRoomCanvas();
+  const mod = await import("./RoomCanvas.js");
   return { default: mod.RoomCanvas };
 });
 
@@ -84,6 +84,7 @@ function SpatialShellStage({
   onAcceptedDistance,
   onRoomExit,
   recoveryPresentation,
+  arrivalFilmEnabled = false,
 }: {
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
@@ -95,6 +96,8 @@ function SpatialShellStage({
   onAcceptedDistance?: (meters: number) => void;
   onRoomExit?: () => void;
   recoveryPresentation?: { current: SpatialState };
+  /** Presentation only; disable without changing session or scene ownership. */
+  arrivalFilmEnabled?: boolean;
 }) {
   const [spatial, dispatch] = useReducer(
     reduceSpatialEvent,
@@ -107,6 +110,10 @@ function SpatialShellStage({
   const { dispatch: osDispatch } = useOsSession();
   // Retain camera/door state after entry; no WebGL on the initial map.
   const [roomEntered, setRoomEntered] = useState(spatial.phase !== "floor_map");
+  const arrivalPending = useRef(arrivalFilmEnabled && spatial.phase === "floor_map");
+  const [arrivalActive, setArrivalActive] = useState(false);
+  const [sceneReady, setSceneReady] = useState(false);
+  const onSceneReady = useCallback(() => { setSceneReady(true); }, []);
   const [nearbyLabel, setNearbyLabel] = useState<string>();
   const [nearbyChoices, setNearbyChoices] = useState<HotspotId[]>([]);
   const [interactionMiss, setInteractionMiss] = useState(false);
@@ -121,6 +128,11 @@ function SpatialShellStage({
   const closeFridgeIntentRef = useRef(false);
   const { active: fullscreen, toggle: toggleFullscreen, exit: exitFullscreen } =
     useFullscreen(stageRef);
+
+  const finishArrival = useCallback(() => {
+    setArrivalActive(false);
+    stageRef.current?.focus({ preventScroll: true });
+  }, []);
 
   const onWalkBlocked = useCallback(() => { setWalkBlocked(true); }, []);
   const onRecover = useCallback(() => { setWalkBlocked(false); }, []);
@@ -403,6 +415,7 @@ function SpatialShellStage({
     mutationState.pendingKey ===
     workplaceMutationKey({ type: "movement_exertion", distanceMeters: 5 });
   const playerMovementBlocked =
+    arrivalActive ||
     julesOpen ||
     morganOpen ||
     workplacePending ||
@@ -412,16 +425,20 @@ function SpatialShellStage({
     <>
       {isFloorMap ? (
         <FloorMap
+          animateTravel={false}
           returning={Boolean(spatial.visitedDesk)}
           hint={journey.body}
           onEnterRoom={(roomId) => {
+            if (roomId === "soc" && arrivalPending.current) {
+              arrivalPending.current = false;
+              setArrivalActive(true);
+            }
             setRoomEntered(true);
             dispatch({ type: "enter_room", roomId });
           }}
           onRequestFullscreen={() => {
-            // Fetch during hallway travel, after explicit intent. Fullscreen
-            // stays in this synchronous click handler.
-            void loadRoomCanvas().catch(() => {});
+            // Preload and request fullscreen in the SOC click; the same stage
+            // stays mounted through film playback and live gameplay.
             if (!fullscreen) void toggleFullscreen();
           }}
           stepLabel={stepLabel}
@@ -443,14 +460,17 @@ function SpatialShellStage({
         }
       >
         <div
-          className={`room-stage${atDesk ? " room-stage-desk" : ""}${maximized ? " room-stage-desk-max" : ""}${fullscreen ? " room-stage-fs" : ""}`}
+          className={`room-stage${arrivalActive ? " room-stage-arriving" : ""}${atDesk ? " room-stage-desk" : ""}${maximized ? " room-stage-desk-max" : ""}${fullscreen ? " room-stage-fs" : ""}`}
           ref={stageRef}
+          tabIndex={-1}
+          data-scene-ready={sceneReady}
         >
+        <div className="room-live" aria-hidden={arrivalActive ? true : undefined} inert={arrivalActive}>
         {!atDesk ? (
           <ShiftHints
             view={view}
             phase={spatial.phase}
-            paused={julesOpen || morganOpen}
+            paused={arrivalActive || julesOpen || morganOpen}
           />
         ) : null}
         {roomEntered ? <Suspense
@@ -467,6 +487,7 @@ function SpatialShellStage({
             workplace={view.workplace}
             onWalkBlocked={onWalkBlocked}
             onRecover={onRecover}
+            onReady={onSceneReady}
             {...(highlightHotspotId ? { highlightHotspotId } : {})}
           />
         </Suspense> : null}
@@ -649,6 +670,8 @@ function SpatialShellStage({
             </div>
           </div>
         ) : null}
+        </div>
+        {arrivalActive ? <ArrivalFilm sceneReady={sceneReady} onComplete={finishArrival} /> : null}
       </div>
     </section>
     </>

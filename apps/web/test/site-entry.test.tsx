@@ -153,15 +153,14 @@ describe("site routes", () => {
     ).toBeVisible();
     expect(document.querySelector(".home-realwork figure")).toBeNull();
     expect(document.querySelector(".home-realwork button")).toBeNull();
-    expect(document.querySelector(".home-realwork [data-media-slot]")).toBeNull();
+    expect(
+      document.querySelector(".home-realwork [data-media-slot]"),
+    ).toBeNull();
     expect(
       screen.getAllByText(/actual product capture/i).length,
     ).toBeGreaterThanOrEqual(1);
     // Deterministic media slots stay stable for the real-media pipeline.
-    for (const slot of [
-      "home-hero-workplace",
-      "home-debrief-reflection",
-    ]) {
+    for (const slot of ["home-hero-workplace", "home-debrief-reflection"]) {
       expect(
         document.querySelector(`[data-media-slot="${slot}"]`),
       ).not.toBeNull();
@@ -324,25 +323,27 @@ describe("site routes", () => {
     ).toBeInTheDocument();
   });
 
-  it("landing hero routes into the start film gate", async () => {
+  it("landing hero routes directly into the independent brief", async () => {
     window.history.pushState(null, "", "/");
     render(<SiteApp />);
-    const ctas = screen.getAllByRole("link", { name: /start your first day/i });
-    const cta = ctas[0];
+    const cta = screen.getAllByRole("link", {
+      name: /start your first day/i,
+    })[0];
     if (!cta) throw new Error("hero start CTA missing");
     fireEvent.click(cta);
     expect(
       await screen.findByRole(
         "heading",
         {
-          name: /short preview film/i,
+          name: /a short simulated first shift as a junior/i,
         },
         { timeout: 6000 },
       ),
     ).toBeVisible();
     expect(
-      screen.getByRole("heading", { name: /short preview film/i }),
+      screen.getByRole("button", { name: /continue to floor/i }),
     ).toHaveFocus();
+    expect(document.querySelector('video[src="/arrival-film.mp4"]')).toBeNull();
     const laterHeading = document.createElement("h1");
     laterHeading.textContent = "Later simulation heading";
     document.getElementById("main-content")?.appendChild(laterHeading);
@@ -351,12 +352,9 @@ describe("site routes", () => {
     window.history.pushState(null, "", "/");
   });
 
-  it("start gate forces film through doors freeze before sim", async () => {
+  it("opens the unchanged brief before creating exactly one assessed session", async () => {
     const createSession = vi.fn(() =>
-      Promise.resolve({
-        sessionId: "s-1",
-        view: undefined as never,
-      }),
+      Promise.resolve({ sessionId: "s-1", view: undefined as never }),
     );
     const client = {
       createSession,
@@ -368,34 +366,6 @@ describe("site routes", () => {
     };
     render(<StartPage client={client} />);
     expect(createSession).not.toHaveBeenCalled();
-
-    expect(
-      await screen.findByRole("heading", {
-        name: /short preview film/i,
-      }),
-    ).toBeVisible();
-    // Enter action is unreachable before the gate resolves. No skip path.
-    expect(
-      screen.queryByRole("button", { name: /enter the verdaly floor/i }),
-    ).toBeNull();
-    expect(
-      screen.queryByRole("button", { name: /skip|continue to briefing/i }),
-    ).toBeNull();
-    expect(
-      screen.queryByText(/finish the film to unlock the simulator/i),
-    ).toBeNull();
-
-    // Simulate doors freeze: play then end the video.
-    fireEvent.click(screen.getByRole("button", { name: /play arrival film/i }));
-    const video = document.querySelector("video");
-    if (!video) throw new Error("arrival video missing");
-    fireEvent(video, new Event("ended"));
-    fireEvent.click(
-      await screen.findByRole("button", {
-        name: /start your first day/i,
-      }),
-    );
-    // Brief is ephemeral presentation between Arrive and Connecting — canonical briefing beats
     expect(
       await screen.findByRole("heading", {
         name: /a short simulated first shift as a junior/i,
@@ -404,6 +374,10 @@ describe("site routes", () => {
     expect(
       screen.getByText(/walk the floor map into security operations/i),
     ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: /play arrival film/i }),
+    ).toBeNull();
+    expect(document.querySelector('video[src="/arrival-film.mp4"]')).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /continue to floor/i }));
     await waitFor(() => {
       expect(createSession).toHaveBeenCalledTimes(1);
@@ -411,15 +385,11 @@ describe("site routes", () => {
     expect(createSession).toHaveBeenCalledWith(
       expect.objectContaining({ sessionKind: "assessed" }),
     );
-  }, 15000);
+  });
 
-  it("start gate fallback shows DoorHud when video fails to load", async () => {
-    const createSession = vi.fn(() =>
-      Promise.resolve({
-        sessionId: "s-1",
-        view: undefined as never,
-      }),
-    );
+  it("maps the old film gate to the brief without an upfront media dependency", async () => {
+    window.sessionStorage.setItem("first-shift-start-gate", "film");
+    const createSession = vi.fn();
     const client = {
       createSession,
       performAction: vi.fn(),
@@ -430,45 +400,11 @@ describe("site routes", () => {
     };
     render(<StartPage client={client} />);
     expect(
-      await screen.findByRole("heading", {
-        name: /short preview film/i,
-      }),
+      await screen.findByRole("button", { name: /continue to floor/i }),
     ).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: /play arrival film/i }));
-    const video = document.querySelector("video");
-    if (!video)
-      throw new Error("arrival video missing for error fallback test");
-    // Simulate missing asset / decode error.
-    fireEvent(video, new Event("error"));
-    // Fallback uses poster/stills and still reveals DoorHud — no dead end.
-    expect(
-      await screen.findByRole("button", {
-        name: /start your first day/i,
-      }),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("region", { name: /verdaly doors/i }),
-    ).toBeVisible();
-    expect(screen.getByText(/film unavailable/i)).toBeVisible();
-    // Poster fallback is present and accessible.
-    expect(screen.getByAltText(/arrival film unavailable/i)).toBeVisible();
-    fireEvent.click(
-      screen.getByRole("button", { name: /start your first day/i }),
-    );
-    // Brief sits between Arrive and Connecting — still reaches sim after Continue
-    expect(
-      await screen.findByRole("heading", {
-        name: /a short simulated first shift as a junior/i,
-      }),
-    ).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: /continue to floor/i }));
-    await waitFor(() => {
-      expect(createSession).toHaveBeenCalledTimes(1);
-    });
-    expect(
-      screen.queryByRole("button", { name: /play arrival film/i }),
-    ).toBeNull();
-  }, 15000);
+    expect(document.querySelector('video[src="/arrival-film.mp4"]')).toBeNull();
+    expect(createSession).not.toHaveBeenCalled();
+  });
 
   it("sets per-route document title", () => {
     render(<SiteApp initialRoute="/trust" />);

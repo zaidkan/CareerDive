@@ -1,5 +1,5 @@
-import { Canvas } from "@react-three/fiber";
-import { lazy, memo, Suspense, useState } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { lazy, memo, Suspense, useEffect, useRef, useState } from "react";
 import { graphicsAvailable } from "../experience/diagnostics.js";
 import type { ClientWorkplaceState } from "@sim/schemas";
 import {
@@ -7,6 +7,7 @@ import {
   WorldQualityProvider,
 } from "./effects/useAdaptiveQuality.js";
 import { SocRoom } from "./rooms/SocRoom.js";
+import { PLAYER_SPAWN } from "./rooms/socLayout.js";
 import type { HotspotId } from "./worldTypes.js";
 
 const PerfOverlay = lazy(async () => {
@@ -48,6 +49,25 @@ function PerfDiagnostics() {
   );
 }
 
+/** Inside the scene's Suspense boundary: report after a complete scene frame,
+ * not just renderer creation or the download of the WebGL module. */
+function SceneReady({ onReady }: { onReady: () => void }) {
+  const frame = useRef<number | undefined>(undefined);
+  const reported = useRef(false);
+  useFrame(() => {
+    if (reported.current) return;
+    reported.current = true;
+    frame.current = requestAnimationFrame(onReady);
+  });
+  useEffect(
+    () => () => {
+      if (frame.current !== undefined) cancelAnimationFrame(frame.current);
+    },
+    [],
+  );
+  return null;
+}
+
 export const RoomCanvas = memo(function RoomCanvas({
   onNearbyChange,
   onInteract,
@@ -60,6 +80,7 @@ export const RoomCanvas = memo(function RoomCanvas({
   onWalkBlocked,
   onRecover,
   onAcceptedDistance,
+  onReady,
 }: {
   onNearbyChange: (
     id?: HotspotId,
@@ -76,6 +97,7 @@ export const RoomCanvas = memo(function RoomCanvas({
   onWalkBlocked?: () => void;
   onRecover?: (position: [number, number, number]) => void;
   onAcceptedDistance?: (meters: number) => void;
+  onReady?: () => void;
 }) {
   // R3F initializes its renderer asynchronously; fail here so recovery can catch it.
   const [canRender] = useState(() => graphicsAvailable("webgl2"));
@@ -84,7 +106,7 @@ export const RoomCanvas = memo(function RoomCanvas({
     <div className="room-canvas" data-interaction-id="movement_exertion">
       <Canvas
         // Far reaches the city and sky dome outside the glazing.
-        camera={{ fov: 62, position: [0, 1.6, 5], near: 0.08, far: 1200 }}
+        camera={{ fov: 62, position: PLAYER_SPAWN, near: 0.08, far: 1200 }}
         dpr={1}
         // Preserve the scene on map return without running invisible frames.
         // Seated remains on demand; walking keeps the interactive frame loop.
@@ -114,6 +136,7 @@ export const RoomCanvas = memo(function RoomCanvas({
               {...(onAcceptedDistance ? { onAcceptedDistance } : {})}
               {...(highlightHotspotId ? { highlightHotspotId } : {})}
             />
+            {onReady ? <SceneReady onReady={onReady} /> : null}
           </Suspense>
           <AdaptiveSceneEffects />
           <PerfDiagnostics />

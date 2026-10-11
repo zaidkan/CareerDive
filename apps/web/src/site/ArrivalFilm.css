@@ -1,0 +1,71 @@
+.arrival-handoff {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  background: #0c0f14;
+  opacity: 1;
+  transition: opacity 300ms ease-out;
+}
+.arrival-handoff[data-phase="fading"] {
+  opacity: 0;
+}
+.arrival-handoff-video,
+.arrival-handoff-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.arrival-handoff-veil {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: #0c0f14;
+  color: #f5f7fa;
+  text-align: center;
+}
+.arrival-handoff-enter {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  transform: translateX(-50%);
+}
+.arrival-handoff-skip {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 1.25rem;
+}
+.arrival-handoff button {
+  z-index: 1;
+}
+.room-stage-arriving {
+  min-height: min(78vh, 46rem);
+}
+.room-stage-arriving:not(:fullscreen) {
+  position: fixed;
+  inset: 0;
+  width: 100dvw;
+  height: 100dvh;
+  z-index: 1000;
+  border: 0;
+}
+.room-stage-arriving .room-canvas {
+  height: 100dvh;
+}
+@media (prefers-reduced-motion: reduce) {
+  .arrival-handoff {
+    transition: none;
+  }
+}
+.room-live {
+  height: 100%;
+}
+/* Lift the existing main stacking contexts only while the viewport film is
+   standing in for denied native fullscreen; otherwise the sticky nav covers it. */
+main:has(.room-stage-arriving:not(:fullscreen)) {
+  z-index: 21;
+}

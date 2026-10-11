@@ -91,6 +91,7 @@ export function FloorMap({
   stepLabel,
   title,
   returning = false,
+  animateTravel = true,
 }: {
   onEnterRoom: (roomId: RoomId) => void;
   onRequestFullscreen?: () => void;
@@ -99,6 +100,7 @@ export function FloorMap({
   stepLabel?: string;
   title?: string;
   returning?: boolean;
+  animateTravel?: boolean;
 }) {
   const [marker, setMarker] = useState<Point>(LOBBY);
   const [traveling, setTraveling] = useState(false);
@@ -115,6 +117,10 @@ export function FloorMap({
   function enter(room: (typeof ROOMS)[number]) {
     if (!room.unlocked || traveling) return;
     onRequestFullscreen?.();
+    if (!animateTravel) {
+      onEnterRoom(room.id);
+      return;
+    }
     setTraveling(true);
     setActiveRoomId(room.id);
     const path = expandAxisPath(room.path);
