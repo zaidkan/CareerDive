@@ -883,7 +883,7 @@ a:focus-visible {
   border-radius: 8px;
 }
 
-/* ponytail: poster is static — no 20–24s drift, no parallax, no particles. M1/M2 only. */
+/* Poster is static — no 20–24s drift, no parallax, no particles. M1/M2 only. */
 .film-hold-wrap-cinema > img {
   animation: none;
 }
@@ -968,7 +968,7 @@ a:focus-visible {
   color: var(--paper);
   padding: 0.95rem 1rem 1.05rem;
   box-shadow: var(--shadow-lift);
-  /* ponytail: M1 only — short enter, no loop — perf: opacity/transform only */
+  /* M1 only — short enter, no loop — perf: opacity/transform only */
   animation: door-hud-enter 220ms var(--ease-out) both;
 }
 
@@ -1162,7 +1162,7 @@ a:focus-visible {
   .hero-ctas .start-shift, .button-secondary { transition: none !important; }
 }
 
-/* Threshold — ponytail: M1/M2 only, static poster, no drift/pulse/particles */
+/* Threshold — M1/M2 only, static poster, no drift/pulse/particles */
 .threshold { display: grid; gap: 1.15rem; }
 .threshold-rail ol { display: flex; flex-wrap: wrap; gap: 0.5rem; list-style: none; padding: 0; margin: 0; }
 .threshold-rail li { padding: 0.38rem 0.75rem; border: 1px solid var(--line); border-radius: 999px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--mute); background: color-mix(in srgb, var(--panel) 88%, transparent); }

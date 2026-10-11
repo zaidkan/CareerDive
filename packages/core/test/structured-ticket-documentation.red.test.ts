@@ -31,11 +31,9 @@ import { applyAction, foldActionLog, toClientView } from "../src/index.js";
 // TEST-ONLY lane. No production runtime. No production edits. No schema edits.
 //
 // Canonical sources:
-// - docs/superpowers/specs/interactivity-and-content-depth-design.md §5.3
-//   (Case Notebook and Ticket), §6.4 (Discovery state), §6.7 (Documentation
-//   state), §7.5 (Ticket/case dataset), Phase 4 RED list.
-// - docs/superpowers/specs/soc-structured-content-pack.md §14.4/§14.6/§20
-//   (operational acknowledgements, handoff fields, "no grade" forbiddance).
+// - Case notes, discovery state, documentation, and ticket records must
+//   survive replay and preserve canonical work-item associations.
+// - Operational acknowledgements and handoff fields must not reveal grades.
 // - packages/schemas/src/ticket.ts (frozen types-only contract: status enum,
 //   structured fields) + packages/schemas/src/evidence-facts.ts (discovered
 //   Evidence Facts) + packages/core/src/evidence-facts.ts (Phase 3 pure

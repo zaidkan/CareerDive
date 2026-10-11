@@ -27,9 +27,8 @@ import {
  * The scenario content this suite drives (`blocked-spray-1` event,
  * `spray-alert` / `spray-blocklist-reference` artifacts,
  * `blocked_spray_review` template, A-1159.linkedWorkItemId = blocked-spray-1)
- * is PROPOSED/UNAPPROVED in `docs/superpowers/specs/soc-structured-content-pack.md`
- * §5.3 (AL-6: OPTIONAL REALISM FILLER, excluded from the beta "Recommend 5"
- * queue). Tests commit before content: this suite runs RED by the repository
+ * is proposed and unapproved; this optional scenario is excluded from the
+ * playable beta queue. Tests commit before content: this suite runs RED by the repository
  * `.red.test.ts` convention (same as `structured-ticket-documentation.red.test.ts`)
  * until the content is authored and approved. Assertions are unchanged; do not
  * satisfy these tests by deleting or weakening them.

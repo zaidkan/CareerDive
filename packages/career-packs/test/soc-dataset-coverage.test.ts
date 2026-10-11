@@ -2,14 +2,12 @@
  * SOC runtime dataset coverage / integrity tests (TEST-ONLY lane).
  *
  * Proves the real cybersecurity pack (content/packs/cybersecurity-analyst/
- * pack.yaml, translated in bbf20ef) carries enough structured, non-answer-
+ * pack.yaml) carries enough structured, non-answer-
  * bearing data to support the intended SOC investigation — without encoding
  * any hidden answer key.
  *
- * Ground truth: the approved fixture spec
- * `docs/superpowers/specs/soc-structured-record-fixtures.md`. All record IDs
- * asserted here come from that document (AUTH-/V-/D-/AL-/SC-/KB- prefixes),
- * never from invention.
+ * Ground truth: the approved records in the default pack. All record IDs
+ * asserted here are authored fixtures (AUTH-/V-/D-/AL-/SC-/KB- prefixes).
  *
  * Deliberately NOT asserted:
  * - whether records are "correct evidence" or resolve the central case;

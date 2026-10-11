@@ -1,6 +1,6 @@
 /* Critical path only: tokens, base layout, and site chrome shared by the
    public pages. Full sim/desktop CSS lives in styles.css and loads with App. */
-/* CHAT 04 is the public color authority. Legacy names below are aliases for
+/* Public theme tokens define the color palette. Legacy names below are aliases for
    existing site CSS; the semantic values are defined only here. */
 
 :root {
@@ -88,7 +88,7 @@
 }
 
 /* The simulation stylesheet loads only after entering /start. Scope these
-   public aliases so returning to the website still uses CHAT 04 colors. */
+   public aliases so returning to the website still uses the public theme colors. */
 .site-nav,
 .site-footer,
 .site-main-public {

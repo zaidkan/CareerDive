@@ -3,7 +3,7 @@
  *
  * Layer: schema (packages/schemas). Asserts record definitions, the query
  * payload envelope, query-history entry shape, and client result-view shape.
- * RED-test IDs map to docs/superpowers/plans/phase2-query-engine-red-test-spec.md.
+ * Contracts cover validation, closed allowlists, and safe client projection.
  */
 import { describe, expect, it } from "vitest";
 

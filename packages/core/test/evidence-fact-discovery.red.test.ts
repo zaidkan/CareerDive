@@ -25,11 +25,9 @@ import { applyAction, foldActionLog } from "../src/index.js";
 // TEST-ONLY lane. No runtime implementation. No production edits.
 //
 // Canonical sources:
-// - docs/superpowers/specs/interactivity-and-content-depth-design.md  §5.2
-//   (Evidence Discovery), §6.4 (Discovery state), §14.2 (truth vs visibility),
-//   §6.10 (never serialize hidden discovery state).
-// - docs/superpowers/specs/soc-structured-record-fixtures.md §8/§10 (absence
-//   coverage, noise, correlational discoveries).
+// - Evidence discovery separates truth from visibility and never serializes
+//   hidden discovery state.
+// - Authored records define absence coverage, noise, and correlations.
 // - packages/schemas/src/evidence-facts.ts (frozen types-only contract).
 // - packages/schemas/src/query.ts + packages/core/src/query.ts (Phase 2
 //   canonical query provenance: normalized filters, resultIds, simMinutes).

@@ -1,4 +1,4 @@
-// P2-T06 RED TEST LANE (Worker D) — query accessibility acceptance contract.
+// Query accessibility acceptance contract.
 //
 // Scope: TEST ONLY. Behavior/contracts, never exact CSS or product copy.
 // Canonical refs:
@@ -14,9 +14,8 @@
 //   HAS a labeling, role, announcement, and reflow requirement. Runs green
 //   without any DOM harness.
 // Tier 2 (`describe.skip` suite at the bottom): real DOM bindings per
-//   renderer. SKIPPED because packages/testing has no web DOM harness and
-//   Worker C's query surface is concurrent work. Un-skip (or port to
-//   apps/web) after T06 implementation; while skipped these are the
+//   renderer. SKIPPED because packages/testing has no web DOM harness.
+//   Port to apps/web and bind to the query surface before enabling; these are the
 //   intentionally-RED-pending items — do NOT force them green by editing
 //   production code from this lane.
 
@@ -171,7 +170,7 @@ describe("Q-A11Y-30 contract parity across the three renderer pathways", () => {
 
 // ---------------------------------------------------------------------------
 // Tier 2 — DOM bindings per renderer. SKIPPED: no web DOM harness exists in
-// packages/testing and Worker C's query surface is still landing. Each item
+// packages/testing. Each item
 // below is an intentionally-RED-pending acceptance requirement: port to
 // apps/web (jsdom + testing-library) or un-skip once the T06 surface exists.
 // ---------------------------------------------------------------------------
@@ -180,7 +179,7 @@ describe.skip("Q-A11Y-40 DOM bindings (pending T06 web surface — do not force 
   it("Desk: every query filter is a real labelled input operable by keyboard", () => {
     // Bind to Desk filter UI: Tab reaches each filter, Enter submits, Escape
     // clears/closes per documented behavior; active filters removable by
-    // keyboard. Requires Worker C query tool + jsdom harness.
+    // keyboard. Requires the query tool and a jsdom harness.
     expect(true).toBe(false);
   });
 

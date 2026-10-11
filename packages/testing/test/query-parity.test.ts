@@ -1,4 +1,4 @@
-// P2-T06 RED TEST LANE (Worker D) — query renderer-parity acceptance.
+// Query renderer-parity acceptance contract.
 //
 // Scope: TEST ONLY. No production code, no schema/pack/doc changes.
 // Canonical refs:
@@ -12,7 +12,7 @@
 // (single `query_records` action + validated payload + closed per-dataset
 // allowlists). Renderer adapters below are pure intent→action mappings: they
 // prove every renderer CAN reach the same canonical action/state without
-// asserting visual equality. DOM reachability itself belongs to Worker C's
+// asserting visual equality. DOM reachability itself requires the
 // web surface and is tracked as skipped-pending in
 // query-accessibility.test.ts, never asserted here.
 

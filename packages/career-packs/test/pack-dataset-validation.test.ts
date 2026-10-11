@@ -11,8 +11,8 @@
  * - per-dataset record schemas via `DatasetRecordSchema`;
  * - `RuntimeDatasetSchema` already validates duplicate ids + datasetId match.
  *
- * RED-test spec: docs/superpowers/plans/phase2-query-engine-red-test-spec.md
- * (§1.3, §2, §13 Q-NEG-08, §16 Batch 1).
+ * Contract: invalid dataset shapes, unknown fields, and duplicate records
+ * must be rejected by the pack schema.
  */
 import { describe, expect, it } from "vitest";
 import { CareerPackSchema } from "@sim/schemas";
