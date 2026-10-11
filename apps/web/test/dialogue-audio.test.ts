@@ -175,11 +175,12 @@ it("plays distinct, quiet world cues with one effect voice and shared mute", () 
   expect(stopped).toBeGreaterThan(4);
 });
 
-it("keeps world cues silent for reduced motion, hidden tabs and blocked audio", () => {
+it("keeps world cues audible under reduced motion and silent for hidden tabs and blocked audio", () => {
   setSimulationMuted(false);
   vi.stubGlobal("matchMedia", () => ({ matches: true }));
   playWorldSound("sit");
-  expect(start).not.toHaveBeenCalled();
+  expect(start).toHaveBeenCalledTimes(1);
+  start.mockClear();
   vi.stubGlobal("matchMedia", () => ({ matches: false }));
   Object.defineProperty(document, "hidden", { configurable: true, value: true });
   playWorldSound("glass-open");
@@ -187,5 +188,48 @@ it("keeps world cues silent for reduced motion, hidden tabs and blocked audio", 
   Object.defineProperty(document, "hidden", { configurable: true, value: false });
   oscillatorGate.mockImplementationOnce(() => { throw new Error("Audio blocked"); });
   expect(() => { playWorldSound("fridge-open"); }).not.toThrow();
+  expect(start).not.toHaveBeenCalled();
+});
+
+it("plays the latest world cue after gesture resume, and cancels it on mute", async () => {
+  vi.resetModules();
+  let release!: () => void;
+  class SuspendedContext extends TestAudioContext {
+    state = "suspended";
+    resume = vi.fn(() => new Promise<void>((resolve) => {
+      release = () => { this.state = "running"; resolve(); };
+    }));
+  }
+  vi.stubGlobal("AudioContext", SuspendedContext);
+  const audio = await import("../src/world/dialogue/audio.js");
+  audio.setSimulationMuted(false);
+  audio.unlockDialogueAudio();
+  audio.playWorldSound("sit");
+  audio.playWorldSound("glass-open");
+  expect(start).not.toHaveBeenCalled();
+  release();
+  await vi.waitFor(() => { expect(start).toHaveBeenCalledTimes(1); });
+  expect(oscillators[0]?.frequency.value).toBe(360);
+  audio.setSimulationMuted(true);
+  audio.playWorldSound("fridge-open");
+  expect(start).toHaveBeenCalledTimes(1);
+});
+
+it("does not play a queued cue when muted before resume finishes", async () => {
+  vi.resetModules();
+  let release!: () => void;
+  class SuspendedContext extends TestAudioContext {
+    state = "suspended";
+    resume = vi.fn(() => new Promise<void>((resolve) => {
+      release = () => { this.state = "running"; resolve(); };
+    }));
+  }
+  vi.stubGlobal("AudioContext", SuspendedContext);
+  const audio = await import("../src/world/dialogue/audio.js");
+  audio.setSimulationMuted(false);
+  audio.playWorldSound("fridge-open");
+  audio.setSimulationMuted(true);
+  release();
+  await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
   expect(start).not.toHaveBeenCalled();
 });

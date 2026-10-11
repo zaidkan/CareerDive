@@ -1744,14 +1744,14 @@ section[aria-labelledby="structured-title"],
 }
 
 
-/* —— Floor 12 / First Shift — cinematic operational theater —— */
+/* —— Floor 4 / First Shift — cinematic operational theater —— */
 .site-main-start {
   width: min(1440px, calc(100% - clamp(1rem, 3vw, 2.5rem)));
   padding: 1.15rem 0 3.5rem;
 }
 /* The sim shell renders its own <main>; on the theater route it must not
    re-cap the width or re-add page padding, and its marketing hero becomes a
-   compact operational identity strip so Floor 12 owns the viewport. */
+   compact operational identity strip so Floor 4 owns the viewport. */
 .site-main-start > main {
   width: 100%;
   max-width: none;

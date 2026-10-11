@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { enqueueHint } from "../src/world/dialogue/ShiftHints.js";
 import { splitGraphemes } from "../src/world/dialogue/DialogueLine.js";
 describe("restrained shift presentation", () => {
@@ -21,7 +21,7 @@ describe("restrained shift presentation", () => {
   });
 });
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import { afterEach } from "vitest";
 import { ShiftHints } from "../src/world/dialogue/ShiftHints.js";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
@@ -66,19 +66,36 @@ it("drops a queued work hint once that work is resolved and never replays it on 
   expect(screen.queryByRole("status")).toBeNull();
 });
 
-it("announces login without repeating the console's Email objective", () => {
-  const view = toClientView(
-    createInitialWorldState(
-      "login-hint",
-      7,
-      {},
-      loadDefaultCybersecurityPack(),
-    ),
-  );
-  const { rerender } = render(<ShiftHints view={view} phase="desk_login" />);
+it("announces shift start only on walking in, never at desk login", () => {
+  const view = hintView();
+  const { rerender } = render(<ShiftHints view={view} phase="floor_map" />);
+  rerender(<ShiftHints view={view} phase="room_walk" />);
+  expect(screen.getByRole("status").textContent).toContain("SHIFT STARTED");
+  rerender(<ShiftHints view={view} phase="desk_login" />);
+  expect(screen.queryByRole("status")).toBeNull();
   rerender(<ShiftHints view={view} phase="seated_monitor" />);
-  expect(screen.getByRole("status").textContent).toBe("SHIFT STARTED");
-  expect(screen.getByRole("status").textContent).not.toMatch(/Email|handoff/i);
+  expect(screen.queryByRole("status")).toBeNull();
+});
+
+it("keeps the walk-in announcement until the film reveals the room", () => {
+  vi.useFakeTimers();
+  try {
+    const view = hintView();
+    const { rerender } = render(<ShiftHints view={view} phase="floor_map" />);
+    rerender(<ShiftHints view={view} phase="room_walk" paused />);
+    act(() => {
+      vi.advanceTimersByTime(10000);
+    });
+    expect(screen.queryByRole("status")).toBeNull();
+    rerender(<ShiftHints view={view} phase="room_walk" />);
+    expect(screen.getByRole("status").textContent).toContain("SHIFT STARTED");
+    act(() => {
+      vi.advanceTimersByTime(2600);
+    });
+    expect(screen.queryByRole("status")).toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 import { fireEvent } from "@testing-library/react";
@@ -120,11 +137,17 @@ it("summons and cycles procedural hints with H, but ignores typing and modifiers
   fireEvent.keyDown(window, { key: "h", repeat: true });
   expect(screen.queryByRole("status")).toBeNull();
   fireEvent.keyDown(window, { key: "h" });
-  expect(screen.getByRole("status").textContent).toContain("Read incoming assignment in Email");
+  expect(screen.getByRole("status").textContent).toContain(
+    "Read incoming assignment in Email",
+  );
   fireEvent.keyDown(window, { key: "H" });
-  expect(screen.getByRole("status").textContent).toContain("Source rows support your claim");
+  expect(screen.getByRole("status").textContent).toContain(
+    "Source rows support your claim",
+  );
   fireEvent.click(screen.getByRole("button", { name: "Next hint" }));
-  expect(screen.getByRole("status").textContent).toContain("Read incoming assignment in Email");
+  expect(screen.getByRole("status").textContent).toContain(
+    "Read incoming assignment in Email",
+  );
 });
 
 it("does not offer hints during dialogue or after completion and clears on session change", () => {

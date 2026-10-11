@@ -34,3 +34,9 @@ export class SessionConflictError extends Error {
     super("Shift changed in another request. Reload and retry.");
   }
 }
+
+export class WriteBudgetError extends Error {
+  constructor() {
+    super("Write limit reached. Wait before trying again.");
+  }
+}

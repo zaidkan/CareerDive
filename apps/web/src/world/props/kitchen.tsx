@@ -322,7 +322,7 @@ export function Lunchbox({ position }: { position: [number, number, number] }) {
     ctx.font = "bold 40px sans-serif";
     ctx.fillText("— DO NOT touch", 256, 126);
     ctx.font = "23px sans-serif";
-    ctx.fillText("yeah, I'm talking to you, Morgan.", 256, 200);
+    ctx.fillText("yeah, I'm talking to you, Reed.", 256, 200);
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
     return texture;

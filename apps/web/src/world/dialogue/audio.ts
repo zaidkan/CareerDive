@@ -15,6 +15,8 @@ let nextPitch = 0;
 const voices = new Set<OscillatorNode>();
 const listeners = new Set<() => void>();
 let worldVoice: OscillatorNode | undefined;
+let worldCue = 0;
+let resuming: Promise<void> | undefined;
 
 function stopWorldSound() {
   try {
@@ -41,7 +43,9 @@ export function unlockDialogueAudio() {
   if (muted || typeof AudioContext === "undefined" || document.hidden) return;
   try {
     context ??= new AudioContext();
-    if (context.state === "suspended") void context.resume().catch(() => {});
+    if (context.state === "suspended" && !resuming) {
+      resuming = context.resume().catch(() => {}).finally(() => { resuming = undefined; });
+    }
   } catch {
     /* Unsupported/blocked audio leaves dialogue fully usable. */
   }
@@ -50,6 +54,7 @@ export function unlockDialogueAudio() {
 export function setSimulationMuted(next: boolean) {
   muted = next;
   if (next) {
+    worldCue += 1;
     stopDialogueAudio();
     stopWorldSound();
   }
@@ -139,15 +144,20 @@ const WORLD_SOUNDS = {
   },
 } as const;
 
-/** Reuses gesture-unlocked dialogue audio; never creates/resumes a context here. */
+/** Keep only the latest cue while a gesture-triggered resume finishes. */
 export function playWorldSound(cue: keyof typeof WORLD_SOUNDS) {
+  const ticket = ++worldCue;
+  if (resuming) {
+    void resuming.then(() => {
+      if (ticket === worldCue) playWorldSound(cue);
+    });
+    return;
+  }
   if (
     muted ||
     document.hidden ||
     !context ||
-    context.state !== "running" ||
-    (typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+    context.state !== "running"
   )
     return;
   stopWorldSound();

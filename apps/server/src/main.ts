@@ -3,6 +3,7 @@ import type { MessageCreateParamsNonStreaming } from "@anthropic-ai/sdk/resource
 import { SupabasePublicKeySchema } from "@sim/schemas";
 import { AnthropicLlmProvider } from "@sim/ai";
 import { createOwnerResolver } from "./auth.js";
+import { poolerCompatibleOptions } from "./db/connection.js";
 import { verifyMigrations } from "./db/migrations.js";
 import { healthRoutes } from "./routes/health.js";
 import { supportRoutes } from "./routes/support.js";
@@ -70,6 +71,7 @@ const supabase =
 const resolveOwner = createOwnerResolver(isProduction, supabase);
 const sql = process.env.DATABASE_URL
   ? postgres(process.env.DATABASE_URL, {
+      ...poolerCompatibleOptions,
       connect_timeout: 5,
       max: 10,
       connection: { statement_timeout: 5000 },
@@ -106,6 +108,7 @@ await server.register(healthRoutes, {
       await sql`SELECT owner_id, diagnostics FROM support_reports LIMIT 0`;
       await sql`SELECT event_name FROM launch_events LIMIT 0`;
       await sql`SELECT owner_id, event_count FROM launch_event_limits LIMIT 0`;
+      await sql`SELECT owner_id, operation, write_count FROM session_write_limits LIMIT 0`;
     } else if (isProduction) {
       throw new Error("Database unavailable");
     }

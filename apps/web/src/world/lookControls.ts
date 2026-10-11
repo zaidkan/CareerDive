@@ -30,6 +30,7 @@ export function bindLookControls(
     [canvas, "pointerleave"],
     [document, "pointerup"],
     [document, "pointercancel"],
+    [document, "fullscreenchange"],
     [window, "blur"],
   ];
   for (const [target, type] of stops) target.addEventListener(type, stop);

@@ -2,8 +2,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { bindLookControls } from "../src/world/lookControls.js";
 
-function pointer(target: EventTarget, type: string, options: MouseEventInit = {}) {
-  const event = new MouseEvent(type, { bubbles: true, cancelable: true, ...options });
+function pointer(
+  target: EventTarget,
+  type: string,
+  options: MouseEventInit = {},
+) {
+  const event = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    ...options,
+  });
   target.dispatchEvent(event);
   return event;
 }
@@ -28,7 +36,11 @@ describe("office look controls", () => {
     const look = vi.fn();
     const dispose = bindLookControls(canvas, look);
     try {
-      const down = pointer(canvas, "pointerdown", { button: 0, clientX: 10, clientY: 20 });
+      const down = pointer(canvas, "pointerdown", {
+        button: 0,
+        clientX: 10,
+        clientY: 20,
+      });
       expect(down.defaultPrevented).toBe(false);
       pointer(canvas, "pointermove", { buttons: 1, clientX: 25, clientY: 24 });
       expect(look).toHaveBeenCalledExactlyOnceWith(15, 4);
@@ -45,12 +57,25 @@ describe("office look controls", () => {
     }
   });
 
-  it.each(["pointerup", "pointercancel", "pointerleave", "blur"] as const)("stops on %s and removes listeners", (type) => {
+  it.each([
+    "pointerup",
+    "pointercancel",
+    "pointerleave",
+    "blur",
+    "fullscreenchange",
+  ] as const)("stops on %s and removes listeners", (type) => {
     const look = vi.fn();
     const dispose = bindLookControls(canvas, look);
     try {
       pointer(canvas, "pointerdown", { button: 0 });
-      pointer(type === "blur" ? window : canvas, type);
+      pointer(
+        type === "blur"
+          ? window
+          : type === "fullscreenchange"
+            ? document
+            : canvas,
+        type,
+      );
       pointer(canvas, "pointermove", { buttons: 1, clientX: 50 });
       expect(look).not.toHaveBeenCalled();
     } finally {
@@ -87,7 +112,9 @@ describe("office look controls", () => {
       pointer(button, "pointermove", { buttons: 1, clientX: 50 });
       pointer(button, "pointerup");
       button.focus();
-      expect(pointer(button, "pointerdown", { button: 0 }).defaultPrevented).toBe(false);
+      expect(
+        pointer(button, "pointerdown", { button: 0 }).defaultPrevented,
+      ).toBe(false);
       expect(pointer(button, "click").defaultPrevented).toBe(false);
       expect(click).toHaveBeenCalledOnce();
       expect(document.activeElement).toBe(button);

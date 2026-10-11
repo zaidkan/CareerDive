@@ -11,7 +11,6 @@ import { Figure } from "../Figure.js";
 import { NameTag } from "../NameTag.js";
 import { DustMotes, VentPapers } from "../props/atmosphere.js";
 import {
-  EmployeeOfMonth,
   FramedCertificate,
   PlantPot,
   TallFloorPlant,
@@ -314,11 +313,6 @@ export function GlassBreakNook({
       />
 
       {/* Plaques flush on outer west glass (local +Z faces aisle after -90° Y) */}
-      <EmployeeOfMonth
-        name="Dana"
-        position={[cornerX - 0.052, 1.55, doorZ - 1.45]}
-        rotationY={-Math.PI / 2}
-      />
       <FramedCertificate
         position={[cornerX - 0.048, 1.55, doorZ + 1.35]}
         rotationY={-Math.PI / 2}

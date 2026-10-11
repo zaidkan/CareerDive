@@ -1,4 +1,5 @@
 import postgres from "postgres";
+import { poolerCompatibleOptions } from "../src/db/connection.js";
 import {
   discoverMigrations,
   migrate,
@@ -11,6 +12,7 @@ if (process.argv.includes("--plan")) {
   if (!process.env.DATABASE_URL)
     throw new Error("DATABASE_URL is required; no implicit database target");
   const sql = postgres(process.env.DATABASE_URL, {
+    ...poolerCompatibleOptions,
     max: 1,
     connect_timeout: 5,
     idle_timeout: 5,

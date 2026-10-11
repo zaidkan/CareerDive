@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { StrictMode } from "react";
+import { StrictMode, useEffect } from "react";
 import {
   cleanup,
   fireEvent,
@@ -23,35 +23,45 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
   RoomCanvas: ({
     onAcceptedDistance,
     onInteract,
+    onReady,
+    enabled,
   }: {
     onAcceptedDistance: (meters: number) => void;
     onInteract: (id: string) => void;
-  }) => (
-    <>
-      <button
-        onClick={() => {
-          onAcceptedDistance(5);
-        }}
-      >
-        Move through office
-      </button>
-      <button
-        onClick={() => {
-          onInteract("desk_player");
-        }}
-      >
-        Sit at desk
-      </button>
-    </>
-  ),
+    onReady: () => void;
+    enabled: boolean;
+  }) => {
+    useEffect(onReady, [onReady]);
+    return (
+      <>
+        <button
+          disabled={!enabled}
+          onClick={() => {
+            onAcceptedDistance(5);
+          }}
+        >
+          Move through office
+        </button>
+        <button
+          disabled={!enabled}
+          onClick={() => {
+            onInteract("desk_player");
+          }}
+        >
+          Sit at desk
+        </button>
+      </>
+    );
+  },
 }));
 afterEach(() => {
   cleanup();
   window.sessionStorage.clear();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
-it("creates exactly one assessed session after arrival and preserves class-client methods through movement and Desk OS", async () => {
+it("creates exactly one assessed session directly from Start, plays film after room selection, and preserves class-client methods through movement and Desk OS", async () => {
   const user = userEvent.setup();
   const initial = createInitialWorldState(
     "entry",
@@ -106,17 +116,12 @@ it("creates exactly one assessed session after arrival and preserves class-clien
       <StartPage client={client} />
     </StrictMode>,
   );
-  expect(requests).toEqual([]);
-  await user.click(screen.getByRole("button", { name: /Play arrival film/i }));
-  const video = document.querySelector("video");
-  if (!video) throw new Error("Arrival video missing");
-  fireEvent.ended(video);
-  await user.click(
-    await screen.findByRole("button", { name: /Start your first day/i }),
+  expect(screen.queryByRole("button", { name: /Continue to floor/i })).toBeNull();
+  vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+  vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(
+    () => undefined,
   );
-  await user.click(
-    await screen.findByRole("button", { name: /Continue to floor/i }),
-  );
+  expect(document.querySelector('video[src="/arrival-film.mp4"]')).toBeNull();
   await user.click(
     await screen.findByRole(
       "button",
@@ -131,6 +136,12 @@ it("creates exactly one assessed session after arrival and preserves class-clien
     sessionKind: "assessed",
     pacingMode: "standard",
   });
+  const video = document.querySelector('video[src="/arrival-film.mp4"]');
+  if (!video) throw new Error("Room-entry arrival video missing");
+  expect(
+    screen.getByRole("dialog", { name: "Arrival at Verdaly" }),
+  ).toBeVisible();
+  fireEvent.ended(video);
   expect(screen.queryByRole("navigation", { name: /Choose how/ })).toBeNull();
   expect(
     screen.queryByText(

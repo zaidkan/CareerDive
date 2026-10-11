@@ -11,11 +11,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SiteApp } from "../src/site/SiteApp.js";
 import { parseRoute } from "../src/site/routes.js";
 import { LandingPage } from "../src/site/pages/LandingPage.js";
+import { HttpSimulationClient } from "../src/client.js";
+import { loadDefaultCybersecurityPack } from "@sim/career-packs";
+import { createInitialWorldState, toClientView } from "@sim/core";
 import { StartPage } from "../src/site/pages/StartPage.js";
 
 vi.mock("../src/world/RoomCanvas.js", () => ({
   RoomCanvas: () => <div>room mock</div>,
 }));
+
+const entryView = toClientView(
+  createInitialWorldState("s-1", 7, {}, loadDefaultCybersecurityPack()),
+);
 
 beforeEach(() => {
   window.scrollTo = vi.fn();
@@ -23,6 +30,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   try {
     window.sessionStorage.removeItem("first-shift-start-gate");
   } catch {
@@ -68,7 +76,10 @@ describe("site routes", () => {
   });
 
   it("renders landing without creating a simulation session", () => {
-    const createSession = vi.fn();
+    const createSession = vi.spyOn(
+      HttpSimulationClient.prototype,
+      "createSession",
+    );
     render(<SiteApp initialRoute="/" />);
     expect(
       screen.getByRole("heading", {
@@ -153,15 +164,14 @@ describe("site routes", () => {
     ).toBeVisible();
     expect(document.querySelector(".home-realwork figure")).toBeNull();
     expect(document.querySelector(".home-realwork button")).toBeNull();
-    expect(document.querySelector(".home-realwork [data-media-slot]")).toBeNull();
+    expect(
+      document.querySelector(".home-realwork [data-media-slot]"),
+    ).toBeNull();
     expect(
       screen.getAllByText(/actual product capture/i).length,
     ).toBeGreaterThanOrEqual(1);
     // Deterministic media slots stay stable for the real-media pipeline.
-    for (const slot of [
-      "home-hero-workplace",
-      "home-debrief-reflection",
-    ]) {
+    for (const slot of ["home-hero-workplace", "home-debrief-reflection"]) {
       expect(
         document.querySelector(`[data-media-slot="${slot}"]`),
       ).not.toBeNull();
@@ -279,6 +289,7 @@ describe("site routes", () => {
       expect(cyber).toHaveAttribute("aria-pressed", "false");
     } finally {
       cleanup();
+      vi.restoreAllMocks();
       vi.useRealTimers();
       vi.unstubAllGlobals();
     }
@@ -324,25 +335,31 @@ describe("site routes", () => {
     ).toBeInTheDocument();
   });
 
-  it("landing hero routes into the start film gate", async () => {
+  it("landing hero routes directly to the floor map", async () => {
+    vi.spyOn(HttpSimulationClient.prototype, "createSession").mockResolvedValue(
+      { sessionId: "s-1", view: entryView },
+    );
     window.history.pushState(null, "", "/");
     render(<SiteApp />);
-    const ctas = screen.getAllByRole("link", { name: /start your first day/i });
-    const cta = ctas[0];
+    const cta = screen.getAllByRole("link", {
+      name: /start your first day/i,
+    })[0];
     if (!cta) throw new Error("hero start CTA missing");
     fireEvent.click(cta);
     expect(
       await screen.findByRole(
         "heading",
         {
-          name: /short preview film/i,
+          name: /head to security operations/i,
         },
         { timeout: 6000 },
       ),
     ).toBeVisible();
     expect(
-      screen.getByRole("heading", { name: /short preview film/i }),
-    ).toHaveFocus();
+      screen.queryByRole("button", { name: /continue to floor/i }),
+    ).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "Threshold" })).toBeNull();
+    expect(document.querySelector('video[src="/arrival-film.mp4"]')).toBeNull();
     const laterHeading = document.createElement("h1");
     laterHeading.textContent = "Later simulation heading";
     document.getElementById("main-content")?.appendChild(laterHeading);
@@ -351,12 +368,9 @@ describe("site routes", () => {
     window.history.pushState(null, "", "/");
   });
 
-  it("start gate forces film through doors freeze before sim", async () => {
+  it("opens the floor map and creates exactly one assessed session", async () => {
     const createSession = vi.fn(() =>
-      Promise.resolve({
-        sessionId: "s-1",
-        view: undefined as never,
-      }),
+      Promise.resolve({ sessionId: "s-1", view: entryView }),
     );
     const client = {
       createSession,
@@ -367,59 +381,32 @@ describe("site routes", () => {
       getDebrief: vi.fn(),
     };
     render(<StartPage client={client} />);
-    expect(createSession).not.toHaveBeenCalled();
-
     expect(
       await screen.findByRole("heading", {
-        name: /short preview film/i,
-      }),
-    ).toBeVisible();
-    // Enter action is unreachable before the gate resolves. No skip path.
-    expect(
-      screen.queryByRole("button", { name: /enter the verdaly floor/i }),
-    ).toBeNull();
-    expect(
-      screen.queryByRole("button", { name: /skip|continue to briefing/i }),
-    ).toBeNull();
-    expect(
-      screen.queryByText(/finish the film to unlock the simulator/i),
-    ).toBeNull();
-
-    // Simulate doors freeze: play then end the video.
-    fireEvent.click(screen.getByRole("button", { name: /play arrival film/i }));
-    const video = document.querySelector("video");
-    if (!video) throw new Error("arrival video missing");
-    fireEvent(video, new Event("ended"));
-    fireEvent.click(
-      await screen.findByRole("button", {
-        name: /start your first day/i,
-      }),
-    );
-    // Brief is ephemeral presentation between Arrive and Connecting — canonical briefing beats
-    expect(
-      await screen.findByRole("heading", {
-        name: /a short simulated first shift as a junior/i,
+        name: /head to security operations/i,
       }),
     ).toBeVisible();
     expect(
-      screen.getByText(/walk the floor map into security operations/i),
-    ).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: /continue to floor/i }));
+      screen.queryByRole("button", { name: /continue to floor/i }),
+    ).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "Threshold" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /play arrival film/i }),
+    ).toBeNull();
+    expect(document.querySelector('video[src="/arrival-film.mp4"]')).toBeNull();
     await waitFor(() => {
       expect(createSession).toHaveBeenCalledTimes(1);
     });
     expect(createSession).toHaveBeenCalledWith(
       expect.objectContaining({ sessionKind: "assessed" }),
     );
-  }, 15000);
+  });
 
-  it("start gate fallback shows DoorHud when video fails to load", async () => {
-    const createSession = vi.fn(() =>
-      Promise.resolve({
-        sessionId: "s-1",
-        view: undefined as never,
-      }),
-    );
+  it("maps the old film gate to the floor without upfront media", async () => {
+    window.sessionStorage.setItem("first-shift-start-gate", "film");
+    const createSession = vi
+      .fn()
+      .mockResolvedValue({ sessionId: "s-1", view: entryView });
     const client = {
       createSession,
       performAction: vi.fn(),
@@ -431,44 +418,12 @@ describe("site routes", () => {
     render(<StartPage client={client} />);
     expect(
       await screen.findByRole("heading", {
-        name: /short preview film/i,
+        name: /head to security operations/i,
       }),
     ).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: /play arrival film/i }));
-    const video = document.querySelector("video");
-    if (!video)
-      throw new Error("arrival video missing for error fallback test");
-    // Simulate missing asset / decode error.
-    fireEvent(video, new Event("error"));
-    // Fallback uses poster/stills and still reveals DoorHud — no dead end.
-    expect(
-      await screen.findByRole("button", {
-        name: /start your first day/i,
-      }),
-    ).toBeVisible();
-    expect(
-      screen.getByRole("region", { name: /verdaly doors/i }),
-    ).toBeVisible();
-    expect(screen.getByText(/film unavailable/i)).toBeVisible();
-    // Poster fallback is present and accessible.
-    expect(screen.getByAltText(/arrival film unavailable/i)).toBeVisible();
-    fireEvent.click(
-      screen.getByRole("button", { name: /start your first day/i }),
-    );
-    // Brief sits between Arrive and Connecting — still reaches sim after Continue
-    expect(
-      await screen.findByRole("heading", {
-        name: /a short simulated first shift as a junior/i,
-      }),
-    ).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: /continue to floor/i }));
-    await waitFor(() => {
-      expect(createSession).toHaveBeenCalledTimes(1);
-    });
-    expect(
-      screen.queryByRole("button", { name: /play arrival film/i }),
-    ).toBeNull();
-  }, 15000);
+    expect(document.querySelector('video[src="/arrival-film.mp4"]')).toBeNull();
+    expect(createSession).toHaveBeenCalledTimes(1);
+  });
 
   it("sets per-route document title", () => {
     render(<SiteApp initialRoute="/trust" />);
@@ -481,7 +436,7 @@ describe("site routes", () => {
       createSession: vi.fn(() =>
         Promise.resolve({
           sessionId: "s-1",
-          view: undefined as never,
+          view: entryView,
         }),
       ),
       performAction: vi.fn(),
@@ -499,6 +454,9 @@ describe("site routes", () => {
     expect(
       screen.queryByRole("heading", { name: /short preview film/i }),
     ).toBeNull();
+    await screen.findByRole("heading", {
+      name: /head to security operations/i,
+    });
     // Sim bootstraps immediately (no film re-gate).
     expect(client.createSession).toHaveBeenCalledTimes(1);
   });

@@ -1,240 +1,198 @@
-import { useRef, useState } from "react";
-import { DoorHud } from "./DoorHud.js";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { usePrefersReducedMotion } from "../world/deskOs/os/reducedMotion.js";
+import { useSimulationMuted } from "../world/dialogue/audio.js";
+import "./ArrivalFilm.css";
 
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
-}
+const DISSOLVE_MS = 300;
+const POSTER = "/verdaly-tower-doors.svg";
 
-/** ponytail: 6 honest stills from the actual 6.4s film; closest representative frames, no fabrication */
-const STILLS = [
-  {
-    id: "01-bedroom-laptop",
-    alt: "Still 1 — Bedroom laptop with Verdaly acceptance notification, from the arrival film",
-    caption: "1 · Bedroom · acceptance note",
-  },
-  {
-    id: "02-cab-exit",
-    alt: "Still 2 — Apartment doorway and cab into the city, from the arrival film",
-    caption: "2 · City approach · cab door",
-  },
-  {
-    id: "03-street-bustle",
-    alt: "Still 3 — Bustling street with briefcases and traffic, from the arrival film",
-    caption: "3 · Street · both directions",
-  },
-  {
-    id: "04-city-approach",
-    alt: "Still 4 — City approach toward Verdaly tower, from the arrival film",
-    caption: "4 · Approach · tower ahead",
-  },
-  {
-    id: "05-look-up-tower",
-    alt: "Still 5 — Look up at the VERDALY tower sign, from the arrival film",
-    caption: "5 · Tower lookup · VERDALY",
-  },
-  {
-    id: "06-doors-hold",
-    alt: "Still 6 — Grand doors holding open, breath in before entering",
-    caption: "6 · Doors hold · enter",
-  },
-] as const;
-
-function StillFigure({ id, alt, caption }: (typeof STILLS)[number]) {
-  return (
-    <figure>
-      <img
-        src={`/arrival-stills/${id}-640.webp`}
-        width={1280}
-        height={720}
-        loading="lazy"
-        decoding="async"
-        srcSet={`/arrival-stills/${id}-640.webp 640w, /arrival-stills/${id}-1280.webp 1280w`}
-        sizes="(max-width: 640px) 640px, 1280px"
-        alt={alt}
-        style={{ width: "100%", height: "auto", display: "block", borderRadius: 8 }}
-      />
-      <figcaption>{caption}</figcaption>
-    </figure>
-  );
-}
-
-function ArrivalTranscript() {
-  return (
-    <>
-      <ol>
-        <li>Bedroom. Laptop open. Notification: accepted to Verdaly.</li>
-        <li>Apartment exit. Cab door. City sound rises.</li>
-        <li>Bustling street — briefcases, phone calls, traffic.</li>
-        <li>Walk toward the tower. VERDALY sign comes into view.</li>
-        <li>Look up at the sign. Doors ahead.</li>
-        <li>Grand doors hold. Breath in. Start your first day.</li>
-      </ol>
-      <p className="stills-note">
-        Frames above are honest exports from the approved short film (about 6 seconds). If your device
-        prefers reduced motion, they are the same film without the cut.
-      </p>
-    </>
-  );
-}
-
-type Props = {
-  onSeen?: () => void;
-  // compat: old callers may still pass required/teaser; treat as noop
-  required?: boolean;
-  teaser?: boolean;
-};
-
-/**
- * Arrival — presentation only. No session, no persistence, no auth.
- * Preserves existing heading/play copy so site-entry tests stay green;
- * lede notes the short duration honestly. Poster is static (no 24s drift).
- */
-export function ArrivalFilm({ onSeen }: Props) {
-  const [playing, setPlaying] = useState(false);
-  const [doorHold, setDoorHold] = useState(false);
-  const [mediaError, setMediaError] = useState(false);
-  const reducedMotion = prefersReducedMotion();
+/** Removable presentation layer. The caller owns the live scene and fullscreen
+ * target; completing this layer never creates a session or changes simulation state. */
+export function ArrivalFilm({
+  sceneReady,
+  onComplete,
+}: {
+  sceneReady: boolean;
+  onComplete: () => void;
+}) {
+  const reducedMotion = usePrefersReducedMotion();
+  const soundMuted = useSimulationMuted();
+  const [phase, setPhase] = useState<
+    "playing" | "blocked" | "waiting" | "fading"
+  >(() => (reducedMotion ? "waiting" : "playing"));
+  const currentPhase = useRef(phase);
+  currentPhase.current = phase;
+  const [mediaFailed, setMediaFailed] = useState(false);
+  const [heldForScene, setHeldForScene] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const alive = useRef(false);
+  const completed = useRef(false);
+  const focusControl = useCallback((node: HTMLButtonElement | null) => {
+    node?.focus();
+  }, []);
+  const finishFilm = useCallback(() => {
+    setPhase("waiting");
+  }, []);
 
-  if (reducedMotion) {
-    return (
-      <section className="film-gate film-cinema threshold-stage" aria-labelledby="arrival-film-gate">
-        <p className="eyebrow">Arrival film · Verdaly Technologies</p>
-        <h1 id="arrival-film-gate">Short preview film before your first shift</h1>
-        <p className="lede">
-          A six-second arrival preview, then a ~10–15-minute simulated first shift and an evidence-based debrief.{" "}
-          <span className="stills-note">(Short film; static poster in reduced motion.)</span>
-        </p>
-        <div className="film-hold-wrap film-hold-wrap-cinema threshold-media">
-          <img
-            src="/verdaly-tower-doors.svg"
-            alt="Verdaly tower entrance — doors hold"
-            width={1600}
-            height={900}
-            loading="eager"
-            style={{ width: "100%", height: "auto", display: "block", borderRadius: 8 }}
-          />
-          <DoorHud
-            reducedMotion
-            onStart={() => {
-              onSeen?.();
-            }}
-          />
-        </div>
-        <details className="film-transcript">
-          <summary>Transcript and stills</summary>
-          <ArrivalTranscript />
-          <div className="stills-grid" aria-label="Stills from the short arrival film">
-            {STILLS.map((s) => (
-              <StillFigure key={s.id} {...s} />
-            ))}
-          </div>
-        </details>
-      </section>
+  useEffect(() => {
+    let currentAttempt = true;
+    alive.current = true;
+    const isCurrent = () => currentAttempt && currentPhase.current === "playing";
+    const video = videoRef.current;
+    if (!reducedMotion && video) {
+      void video.play().catch(async () => {
+        if (!isCurrent()) return;
+        // Room entry is a gesture, but some browsers lose activation before
+        // React mounts the video. Retry silently without extending the gate.
+        if (!video.muted) {
+          video.muted = true;
+          try {
+            await video.play();
+            return;
+          } catch { /* Existing explicit-entry fallback still applies. */ }
+        }
+        if (isCurrent())
+          setPhase((current) => (current === "playing" ? "blocked" : current));
+      });
+    }
+    return () => {
+      currentAttempt = false;
+      alive.current = false;
+      video?.pause();
+    };
+  }, [reducedMotion]);
+
+  useEffect(() => {
+    if (reducedMotion) finishFilm();
+  }, [reducedMotion, finishFilm]);
+
+  useEffect(() => {
+    if (phase === "waiting") dialogRef.current?.focus();
+    if (phase === "waiting" && !sceneReady) setHeldForScene(true);
+  }, [phase, sceneReady]);
+
+  useEffect(() => {
+    if (phase !== "playing") videoRef.current?.pause();
+    if (phase !== "playing") return;
+    // A stalled download/decoder must not become an endless movie gate.
+    const timer = window.setTimeout(finishFilm, 30_000);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [phase, finishFilm]);
+
+  useEffect(() => {
+    if (phase !== "waiting" || !sceneReady) return;
+    if (reducedMotion) {
+      if (!completed.current) {
+        completed.current = true;
+        onComplete();
+      }
+    } else setPhase("fading");
+  }, [phase, sceneReady, reducedMotion, onComplete]);
+
+  useEffect(() => {
+    if (phase !== "fading") return;
+    const timer = window.setTimeout(
+      () => {
+        if (!completed.current) {
+          completed.current = true;
+          onComplete();
+        }
+      },
+      reducedMotion ? 0 : DISSOLVE_MS,
     );
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [phase, reducedMotion, onComplete]);
+
+  function retryPlayback() {
+    const video = videoRef.current;
+    if (!video) {
+      finishFilm();
+      return;
+    }
+    setPhase("playing");
+    // A second refusal takes the user straight to the live scene; no retry loop.
+    void video.play().catch(() => {
+      if (alive.current) finishFilm();
+    });
   }
 
   return (
-    <section className="film-gate film-cinema threshold-stage" aria-labelledby="arrival-film-gate">
-      <p className="eyebrow">Arrival film · Verdaly Technologies</p>
-      <h1 id="arrival-film-gate">Short preview film before your first shift</h1>
-      <p className="lede">A six-second arrival preview, then a ~10–15-minute simulated first shift and an evidence-based debrief.</p>
-
-      <div className="film-hold-wrap film-hold-wrap-cinema threshold-media">
-        {!playing ? (
-          <>
-            <img
-              src="/verdaly-tower-doors.svg"
-              alt="Arrival film poster: Verdaly tower doors"
-              width={1600}
-              height={900}
-              loading="eager"
-              style={{ width: "100%", height: "auto", display: "block", borderRadius: 8 }}
-            />
-            <button
-              type="button"
-              className="film-play-overlay"
-              onClick={() => {
-                setPlaying(true);
-              }}
-              aria-label="Play arrival film"
-            >
-              <span className="film-play-icon" aria-hidden="true">▶</span>
-              Play arrival film
-            </button>
-          </>
-        ) : (
-          <>
-            {!mediaError ? (
-              <video
-                ref={videoRef}
-                controls={!doorHold}
-                autoPlay
-                muted
-                preload="metadata"
-                poster="/verdaly-tower-doors.svg"
-                aria-label="Arrival at Verdaly: from bedroom to tower doors"
-                playsInline
-                onEnded={() => {
-                  setDoorHold(true);
-                }}
-                onError={() => {
-                  setMediaError(true);
-                  setDoorHold(true);
-                }}
-                onTimeUpdate={(e) => {
-                  const v = e.currentTarget;
-                  if (!doorHold && Number.isFinite(v.duration) && v.duration - v.currentTime < 0.5) {
-                    v.pause();
-                    setDoorHold(true);
-                  }
-                }}
-              >
-                <source src="/arrival-film.mp4" type="video/mp4" />
-                <p>Film file lands at launch. Read the transcript below.</p>
-                <track kind="captions" srcLang="en" label="English" src="/arrival-film.vtt" />
-              </video>
-            ) : (
-              <img
-                src="/verdaly-tower-doors.svg"
-                alt="Arrival film unavailable — Verdaly tower doors poster"
-                width={1600}
-                height={900}
-                loading="eager"
-                style={{ width: "100%", height: "auto", display: "block", borderRadius: 8 }}
-              />
-            )}
-            {mediaError ? (
-              <p role="status" aria-live="polite" className="film-unavailable-note">
-                Film unavailable — the poster and stills below tell the same story. You can still step
-                through the doors.
-              </p>
-            ) : null}
-            {doorHold ? (
-              <DoorHud
-                reducedMotion={false}
-                onStart={() => {
-                  onSeen?.();
-                }}
-              />
-            ) : null}
-          </>
-        )}
-      </div>
-
-      <details className="film-transcript">
-        <summary>Transcript and stills</summary>
-        <ArrivalTranscript />
-        <div className="stills-grid" aria-label="Stills from the short arrival film">
-          {STILLS.map((s) => (
-            <StillFigure key={s.id} {...s} />
-          ))}
+    <div
+      ref={dialogRef}
+      className="arrival-handoff"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Arrival at Verdaly"
+      data-phase={phase}
+      tabIndex={-1}
+      onKeyDown={(event) => {
+        if (event.key !== "Tab") return;
+        event.preventDefault();
+        (
+          event.currentTarget.querySelector<HTMLButtonElement>("button") ??
+          event.currentTarget
+        ).focus();
+      }}
+    >
+      {phase === "playing" ? (
+        <p className="arrival-handoff-notice" aria-live="polite">
+          Switching to fullscreen… Press Esc to exit.
+        </p>
+      ) : null}
+      {!reducedMotion && !mediaFailed ? (
+        <video
+          ref={videoRef}
+          className="arrival-handoff-video"
+          src="/arrival-film.mp4"
+          poster={POSTER}
+          autoPlay
+          muted={soundMuted}
+          playsInline
+          preload="auto"
+          aria-hidden="true"
+          onEnded={finishFilm}
+          onError={() => {
+            setMediaFailed(true);
+            finishFilm();
+          }}
+        />
+      ) : null}
+      {phase === "blocked" ? (
+        <>
+          <img
+            className="arrival-handoff-poster"
+            src={POSTER}
+            alt="Verdaly arrival film poster"
+          />
+          <button
+            ref={focusControl}
+            className="arrival-handoff-enter start-shift"
+            type="button"
+            onClick={retryPlayback}
+          >
+            Enter Security Operations
+          </button>
+        </>
+      ) : phase === "playing" ? (
+        <button
+          ref={focusControl}
+          className="arrival-handoff-skip guidance-secondary"
+          type="button"
+          onClick={finishFilm}
+        >
+          Skip film
+        </button>
+      ) : null}
+      {heldForScene || reducedMotion || mediaFailed ? (
+        <div className="arrival-handoff-veil">
+          <p role="status">Entering Security Operations…</p>
         </div>
-      </details>
-    </section>
+      ) : null}
+    </div>
   );
 }

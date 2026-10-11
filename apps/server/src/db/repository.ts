@@ -1,4 +1,5 @@
 import postgres from "postgres";
+import { poolerCompatibleOptions } from "./connection.js";
 import {
   ActionLogEntrySchema,
   EvidenceSignalSchema,
@@ -9,6 +10,7 @@ import {
   GrantNotFoundError,
   SessionNotFoundError,
   SessionConflictError,
+  WriteBudgetError,
 } from "../domain/errors.js";
 import type { SharingGrant, StoredSession } from "../domain/session.js";
 import type {
@@ -16,6 +18,12 @@ import type {
   CompletedDecision,
 } from "../domain/decision-review.js";
 import type { SimulationRepository } from "../repository/types.js";
+import {
+  SESSION_CREATIONS_PER_HOUR,
+  REFLECTIONS_PER_HOUR,
+  REFLECTIONS_PER_SESSION,
+} from "../repository/write-budgets.js";
+import type { Reflection } from "@sim/schemas";
 
 type SqlClient = ReturnType<typeof postgres>;
 
@@ -32,12 +40,45 @@ export class PostgresRepository implements SimulationRepository {
     this.#sql = sql;
   }
 
+  async #consumeBudget(
+    tx: postgres.TransactionSql,
+    ownerId: string,
+    operation: "session" | "reflection",
+    limit: number,
+  ) {
+    const accepted = await tx`
+      INSERT INTO session_write_limits (owner_id, operation, write_count)
+      VALUES (${ownerId}::uuid, ${operation}, 1)
+      ON CONFLICT (owner_id, operation) DO UPDATE SET
+        write_count = CASE WHEN session_write_limits.window_started_at <= now() - interval '1 hour'
+          THEN 1 ELSE session_write_limits.write_count + 1 END,
+        window_started_at = CASE WHEN session_write_limits.window_started_at <= now() - interval '1 hour'
+          THEN now() ELSE session_write_limits.window_started_at END
+      WHERE session_write_limits.window_started_at <= now() - interval '1 hour'
+        OR session_write_limits.write_count < ${limit}
+      RETURNING owner_id
+    `;
+    if (!accepted.length) throw new WriteBudgetError();
+  }
+
   async createSession(
     ownerId: string,
     state: StoredSession["state"],
     createRequestId?: string,
   ): Promise<StoredSession> {
-    await this.#sql`
+    await this.#sql.begin(async (tx) => {
+      // Same owner/request retries serialize across replicas and remain free.
+      await tx`SELECT pg_advisory_xact_lock(hashtextextended(${ownerId}, 7413))`;
+      const existing = await tx`SELECT id FROM simulation_sessions
+        WHERE owner_id = ${ownerId}::uuid AND create_request_id = ${createRequestId ?? state.sessionId}::uuid`;
+      if (existing.length) return;
+      await this.#consumeBudget(
+        tx,
+        ownerId,
+        "session",
+        SESSION_CREATIONS_PER_HOUR,
+      );
+      await tx`
       INSERT INTO simulation_sessions (
         id, owner_id, career_id, session_kind, pacing_mode, seed, current_state, create_request_id
       ) VALUES (
@@ -47,17 +88,62 @@ export class PostgresRepository implements SimulationRepository {
         ${state.sessionKind},
         ${state.pacingMode},
         ${state.seed},
-        ${this.#sql.json(state)},
+        ${tx.json(state)},
         ${createRequestId ?? state.sessionId}::uuid
       )
       ON CONFLICT (owner_id, create_request_id) DO NOTHING
     `;
+    });
     const rows = await this.#sql<{ id: string }[]>`
       SELECT id FROM simulation_sessions WHERE owner_id = ${ownerId}::uuid
         AND create_request_id = ${createRequestId ?? state.sessionId}::uuid
     `;
     if (!rows[0]) throw new SessionNotFoundError();
     return this.getSession(ownerId, rows[0].id);
+  }
+
+  async submitReflection(
+    ownerId: string,
+    reflection: Reflection,
+  ): Promise<Reflection> {
+    return this.#sql.begin(async (tx) => {
+      // Row lock serializes reflections with each other and authoritative saves.
+      const session = await tx`SELECT id FROM simulation_sessions
+        WHERE id = ${reflection.sessionId}::uuid AND owner_id = ${ownerId}::uuid FOR UPDATE`;
+      if (!session.length) throw new SessionNotFoundError();
+      const existing = await tx<
+        { id: string; created_at: Date }[]
+      >`SELECT id, created_at FROM reflections
+        WHERE session_id = ${reflection.sessionId}::uuid AND owner_id = ${ownerId}::uuid
+          AND event_id = ${reflection.eventId} AND enjoyment = ${reflection.enjoyment}
+          AND confidence = ${reflection.confidence} AND note IS NOT DISTINCT FROM ${reflection.note ?? null}
+        ORDER BY created_at, id LIMIT 1`;
+      if (existing[0])
+        return {
+          ...reflection,
+          id: existing[0].id,
+          createdAt: existing[0].created_at.toISOString(),
+        };
+      const counts = await tx<
+        { count: number }[]
+      >`SELECT count(*)::int AS count FROM reflections
+        WHERE session_id = ${reflection.sessionId}::uuid AND owner_id = ${ownerId}::uuid`;
+      if ((counts[0]?.count ?? 0) >= REFLECTIONS_PER_SESSION)
+        throw new WriteBudgetError();
+      await this.#consumeBudget(
+        tx,
+        ownerId,
+        "reflection",
+        REFLECTIONS_PER_HOUR,
+      );
+      await tx`INSERT INTO reflections (id, session_id, owner_id, event_id, enjoyment, confidence, note, created_at)
+        VALUES (${reflection.id}::uuid, ${reflection.sessionId}::uuid, ${ownerId}::uuid, ${reflection.eventId},
+          ${reflection.enjoyment}, ${reflection.confidence}, ${reflection.note ?? null}, ${reflection.createdAt}::timestamptz)`;
+      // A gameplay write fetched before this insert must conflict, never erase it.
+      await tx`UPDATE simulation_sessions SET revision = revision + 1
+        WHERE id = ${reflection.sessionId}::uuid AND owner_id = ${ownerId}::uuid`;
+      return reflection;
+    });
   }
 
   async getSession(ownerId: string, sessionId: string): Promise<StoredSession> {
@@ -105,7 +191,7 @@ export class PostgresRepository implements SimulationRepository {
           'enjoyment', enjoyment,
           'confidence', confidence,
           'note', note,
-          'createdAt', created_at
+          'createdAt', to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
         )) AS payload
         FROM reflections
         WHERE session_id = ${sessionId}::uuid AND owner_id = ${ownerId}::uuid
@@ -289,6 +375,7 @@ export class PostgresRepository implements SimulationRepository {
       await transaction`DELETE FROM career_requests WHERE requester_key = ${ownerId}::uuid`;
       await transaction`DELETE FROM support_reports WHERE owner_id = ${ownerId}::uuid`;
       await transaction`DELETE FROM launch_event_limits WHERE owner_id = ${ownerId}::uuid`;
+      await transaction`DELETE FROM session_write_limits WHERE owner_id = ${ownerId}::uuid`;
     });
   }
 
@@ -352,6 +439,7 @@ export class PostgresRepository implements SimulationRepository {
 export function createPostgresRepository(databaseUrl: string) {
   return new PostgresRepository(
     postgres(databaseUrl, {
+      ...poolerCompatibleOptions,
       max: 10,
       idle_timeout: 20,
       connect_timeout: 10,
