@@ -63,3 +63,6 @@ docs/planning/desk-os-audit/
 /brag-output/
 /launch-film-assets/
 /logs/
+
+# Heavy visual reference assets (arrival film + frames) — not shipped
+/apps/web/reference/
