@@ -1,6 +1,10 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import { StatusSelectionError, WorkplaceInteractionError } from "@sim/core";
-import { NotFoundError, SessionConflictError } from "../domain/errors.js";
+import {
+  NotFoundError,
+  SessionConflictError,
+  WriteBudgetError,
+} from "../domain/errors.js";
 import type { AppContext } from "../domain/session.js";
 
 export const t = initTRPC.context<AppContext>().create({
@@ -23,6 +27,11 @@ export const authenticatedProcedure = t.procedure.use(async ({ ctx, next }) => {
     throw new TRPCError({ code: "UNAUTHORIZED" });
   }
   const result = await next({ ctx });
+  if (!result.ok && result.error.cause instanceof WriteBudgetError)
+    throw new TRPCError({
+      code: "TOO_MANY_REQUESTS",
+      message: result.error.cause.message,
+    });
   if (!result.ok && result.error.cause instanceof SessionConflictError)
     throw new TRPCError({
       code: "CONFLICT",

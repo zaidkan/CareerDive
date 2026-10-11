@@ -1,6 +1,16 @@
 import { randomUUID } from "node:crypto";
-import type { EvidenceSignal, WorldState } from "@sim/schemas";
-import { GrantNotFoundError, SessionNotFoundError } from "../domain/errors.js";
+import type { EvidenceSignal, Reflection, WorldState } from "@sim/schemas";
+import {
+  GrantNotFoundError,
+  SessionNotFoundError,
+  WriteBudgetError,
+} from "../domain/errors.js";
+import {
+  SESSION_CREATIONS_PER_HOUR,
+  REFLECTIONS_PER_HOUR,
+  REFLECTIONS_PER_SESSION,
+  sameReflection,
+} from "./write-budgets.js";
 import type { SharingGrant, StoredSession } from "../domain/session.js";
 import type {
   CohortCount,
@@ -22,6 +32,27 @@ export class InMemoryRepository implements SimulationRepository {
   readonly #grants = new Map<string, SharingGrant>();
   readonly #createRequests = new Map<string, string>();
   readonly #decisions = new Map<string, CompletedDecision>();
+  readonly #writeLimits = new Map<
+    string,
+    { startedAt: number; count: number }
+  >();
+
+  #consumeBudget(
+    ownerId: string,
+    operation: "session" | "reflection",
+    limit: number,
+  ) {
+    const key = `${ownerId}:${operation}`;
+    const now = Date.now();
+    const previous = this.#writeLimits.get(key);
+    const window =
+      previous && previous.startedAt > now - 3_600_000
+        ? previous
+        : { startedAt: now, count: 0 };
+    if (window.count >= limit) throw new WriteBudgetError();
+    window.count += 1;
+    this.#writeLimits.set(key, window);
+  }
 
   async createSession(
     ownerId: string,
@@ -32,6 +63,7 @@ export class InMemoryRepository implements SimulationRepository {
     const existing = this.#createRequests.get(key);
     if (existing && this.#sessions.has(existing))
       return this.getSession(ownerId, existing);
+    this.#consumeBudget(ownerId, "session", SESSION_CREATIONS_PER_HOUR);
     this.#createRequests.set(key, state.sessionId);
     this.#sessions.set(state.sessionId, {
       ownerId,
@@ -53,6 +85,22 @@ export class InMemoryRepository implements SimulationRepository {
 
   async saveSession(session: StoredSession): Promise<void> {
     this.#sessions.set(session.state.sessionId, session);
+  }
+
+  async submitReflection(
+    ownerId: string,
+    reflection: Reflection,
+  ): Promise<Reflection> {
+    const session = await this.getSession(ownerId, reflection.sessionId);
+    const existing = session.reflections.find((row) =>
+      sameReflection(row, reflection),
+    );
+    if (existing) return existing;
+    if (session.reflections.length >= REFLECTIONS_PER_SESSION)
+      throw new WriteBudgetError();
+    this.#consumeBudget(ownerId, "reflection", REFLECTIONS_PER_HOUR);
+    session.reflections.push(reflection);
+    return reflection;
   }
 
   async saveCompletedDecisions(decisions: CompletedDecision[]): Promise<void> {
@@ -113,6 +161,8 @@ export class InMemoryRepository implements SimulationRepository {
   }
 
   async deleteAccount(ownerId: string): Promise<void> {
+    this.#writeLimits.delete(`${ownerId}:session`);
+    this.#writeLimits.delete(`${ownerId}:reflection`);
     for (const [sessionId, session] of this.#sessions) {
       if (session.ownerId === ownerId) {
         this.#sessions.delete(sessionId);

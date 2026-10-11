@@ -585,8 +585,9 @@ describe("end-of-shift decision review", () => {
       const { state, log } = fixture(`journey-${String(index)}`);
       if (index === 30) state.careerVersion = "2.0.0";
       if (index !== 29) state.completedActionIds.push("complete_shift");
-      await repository.createSession(owner, state);
-      const session = await repository.getSession(owner, state.sessionId);
+      const journeyOwner = `${owner}-${String(index)}`;
+      await repository.createSession(journeyOwner, state);
+      const session = await repository.getSession(journeyOwner, state.sessionId);
       session.actionLog = log;
       const rows = completedDecisions(state, log, pack.career.id);
       await repository.saveSession(session);
@@ -617,7 +618,7 @@ describe("end-of-shift decision review", () => {
     expect(JSON.stringify(counts)).not.toMatch(
       /noteText|freeText|ownerId|J\. Patel/,
     );
-    await repository.deleteSession(owner, "journey-30");
+    await repository.deleteSession(`${owner}-30`, "journey-30");
     expect(await repository.getCohortCounts(pack.career.id, "2.0.0")).toEqual(
       [],
     );

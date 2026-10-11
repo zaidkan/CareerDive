@@ -444,10 +444,6 @@ export function createAppRouter(
         )
         .output(ReflectionSchema)
         .mutation(async ({ ctx, input }) => {
-          const session = await repository.getSession(
-            ctx.userId,
-            input.sessionId,
-          );
           const reflection = ReflectionSchema.parse({
             id: randomUUID(),
             sessionId: input.sessionId,
@@ -457,9 +453,7 @@ export function createAppRouter(
             ...(input.note === undefined ? {} : { note: input.note }),
             createdAt: new Date().toISOString(),
           });
-          session.reflections.push(reflection);
-          await repository.saveSession(session);
-          return reflection;
+          return repository.submitReflection(ctx.userId, reflection);
         }),
     }),
     debrief: t.router({

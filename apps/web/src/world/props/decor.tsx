@@ -4,8 +4,8 @@
 import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { fitFontSize, makePaintingTexture, makePortraitTexture } from "../textures.js";
-import { labelFont, makeLabelTexture } from "./signage.js";
+import { fitFontSize, makePaintingTexture } from "../textures.js";
+import { labelFont } from "./signage.js";
 
 const certificateCache = new Map<string, THREE.CanvasTexture>();
 
@@ -353,52 +353,6 @@ export function FramedCertificate({
       <mesh position={[0, 0, 0.026]}>
         <planeGeometry args={[0.47, 0.6]} />
         <meshBasicMaterial map={texture} toneMapped={false} />
-      </mesh>
-    </group>
-  );
-}
-
-export function EmployeeOfMonth({
-  position,
-  rotationY = 0,
-  name = "Dana",
-}: {
-  position: [number, number, number];
-  rotationY?: number;
-  name?: string;
-}) {
-  const nameplate = useMemo(() => makeLabelTexture(name.toUpperCase(), 256, 72), [name]);
-  const caption = useMemo(
-    () => makeLabelTexture("EMPLOYEE OF THE MONTH", 512, 72),
-    [],
-  );
-  const portrait = useMemo(
-    () => makePortraitTexture({ hair: "#241610", top: "#7a5a42", longHair: true }),
-    [],
-  );
-  return (
-    <group position={position} rotation={[0, rotationY, 0]}>
-      <mesh castShadow>
-        <boxGeometry args={[0.85, 1.15, 0.04]} />
-        <meshStandardMaterial color="#2a2118" roughness={0.55} />
-      </mesh>
-      {/* Caption band across the top, wide enough for the full phrase */}
-      <mesh position={[0, 0.44, 0.032]}>
-        <planeGeometry args={[0.74, 0.11]} />
-        <meshBasicMaterial map={caption} toneMapped={false} />
-      </mesh>
-      {/* Portrait, matted inside a mount */}
-      <mesh position={[0, 0.03, 0.026]} castShadow>
-        <boxGeometry args={[0.52, 0.6, 0.015]} />
-        <meshStandardMaterial color="#efe6d4" />
-      </mesh>
-      <mesh position={[0, 0.03, 0.045]}>
-        <planeGeometry args={[0.42, 0.5]} />
-        <meshBasicMaterial map={portrait} toneMapped={false} />
-      </mesh>
-      <mesh position={[0, -0.42, 0.032]}>
-        <planeGeometry args={[0.46, 0.11]} />
-        <meshBasicMaterial map={nameplate} toneMapped={false} />
       </mesh>
     </group>
   );

@@ -273,6 +273,7 @@ function SpatialShellStage({
 
   const requestWorkplaceInteraction = useCallback(
     (interaction: WorkplaceInteraction) => {
+      unlockDialogueAudio();
       void submitWorkplaceInteraction(interaction);
     },
     [submitWorkplaceInteraction],
@@ -632,7 +633,7 @@ function SpatialShellStage({
                 />
               ) : null}
             </div>
-            <span className="visually-hidden">Lunchbox by the fridge: My breakfast — DO NOT touch. yeah, I'm talking to you, Morgan.</span>
+            <span className="visually-hidden">Lunchbox by the fridge: My breakfast — DO NOT touch. yeah, I'm talking to you, Reed.</span>
             <div className="room-hud-actions">
               {nearbyHotspotId && !breakStation ? (
                 <button

@@ -20,6 +20,8 @@ describe("migration runner", () => {
       "0005_server_boundaries.sql",
       "0006_support_launch.sql",
       "0007_state_revision_launch_limits.sql",
+      "0008_session_lookup_indexes.sql",
+      "0009_session_write_budgets.sql",
     ]);
     expect(pendingMigrations(migrations, migrations.slice(0, 2))).toEqual(
       migrations.slice(2),
@@ -60,7 +62,7 @@ describe("migration runner", () => {
         const brokenSql =
           "CREATE TABLE public.failed_migration_probe(id int); SELECT missing_function_for_test();";
         const broken: Migration = {
-          name: "0008_broken_test.sql",
+          name: "0010_broken_test.sql",
           sql: brokenSql,
           hash: createHash("sha256").update(brokenSql).digest("hex"),
         };

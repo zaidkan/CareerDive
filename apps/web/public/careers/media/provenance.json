@@ -783,7 +783,7 @@
     "id": "a-11",
     "file": "a-11-desktop-dark.webp",
     "pack": "cybersecurity_analyst@2.0.0",
-    "packSha256": "f13ce947ded5ec2531b7b3a65ca64f133a2d8ef6c555698cba885fe0f3b59b9e",
+    "packSha256": "8e53ed9d14c19928d8ee0df002142e7b3e0024ab836e73d252235e6042f0ccc1",
     "seed": 7,
     "route": "/fixtures/product-media.html",
     "actions": [
@@ -796,7 +796,7 @@
       "deviceScaleFactor": 1
     },
     "crop": "fullPage",
-    "capturedAt": "2026-10-09T01:41:43.379Z",
+    "capturedAt": "2026-10-11T05:33:47.859Z",
     "tool": "Playwright Chromium 153.0.8010.12; cwebp 1.6.0\nlibsharpyuv: 0.4.2 -q 86",
     "source": "current core state + current React product components"
   },

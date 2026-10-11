@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { productMedia, selectProductMedia } from "../src/site/productMedia.js";
 import { buildCompletedCyberMediaShift } from "../../../scripts/product-media-shift.js";
@@ -15,8 +16,9 @@ const provenance = JSON.parse(readFileSync(new URL("../public/careers/media/prov
 describe("public product media", () => {
   it("has twelve typed scenes backed by real files and matching provenance", () => {
     expect(Object.keys(productMedia)).toEqual(Array.from({ length: 12 }, (_, index) => `a-${String(index + 1).padStart(2, "0")}`));
-    // Captures remain frozen to aa8d79d; source edits must not falsify their provenance.
+    // Historical captures stay frozen; the refreshed room uses the current pack file.
     const packSha256 = "f13ce947ded5ec2531b7b3a65ca64f133a2d8ef6c555698cba885fe0f3b59b9e";
+    const roomPackSha256 = createHash("sha256").update(readFileSync(new URL("../../../content/packs/cybersecurity-analyst/pack.yaml", moduleBase))).digest("hex");
     let count = 0;
     for (const media of Object.values(productMedia)) {
       expect(media.provenance).toBe("/careers/media/provenance.json");
@@ -31,7 +33,7 @@ describe("public product media", () => {
           const refreshed = media.id === "a-06" || media.id === "a-10";
           expect(provenance).toContainEqual(expect.objectContaining({
             id: media.id, file: variant.src.split("/").at(-1),
-            pack: "cybersecurity_analyst@2.0.0", packSha256,
+            pack: "cybersecurity_analyst@2.0.0", packSha256: media.id === "a-11" ? roomPackSha256 : packSha256,
             seed: 7, route: "/fixtures/product-media.html", theme,
             crop: media.id === "a-06" ? "main.capture element" : "fullPage",
           }));

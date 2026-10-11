@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePrefersReducedMotion } from "../world/deskOs/os/reducedMotion.js";
+import { useSimulationMuted } from "../world/dialogue/audio.js";
 import "./ArrivalFilm.css";
 
 const DISSOLVE_MS = 300;
@@ -15,9 +16,12 @@ export function ArrivalFilm({
   onComplete: () => void;
 }) {
   const reducedMotion = usePrefersReducedMotion();
+  const soundMuted = useSimulationMuted();
   const [phase, setPhase] = useState<
     "playing" | "blocked" | "waiting" | "fading"
   >(() => (reducedMotion ? "waiting" : "playing"));
+  const currentPhase = useRef(phase);
+  currentPhase.current = phase;
   const [mediaFailed, setMediaFailed] = useState(false);
   const [heldForScene, setHeldForScene] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -34,10 +38,21 @@ export function ArrivalFilm({
   useEffect(() => {
     let currentAttempt = true;
     alive.current = true;
+    const isCurrent = () => currentAttempt && currentPhase.current === "playing";
     const video = videoRef.current;
     if (!reducedMotion && video) {
-      void video.play().catch(() => {
-        if (currentAttempt)
+      void video.play().catch(async () => {
+        if (!isCurrent()) return;
+        // Room entry is a gesture, but some browsers lose activation before
+        // React mounts the video. Retry silently without extending the gate.
+        if (!video.muted) {
+          video.muted = true;
+          try {
+            await video.play();
+            return;
+          } catch { /* Existing explicit-entry fallback still applies. */ }
+        }
+        if (isCurrent())
           setPhase((current) => (current === "playing" ? "blocked" : current));
       });
     }
@@ -136,7 +151,7 @@ export function ArrivalFilm({
           src="/arrival-film.mp4"
           poster={POSTER}
           autoPlay
-          muted
+          muted={soundMuted}
           playsInline
           preload="auto"
           aria-hidden="true"

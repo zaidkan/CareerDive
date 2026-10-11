@@ -731,20 +731,26 @@ export function SocRoom({
 
       {/* Exit door — charcoal frame, oak leaf, and readable label */}
       <group position={[0, 0, ROOM.halfZ - 0.2]}>
-        <mesh position={[-0.95, 1.25, 0]} castShadow>
+        {/* Solid recess closes the complete 2.2m wall opening behind the leaf.
+            Keep plaque surfaces proud of the leaf to avoid z-fighting. */}
+        <mesh position={[0, 1.2, 0.19]} castShadow receiveShadow>
+          <boxGeometry args={[2.22, 2.4, 0.3]} />
+          <meshStandardMaterial color="#2a2b2c" roughness={0.8} />
+        </mesh>
+        <mesh position={[-1.04, 1.25, 0]} castShadow>
           <boxGeometry args={[0.14, 2.5, 0.18]} />
           <meshStandardMaterial color="#2a2b2c" roughness={0.55} />
         </mesh>
-        <mesh position={[0.95, 1.25, 0]} castShadow>
+        <mesh position={[1.04, 1.25, 0]} castShadow>
           <boxGeometry args={[0.14, 2.5, 0.18]} />
           <meshStandardMaterial color="#2a2b2c" roughness={0.55} />
         </mesh>
         <mesh position={[0, 2.55, 0]} castShadow>
-          <boxGeometry args={[2.05, 0.14, 0.2]} />
+          <boxGeometry args={[2.22, 0.14, 0.2]} />
           <meshStandardMaterial color="#2a2b2c" roughness={0.55} />
         </mesh>
         <mesh position={[0, 1.25, 0.02]} castShadow>
-          <boxGeometry args={[1.7, 2.4, 0.08]} />
+          <boxGeometry args={[1.98, 2.5, 0.14]} />
           <meshStandardMaterial color="#c9a97f" roughness={0.55} />
         </mesh>
         <mesh position={[0.65, 1.25, 0.08]}>
@@ -755,13 +761,13 @@ export function SocRoom({
             roughness={0.35}
           />
         </mesh>
-        <mesh position={[0, 2.35, -0.06]}>
+        <mesh position={[0, 2.35, -0.11]}>
           <boxGeometry args={[0.7, 0.18, 0.04]} />
           <meshStandardMaterial color="#1a3028" />
         </mesh>
         <MeshLabel
           text="EXIT"
-          position={[0, 2.35, -0.09]}
+          position={[0, 2.35, -0.135]}
           rotationY={Math.PI}
           width={0.65}
           height={0.14}

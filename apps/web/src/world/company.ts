@@ -3,5 +3,5 @@ export const COMPANY = {
   name: "Verdaly",
   fullName: "Verdaly Technologies",
   role: "Junior Cybersecurity Analyst",
-  floor: "Floor 12 · Trust & Safety Ops",
+  floor: "Floor 4 · Trust & Safety Ops",
 } as const;

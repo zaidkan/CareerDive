@@ -106,7 +106,7 @@ export const evidenceSignals = pgTable("evidence_signals", {
   provenance: jsonb("provenance").notNull(),
   userAnnotation: text("user_annotation"),
   createdAt: createdAt(),
-});
+}, (table) => [index("evidence_signals_session_owner_idx").on(table.sessionId, table.ownerId)]);
 export const reflections = pgTable("reflections", {
   id: uuid("id").primaryKey(),
   sessionId: uuid("session_id").notNull(),
@@ -116,7 +116,7 @@ export const reflections = pgTable("reflections", {
   confidence: text("confidence").notNull(),
   note: text("note"),
   createdAt: createdAt(),
-});
+}, (table) => [index("reflections_session_owner_idx").on(table.sessionId, table.ownerId)]);
 export const interpretations = pgTable("interpretations", {
   id: uuid("id").primaryKey().defaultRandom(),
   ownerId: uuid("owner_id").notNull(),
@@ -133,7 +133,18 @@ export const sharingGrants = pgTable("sharing_grants", {
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
   createdAt: createdAt(),
-});
+}, (table) => [index("sharing_grants_active_owner_idx").on(table.ownerId, table.expiresAt).where(sql`${table.revokedAt} IS NULL`)]);
+
+export const sessionWriteLimits = pgTable("session_write_limits", {
+  ownerId: uuid("owner_id").notNull(),
+  operation: text("operation").notNull(),
+  windowStartedAt: timestamp("window_started_at", { withTimezone: true }).notNull().defaultNow(),
+  writeCount: integer("write_count").notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.ownerId, table.operation] }),
+  check("session_write_limits_operation_check", sql`${table.operation} IN ('session', 'reflection')`),
+  check("session_write_limits_write_count_check", sql`${table.writeCount} > 0`),
+]).enableRLS();
 export const pathwayRecords = pgTable("pathway_records", {
   id: text("id").primaryKey(),
   careerId: text("career_id").notNull(),

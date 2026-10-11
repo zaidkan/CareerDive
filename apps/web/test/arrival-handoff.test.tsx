@@ -11,12 +11,14 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { setSimulationMuted } from "../src/world/dialogue/audio.js";
 import { ArrivalFilm } from "../src/site/ArrivalFilm.js";
 
 let reduced = false;
 const play = vi.fn<() => Promise<void>>();
 beforeEach(() => {
   reduced = false;
+  setSimulationMuted(false);
   vi.stubGlobal(
     "matchMedia",
     vi.fn(() => ({
@@ -80,13 +82,13 @@ describe("arrival handoff presentation", () => {
       screen.queryByRole("button", { name: "Enter Security Operations" }),
     ).toBeNull();
   });
-  it("autoplays muted inline, then dissolves only after the live scene is ready", async () => {
+  it("autoplays with sound inline, then dissolves only after the live scene is ready", async () => {
     const onComplete = vi.fn();
     const { rerender } = render(
       <ArrivalFilm sceneReady={false} onComplete={onComplete} />,
     );
     expect(video()).toHaveAttribute("autoplay");
-    expect(video().muted).toBe(true);
+    expect(video().muted).toBe(false);
     expect(
       screen.getByText("Switching to fullscreen… Press Esc to exit."),
     ).toBeVisible();
@@ -126,6 +128,7 @@ describe("arrival handoff presentation", () => {
     "provides one Enter button when autoplay is blocked (retry also blocked: %s)",
     async (retryBlocked) => {
       play.mockRejectedValueOnce(new Error("Autoplay denied"));
+      play.mockRejectedValueOnce(new Error("Muted autoplay denied"));
       if (retryBlocked) play.mockRejectedValueOnce(new Error("Still denied"));
       const onComplete = vi.fn();
       render(<ArrivalFilm sceneReady onComplete={onComplete} />);
@@ -217,4 +220,34 @@ describe("arrival handoff presentation", () => {
     await new Promise((resolve) => setTimeout(resolve, 350));
     expect(onComplete).not.toHaveBeenCalled();
   });
+});
+
+it("falls back to muted playback when audible autoplay is denied without adding an entry gate", async () => {
+  play.mockRejectedValueOnce(new Error("Audible autoplay denied"));
+  const onComplete = vi.fn();
+  render(<ArrivalFilm sceneReady onComplete={onComplete} />);
+  await waitFor(() => { expect(play).toHaveBeenCalledTimes(2); });
+  expect(video().muted).toBe(true);
+  expect(screen.queryByRole("button", { name: "Enter Security Operations" })).toBeNull();
+  fireEvent.ended(video());
+  await waitFor(() => { expect(onComplete).toHaveBeenCalledTimes(1); });
+});
+
+it("honors persisted sound preference and live mute changes", async () => {
+  setSimulationMuted(true);
+  render(<ArrivalFilm sceneReady onComplete={vi.fn()} />);
+  expect(video().muted).toBe(true);
+  await act(async () => { setSimulationMuted(false); });
+  expect(video().muted).toBe(false);
+  await act(async () => { setSimulationMuted(true); });
+  expect(video().muted).toBe(true);
+});
+
+it("never restarts a skipped or unmounted film after a late audible rejection", async () => {
+  let reject!: (reason: Error) => void;
+  play.mockImplementationOnce(() => new Promise<void>((_resolve, fail) => { reject = fail; }));
+  render(<ArrivalFilm sceneReady onComplete={vi.fn()} />);
+  fireEvent.click(screen.getByRole("button", { name: "Skip film" }));
+  await act(async () => { reject(new Error("Late rejection")); });
+  expect(play).toHaveBeenCalledTimes(1);
 });

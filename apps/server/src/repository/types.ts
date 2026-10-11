@@ -1,4 +1,4 @@
-import type { WorldState } from "@sim/schemas";
+import type { Reflection, WorldState } from "@sim/schemas";
 import type { SharingGrant, StoredSession } from "../domain/session.js";
 import type {
   CohortCount,
@@ -13,6 +13,7 @@ export interface SimulationRepository {
   ): Promise<StoredSession>;
   getSession(ownerId: string, sessionId: string): Promise<StoredSession>;
   saveSession(session: StoredSession): Promise<void>;
+  submitReflection(ownerId: string, reflection: Reflection): Promise<Reflection>;
   saveCompletedDecisions(decisions: CompletedDecision[]): Promise<void>;
   getRecordedDecisionIds(
     sessionId: string,

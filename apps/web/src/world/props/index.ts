@@ -12,7 +12,6 @@ export {
 export { DustMotes, VentPapers } from "./atmosphere.js";
 export {
   AccentPoster,
-  EmployeeOfMonth,
   FramedCertificate,
   PlantPot,
   TallFloorPlant,
