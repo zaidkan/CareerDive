@@ -40,7 +40,10 @@ const liveSessions = new WeakMap<
 >();
 const SESSION_KEY = "career-expo-active-session";
 
-export function App({ client = defaultClient }: { client?: SimulationClient }) {
+export function App({ client = defaultClient, arrivalFilmEnabled = false }: {
+  client?: SimulationClient;
+  arrivalFilmEnabled?: boolean;
+}) {
   const [view, setView] = useState<ClientView>();
   const [sessionId, setSessionId] = useState<string>();
   const [debrief, setDebrief] = useState<Debrief>();
@@ -539,6 +542,7 @@ export function App({ client = defaultClient }: { client?: SimulationClient }) {
             items={view.acknowledgements ?? []}
           />
           <ExperienceShell
+            arrivalFilmEnabled={arrivalFilmEnabled}
             key={view.sessionId}
             onAction={(action, freeText) => void perform(action, freeText)}
             onNotification={respondToWorkNotification}

@@ -19,6 +19,7 @@ import {
   type JulesDialogueReply,
 } from "@sim/core";
 import { MutationStatus } from "../components/MutationStatus.js";
+import { ArrivalFilm } from "../site/ArrivalFilm.js";
 import {
   BreakRoomPanel,
   CarriedSnackControl,
@@ -49,9 +50,8 @@ import {
   type MutationState,
 } from "../useMutationCoordinator.js";
 
-const loadRoomCanvas = () => import("./RoomCanvas.js");
 const RoomCanvas = lazy(async () => {
-  const mod = await loadRoomCanvas();
+  const mod = await import("./RoomCanvas.js");
   return { default: mod.RoomCanvas };
 });
 
@@ -86,6 +86,7 @@ function SpatialShellStage({
   onAcceptedDistance,
   onRoomExit,
   recoveryPresentation,
+  arrivalFilmEnabled = false,
 }: {
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
@@ -97,6 +98,8 @@ function SpatialShellStage({
   onAcceptedDistance?: (meters: number) => void;
   onRoomExit?: () => void;
   recoveryPresentation?: { current: SpatialState };
+  /** Disable or relocate the film without changing scene/session ownership. */
+  arrivalFilmEnabled?: boolean;
 }) {
   const [spatial, dispatch] = useReducer(
     reduceSpatialEvent,
@@ -109,6 +112,14 @@ function SpatialShellStage({
   const { dispatch: osDispatch } = useOsSession();
   // Retain camera/door state after entry; no WebGL on the initial map.
   const [roomEntered, setRoomEntered] = useState(spatial.phase !== "floor_map");
+  const arrivalPending = useRef(
+    arrivalFilmEnabled && spatial.phase === "floor_map",
+  );
+  const [arrivalActive, setArrivalActive] = useState(false);
+  const [sceneReady, setSceneReady] = useState(false);
+  const onSceneReady = useCallback(() => {
+    setSceneReady(true);
+  }, []);
   const [nearbyLabel, setNearbyLabel] = useState<string>();
   const [nearbyChoices, setNearbyChoices] = useState<HotspotId[]>([]);
   const [interactionMiss, setInteractionMiss] = useState(false);
@@ -121,11 +132,22 @@ function SpatialShellStage({
   const stageRef = useRef<HTMLDivElement>(null);
   const workplacePendingRef = useRef(false);
   const closeFridgeIntentRef = useRef(false);
-  const { active: fullscreen, toggle: toggleFullscreen, exit: exitFullscreen } =
-    useFullscreen(stageRef);
+  const {
+    active: fullscreen,
+    toggle: toggleFullscreen,
+    exit: exitFullscreen,
+  } = useFullscreen(stageRef);
+  const finishArrival = useCallback(() => {
+    setArrivalActive(false);
+    stageRef.current?.focus({ preventScroll: true });
+  }, []);
 
-  const onWalkBlocked = useCallback(() => { setWalkBlocked(true); }, []);
-  const onRecover = useCallback(() => { setWalkBlocked(false); }, []);
+  const onWalkBlocked = useCallback(() => {
+    setWalkBlocked(true);
+  }, []);
+  const onRecover = useCallback(() => {
+    setWalkBlocked(false);
+  }, []);
 
   useEffect(() => {
     if (spatial.phase === "floor_map") onRoomExit?.();
@@ -407,9 +429,10 @@ function SpatialShellStage({
       : undefined;
   const roomLabel = "Security Operations";
   const fullscreenLabel = fullscreen ? "Exit fullscreen" : "Fullscreen";
-  const compass = highlightHotspotId === "desk_player"
-    ? "Your desk · follow the blue marker · approach the open front of the cubicle"
-    : undefined;
+  const compass =
+    highlightHotspotId === "desk_player"
+      ? "Your desk · follow the blue marker · approach the open front of the cubicle"
+      : undefined;
   const breakStation =
     nearbyHotspotId === "fridge" || nearbyHotspotId === "coffee"
       ? nearbyHotspotId
@@ -420,6 +443,7 @@ function SpatialShellStage({
     mutationState.pendingKey ===
     workplaceMutationKey({ type: "movement_exertion", distanceMeters: 5 });
   const playerMovementBlocked =
+    arrivalActive ||
     julesOpen ||
     morganOpen ||
     workplacePending ||
@@ -429,16 +453,20 @@ function SpatialShellStage({
     <>
       {isFloorMap ? (
         <FloorMap
+          animateTravel={false}
           returning={Boolean(spatial.visitedDesk)}
           hint={journey.body}
           onEnterRoom={(roomId) => {
+            if (roomId === "soc" && arrivalPending.current) {
+              arrivalPending.current = false;
+              setArrivalActive(true);
+            }
             setRoomEntered(true);
             dispatch({ type: "enter_room", roomId });
           }}
           onRequestFullscreen={() => {
-            // Fetch during hallway travel, after explicit intent. Fullscreen
-            // stays in this synchronous click handler.
-            void loadRoomCanvas().catch(() => {});
+            // RoomCanvas mounts in this same click, underneath the film.
+            // Keep fullscreen within the browser's user-activation window.
             if (!fullscreen) void toggleFullscreen();
           }}
           stepLabel={stepLabel}
@@ -455,231 +483,257 @@ function SpatialShellStage({
         {...(isFloorMap ? { inert: true } : {})}
         style={
           isFloorMap
-            ? { position: "absolute", opacity: 0, pointerEvents: "none", zIndex: -1 }
+            ? {
+                position: "absolute",
+                opacity: 0,
+                pointerEvents: "none",
+                zIndex: -1,
+              }
             : undefined
         }
       >
         <div
-          className={`room-stage${atDesk ? " room-stage-desk" : ""}${maximized ? " room-stage-desk-max" : ""}${fullscreen ? " room-stage-fs" : ""}`}
+          className={`room-stage${arrivalActive ? " room-stage-arriving" : ""}${atDesk ? " room-stage-desk" : ""}${maximized ? " room-stage-desk-max" : ""}${fullscreen ? " room-stage-fs" : ""}`}
           ref={stageRef}
+          tabIndex={-1}
+          data-scene-ready={sceneReady}
         >
-        {!atDesk ? (
-          <ShiftHints
-            view={view}
-            phase={spatial.phase}
-            paused={julesOpen || morganOpen}
-          />
-        ) : null}
-        {roomEntered ? <Suspense
-          fallback={<p className="room-loading">Entering {roomLabel}…</p>}
-        >
-          <RoomCanvas
-            active={!isFloorMap}
-            enabled={walking && !playerMovementBlocked}
-            {...(onAcceptedDistance ? { onAcceptedDistance } : {})}
-            onBreakRoomExit={requestFridgeCloseOnExit}
-            onInteract={handleInteract}
-            onNearbyChange={onNearbyChange}
-            seated={atDesk}
-            workplace={view.workplace}
-            onWalkBlocked={onWalkBlocked}
-            onRecover={onRecover}
-            {...(highlightHotspotId ? { highlightHotspotId } : {})}
-          />
-        </Suspense> : null}
-        {atDesk && deskPhase ? (
-          <LaptopOverlay
-            maximized={maximized}
-            onAction={onAction}
-            mutationState={mutationState}
-            {...(onRetryMutation ? { onRetryMutation } : {})}
-            {...(onTaskAttempt ? { onTaskAttempt } : {})}
-            {...(onNotification ? { onNotification } : {})}
-            {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
-            onLoginSuccess={() => {
-              dispatch({ type: "login_success" });
-              osDispatch({ type: "mark_morgan_intro_seen" });
-            }}
-            onStand={() => {
-              dispatch({ type: "stand" });
-            }}
-            phase={deskPhase}
-            view={view}
-          />
-        ) : null}
-        {walking && !pointerLocked ? (
-          <p className="room-look-hint">Click to look around</p>
-        ) : null}
-        {walking && morganOpen ? (
-          <MorganDialogue
-            view={view}
-            actions={view.availableActions.filter(
-              (a) => a.id === "ask_manager",
-            )}
-            onAction={onAction}
-            pending={resourcePending}
-            onClose={() => {
-              setMorganOpen(false);
-            }}
-          />
-        ) : null}
-        {walking && julesOpen ? (
-          <JulesDialogue
-            onClose={() => {
-              setJulesOpen(false);
-            }}
-            onTopic={handleJulesTopic}
-            pending={
-              workplacePending ||
-              canonicalMutationPending ||
-              !onWorkplaceInteraction
-            }
-            seenTopics={view.workplace.julesTopicsSeen}
-            {...(julesReply ? { reply: julesReply } : {})}
-          />
-        ) : null}
-        {walking ? (
-          <div className="room-hud">
-            <div className="room-hud-brief">
-              {mutationState.error ||
-              mutationState.pendingKey ||
-              mutationState.success ? (
-                <MutationStatus
-                  focusSuccess={!julesOpen && !morganOpen}
-                  state={mutationState}
-                  {...(onRetryMutation ? { onRetry: onRetryMutation } : {})}
+          <div
+            className="room-live"
+            aria-hidden={arrivalActive ? true : undefined}
+            inert={arrivalActive}
+          >
+            {!atDesk ? (
+              <ShiftHints
+                view={view}
+                phase={spatial.phase}
+                paused={arrivalActive || julesOpen || morganOpen}
+              />
+            ) : null}
+            {roomEntered ? (
+              <Suspense
+                fallback={<p className="room-loading">Entering {roomLabel}…</p>}
+              >
+                <RoomCanvas
+                  active={!isFloorMap}
+                  enabled={walking && !playerMovementBlocked}
+                  {...(onAcceptedDistance ? { onAcceptedDistance } : {})}
+                  onBreakRoomExit={requestFridgeCloseOnExit}
+                  onInteract={handleInteract}
+                  onNearbyChange={onNearbyChange}
+                  seated={atDesk}
+                  workplace={view.workplace}
+                  onWalkBlocked={onWalkBlocked}
+                  onRecover={onRecover}
+                  onReady={onSceneReady}
+                  {...(highlightHotspotId ? { highlightHotspotId } : {})}
                 />
-              ) : null}
-              <p className="room-hud-step">
-                <span className="room-hud-count">{stepLabel}</span>
-                {journey.title}
-              </p>
-              {nearbyHotspotId && !playerMovementBlocked ? (
-                <p className="room-context-action">
-                  <kbd>E</kbd> {labelFor(nearbyHotspotId)}
-                </p>
-              ) : null}
-              <p className="room-hud-line">
-                {nearbyIsTarget && nearbyPrompt ? nearbyPrompt : journey.body}
-              </p>
-              {compass ? <p className="room-hud-compass">{compass}</p> : null}
-              <p className="room-hud-nearby" role="status">
-                {playerMovementBlocked
-                  ? "Interaction paused · finish the current action or close the conversation to move and use E"
-                  : nearbyPrompt
-                    ? `Ready · ${nearbyPrompt}`
-                    : "Out of reach · move closer to a floor marker to use E"}
-              </p>
-              {nearbyChoices.length > 1 ? (
-                <div className="room-hud-choices" aria-label="Nearby actions">
-                  <p>
-                    More than one action in reach — choose below. E uses the
-                    action shown above.
+              </Suspense>
+            ) : null}
+            {atDesk && deskPhase ? (
+              <LaptopOverlay
+                maximized={maximized}
+                onAction={onAction}
+                mutationState={mutationState}
+                {...(onRetryMutation ? { onRetryMutation } : {})}
+                {...(onTaskAttempt ? { onTaskAttempt } : {})}
+                {...(onNotification ? { onNotification } : {})}
+                {...(onWorkplaceInteraction ? { onWorkplaceInteraction } : {})}
+                onLoginSuccess={() => {
+                  dispatch({ type: "login_success" });
+                  osDispatch({ type: "mark_morgan_intro_seen" });
+                }}
+                onStand={() => {
+                  dispatch({ type: "stand" });
+                }}
+                phase={deskPhase}
+                view={view}
+              />
+            ) : null}
+            {walking && !pointerLocked ? (
+              <p className="room-look-hint">Click to look around</p>
+            ) : null}
+            {walking && morganOpen ? (
+              <MorganDialogue
+                view={view}
+                actions={view.availableActions.filter(
+                  (a) => a.id === "ask_manager",
+                )}
+                onAction={onAction}
+                pending={resourcePending}
+                onClose={() => {
+                  setMorganOpen(false);
+                }}
+              />
+            ) : null}
+            {walking && julesOpen ? (
+              <JulesDialogue
+                onClose={() => {
+                  setJulesOpen(false);
+                }}
+                onTopic={handleJulesTopic}
+                pending={
+                  workplacePending ||
+                  canonicalMutationPending ||
+                  !onWorkplaceInteraction
+                }
+                seenTopics={view.workplace.julesTopicsSeen}
+                {...(julesReply ? { reply: julesReply } : {})}
+              />
+            ) : null}
+            {walking ? (
+              <div className="room-hud">
+                <div className="room-hud-brief">
+                  {mutationState.error ||
+                  mutationState.pendingKey ||
+                  mutationState.success ? (
+                    <MutationStatus
+                      focusSuccess={!julesOpen && !morganOpen}
+                      state={mutationState}
+                      {...(onRetryMutation ? { onRetry: onRetryMutation } : {})}
+                    />
+                  ) : null}
+                  <p className="room-hud-step">
+                    <span className="room-hud-count">{stepLabel}</span>
+                    {journey.title}
                   </p>
-                  {nearbyChoices
-                    .filter((id) => id !== nearbyHotspotId)
-                    .map((id) => (
+                  {nearbyHotspotId && !playerMovementBlocked ? (
+                    <p className="room-context-action">
+                      <kbd>E</kbd> {labelFor(nearbyHotspotId)}
+                    </p>
+                  ) : null}
+                  <p className="room-hud-line">
+                    {nearbyIsTarget && nearbyPrompt
+                      ? nearbyPrompt
+                      : journey.body}
+                  </p>
+                  {compass ? (
+                    <p className="room-hud-compass">{compass}</p>
+                  ) : null}
+                  <p className="room-hud-nearby" role="status">
+                    {playerMovementBlocked
+                      ? "Interaction paused · finish the current action or close the conversation to move and use E"
+                      : nearbyPrompt
+                        ? `Ready · ${nearbyPrompt}`
+                        : "Out of reach · move closer to a floor marker to use E"}
+                  </p>
+                  {nearbyChoices.length > 1 ? (
+                    <div
+                      className="room-hud-choices"
+                      aria-label="Nearby actions"
+                    >
+                      <p>
+                        More than one action in reach — choose below. E uses the
+                        action shown above.
+                      </p>
+                      {nearbyChoices
+                        .filter((id) => id !== nearbyHotspotId)
+                        .map((id) => (
+                          <button
+                            key={id}
+                            type="button"
+                            className="guidance-secondary"
+                            disabled={playerMovementBlocked}
+                            onClick={() => {
+                              handleInteract(id);
+                            }}
+                          >
+                            {labelFor(id)}
+                          </button>
+                        ))}
+                    </div>
+                  ) : null}
+
+                  {interactionMiss ? (
+                    <p className="room-flavor" role="status">
+                      Nothing in reach yet — move closer to a floor marker. When
+                      ready, the prompt shows E and the action.
+                    </p>
+                  ) : null}
+                  {spatial.flavorMessage ? (
+                    <p className="room-flavor">{spatial.flavorMessage}</p>
+                  ) : null}
+                  {walkBlocked ? (
+                    <div className="room-flavor" role="status">
+                      That way is blocked — head back to the aisle.
                       <button
-                        key={id}
-                        type="button"
                         className="guidance-secondary"
-                        disabled={playerMovementBlocked}
+                        type="button"
                         onClick={() => {
-                          handleInteract(id);
+                          window.dispatchEvent(new Event("soc-recover-aisle"));
+                          setWalkBlocked(false);
                         }}
                       >
-                        {labelFor(id)}
+                        Return to aisle
                       </button>
-                    ))}
+                    </div>
+                  ) : null}
+                  {breakStation ? (
+                    <BreakRoomPanel
+                      onSubmit={requestWorkplaceInteraction}
+                      pending={resourcePending || !onWorkplaceInteraction}
+                      station={breakStation}
+                      workplace={view.workplace}
+                    />
+                  ) : null}
                 </div>
-              ) : null}
-
-              {interactionMiss ? (
-                <p className="room-flavor" role="status">
-                  Nothing in reach yet — move closer to a floor marker. When
-                  ready, the prompt shows E and the action.
-                </p>
-              ) : null}
-              {spatial.flavorMessage ? (
-                <p className="room-flavor">{spatial.flavorMessage}</p>
-              ) : null}
-              {walkBlocked ? (
-                <div className="room-flavor" role="status">
-                  That way is blocked — head back to the aisle.
+                <div className="room-hud-status">
+                  <details className="room-hud-details">
+                    <summary>Supplies</summary>
+                    <EmergencyRecoveryControl
+                      workplace={view.workplace}
+                      onSubmit={requestWorkplaceInteraction}
+                      pending={resourcePending || !onWorkplaceInteraction}
+                    />
+                    <CarriedSnackControl
+                      onSubmit={requestWorkplaceInteraction}
+                      pending={resourcePending || !onWorkplaceInteraction}
+                      workplace={view.workplace}
+                    />
+                  </details>
+                </div>
+                <div className="room-hud-actions">
+                  {nearbyHotspotId && !breakStation ? (
+                    <button
+                      className="start-shift"
+                      disabled={playerMovementBlocked}
+                      onClick={() => {
+                        handleInteract(nearbyHotspotId);
+                      }}
+                      type="button"
+                    >
+                      {labelFor(nearbyHotspotId)}
+                    </button>
+                  ) : null}
+                  <button
+                    aria-pressed={fullscreen}
+                    className="guidance-secondary"
+                    onClick={() => {
+                      void toggleFullscreen();
+                    }}
+                    type="button"
+                  >
+                    {fullscreenLabel}
+                  </button>
                   <button
                     className="guidance-secondary"
-                    type="button"
                     onClick={() => {
-                      window.dispatchEvent(new Event("soc-recover-aisle"));
-                      setWalkBlocked(false);
+                      void leaveRoom();
                     }}
+                    type="button"
                   >
-                    Return to aisle
+                    Floor map
                   </button>
+                  <ControlsHelp />
                 </div>
-              ) : null}
-              {breakStation ? (
-                <BreakRoomPanel
-                  onSubmit={requestWorkplaceInteraction}
-                  pending={resourcePending || !onWorkplaceInteraction}
-                  station={breakStation}
-                  workplace={view.workplace}
-                />
-              ) : null}
-            </div>
-            <div className="room-hud-status">
-              <details className="room-hud-details">
-                <summary>Supplies</summary>
-                <EmergencyRecoveryControl
-                  workplace={view.workplace}
-                  onSubmit={requestWorkplaceInteraction}
-                  pending={resourcePending || !onWorkplaceInteraction}
-                />
-                <CarriedSnackControl
-                  onSubmit={requestWorkplaceInteraction}
-                  pending={resourcePending || !onWorkplaceInteraction}
-                  workplace={view.workplace}
-                />
-              </details>
-            </div>
-            <div className="room-hud-actions">
-              {nearbyHotspotId && !breakStation ? (
-                <button
-                  className="start-shift"
-                  disabled={playerMovementBlocked}
-                  onClick={() => {
-                    handleInteract(nearbyHotspotId);
-                  }}
-                  type="button"
-                >
-                  {labelFor(nearbyHotspotId)}
-                </button>
-              ) : null}
-              <button
-                aria-pressed={fullscreen}
-                className="guidance-secondary"
-                onClick={() => {
-                  void toggleFullscreen();
-                }}
-                type="button"
-              >
-                {fullscreenLabel}
-              </button>
-              <button
-                className="guidance-secondary"
-                onClick={() => {
-                  void leaveRoom();
-                }}
-                type="button"
-              >
-                Floor map
-              </button>
-              <ControlsHelp />
-            </div>
+              </div>
+            ) : null}
           </div>
-        ) : null}
-      </div>
-    </section>
+          {arrivalActive ? (
+            <ArrivalFilm sceneReady={sceneReady} onComplete={finishArrival} />
+          ) : null}
+        </div>
+      </section>
     </>
   );
 }

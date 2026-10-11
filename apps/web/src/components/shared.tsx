@@ -28,6 +28,8 @@ export type WorkplaceInteractionHandler = (
 ) => Promise<WorkplaceInteractionResult>;
 
 export type WorkstationProps = {
+  /** Presentation only: play once on the first SOC selection, never on resume. */
+  arrivalFilmEnabled?: boolean;
   view: ClientView;
   onAction: (action: AvailableAction, freeText?: string) => void;
   onTaskAttempt?: TaskAttemptHandler;

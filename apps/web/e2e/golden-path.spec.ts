@@ -4,13 +4,13 @@ import { DESK_LOGIN } from "../src/world/deskLogin.js";
 /**
  * CareerDive golden-path smoke test — the permanent product experience.
  *
- * Landing → arrival film → Begin your first day → exactly ONE assessed session
- * → 3D workplace → walk → sit → login → Desk OS → leave/return.
+ * Landing → brief → exactly ONE assessed session → floor map → arrival film
+ * → live 3D workplace → walk → sit → login → Desk OS → leave/return.
  *
  * Determinism rules:
- *  - Arrival film is fast-forwarded to its real door HUD.
- *  - Walking uses physical keyboard input. Its first waypoint is the successful
- *    five-meter movement mutation; the chair prompt is the second waypoint.
+ *  - Arrival film plays on room selection over the warming live scene.
+ *  - Walking uses physical keyboard input through the open front aisle. Both
+ *    a five-meter movement mutation and the ready chair prompt must appear.
  */
 
 const WEB_ORIGIN = process.env.WEB_ORIGIN ?? "http://localhost:5173";
@@ -105,25 +105,6 @@ async function scanStaleConcepts(page: Page): Promise<string[]> {
     }
   }
   return violations;
-}
-
-/** Fast-forward a playing arrival film to its door-hold beat (0.5s from end). */
-async function advanceArrivalFilmToDoors(page: Page): Promise<boolean> {
-  return page.evaluate(() => {
-    const videos = document.querySelectorAll<HTMLVideoElement>(
-      'video[aria-label*="Arrival at Verdaly"]',
-    );
-    for (const video of videos) {
-      if (Number.isFinite(video.duration) && video.duration > 0) {
-        video.currentTime = Math.max(0, video.duration - 0.3);
-        void video.play().catch(() => {
-          // Unsupported/unplayable media in headless resolves to the film
-          // error path, which still reveals the door HUD.
-        });
-      }
-    }
-    return videos.length > 0;
-  });
 }
 
 async function workstationFitsViewport(page: Page): Promise<boolean> {
@@ -243,65 +224,33 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
     expect(await scanStaleConcepts(page)).toEqual([]);
   });
 
-  await test.step("2 · start navigates into the arrival film", async () => {
+  await test.step("2 · unchanged start CTA opens the brief", async () => {
     await page
       .getByRole("link", { name: /Start your first day/ })
       .first()
       .click();
     await expect(
       page.getByRole("heading", {
-        name: "Short preview film before your first shift",
-      }),
-    ).toBeVisible({ timeout: 30_000 });
-    await expect(
-      page.getByRole("button", { name: "Play arrival film" }),
-    ).toBeVisible();
-  });
-
-  await test.step("3 · arrival film plays and reaches the door HUD", async () => {
-    await page.getByRole("button", { name: "Play arrival film" }).click();
-    // Fast-forward the film to its door-hold beat rather than playing minutes
-    // of video in a smoke run; the door HUD button is the real gate. Unplayable
-    // media resolves through the film error path, which opens the same door.
-    const doorHudRegion = page.getByRole("region", { name: /Verdaly doors/ });
-    await expect
-      .poll(
-        async () => {
-          await advanceArrivalFilmToDoors(page);
-          try {
-            return await doorHudRegion.isVisible();
-          } catch {
-            return false;
-          }
-        },
-        { timeout: 30_000, intervals: [200, 400, 800, 1200] },
-      )
-      .toBe(true);
-    await expect(
-      page.getByRole("button", { name: "Start your first day" }),
-    ).toBeVisible();
-    await expect(page.locator("body")).toContainText("Begin your");
-    expect(await scanStaleConcepts(page)).toEqual([]);
-  });
-
-  await test.step("4 · Begin your first day enters the simulation", async () => {
-    await page.getByRole("button", { name: "Start your first day" }).click();
-    // Threshold: the doors open onto the day-one brief, not straight to the
-    // floor. The brief is ephemeral presentation with no session of its own.
-    await expect(
-      page.getByRole("heading", {
         name: /^A short simulated first shift as a .+ at Verdaly$/,
       }),
     ).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('video[src="/arrival-film.mp4"]')).toHaveCount(0);
+  });
+
+  await test.step("3 · independent brief creates no session", async () => {
     expect(sessionCreates.length, "brief creates no session").toBe(0);
+    await expect(
+      page.getByRole("button", { name: "Continue to floor" }),
+    ).toBeFocused();
+    expect(await scanStaleConcepts(page)).toEqual([]);
+  });
+
+  await test.step("4 · continue enters the floor map", async () => {
     await page.getByRole("button", { name: "Continue to floor" }).click();
-    // The floor screen leads with the canonical Step 1 task, not a generic
-    // "floor plan" label, so the heading names the work itself.
     await expect(
       page.getByRole("heading", { name: "Head to Security Operations" }),
-    ).toBeVisible({
-      timeout: 60_000,
-    });
+    ).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator('video[src="/arrival-film.mp4"]')).toHaveCount(0);
   });
 
   await test.step("5 · exactly one ASSESSED session is created", async () => {
@@ -316,9 +265,34 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
     await page
       .getByRole("button", { name: /Security Operations/ })
       .click({ force: true });
-    await expect(
-      page.getByRole("region", { name: "Workplace space" }),
-    ).toBeVisible({ timeout: 30_000 });
+    const film = page.getByRole("dialog", { name: "Arrival at Verdaly" });
+    await expect(film).toBeVisible();
+    const video = film.locator("video");
+    await expect(video).toHaveAttribute("autoplay", "");
+    await expect(video).toHaveAttribute("playsinline", "");
+    expect(await video.evaluate((el: HTMLVideoElement) => el.muted)).toBe(true);
+    const fullscreenTarget = await page.evaluate(
+      () => document.fullscreenElement?.className,
+    );
+    expect(fullscreenTarget).toContain("room-stage");
+    await expect
+      .poll(() => video.evaluate((el: HTMLVideoElement) => el.currentTime), {
+        timeout: 30_000,
+      })
+      .toBeGreaterThan(0);
+    await expect(film).toHaveCount(0, { timeout: 60_000 });
+    expect(
+      await page.evaluate(() =>
+        document.fullscreenElement?.classList.contains("room-stage"),
+      ),
+    ).toBe(true);
+    await expect(page.locator(".room-stage")).toHaveAttribute(
+      "data-scene-ready",
+      "true",
+    );
+    // The fullscreen child leaves its normal-flow ancestor with zero height.
+    // Assert the actual visible workplace surface, then its rendered canvas.
+    await expect(page.locator(".room-stage")).toBeVisible();
     await expect(
       page.locator('section[aria-label="Workplace space"] .room-canvas canvas'),
     ).toBeVisible({ timeout: 30_000 });
@@ -346,6 +320,7 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
       "browser receives keyboard input",
     ).toBe(true);
     await page.keyboard.down("w");
+    await page.keyboard.down("d");
     try {
       await expect
         .poll(
@@ -353,38 +328,32 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
             // Canvas can appear before PlayerController's keyboard effect mounts.
             // Real held keyboards repeat keydown; Playwright's down() does not.
             await page.keyboard.down("w");
-            return movementCalls.length;
+            await page.keyboard.down("d");
+            // The film-aligned spawn faces north, southwest of the chair.
+            // Walk northeast through its open front, not east through its wall.
+            return (
+              movementCalls.length > 0 &&
+              (await page
+                .getByRole("button", { name: "Sit at computer" })
+                .isVisible())
+            );
           },
           { timeout: 45_000, intervals: [100] },
         )
-        .toBeGreaterThan(0);
-      // First 5m bucket fires before the chair's south approach. Continue
-      // a short distance, then turn east. A 450ms hold overshoots the clear
-      // south approach on a hardware renderer before the eastward walk.
-      await page.waitForTimeout(150);
+        .toBe(true);
     } finally {
       await page.keyboard.up("w");
+      await page.keyboard.up("d");
     }
     await expect
       .poll(() => movementCalls[0]?.status, { timeout: 10_000 })
       .toBe(200);
-    await page.keyboard.down("d");
-    try {
-      await expect
-        .poll(
-          async () => {
-            // Match real held-key repeat, just as the northward walk does above.
-            await page.keyboard.down("d");
-            return page
-              .getByRole("button", { name: "Sit at computer" })
-              .isVisible();
-          },
-          { timeout: 20_000, intervals: [100] },
-        )
-        .toBe(true);
-    } finally {
-      await page.keyboard.up("d");
-    }
+    // Film and walking kept the room fullscreen. Exercise F to exit it before
+    // testing the laptop's independent enter/exit fullscreen pair below.
+    await page.keyboard.press("f");
+    await expect
+      .poll(() => page.evaluate(() => document.fullscreenElement === null))
+      .toBe(true);
   });
 
   await test.step("8 · sit and sign in", async () => {
@@ -418,7 +387,7 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
     await page.keyboard.press("h");
     await expect(
       page.getByRole("status").filter({ hasText: "Optional hint" }),
-    ).toContainText("Open Email");
+    ).toContainText("Read incoming assignment in Email");
     await page.getByRole("button", { name: "Dismiss hint" }).click();
     await page.keyboard.press("f");
     await expect
@@ -435,11 +404,11 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
       .click();
     await expect(
       page.getByRole("status").filter({ hasText: "Optional hint" }),
-    ).toContainText("Open Email");
+    ).toContainText("Read incoming assignment in Email");
     await page.getByRole("button", { name: "Next hint" }).click();
     await expect(
       page.getByRole("status").filter({ hasText: "Optional hint" }),
-    ).toContainText("Clear selections");
+    ).toContainText("opening a record alone does not save one");
     await page.getByRole("button", { name: "Dismiss hint" }).click();
     await page.keyboard.press("f");
     await expect

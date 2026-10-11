@@ -16,7 +16,7 @@ test("landing defers simulation runtime until Start", async ({ page }) => {
       )
       .map((entry) => entry.name),
   );
-  // StartPage is the eager arrival shell; the simulation runtime stays lazy.
+  // StartPage is the eager brief shell; the simulation runtime stays lazy.
   expect(
     scripts.some((url) =>
       /RoomCanvas|SpatialShell|\/src\/index\.tsx/.test(url),
@@ -28,9 +28,10 @@ test("landing defers simulation runtime until Start", async ({ page }) => {
     .click();
   await expect(
     page.getByRole("heading", {
-      name: "Short preview film before your first shift",
+      name: /A short simulated first shift/,
     }),
   ).toBeVisible();
+  await expect(page.locator('video[src="/arrival-film.mp4"]')).toHaveCount(0);
 });
 
 test("performance diagnostics do not crash the workplace", async ({ page }) => {
@@ -44,9 +45,7 @@ test("performance diagnostics do not crash the workplace", async ({ page }) => {
     .getByRole("button", { name: /Security Operations/ })
     .click({ force: true });
   await expect(page.getByTestId("perf-overlay")).toContainText("tier");
-  await expect(
-    page.getByRole("region", { name: "Workplace space" }),
-  ).toBeVisible();
+  await expect(page.locator(".room-stage")).toBeVisible();
   expect(errors).toEqual([]);
   await page.goto("/");
   await expect(page.getByTestId("perf-overlay")).toHaveCount(0);

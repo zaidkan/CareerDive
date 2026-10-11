@@ -31,7 +31,7 @@ const ROUTES = [
   { key: "faq", path: "/faq", label: "FAQ" },
   { key: "trust", path: "/trust", label: "Trust" },
   { key: "404", path: "/this-route-does-not-exist", label: "Public 404" },
-  { key: "start", path: "/start", label: "Start threshold", reducedOnly: true, filmShot: true },
+  { key: "start", path: "/start", label: "Start threshold" },
 ];
 
 const VIEWPORTS = [
