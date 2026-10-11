@@ -6,7 +6,7 @@ export type SafeAnchorSet = SafeAnchors & { aisle: Vec2 };
 
 /** Presentation-only destinations; these never enter the simulation log. */
 export const SAFE_ANCHORS: SafeAnchorSet = {
-  aisle: { x: 0, z: 5.8 },
+  aisle: { x: 0, z: 4.6 },
   entrance: { x: 0, z: 6.2 },
   desk: { x: 5.6, z: 1.3 },
 };

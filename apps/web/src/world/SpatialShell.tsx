@@ -57,7 +57,7 @@ const RoomCanvas = lazy(async () => {
 
 const FLAVOR: Partial<Record<HotspotId, string>> = {
   break_door:
-    "Glass break corner in the far wall — coffee with Jules if you want a breather.",
+    "Glass break corner beside the entrance — coffee with Jules if you want a breather.",
   alert_wall:
     "Shared alert boards. Sit at your desk when you are ready to work them.",
   morgan_station:

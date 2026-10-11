@@ -83,7 +83,8 @@ export const RoomCanvas = memo(function RoomCanvas({
   return (
     <div className="room-canvas" data-interaction-id="movement_exertion">
       <Canvas
-        camera={{ fov: 62, position: [0, 1.6, 5], near: 0.08, far: 48 }}
+        // Far reaches the city and sky dome outside the glazing.
+        camera={{ fov: 62, position: [0, 1.6, 5], near: 0.08, far: 1200 }}
         dpr={1}
         // Preserve the scene on map return without running invisible frames.
         // Seated remains on demand; walking keeps the interactive frame loop.

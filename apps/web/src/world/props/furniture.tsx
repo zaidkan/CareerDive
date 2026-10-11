@@ -18,14 +18,19 @@ import {
 } from "./sharedMaterials.js";
 
 const chairSeatMat = new THREE.MeshStandardMaterial({
-  color: "#29383c",
-  roughness: 0.75,
+  color: "#7f9179",
+  roughness: 0.85,
   metalness: 0,
 });
 const chairBackMat = new THREE.MeshStandardMaterial({
-  color: "#3c5054",
-  roughness: 0.75,
+  color: "#8a9c84",
+  roughness: 0.85,
   metalness: 0,
+});
+const screenCapMat = new THREE.MeshStandardMaterial({
+  color: "#dcdcd6",
+  roughness: 0.4,
+  metalness: 0.3,
 });
 
 /** Slab center and thicknesses — `DESK_SURFACE_Y` is the finished top. */
@@ -39,7 +44,7 @@ export function DeskFrame({
   position,
   width = 2.05,
   depth = 1.05,
-  color = "#2c241c",
+  color = "#d2b48c",
 }: {
   position: [number, number, number];
   width?: number;
@@ -82,7 +87,7 @@ export function DeskFrame({
           position={[x, 0.39, z]}
           geometry={UNIT_BOX}
           scale={[leg, 0.78, leg]}
-          material={MAT.darkMetal}
+          material={MAT.whiteMetal}
         />
       ))}
       {/* Modesty panel */}
@@ -90,7 +95,7 @@ export function DeskFrame({
         position={[0, 0.4, -depth / 2 + 0.05]}
         geometry={UNIT_BOX}
         scale={[width - 0.2, 0.55, 0.03]}
-        material={MAT.blackPlastic}
+        material={MAT.whiteMetal}
       />
     </group>
   );
@@ -127,7 +132,7 @@ export function OfficeChair({
       {/* Lumbar accent */}
       <mesh position={[0, 0.62, -0.1]} geometry={UNIT_BOX} scale={[0.38, 0.12, 0.04]}>
         <meshStandardMaterial
-          color={occupied ? "#a8c4be" : highlighted ? "#6ea8fe" : "#507c79"}
+          color={occupied ? "#a8c4be" : highlighted ? "#6ea8fe" : "#6c7f66"}
           emissive={highlighted && !occupied ? "#6ea8fe" : "#000000"}
           emissiveIntensity={0.3}
           roughness={0.85}
@@ -187,46 +192,42 @@ export function CubicleWalls({
   depth?: number;
   height?: number;
 }) {
-  const fabric = useMemo(() => makeCubicleFabricTexture(), []);
+  const fabric = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        map: makeCubicleFabricTexture(),
+        color: "#93a493",
+        roughness: 0.95,
+      }),
+    [],
+  );
+  useEffect(
+    () => () => {
+      fabric.dispose();
+    },
+    [fabric],
+  );
   const t = 0.08;
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
-      <mesh position={[0, height / 2, -depth / 2]} castShadow>
+      <mesh position={[0, height / 2, -depth / 2]} castShadow material={fabric}>
         <boxGeometry args={[width, height, t]} />
-        <meshStandardMaterial map={fabric} color="#817e73" roughness={0.95} />
       </mesh>
-      <mesh position={[-width / 2, height / 2, 0]} castShadow>
+      <mesh position={[-width / 2, height / 2, 0]} castShadow material={fabric}>
         <boxGeometry args={[t, height, depth]} />
-        <meshStandardMaterial map={fabric} color="#817e73" roughness={0.95} />
       </mesh>
-      <mesh position={[width / 2, height / 2, 0]} castShadow>
+      <mesh position={[width / 2, height / 2, 0]} castShadow material={fabric}>
         <boxGeometry args={[t, height, depth]} />
-        <meshStandardMaterial map={fabric} color="#817e73" roughness={0.95} />
       </mesh>
-      {/* Top rail */}
-      <mesh position={[0, height + 0.03, -depth / 2]}>
-        <boxGeometry args={[width + 0.05, 0.06, 0.1]} />
-        <meshStandardMaterial
-          color="#4fd0c8"
-          emissive="#4fd0c8"
-          emissiveIntensity={0.25}
-        />
+      {/* Aluminium top cap */}
+      <mesh position={[0, height + 0.015, -depth / 2]} material={screenCapMat}>
+        <boxGeometry args={[width + 0.02, 0.03, t + 0.02]} />
       </mesh>
-      <mesh position={[-width / 2, height + 0.03, 0]}>
-        <boxGeometry args={[0.1, 0.06, depth]} />
-        <meshStandardMaterial
-          color="#4fd0c8"
-          emissive="#4fd0c8"
-          emissiveIntensity={0.2}
-        />
+      <mesh position={[-width / 2, height + 0.015, 0]} material={screenCapMat}>
+        <boxGeometry args={[t + 0.02, 0.03, depth]} />
       </mesh>
-      <mesh position={[width / 2, height + 0.03, 0]}>
-        <boxGeometry args={[0.1, 0.06, depth]} />
-        <meshStandardMaterial
-          color="#4fd0c8"
-          emissive="#4fd0c8"
-          emissiveIntensity={0.2}
-        />
+      <mesh position={[width / 2, height + 0.015, 0]} material={screenCapMat}>
+        <boxGeometry args={[t + 0.02, 0.03, depth]} />
       </mesh>
     </group>
   );
@@ -247,7 +248,7 @@ export function BreakTable({
     <group position={position}>
       <mesh position={[0, 0.78, 0]} castShadow receiveShadow>
         <boxGeometry args={[width, 0.08, depth]} />
-        <meshStandardMaterial color="#4a3a2c" roughness={0.55} />
+        <meshStandardMaterial color="#c9a87e" roughness={0.5} />
       </mesh>
       {(
         [
@@ -259,7 +260,7 @@ export function BreakTable({
       ).map(([x, z], i) => (
         <mesh key={i} position={[x, 0.39, z]}>
           <cylinderGeometry args={[0.05, 0.05, 0.78, 10]} />
-          <meshStandardMaterial color="#2a2118" />
+          <meshStandardMaterial color="#1e1e1e" roughness={0.5} metalness={0.3} />
         </mesh>
       ))}
     </group>
@@ -313,7 +314,7 @@ export function MonitorArmDesk({
       {/* Desk against wall */}
       <mesh position={[0, 0.78, 0]} castShadow receiveShadow>
         <boxGeometry args={[1.9, 0.06, 0.85]} />
-        <meshStandardMaterial color="#2c241c" roughness={0.5} />
+        <meshStandardMaterial color="#d2b48c" roughness={0.5} />
       </mesh>
       {(
         [
@@ -323,10 +324,13 @@ export function MonitorArmDesk({
           [0.8, -0.28],
         ] as const
       ).map(([x, z], i) => (
-        <mesh key={i} position={[x, 0.39, z]}>
-          <boxGeometry args={[0.07, 0.78, 0.07]} />
-          <meshStandardMaterial color="#16110e" />
-        </mesh>
+        <mesh
+          key={i}
+          position={[x, 0.39, z]}
+          geometry={UNIT_BOX}
+          scale={[0.07, 0.78, 0.07]}
+          material={MAT.whiteMetal}
+        />
       ))}
       {/* Clamp + articulated arm into desk */}
       <mesh position={[0, 0.86, -0.28]}>
@@ -714,6 +718,78 @@ export function TrashBin({
           <meshStandardMaterial color="#7dba6a" emissive="#7dba6a" emissiveIntensity={0.2} />
         </mesh>
       ) : null}
+    </group>
+  );
+}
+
+const CREDENZA_DOORS = [-1, 0, 1] as const;
+
+/**
+ * Low walnut credenza: three doors with slim black pulls under a cream stone
+ * top, dressed with a reed vase and a small book stack. Fronts face +Z.
+ */
+export function Credenza({
+  position,
+  width,
+  depth,
+  height,
+}: {
+  position: [number, number, number];
+  width: number;
+  depth: number;
+  height: number;
+}) {
+  const walnut = useMemo(() => makeWoodTexture("#94603a"), []);
+  const plinth = 0.07;
+  const top = 0.05;
+  const bodyH = height - plinth - top;
+  const doorW = (width - 0.06) / CREDENZA_DOORS.length;
+  return (
+    <group position={position}>
+      <mesh position={[0, plinth / 2, -0.03]} receiveShadow>
+        <boxGeometry args={[width - 0.1, plinth, depth - 0.1]} />
+        <meshStandardMaterial color="#1f1712" roughness={0.85} />
+      </mesh>
+      <mesh position={[0, plinth + bodyH / 2, 0]} castShadow receiveShadow>
+        <boxGeometry args={[width, bodyH, depth]} />
+        <meshStandardMaterial map={walnut} roughness={0.55} />
+      </mesh>
+      {CREDENZA_DOORS.map((slot) => (
+        <group key={slot} position={[slot * (doorW + 0.012), plinth + bodyH / 2, depth / 2]}>
+          <mesh position={[0, 0, 0.006]}>
+            <boxGeometry args={[doorW, bodyH - 0.035, 0.012]} />
+            <meshStandardMaterial map={walnut} roughness={0.48} />
+          </mesh>
+          <mesh position={[0, bodyH / 2 - 0.1, 0.02]}>
+            <boxGeometry args={[0.2, 0.012, 0.014]} />
+            <meshStandardMaterial color="#121212" metalness={0.5} roughness={0.35} />
+          </mesh>
+        </group>
+      ))}
+      <mesh position={[0, height - top / 2, 0.01]} castShadow receiveShadow>
+        <boxGeometry args={[width + 0.04, top, depth + 0.03]} />
+        <meshStandardMaterial color="#dad3c6" roughness={0.62} />
+      </mesh>
+      <group position={[-width / 2 + 0.32, height, -0.02]}>
+        <mesh position={[0, 0.11, 0]} castShadow>
+          <cylinderGeometry args={[0.045, 0.055, 0.22, 16]} />
+          <meshStandardMaterial color="#f1eee8" roughness={0.4} />
+        </mesh>
+        <mesh position={[0.02, 0.36, 0]} rotation={[0, 0, -0.12]}>
+          <cylinderGeometry args={[0.004, 0.004, 0.32, 4]} />
+          <meshStandardMaterial color="#5a4632" />
+        </mesh>
+      </group>
+      <group position={[width / 2 - 0.55, height, 0.02]}>
+        <mesh position={[0, 0.012, 0]} castShadow>
+          <boxGeometry args={[0.3, 0.024, 0.2]} />
+          <meshStandardMaterial color="#f2f0ea" roughness={0.7} />
+        </mesh>
+        <mesh position={[0.01, 0.034, 0]}>
+          <boxGeometry args={[0.28, 0.02, 0.18]} />
+          <meshStandardMaterial color="#1c1c1e" roughness={0.6} />
+        </mesh>
+      </group>
     </group>
   );
 }

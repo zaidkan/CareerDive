@@ -2,7 +2,7 @@
  * Wall decor and greenery — plants, posters, art, certificates, clock.
  */
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { fitFontSize, makePaintingTexture, makePortraitTexture } from "../textures.js";
 import { labelFont, makeLabelTexture } from "./signage.js";
@@ -151,6 +151,126 @@ export function TallFloorPlant({
           />
         </mesh>
       ))}
+    </group>
+  );
+}
+
+/** Arrowhead leaf in the XZ plane, tip along +Z, base at the origin. */
+function makeLeafGeometry(): THREE.ShapeGeometry {
+  const shape = new THREE.Shape();
+  shape.moveTo(0, 0.04);
+  shape.bezierCurveTo(-0.16, -0.06, -0.24, 0.12, -0.2, 0.28);
+  shape.bezierCurveTo(-0.16, 0.44, -0.06, 0.58, 0, 0.66);
+  shape.bezierCurveTo(0.06, 0.58, 0.16, 0.44, 0.2, 0.28);
+  shape.bezierCurveTo(0.24, 0.12, 0.16, -0.06, 0, 0.04);
+  const geometry = new THREE.ShapeGeometry(shape, 6);
+  geometry.rotateX(Math.PI / 2);
+  return geometry;
+}
+
+const LEAF_GEOMETRY = makeLeafGeometry();
+const STEM_GEOMETRY = new THREE.CylinderGeometry(1, 1, 1, 5);
+const LEAF_TONES = ["#6f9b46", "#86ad59", "#5d8a3a", "#9cbd6c"] as const;
+
+type Placed = { matrix: THREE.Matrix4; color?: string };
+
+/** Golden-angle spiral of leaves on arching stems, fixed so every mount matches. */
+function heroPlantParts(count: number): { leaves: Placed[]; stems: Placed[] } {
+  const leaves: Placed[] = [];
+  const stems: Placed[] = [];
+  const up = new THREE.Vector3(0, 1, 0);
+  for (let i = 0; i < count; i += 1) {
+    const azimuth = i * 2.39996;
+    const lift = (i * 0.618) % 1;
+    const reach = 0.16 + ((i * 0.381) % 1) * 0.3;
+    const height = 0.95 + lift * 0.9;
+    const dir = new THREE.Vector3(Math.cos(azimuth), 0, Math.sin(azimuth));
+    const base = new THREE.Vector3(0, 0.6, 0).addScaledVector(dir, 0.04);
+    const tip = new THREE.Vector3(0, height, 0).addScaledVector(dir, reach);
+    const stemDir = tip.clone().sub(base);
+    const length = stemDir.length();
+    stems.push({
+      matrix: new THREE.Matrix4().compose(
+        base.clone().addScaledVector(stemDir, 0.5),
+        new THREE.Quaternion().setFromUnitVectors(up, stemDir.normalize()),
+        new THREE.Vector3(0.007, length, 0.007),
+      ),
+    });
+    const droop = 0.35 + lift * 0.55;
+    const size = 0.36 + ((i * 0.27) % 1) * 0.14;
+    leaves.push({
+      matrix: new THREE.Matrix4().compose(
+        tip,
+        new THREE.Quaternion().setFromEuler(
+          new THREE.Euler(droop, Math.PI / 2 - azimuth, (i % 3) * 0.18 - 0.18, "YXZ"),
+        ),
+        new THREE.Vector3(size, size, size),
+      ),
+      color: LEAF_TONES[i % LEAF_TONES.length] ?? LEAF_TONES[0],
+    });
+  }
+  return { leaves, stems };
+}
+
+function InstancedParts({
+  parts,
+  geometry,
+  color = "#ffffff",
+  side = THREE.FrontSide,
+}: {
+  parts: Placed[];
+  geometry: THREE.BufferGeometry;
+  color?: string;
+  side?: THREE.Side;
+}) {
+  const mesh = useRef<THREE.InstancedMesh>(null);
+  useLayoutEffect(() => {
+    const target = mesh.current;
+    if (!target) return;
+    const tint = new THREE.Color();
+    parts.forEach(({ matrix, color: partColor }, i) => {
+      target.setMatrixAt(i, matrix);
+      if (partColor) target.setColorAt(i, tint.set(partColor));
+    });
+    target.instanceMatrix.needsUpdate = true;
+    if (target.instanceColor) target.instanceColor.needsUpdate = true;
+    target.computeBoundingSphere();
+  }, [parts]);
+  return (
+    <instancedMesh ref={mesh} args={[geometry, undefined, parts.length]} castShadow>
+      <meshStandardMaterial color={color} roughness={0.7} side={side} />
+    </instancedMesh>
+  );
+}
+
+/**
+ * Statement plant from the arrival film: a wide stone-white bowl on a dark
+ * saucer, with broad arrowhead leaves on arching stems.
+ */
+export function HeroPlant({
+  position,
+  scale = 1,
+}: {
+  position: [number, number, number];
+  scale?: number;
+}) {
+  const { leaves, stems } = useMemo(() => heroPlantParts(22), []);
+  return (
+    <group position={position} scale={scale}>
+      <mesh position={[0, 0.015, 0]} receiveShadow>
+        <cylinderGeometry args={[0.31, 0.33, 0.03, 28]} />
+        <meshStandardMaterial color="#2a2826" roughness={0.5} metalness={0.2} />
+      </mesh>
+      <mesh position={[0, 0.35, 0]} scale={[1, 0.9, 1]} castShadow receiveShadow>
+        <sphereGeometry args={[0.44, 32, 18, 0, Math.PI * 2, Math.PI * 0.28, Math.PI * 0.52]} />
+        <meshStandardMaterial color="#ebe7df" roughness={0.88} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh position={[0, 0.585, 0]}>
+        <cylinderGeometry args={[0.33, 0.33, 0.02, 28]} />
+        <meshStandardMaterial color="#3d3024" roughness={1} />
+      </mesh>
+      <InstancedParts parts={stems} geometry={STEM_GEOMETRY} color="#5f7a3e" />
+      <InstancedParts parts={leaves} geometry={LEAF_GEOMETRY} side={THREE.DoubleSide} />
     </group>
   );
 }
