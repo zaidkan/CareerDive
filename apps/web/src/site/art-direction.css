@@ -6,7 +6,7 @@
   --ui-surface-d: #102743;
   --ui-finale-text: #F5F7FA;
   --ui-finale-muted: #B9C8DC;
-  --ui-rule: color-mix(in srgb, var(--border-subtle) 70%, transparent);
+  --ui-rule: var(--border-subtle);
   --ui-gutter: clamp(1rem, 4.4vw, 5rem);
   --ui-space-compact: clamp(3.5rem, 6vw, 5.5rem);
   --ui-space-standard: clamp(5rem, 9vw, 9rem);
@@ -24,7 +24,7 @@
   --ui-surface-c: #E9EEF4;
   --ui-surface-d: #142238;
   --ui-finale-muted: #C9D5E5;
-  --ui-rule: color-mix(in srgb, var(--border-subtle) 76%, transparent);
+  --ui-rule: var(--border-subtle);
 }
 
 .ui-chapter { position: relative; min-width: 0; color: var(--text-secondary); }
@@ -37,11 +37,22 @@
   --text-primary: var(--ui-finale-text);
   --text-secondary: var(--ui-finale-muted);
   --text-muted: var(--ui-finale-muted);
-  --border-subtle: #40536D;
+  --border-subtle: #8290A2;
+  --border-strong: #A5B1C1;
   --action-primary: #A7C8FF;
   --action-on-primary: #08111F;
   --focus-ring: #C3DCFF;
+  /* Rebind legacy aliases here: inherited aliases were computed on the light
+     parent, leaving dark finale surfaces with light-theme button/border colors. */
+  --paper: var(--text-primary);
+  --fog: var(--text-secondary);
+  --mute: var(--text-muted);
+  --line: var(--border-subtle);
+  --line-bright: var(--border-strong);
+  --phosphor: var(--action-primary);
+  --cta: var(--action-primary);
 }
+.site-main-public .ui-surface--finale .start-shift { color: var(--action-on-primary); }
 .ui-rhythm--compact { padding-block: var(--ui-space-compact); }
 .ui-rhythm--standard { padding-block: var(--ui-space-standard); }
 .ui-rhythm--expansive { padding-block: var(--ui-space-expansive); }

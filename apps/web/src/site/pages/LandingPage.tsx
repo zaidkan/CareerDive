@@ -327,6 +327,9 @@ export function LandingPage() {
           className="home-place-chapter"
         >
           <div className="home-place-crop">
+            {/* TODO(site-media): Replace registry capture a-11 with an authentic
+                new-room capture after the parallel room task lands. Recapture
+                desktop/mobile and both themes; keep provenance accurate. */}
             <HomeMediaSlot slotId="home-media-arrival" eager />
           </div>
         </PublicChapter>

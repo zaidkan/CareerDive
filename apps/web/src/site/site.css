@@ -1,3 +1,54 @@
+/* Public-site contrast refinements. Keep semantic tokens and theme switching;
+   scope to marketing chrome/pages and the pre-session threshold, never App. */
+.site-nav,
+.site-footer,
+.site-main-public,
+.site-main-start > .threshold {
+  --text-muted: #A5B1C1;
+  --border-subtle: #475466;
+  --border-strong: #8290A2;
+  --text-brand: var(--action-primary);
+  --ink: var(--canvas);
+  --ink-lift: var(--surface-subtle);
+  --desk: var(--surface-base);
+  --panel: var(--surface-raised);
+  --line: var(--border-subtle);
+  --line-bright: var(--border-strong);
+  --paper: var(--text-primary);
+  --fog: var(--text-secondary);
+  --mute: var(--text-muted);
+  --phosphor: var(--action-primary);
+  --phosphor-dim: var(--text-muted);
+  --cta: var(--action-primary);
+}
+:root[data-theme="light"] .site-nav,
+:root[data-theme="light"] .site-footer,
+:root[data-theme="light"] .site-main-public,
+:root[data-theme="light"] .site-main-start > .threshold {
+  --text-muted: #49586B;
+  --border-subtle: #A6B2C2;
+  --border-strong: #697789;
+}
+
+.site-main-public :is(a, button, summary, input, select, textarea):focus-visible,
+.site-main-start > .threshold :is(a, button, summary):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 4px;
+}
+/* The brief preloads simulation CSS. Preserve AA button text when its legacy
+   .start-shift rule arrives, without changing controls inside the simulation. */
+.site-main-public .start-shift,
+.site-main-start > .threshold .start-shift {
+  color: var(--action-on-primary);
+}
+
+.site-main-public summary,
+.site-main-start > .threshold summary {
+  min-height: 44px;
+  padding-block: 0.65rem;
+  cursor: pointer;
+}
+
 /* Pre-sim marketing — Illoca studio + Opacity clarity. Warm paper, cobalt, mono chapters. */
 
 .site-nav {
@@ -142,6 +193,11 @@ a:focus-visible {
     radial-gradient(circle at 50% 50%, color-mix(in srgb, #FACC15 20%, transparent) 0%, transparent 72%),
     var(--panel);
   border-color: color-mix(in srgb, #EAB308 24%, var(--line-bright));
+}
+/* Gold fill stays; darker rays/edge make the sun legible on white. */
+.theme-toggle--light .theme-toggle-sun svg > circle:nth-child(2),
+.theme-toggle--light .theme-toggle-sun svg > g {
+  stroke: var(--status-warning-fg);
 }
 .theme-toggle--dark {
   background:
