@@ -7,7 +7,8 @@
  * one shared time uniform. Cars move in the vertex shader; the sky draws after
  * the room so only window pixels shade it.
  */
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { memo, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import {
   CITY,
@@ -19,7 +20,7 @@ import {
 } from "../cityLayout.js";
 import type { QualityTier } from "../effects/useAdaptiveQuality.js";
 import { useAmbientMotion } from "./ambient.js";
-import { useAmbient } from "./ambientClock.js";
+import { installCityRenderGate } from "./cityVisibility.js";
 
 /** Morning sun low in the east, matching the room's directional light. */
 export const CITY_SUN_DIRECTION = new THREE.Vector3(11, 9, 2).normalize();
@@ -27,8 +28,6 @@ export const CITY_SUN_DIRECTION = new THREE.Vector3(11, 9, 2).normalize();
 const HORIZON = "#d9e4ee";
 const ZENITH = "#78a6dc";
 const HAZE_DENSITY = 0.0011;
-/** The ambient clock skips entries whose rate is below the frame rate. */
-const EVERY_FRAME_HZ = 240;
 /**
  * City geometry lives in world-space attributes, so three would depth-sort it
  * as if it sat at the origin. Drawing it after the room lets the walls reject
@@ -553,13 +552,15 @@ const LAMP_GEOMETRY = baseBox();
 const TREE_GEOMETRY = new THREE.IcosahedronGeometry(1, 1).translate(0, 3.6, 0);
 const TREE_PARTS: readonly PropPart[] = [{ position: [0, 0, 0], scale: [1, 0.9, 1] }];
 
-export function Cityscape({
+export const Cityscape = memo(function Cityscape({
   tier,
   animated = true,
 }: {
   tier: QualityTier;
   animated?: boolean;
 }) {
+  const group = useRef<THREE.Group>(null);
+  const { scene, camera, clock } = useThree();
   const plan = useMemo(() => planCity(tier), [tier]);
   const live = useAmbientMotion(animated);
   const shared = useMemo<Shared>(
@@ -572,16 +573,13 @@ export function Cityscape({
     }),
     [],
   );
-  useAmbient(
-    (elapsed) => {
-      shared.uTime.value = elapsed;
-    },
-    EVERY_FRAME_HZ,
-    live,
-    [shared],
-  );
+  useLayoutEffect(() => {
+    const target = group.current;
+    if (!target) return undefined;
+    return installCityRenderGate(scene, camera, target, shared.uTime, clock, live);
+  }, [camera, clock, live, scene, shared]);
   return (
-    <group>
+    <group ref={group}>
       <CitySky shared={shared} octaves={CITY_TIERS[tier].cloudOctaves} />
       <StreetGround shared={shared} />
       <Buildings shared={shared} buildings={plan.buildings} />
@@ -590,4 +588,4 @@ export function Cityscape({
       <StreetProps shared={shared} props={plan.trees} parts={TREE_PARTS} geometry={TREE_GEOMETRY} />
     </group>
   );
-}
+});
