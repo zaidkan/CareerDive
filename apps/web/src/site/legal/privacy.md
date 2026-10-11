@@ -53,11 +53,9 @@ CareerDive uses the following service providers:
 - **Render** hosts the website and backend service. It may process ordinary request, network, and operational information, including IP addresses and logs.
 - **Supabase** provides the database and anonymous authentication. It processes the session identifier, authentication information, and information stored by the simulation.
 
-The current website code also loads some fonts from **Google Fonts**. When a browser requests those fonts, Google can receive ordinary connection information, such as the visitor's IP address. This is separate from CareerDive's simulation records. If those fonts are self-hosted before publication, this paragraph should be removed.
-
 ## 6. How long information is kept
 
-**Saved simulation data is automatically deleted after 90 days.** This includes the simulation records covered by CareerDive's retention process, such as saved session activity, observations, and reflections.
+**Saved simulation sessions older than 90 days are automatically deleted**, measured from when each session was created. Updating or resuming a shift does not restart that period. Database-backed servers run cleanup at startup and hourly; outages, active writes, or a large backlog can delay deletion. The cleanup includes associated activity, observations, and reflections.
 
 The 90-day simulation-data rule does not necessarily apply to optional support reports, emails sent to me, anonymous authentication records, or network/security logs maintained by service providers. These are handled separately for support and operational purposes. You may contact me to request deletion of information associated with your use of CareerDive.
 

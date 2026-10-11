@@ -9,9 +9,9 @@ import terms from "../src/site/legal/terms.md?raw";
 
 afterEach(cleanup);
 it.each([
-  ["/privacy", "CareerDive Privacy Policy", privacy, "6bd089e3bc4a3d3753b589392e7f27e27d7191c3a40d1fee3e8cbbc74984d9a5", 9],
+  ["/privacy", "CareerDive Privacy Policy", privacy, "11594dd25c1de778b14deace4e6cf9b90978a5ee8e8a190d6a824e2b91d58d9b", 9],
   ["/terms", "CareerDive Terms of Use", terms, "85a2f66e7d5f9dd18fdab95cfb9164afceb7809516309bbf0231fc262e7825ea", 8],
-] as const)("renders %s from unchanged supplied wording without creating an identity", async (route, title, source, hash, sections) => {
+] as const)("renders %s from approved source wording without creating an identity", async (route, title, source, hash, sections) => {
   const fetch = vi.spyOn(globalThis, "fetch");
   try {
     expect(createHash("sha256").update(source).digest("hex")).toBe(hash);

@@ -1,3 +1,4 @@
+import { NOTE_CHOICES } from "./tools/closedInputChoices.js";
 import { matchingGuides } from "@sim/core";
 import { useEffect, useRef, useState } from "react";
 import type { AvailableAction, ClientArtifact, ClientView } from "@sim/schemas";
@@ -165,11 +166,11 @@ export function NotesEditor({
       className="notes-editor"
       onSubmit={(event) => {
         event.preventDefault();
-        onSave(action, entry.draft);
+        if (NOTE_CHOICES.some(choice => choice === entry.draft)) onSave(action, entry.draft);
       }}
     >
       <label htmlFor={`notes-${action.id}-${action.eventId}`}>{label}</label>
-      <textarea
+      <select
         id={`notes-${action.id}-${action.eventId}`}
         onChange={(event) => {
           const draft = event.target.value;
@@ -182,13 +183,17 @@ export function NotesEditor({
             },
           }));
         }}
-        rows={4}
         value={entry.draft}
-      />
+      >
+        <option value="">Choose a reminder</option>
+        {value && !NOTE_CHOICES.some(choice => choice === value) ? <option value={value} disabled>Previously saved notes</option> : null}
+        {NOTE_CHOICES.map(choice => <option key={choice} value={choice}>{choice}</option>)}
+      </select>
+      {value && !NOTE_CHOICES.some(choice => choice === value) ? <pre>{value}</pre> : null}
       <button
         data-action-id={action.id}
         data-event-id={action.eventId}
-        disabled={Boolean(mutationState.pendingKey)}
+        disabled={Boolean(mutationState.pendingKey) || !NOTE_CHOICES.some(choice => choice === entry.draft)}
         type="submit"
       >
         {mutationState.pendingKey === actionKey

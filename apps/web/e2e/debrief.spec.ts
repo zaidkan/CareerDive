@@ -59,8 +59,8 @@ test("completion opens five-decision debrief across themes and viewports", async
   await page.getByRole("button", { name: "Sit at computer" }).click();
   await page.getByTestId("login-surface").click();
   await expect(page.getByRole("heading", { name: "Sign in to Verdaly" })).toBeVisible();
-  await page.getByRole("textbox", { name: "Username" }).fill(DESK_LOGIN.username);
-  await page.getByRole("textbox", { name: "Password" }).fill(DESK_LOGIN.password);
+  await page.getByRole("combobox", { name: "Username" }).selectOption(DESK_LOGIN.username);
+  await page.getByRole("combobox", { name: "Password" }).selectOption(DESK_LOGIN.password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("navigation", { name: "Workstation tools" })).toBeVisible();
   await page.getByRole("tab", { name: /^Team/ }).click();

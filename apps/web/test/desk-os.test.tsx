@@ -202,7 +202,7 @@ async function enterDesk(user: ReturnType<typeof userEvent.setup>) {
   );
   await user.click(await screen.findByRole("button", { name: "Sit at desk" }));
   await user.click(await screen.findByTestId("login-surface"));
-  await user.type(await screen.findByLabelText(/^Password$/i), "FirstDay!");
+  await user.selectOptions(await screen.findByLabelText(/^Password$/i), "FirstDay!");
   await user.click(await screen.findByRole("button", { name: /^Sign in$/i }));
   await screen.findByRole("navigation", { name: "Workstation tools" });
 }
@@ -702,15 +702,15 @@ describe("Desk OS mutation coordination", () => {
     });
     const savedView = makeView({
       ...initialView,
-      ticketNotes: { "alert-1": "Checked device inventory" },
+      ticketNotes: { "alert-1": "Check the device label" },
     });
     const performAction = vi.fn(() => Promise.resolve(savedView));
     render(<App client={makeClient(initialView, { performAction })} />);
     await enterDesk(user);
     await user.click(screen.getByRole("button", { name: "Tickets" }));
-    await user.type(
+    await user.selectOptions(
       screen.getByLabelText("Investigation notes"),
-      "Checked device inventory",
+      "Check the device label",
     );
     await user.click(
       screen.getByRole("button", { name: /Save update investigation notes/i }),
@@ -825,8 +825,7 @@ describe("Desk OS canonical state rendering", () => {
     );
     const rendered = render(renderSystem());
     const notes = screen.getByLabelText("Investigation notes");
-    await user.clear(notes);
-    await user.type(notes, "Unsaved first draft");
+    await user.selectOptions(notes, "Compare IDs");
 
     view = {
       ...view,
@@ -834,7 +833,7 @@ describe("Desk OS canonical state rendering", () => {
     };
     rendered.rerender(renderSystem());
     expect(screen.getByLabelText("Investigation notes")).toHaveValue(
-      "Unsaved first draft",
+      "Compare IDs",
     );
 
     focusEventId = "alert-2";
@@ -855,7 +854,7 @@ describe("Desk OS canonical state rendering", () => {
     focusEventId = "alert-1";
     rendered.rerender(renderSystem());
     expect(screen.getByLabelText("Investigation notes")).toHaveValue(
-      "Unsaved first draft",
+      "Compare IDs",
     );
   });
 

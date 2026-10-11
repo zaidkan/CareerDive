@@ -42,7 +42,7 @@ it.skipIf(!process.env.TEST_DATABASE_URL)(
         eventId: "shift",
         enjoyment: "energizing" as const,
         confidence: "comfortable" as const,
-        note: "Useful work",
+
       };
       const retries = await Promise.all(
         Array.from({ length: 8 }, (_, index) =>
@@ -64,7 +64,7 @@ it.skipIf(!process.env.TEST_DATABASE_URL)(
         Array.from({ length: 65 }, (_, index) =>
           (index % 2 ? caller : replica).reflection.submit({
             ...reflection,
-            note: `Note ${String(index)}`,
+            eventId: `reflection-${String(index)}`,
           }),
         ),
       );
@@ -87,11 +87,11 @@ it.skipIf(!process.env.TEST_DATABASE_URL)(
       for (let index = 0; index < 4; index++)
         await caller.reflection.submit({
           ...reflection,
-          note: `Next hour ${String(index)}`,
+          eventId: `next-hour-${String(index)}`,
         });
       const full = await repository.getSession(owner, sessionId);
       await expect(
-        caller.reflection.submit({ ...reflection, note: "Session full" }),
+        caller.reflection.submit({ ...reflection, eventId: "session-full" }),
       ).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
       expect((await repository.getSession(owner, sessionId)).revision).toBe(
         full.revision,

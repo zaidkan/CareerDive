@@ -308,11 +308,11 @@ describe("workstation recovery", () => {
                     : { id: action.id, freeText });
             }}/>);
         await user.click(screen.getByRole("button", { name: /Tickets/i }));
-        await user.type(screen.getByLabelText("Investigation notes"), "Need device inventory");
+        await user.selectOptions(screen.getByLabelText("Investigation notes"), "Check the device label");
         await user.click(screen.getByRole("button", { name: /save update investigation notes/i }));
         expect(actions.at(-1)).toEqual({
             id: "update_ticket_notes",
-            freeText: "Need device inventory",
+            freeText: "Check the device label",
         });
     });
 });

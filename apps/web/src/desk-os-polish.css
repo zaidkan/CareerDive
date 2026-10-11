@@ -32,14 +32,11 @@
   filter: brightness(1.08);
   box-shadow: none;
 }
-.simulation-main :is(.notes-editor textarea, .kb-search input) {
+.simulation-main :is(.notes-editor select, .kb-search select) {
   background: var(--surface-base);
   color: var(--text-primary);
   border-radius: var(--radius-sm);
   line-height: 1.6;
-}
-.simulation-main .notes-editor textarea {
-  background-image: none;
 }
 .simulation-main .mutation-status-error {
   color: var(--status-danger-fg);
@@ -304,7 +301,6 @@
 }
 .desk-os
   :is(
-    .tool-panel textarea,
     .tool-panel input:not([type="radio"]):not([type="checkbox"]),
     .tool-panel select
   ) {
@@ -316,11 +312,6 @@
   background-color: var(--surface-base);
   color: var(--text-primary);
   font: 0.875rem/1.55 var(--font-body);
-}
-.desk-os .tool-panel textarea {
-  min-height: 6rem;
-  resize: vertical;
-  background-image: none;
 }
 .desk-os :is(input, textarea)::placeholder {
   color: var(--text-muted);

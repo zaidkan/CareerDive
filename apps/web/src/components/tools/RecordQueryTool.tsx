@@ -14,6 +14,7 @@ import {
   type MutationState,
 } from "../../useMutationCoordinator.js";
 import "./RecordQueryTool.css";
+import { recordFilterChoices } from "./closedInputChoices.js";
 import { useTabDraft } from "../../useTabDraft.js";
 
 export type QueryRecordsHandler = (
@@ -238,7 +239,9 @@ export function RecordQueryTool({
   }
 
   function renderFilter(field: string) {
-    const hasValue = Boolean((stringFilters[field] ?? "").trim());
+    const savedValue = stringFilters[field] ?? "";
+    const choices = recordFilterChoices(view, field, datasetId);
+    const hasValue = Boolean(savedValue.trim());
     return (
       <div
         key={field}
@@ -247,17 +250,21 @@ export function RecordQueryTool({
         <label htmlFor={`record-query-${datasetId}-${field}`}>
           {FILTER_LABELS[field] ?? field}
         </label>
-        <input
+        <select
           id={`record-query-${datasetId}-${field}`}
-          type="text"
-          autoComplete="off"
-          spellCheck={false}
           value={stringFilters[field] ?? ""}
           onChange={(event) => {
             setStringFilter(field, event.target.value);
           }}
-          placeholder="Leave blank to include all"
-        />
+        >
+          <option value="">Include all</option>
+          {savedValue && !choices.includes(savedValue) && (
+            <option value={savedValue} disabled>Saved filter: {savedValue}</option>
+          )}
+          {choices.map(value => (
+            <option key={value} value={value}>{value}</option>
+          ))}
+        </select>
       </div>
     );
   }
@@ -345,8 +352,7 @@ export function RecordQueryTool({
                 </label>
                 <input
                   id={`record-query-${datasetId}-window-start`}
-                  type="text"
-                  inputMode="numeric"
+                  type="time"
                   autoComplete="off"
                   value={windowStart}
                   aria-invalid={
@@ -357,7 +363,6 @@ export function RecordQueryTool({
                   onChange={(event) => {
                     setWindowStart(event.target.value);
                   }}
-                  placeholder="Leave blank for no lower bound"
                 />
               </div>
               <div>
@@ -366,8 +371,7 @@ export function RecordQueryTool({
                 </label>
                 <input
                   id={`record-query-${datasetId}-window-end`}
-                  type="text"
-                  inputMode="numeric"
+                  type="time"
                   autoComplete="off"
                   value={windowEnd}
                   aria-invalid={
@@ -378,7 +382,6 @@ export function RecordQueryTool({
                   onChange={(event) => {
                     setWindowEnd(event.target.value);
                   }}
-                  placeholder="Leave blank for no upper bound"
                 />
               </div>
             </div>

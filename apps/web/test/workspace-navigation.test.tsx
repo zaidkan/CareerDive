@@ -183,7 +183,7 @@ it("persists selected tool/case and unassessed scratchpad through a full provide
   );
   await user.click(screen.getByRole("button", { name: "Tickets" }));
   await user.click(screen.getByText("Personal scratchpad (optional)"));
-  await user.type(screen.getByLabelText("Scratch notes"), "Compare IDs");
+  await user.selectOptions(screen.getByLabelText("Scratch notes"), "Compare IDs");
   mounted.unmount();
   render(tree(view, vi.fn(), "persisted-workspace"));
   expect(screen.getByRole("button", { name: "Tickets" })).toHaveAttribute(

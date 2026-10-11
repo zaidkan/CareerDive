@@ -394,8 +394,7 @@ export function createAppRouter(
             eventId: z.string(),
             enjoyment: z.enum(["draining", "neutral", "energizing"]),
             confidence: z.enum(["uncertain", "comfortable"]),
-            note: z.string().max(2_000).optional(),
-          }),
+          }).strict(),
         )
         .output(ReflectionSchema)
         .mutation(async ({ ctx, input }) => {
@@ -405,7 +404,6 @@ export function createAppRouter(
             eventId: input.eventId,
             enjoyment: input.enjoyment,
             confidence: input.confidence,
-            ...(input.note === undefined ? {} : { note: input.note }),
             createdAt: new Date().toISOString(),
           });
           return repository.submitReflection(ctx.userId, reflection);

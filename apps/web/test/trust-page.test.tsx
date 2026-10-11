@@ -40,16 +40,15 @@ describe("trust page proof", () => {
   it("keeps source excerpts secondary and matched to repository proof", () => {
     render(<TrustPage />);
     fireEvent.click(screen.getByText("See how this works"));
-    const sql = readFileSync("apps/server/drizzle/0001_initial.sql", "utf8");
+    const sql = readFileSync("apps/server/src/db/repository.ts", "utf8");
     const evidenceTest = readFileSync(
       "packages/evidence/test/evidence.test.ts",
       "utf8",
     );
     const dialogue = readFileSync("apps/web/src/world/dialogue/MorganDialogue.tsx", "utf8");
     expect(sql).toContain(
-      "CREATE POLICY simulation_sessions_owner_all ON simulation_sessions",
+      "WHERE id = ${sessionId}::uuid AND owner_id = ${ownerId}::uuid",
     );
-    expect(sql).toContain("FOR ALL USING (auth.uid() = owner_id)");
     expect(evidenceTest).toContain(
       'expect(signal).not.toHaveProperty("score");',
     );
@@ -58,7 +57,7 @@ describe("trust page proof", () => {
     );
     expect(dialogue).toContain("managerRecap(view, action.eventId, choice)");
     expect(
-      screen.getByText(/CREATE POLICY simulation_sessions_owner_all/),
+      screen.getByText(/WHERE id = .*owner_id =/),
     ).toBeVisible();
   });
 });

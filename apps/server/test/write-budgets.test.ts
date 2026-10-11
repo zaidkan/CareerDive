@@ -18,7 +18,7 @@ it("owner write limits allow exact retries, preserve distinct reflection content
       eventId: "shift",
       enjoyment: "energizing" as const,
       confidence: "comfortable" as const,
-      note: "Useful work",
+
     };
     const retries = await Promise.all(
       Array.from({ length: 8 }, () => caller.reflection.submit(reflection)),
@@ -31,9 +31,9 @@ it("owner write limits allow exact retries, preserve distinct reflection content
       code: "NOT_FOUND",
     });
     for (let index = 1; index < 60; index++)
-      await caller.reflection.submit({ ...reflection, note: `Note ${String(index)}` });
+      await caller.reflection.submit({ ...reflection, eventId: `reflection-${String(index)}` });
     await expect(
-      caller.reflection.submit({ ...reflection, note: "Over quota" }),
+      caller.reflection.submit({ ...reflection, eventId: "over-quota" }),
     ).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
     expect(await caller.reflection.submit(reflection)).toEqual(retries[0]);
     for (let index = 1; index < 10; index++)

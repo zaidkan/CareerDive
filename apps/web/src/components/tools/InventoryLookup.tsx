@@ -37,15 +37,18 @@ export function InventoryLookup({
     <section aria-label="Device inventory lookup" className="inventory-lookup">
       <h3>Device inventory</h3>
       <label htmlFor="inventory-device-query">Find an exact device</label>
-      <input
+      <select
         id="inventory-device-query"
-        type="search"
         value={query}
         onChange={(event) => {
           setQuery(event.target.value);
         }}
-        placeholder="Enter the device name shown in the alert"
-      />
+      >
+        <option value="">Choose an available device identifier</option>
+        {[...new Set(records.flatMap(record => record.lookupKeys ?? []))].map(key => (
+          <option key={key} value={key}>{key}</option>
+        ))}
+      </select>
       {query.trim() && matches.length === 0 ? (
         <p role="status">
           No inventory records match that device. Check the full device name in

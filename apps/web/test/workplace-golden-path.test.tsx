@@ -755,8 +755,8 @@ describe("rendered workplace golden path", () => {
       await perform("review_alert", suspicious);
       await perform("inspect_login_context", suspicious);
       await openSystem("knowledge_base");
-      await user.type(
-        screen.getByRole("searchbox", { name: "Find an exact device" }),
+      await user.selectOptions(
+        screen.getByRole("combobox", { name: "Find an exact device" }),
         "unknown-laptop-17",
       );
       await activate(
@@ -772,9 +772,9 @@ describe("rendered workplace golden path", () => {
       await activate(screen.getByRole("button", { name: "Handle now" }));
       await perform("review_alert", routine);
       await openSystem("knowledge_base");
-      await user.type(
-        screen.getByRole("searchbox", { name: "Find a guide" }),
-        "scanner",
+      await user.selectOptions(
+        screen.getByRole("combobox", { name: "Find a guide" }),
+        required(toClientView(state).artifacts.find(a => a.id === "scanner-window"), "scanner guide").title,
       );
       await activate(
         required(

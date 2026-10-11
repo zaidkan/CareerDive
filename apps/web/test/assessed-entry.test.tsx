@@ -195,7 +195,7 @@ it("creates exactly one assessed session directly from Start, plays film after r
   });
   await user.click(screen.getByRole("button", { name: "Sit at desk" }));
   await user.click(await screen.findByTestId("login-surface"));
-  await user.type(screen.getByLabelText(/^Password$/i), "FirstDay!");
+  await user.selectOptions(screen.getByLabelText(/^Password$/i), "FirstDay!");
   await user.click(screen.getByRole("button", { name: /^Sign in$/ }));
   await user.click(await screen.findByRole("button", { name: /^Email/ }));
   await user.click(

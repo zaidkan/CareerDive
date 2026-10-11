@@ -76,15 +76,19 @@ export function GuideSearch({
           }}
         >
           <label htmlFor="guide-local-query">Find a guide</label>
-          <input
+          <select
             id="guide-local-query"
-            type="search"
-            placeholder="Short keyword: scanner, device, or approval"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
             }}
-          />
+          >
+            <option value="">All available guides</option>
+            {query && !view.artifacts.some(a => a.systemId === "knowledge_base" && a.title === query) ? <option value={query} disabled>Saved search: {query}</option> : null}
+            {view.artifacts.filter(a => a.systemId === "knowledge_base").map(a => (
+              <option key={a.id} value={a.title}>{a.title}</option>
+            ))}
+          </select>
           {query ? (
             <button
               type="button"
@@ -98,7 +102,7 @@ export function GuideSearch({
           {canonicalSearchAction && onCanonicalSearch ? (
             <>
               <p>
-                Use a short keyword, not a full question. Only a match relevant
+                Choose a guide. Only a match relevant
                 to this case can record the procedure check. Open the guide to
                 inspect its content.
               </p>

@@ -23,7 +23,9 @@ afterEach(() => {
   sessionStorage.clear();
 });
 function SearchHarness() {
-  const [state, setState] = useState(fresh);
+  const [state, setState] = useState(() =>
+    applyWorkplaceInteraction(fresh(), { type: "open_alert_record", recordId: "A-1042" }).state,
+  );
   const [tab, setTab] = useState<"alert_dashboard" | "knowledge_base">(
     "alert_dashboard",
   );
@@ -76,7 +78,7 @@ it("mounted case search discovers authored records, inspects/revisits and retain
   const user = userEvent.setup();
   render(<SearchHarness />);
   const search = () => screen.getByRole("region", { name: "Record search" });
-  await user.type(
+  await user.selectOptions(
     within(search()).getByLabelText("User"),
     "j.patel@example.com",
   );
@@ -107,8 +109,9 @@ it("mounted case search discovers authored records, inspects/revisits and retain
   expect(
     within(search()).getByRole("button", { name: "Revisit AUTH-0741-PATEL" }),
   ).toBeVisible();
-  await user.clear(within(search()).getByLabelText("User"));
-  await user.type(within(search()).getByLabelText("User"), "no-such-account");
+  await user.click(within(search()).getByText(/^More filters/));
+  await user.selectOptions(within(search()).getByLabelText("Session ID"), "S-0741");
+  await user.selectOptions(within(search()).getByLabelText("Source IP"), "198.51.100.20");
   await user.click(
     within(search()).getByRole("button", { name: "Search records" }),
   );
@@ -124,9 +127,9 @@ it("mounted case search discovers authored records, inspects/revisits and retain
       name: "Open case sources and record search in Alerts",
     }),
   );
-  expect(within(search()).getByLabelText("User")).toHaveValue(
-    "no-such-account",
-  );
+  expect(within(search()).getByLabelText("User")).toHaveValue("j.patel@example.com");
+  expect(within(search()).getByLabelText("Session ID")).toHaveValue("S-0741");
+  expect(within(search()).getByLabelText("Source IP")).toHaveValue("198.51.100.20");
   expect(screen.getByRole("region", { name: "Case evidence" })).toBeVisible();
 });
 it("handoff selections generate inspected references, preview actual work and persist on remount", async () => {

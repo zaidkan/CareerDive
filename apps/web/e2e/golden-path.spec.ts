@@ -376,11 +376,11 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
       page.getByRole("heading", { name: "Sign in to Verdaly" }),
     ).toBeVisible();
     await page
-      .getByRole("textbox", { name: "Username" })
-      .fill(DESK_LOGIN.username);
+      .getByRole("combobox", { name: "Username" })
+      .selectOption(DESK_LOGIN.username);
     await page
-      .getByRole("textbox", { name: "Password" })
-      .fill(DESK_LOGIN.password);
+      .getByRole("combobox", { name: "Password" })
+      .selectOption(DESK_LOGIN.password);
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(
       page.getByRole("navigation", { name: "Workstation tools" }),
@@ -438,8 +438,8 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
       .getByText("Personal scratchpad (optional)", { exact: true })
       .click();
     await page
-      .getByRole("textbox", { name: "Scratch notes", exact: true })
-      .fill("continuity probe");
+      .getByRole("combobox", { name: "Scratch notes", exact: true })
+      .selectOption("Compare IDs");
     await page.getByRole("button", { name: "Leave desk" }).click();
     const exitRoomFullscreen = page.getByRole("button", {
       name: "Exit fullscreen",
@@ -487,8 +487,8 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
       .getByText("Personal scratchpad (optional)", { exact: true })
       .click();
     await expect(
-      page.getByRole("textbox", { name: "Scratch notes", exact: true }),
-    ).toHaveValue("continuity probe");
+      page.getByRole("combobox", { name: "Scratch notes", exact: true }),
+    ).toHaveValue("Compare IDs");
     expect(sessionCreates.length, "return creates no extra session").toBe(1);
   });
 
@@ -510,8 +510,8 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
       .getByText("Personal scratchpad (optional)", { exact: true })
       .click();
     await expect(
-      page.getByRole("textbox", { name: "Scratch notes", exact: true }),
-    ).toHaveValue("continuity probe");
+      page.getByRole("combobox", { name: "Scratch notes", exact: true }),
+    ).toHaveValue("Compare IDs");
     expect(sessionCreates.length, "Forward resumes instead of creating").toBe(
       1,
     );
@@ -523,8 +523,8 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
       .getByText("Personal scratchpad (optional)", { exact: true })
       .click();
     await expect(
-      page.getByRole("textbox", { name: "Scratch notes", exact: true }),
-    ).toHaveValue("continuity probe");
+      page.getByRole("combobox", { name: "Scratch notes", exact: true }),
+    ).toHaveValue("Compare IDs");
     expect(sessionCreates.length, "reload resumes instead of creating").toBe(1);
   });
 

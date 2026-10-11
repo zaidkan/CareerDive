@@ -40,7 +40,7 @@ function baseView(): ClientView {
     availableActions: [],
     operationalMessages: [],
     pacingMode: "standard",
-    artifacts: [],
+    artifacts: [{ id: "opened-alert", systemId: "alert_dashboard", kind: "alert", title: "Opened alert", summary: "j.patel@example.com · S-0741 · 203.0.113.44", eventIds: ["alert-1"], observed: true }],
     ticketNotes: {},
     notebook: "",
     kbQuery: "",
@@ -135,9 +135,9 @@ describe("RecordQueryTool", () => {
       />,
     );
 
-    await user.type(screen.getByLabelText("User"), "j.patel@example.com");
+    await user.selectOptions(screen.getByLabelText("User"), "j.patel@example.com");
     await user.click(screen.getByText(/^More filters/));
-    await user.type(screen.getByLabelText("Session ID"), "S-0741");
+    await user.selectOptions(screen.getByLabelText("Session ID"), "S-0741");
     await user.type(screen.getByLabelText("Time from (HH:MM)"), "07:21");
     await user.type(screen.getByLabelText("Time to (HH:MM)"), "07:45");
     await user.click(screen.getByRole("button", { name: "Search records" }));
@@ -162,7 +162,7 @@ describe("RecordQueryTool", () => {
     render(<RecordQueryTool view={view} onQueryRecords={onQueryRecords} />);
 
     await user.click(screen.getByText(/^More filters/));
-    await user.type(screen.getByLabelText("Source IP"), "203.0.113.44");
+    await user.selectOptions(screen.getByLabelText("Source IP"), "203.0.113.44");
     await user.click(screen.getByRole("button", { name: "Search records" }));
 
     expect(onQueryRecords).toHaveBeenCalledWith(queryAction, {
@@ -174,12 +174,8 @@ describe("RecordQueryTool", () => {
   it("blocks submission with neutral validation text for a bad time window", async () => {
     const user = userEvent.setup();
     const onQueryRecords = vi.fn();
-    render(
-      <RecordQueryTool
-        view={baseView()}
-        queryAction={queryAction}
-        onQueryRecords={onQueryRecords}
-      />,
+    const rendered = render(
+      <RecordQueryTool view={baseView()} queryAction={queryAction} onQueryRecords={onQueryRecords} />,
     );
 
     await user.click(screen.getByText(/^More filters/));
@@ -192,19 +188,34 @@ describe("RecordQueryTool", () => {
       "Time window start must be at or before the window end.",
     );
 
-    await user.clear(screen.getByLabelText("Time to (HH:MM)"));
-    await user.type(screen.getByLabelText("Time to (HH:MM)"), "later");
+    rendered.unmount();
+    sessionStorage.setItem("search:session-1:alert-1:to", JSON.stringify("later"));
+    render(<RecordQueryTool view={baseView()} queryAction={queryAction} onQueryRecords={onQueryRecords} />);
+    await user.click(screen.getByText(/^More filters/));
     await user.click(screen.getByRole("button", { name: "Search records" }));
     expect(onQueryRecords).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Enter office-local times as HH:MM.",
     );
 
-    await user.clear(screen.getByLabelText("Time from (HH:MM)"));
-    await user.clear(screen.getByLabelText("Time to (HH:MM)"));
+    await user.click(screen.getByRole("button", { name: "Clear all record search filters" }));
     await user.click(screen.getByRole("button", { name: "Search records" }));
     expect(onQueryRecords).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("keeps legacy filter values visible and clearable without allowing new free text", async () => {
+    const user = userEvent.setup();
+    sessionStorage.setItem("search:session-1:alert-1:filters", JSON.stringify({ user: "old-saved@example.com" }));
+    const onQueryRecords = vi.fn();
+    render(<RecordQueryTool view={baseView()} queryAction={queryAction} onQueryRecords={onQueryRecords} />);
+    expect(screen.getByLabelText("User")).toHaveValue("old-saved@example.com");
+    expect(screen.getByRole("option", { name: "Saved filter: old-saved@example.com" })).toBeDisabled();
+    expect(screen.queryByRole("textbox")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Clear all record search filters" }));
+    expect(screen.getByLabelText("User")).toHaveValue("");
+    await user.click(screen.getByRole("button", { name: "Search records" }));
+    expect(onQueryRecords).toHaveBeenCalledWith(queryAction, { datasetId: "auth", filters: {} });
   });
 
   it("renders returned records with technical fields and hides relationship internals", () => {
@@ -320,7 +331,7 @@ describe("RecordQueryTool", () => {
     );
 
     await user.click(screen.getByText(/^More filters/));
-    await user.type(screen.getByLabelText("Session ID"), "S-0741");
+    await user.selectOptions(screen.getByLabelText("Session ID"), "S-0741");
     await user.click(screen.getByRole("button", { name: "Search records" }));
     await user.click(screen.getByRole("button", { name: "Search records" }));
 

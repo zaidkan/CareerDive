@@ -67,14 +67,14 @@
 }
 
 .rq-dataset-row select,
-.rq-field input,
+.rq-field :is(input, select),
 .rq-time-row input {
   width: 100%;
   min-width: 0;
   padding: 0.58rem 0.65rem;
   border: 1px solid var(--line-bright);
   border-radius: 6px;
-  background: #120e0b;
+  background: var(--surface-base);
   color: var(--paper);
   font-family: var(--font-body);
   font-size: 0.9rem;
@@ -102,12 +102,12 @@
   appearance: none;
 }
 
-.rq-field input::placeholder,
+.rq-field :is(input, select)::placeholder,
 .rq-time-row input::placeholder {
   color: rgb(154 160 166 / 78%);
 }
 
-.rq-field input:focus,
+.rq-field :is(input, select):focus,
 .rq-time-row input:focus,
 .rq-dataset-row select:focus {
   outline: none;
@@ -115,7 +115,7 @@
   box-shadow: 0 0 0 3px rgb(110 168 254 / 18%);
 }
 
-.rq-field input[aria-invalid="true"],
+.rq-field :is(input, select)[aria-invalid="true"],
 .rq-time-row input[aria-invalid="true"] {
   border-color: var(--signal-hot);
 }

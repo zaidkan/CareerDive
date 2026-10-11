@@ -202,26 +202,20 @@ describe("monitor wake, lock curtain, and sign-in", () => {
     ).toBeVisible();
   });
 
-  it("renders the known account with a masked, toggleable password", () => {
+  it("offers only issued credentials and toggles the selected code's display", () => {
     setup();
     fireEvent.click(screen.getByTestId("login-surface"));
-    const username = screen.getByLabelText(/Username/i);
-    expect(username).toHaveAttribute("type", "text");
-    expect(username).toHaveValue(DESK_LOGIN.username);
-    expect(screen.getByLabelText(/^Password$/i)).toHaveAttribute(
-      "type",
-      "password",
-    );
-    fireEvent.change(screen.getByLabelText(/^Password$/i), {
-      target: { value: "typed" },
-    });
+    expect(screen.getByRole("combobox", { name: "Username" })).toHaveValue(DESK_LOGIN.username);
+    const password = screen.getByRole("combobox", { name: "Password" });
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.getByRole("option", { name: "Provisioning slip code" })).toBeInTheDocument();
+    fireEvent.change(password, { target: { value: DESK_LOGIN.password } });
     fireEvent.click(screen.getByRole("button", { name: /Show password/i }));
-    expect(screen.getByLabelText(/^Password$/i)).toHaveAttribute("type", "text");
+    expect(screen.getByRole("option", { name: DESK_LOGIN.password })).toBeInTheDocument();
+    expect(password).toHaveValue(DESK_LOGIN.password);
     fireEvent.click(screen.getByRole("button", { name: /Hide password/i }));
-    expect(screen.getByLabelText(/^Password$/i)).toHaveAttribute(
-      "type",
-      "password",
-    );
+    expect(screen.getByRole("option", { name: "Provisioning slip code" })).toBeInTheDocument();
+    expect(password).toHaveValue(DESK_LOGIN.password);
   });
 
   it("stays locked on invalid credentials and announces the error", () => {
@@ -300,17 +294,19 @@ describe("monitor wake, lock curtain, and sign-in", () => {
     expect(onLoginSuccess).toHaveBeenCalledTimes(1);
   });
 
-  it("submits with Enter from the password field", async () => {
+  it("submits with Enter after selecting the issued password", async () => {
     // Real timers here: genuine keyboard semantics, no arbitrary sleeps —
     // waitFor polls until the unlock completes.
     const user = userEvent.setup();
     const onLoginSuccess = vi.fn();
     render(<LockScreen onLoginSuccess={onLoginSuccess} />);
     await user.click(screen.getByTestId("login-surface"));
-    await user.type(
+    await user.selectOptions(
       screen.getByLabelText(/^Password$/i),
-      `${DESK_LOGIN.password}{enter}`,
+      DESK_LOGIN.password,
     );
+    screen.getByRole("button", { name: /^Sign in$/i }).focus();
+    await user.keyboard("{Enter}");
     await waitFor(
       () => {
         expect(onLoginSuccess).toHaveBeenCalledTimes(1);

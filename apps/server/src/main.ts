@@ -2,6 +2,7 @@ import { SupabasePublicKeySchema } from "@sim/schemas";
 import { createOwnerResolver } from "./auth.js";
 import { poolerCompatibleOptions } from "./db/connection.js";
 import { verifyMigrations } from "./db/migrations.js";
+import { purgeExpiredSessions, startSessionRetention } from "./db/retention.js";
 import { healthRoutes } from "./routes/health.js";
 import { supportRoutes } from "./routes/support.js";
 import { launchRoutes } from "./routes/launch.js";
@@ -141,7 +142,27 @@ await server.register(launchRoutes, {
     else if (isProduction) throw new Error("Database unavailable");
   },
 });
+let stopRetention: (() => Promise<void>) | undefined;
+server.addHook("onReady", async () => {
+  if (!sql) return;
+  let verified = false;
+  stopRetention = startSessionRetention(
+    async () => {
+      if (!verified) {
+        await verifyMigrations(sql);
+        verified = true;
+      }
+      return purgeExpiredSessions(sql);
+    },
+    (result) => {
+      server.log.info(result, "Simulation retention cleanup completed");
+      if (result.more) server.log.warn("Simulation retention backlog requires another cleanup run");
+    },
+    () => { server.log.error("Simulation retention cleanup failed; next hourly run will retry"); },
+  );
+});
 server.addHook("onClose", async () => {
+  await stopRetention?.();
   await sql?.end({ timeout: 5 });
 });
 const appRouter = createAppRouter(repository, {

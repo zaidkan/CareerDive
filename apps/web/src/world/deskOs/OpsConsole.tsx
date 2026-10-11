@@ -1,3 +1,4 @@
+import { NOTE_CHOICES } from "../../components/tools/closedInputChoices.js";
 import { ConfirmAction } from "../../components/tools/ConfirmAction.js";
 import { CaseCommunication } from "./CaseCommunication.js";
 import { updateWorkspacePresentation } from "./workspaceTransition.js";
@@ -316,12 +317,11 @@ export const OpsConsole = memo(function OpsConsole({
             <details className="workspace-scratchpad">
               <summary>Personal scratchpad (optional)</summary>
               <p>
-                Private to this browser session. These notes are not assessed.
+                Choose a reminder saved in this browser session. These reminders are not assessed.
               </p>
               <label htmlFor="workspace-scratch">Scratch notes</label>
-              <textarea
+              <select
                 id="workspace-scratch"
-                rows={5}
                 value={state.notesText}
                 onChange={(event) => {
                   dispatch({
@@ -329,7 +329,12 @@ export const OpsConsole = memo(function OpsConsole({
                     text: event.target.value,
                   });
                 }}
-              />
+              >
+                <option value="">Choose a reminder</option>
+                {state.notesText && !NOTE_CHOICES.some(choice => choice === state.notesText) ? <option value={state.notesText} disabled>Previously saved note</option> : null}
+                {NOTE_CHOICES.map(choice => <option key={choice} value={choice}>{choice}</option>)}
+              </select>
+              {state.notesText && !NOTE_CHOICES.some(choice => choice === state.notesText) ? <pre>{state.notesText}</pre> : null}
             </details>
           ) : null}
           {systemId === "team_chat" ? (
