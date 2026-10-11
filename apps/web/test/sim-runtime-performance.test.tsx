@@ -154,9 +154,11 @@ it("defers scene creation until entry, then retains it while pausing on map retu
   fireEvent.click(screen.getByRole("button", { name: "Enter room" }));
   expect(requestFullscreen).toHaveBeenCalledOnce();
   expect(requestFullscreen.mock.contexts[0]).toBe(document.querySelector(".room-stage"));
+  // Only first lazy mounts need the spatial cold-start budget; transitions
+  // below retain their normal, shorter waits.
   await waitFor(() => {
     expect(screen.getByTestId("scene")).toHaveAttribute("data-active", "true");
-  });
+  }, { timeout: 6000 });
   expect(probes.mounts).toHaveBeenCalledOnce();
   const scene = screen.getByTestId("scene");
   fireEvent.click(screen.getByRole("button", { name: "Exit room" }));
@@ -198,7 +200,7 @@ it("skips unchanged workstation renders but propagates canonical and navigation 
     </OsSessionProvider>
   );
   const { rerender } = render(tree());
-  await screen.findByTestId("tool-clock");
+  await screen.findByTestId("tool-clock", {}, { timeout: 6000 });
   const before = probes.tool.mock.calls.length;
   rerender(tree());
   expect(probes.tool).toHaveBeenCalledTimes(before);

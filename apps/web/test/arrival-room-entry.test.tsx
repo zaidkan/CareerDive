@@ -81,9 +81,10 @@ it("mounts the room under the film, waits for a ready frame, and retains the sam
       screen.getByRole("button", { name: /Security Operations/i }),
     );
     expect(fullscreen).toBe(stage);
+    // The mocked RoomCanvas still crosses a real lazy import/Suspense boundary.
     await waitFor(() => {
       expect(reportReady).toBeDefined();
-    });
+    }, { timeout: 6000 });
     const live = screen.getByRole("button", {
       name: "Live room control",
       hidden: true,
@@ -127,7 +128,7 @@ it("does not replay on a repeat room visit and exposes a removable presentation 
   fireEvent.click(screen.getByRole("button", { name: /Security Operations/i }));
   await waitFor(() => {
     expect(reportReady).toBeDefined();
-  });
+  }, { timeout: 6000 });
   act(() => {
     reportReady?.();
   });
@@ -151,7 +152,7 @@ it("disables film completely without changing entry into the same room", async (
   );
   fireEvent.click(screen.getByRole("button", { name: /Security Operations/i }));
   expect(
-    await screen.findByRole("button", { name: "Live room control" }),
+    await screen.findByRole("button", { name: "Live room control" }, { timeout: 6000 }),
   ).toBeEnabled();
   expect(document.querySelector("video")).toBeNull();
 });
@@ -170,10 +171,10 @@ it.each(["sim", "briefing"])(
     };
     render(<StartPage client={client} />);
     fireEvent.click(
-      await screen.findByRole("button", { name: /Security Operations/i }),
+      await screen.findByRole("button", { name: /Security Operations/i }, { timeout: 6000 }),
     );
     expect(
-      await screen.findByRole("button", { name: "Live room control" }),
+      await screen.findByRole("button", { name: "Live room control" }, { timeout: 6000 }),
     ).toBeEnabled();
     expect(document.querySelector("video")).toBeNull();
     expect(
