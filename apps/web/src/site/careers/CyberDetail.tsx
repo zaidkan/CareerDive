@@ -1,3 +1,4 @@
+import { StartLink } from "../StartConsent.js";
 import type { ReactNode } from "react";
 import type { PublicCareer } from "../../careers/types.js";
 import {
@@ -109,9 +110,9 @@ export function CyberDetail({ career }: { career: PublicCareer }) {
             evidence-based debrief: what you can support and what is still unknown.
           </p>
           <p>{career.workplaceSummary}</p>
-          <SiteLink className="start-shift" to="/start">
+          <StartLink className="start-shift">
             Start your first day
-          </SiteLink>
+          </StartLink>
         </div>
         <figure className="cyber-arrival-proof">
           <ProductImage
@@ -398,9 +399,9 @@ export function CyberDetail({ career }: { career: PublicCareer }) {
           Work the open case, make a bounded call, and leave the next analyst a
           usable record.
         </p>
-        <SiteLink className="start-shift" to="/start">
+        <StartLink className="start-shift">
           Start your first day <span aria-hidden="true">↗</span>
-        </SiteLink>
+        </StartLink>
       </PublicChapter>
     </article>
   );

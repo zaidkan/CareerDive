@@ -116,6 +116,8 @@ export function SiteChrome({
                 FAQ
               </a>
             </li>
+            <li><a href="/privacy" onClick={go("/privacy")}>Privacy Policy</a></li>
+            <li><a href="/terms" onClick={go("/terms")}>Terms</a></li>
             <li>
               <a href="/start" onClick={go("/start")}>
                 {hasSeenFilm ? "Continue" : "Start your first day"}

@@ -17,7 +17,7 @@ export default defineConfig({
     // RED contracts (*.red.test.ts) are intentionally-failing specifications
     // for not-yet-implemented behavior. They must NOT gate CI (the test step
     // could never be green while they exist). Run them explicitly with
-    // `pnpm test:red` (vitest.red.config.ts). See docs/coordination on RED files.
+    // `pnpm test:red` (vitest.red.config.ts).
     exclude: [
       "**/node_modules/**",
       "**/dist/**",

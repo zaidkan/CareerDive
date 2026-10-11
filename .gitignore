@@ -20,8 +20,7 @@ test-results/
 .impeccable/
 apps/web/public/hero-sting.mp4
 
-# Personal developer/orchestration infra — NOT part of the public product.
-# Lives on the private brain branch; must never re-enter the public main line.
+# Local development tools and workspace instructions.
 .codex/
 .kiro/
 .cursor/
@@ -39,15 +38,25 @@ scripts/tests/brain/
 docs/coordination/
 docs/superpowers/
 
-# Internal agent task reports and assistant instructions.
+# Local tool instructions.
 .superpowers/
 CLAUDE.md
 GEMINI.md
 
-# Internal planning/handoff docs (agent-process; keep private)
+# Local planning and review artifacts.
 docs/product/workplace-systems-overhaul-design.md
 docs/product/workplace-systems-overhaul-plan.md
-docs/planning/desk-os-audit/
+docs/planning/
+docs/qa/
+docs/REPO_STATUS.md
+docs/2026-*.md
+docs/future-arrival-concept.md
+docs/ops/offline-verification.md
+docs/ops/production-preparation-plan.md
+docs/ops/production-preparation-results.md
+docs/ops/supabase-render-activation.md
+/career-sim-build-spec.md
+/scripts/tests/classifier.test.sh
 
 # Local pre-launch QA scratch and generated assets.
 /qa-debug-redirect.mjs

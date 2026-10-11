@@ -13,13 +13,12 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:verify": "tsx scripts/migrate.ts --verify",
-    "db:plan": "tsx scripts/migrate.ts --plan"
+    "db:plan": "tsx scripts/migrate.ts --plan",
+    "db:purge": "tsx scripts/purge-sessions.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.55.1",
     "@fastify/cors": "^11.0.1",
     "@fastify/rate-limit": "^10.3.0",
-    "@sim/ai": "workspace:*",
     "@sim/career-packs": "workspace:*",
     "@sim/core": "workspace:*",
     "@sim/evidence": "workspace:*",

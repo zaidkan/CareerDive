@@ -1,21 +1,18 @@
 /**
  * Declared extension seams for the simulation platform.
  *
- * `career-sim-build-spec.md` ("Extension points (the interfaces that make this
- * expandable)") requires that every place the system is meant to grow is a
- * named interface, so that adding a career, a system, a rhythm, a mode, a
- * provider, or a safety check means implementing an interface rather than
+ * Named interfaces define how the system can grow. Adding a career, system,
+ * rhythm, mode, provider, or safety check means implementing an interface rather than
  * editing the core:
  *
  * - `SystemModule` — a reusable professional system (inbox, dashboard, ticket
  *   queue); one implementation, configured per career.
  * - `ViewAdapter` — a front-end mode (spatial, accessible, and future modes)
- *   over the shared `SimulationClient`. See also the spec's rendering-model
- *   section, where the R3F shell is described as "just another `ViewAdapter`".
+ *   over the shared `SimulationClient`.
  * - `SafetyCheck` — a pluggable check that runs in safety Layer A or B.
  * - `EvidenceInterpreter` — turns typed `EvidenceSignal`s into a confidence
  *   level and statement for the debrief.
- * - `Cache` — the seam behind "Caching: start in-process, design for Redis":
+ * - `Cache` — swappable storage for cached dialogue:
  *   deterministic responses and pre-generated NPC lines sit behind this
  *   interface with an in-memory implementation first, swappable for Redis once
  *   a second server instance exists.

@@ -113,9 +113,9 @@ describe("Guide search", () => {
         onWorkplaceInteraction={onOpen}
       />,
     );
-    await user.type(
-      screen.getByRole("searchbox", { name: "Find a guide" }),
-      "account history",
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Find a guide" }),
+      "Login alert guide",
     );
     expect(
       screen.getByRole("button", { name: /Login alert guide kb document/ }),
@@ -156,10 +156,10 @@ describe("Guide search", () => {
       ),
     ).toBeNull();
 
-    const input = screen.getByRole("searchbox", {
+    const input = screen.getByRole("combobox", {
       name: "Find a guide",
     });
-    await user.type(input, "phishing");
+    await user.selectOptions(input, "Phishing response guide");
 
     const results = within(screen.getByRole("list"));
     expect(results.getByText("Phishing response guide")).toBeVisible();
@@ -175,45 +175,27 @@ describe("Guide search", () => {
         view={view}
       />,
     );
-    expect(input).toHaveValue("phishing");
+    expect(input).toHaveValue("Phishing response guide");
   });
 
-  it("shows empty results and only reveals a guide body through canonical open", async () => {
+  it("handles a legacy empty search and only reveals a guide body through canonical open", async () => {
     const user = userEvent.setup();
     const onOpenArtifact = vi.fn().mockResolvedValue(undefined);
-    render(
-      <SystemToolPanel
-        actions={[]}
-        onAction={() => undefined}
-        onWorkplaceInteraction={(interaction) => {
-          if (interaction.type === "open_artifact") {
-            onOpenArtifact(interaction.artifactId);
-          }
-          return Promise.resolve(undefined);
-        }}
-        systemId="knowledge_base"
-        view={guideView()}
-      />,
-    );
-
-    const input = screen.getByRole("searchbox", {
-      name: "Find a guide",
-    });
-    await user.type(input, "does-not-exist");
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "No guides match “does-not-exist”.",
-    );
-
+    const tree = (view: ClientView) => <SystemToolPanel actions={[]} onAction={() => undefined}
+      onWorkplaceInteraction={(interaction) => {
+        if (interaction.type === "open_artifact") onOpenArtifact(interaction.artifactId);
+        return Promise.resolve(undefined);
+      }} systemId="knowledge_base" view={view} />;
+    const mounted = render(tree(guideView()));
+    mounted.rerender(tree({ ...guideView(), kbQuery: "does-not-exist" }));
+    const input = screen.getByRole("combobox", { name: "Find a guide" });
+    expect(screen.getByRole("status")).toHaveTextContent("No guides match “does-not-exist”.");
     await user.click(screen.getByRole("button", { name: "Clear search" }));
     expect(input).toHaveValue("");
-    expect(
-      within(screen.getByRole("list")).getByText("Phishing response guide"),
-    ).toBeVisible();
+    expect(within(screen.getByRole("list")).getByText("Phishing response guide")).toBeVisible();
     expect(screen.queryByText("Full phishing response procedure.")).toBeNull();
-
-    await user.click(
-      screen.getByRole("button", { name: "Open Phishing response guide" }),
-    );
+    await user.selectOptions(input, "Phishing response guide");
+    await user.click(screen.getByRole("button", { name: "Open Phishing response guide" }));
     expect(onOpenArtifact).toHaveBeenCalledWith("phishing-guide");
     expect(screen.queryByText("Full phishing response procedure.")).toBeNull();
   });
@@ -230,26 +212,26 @@ describe("Guide search", () => {
       />,
     );
 
-    const canonicalInput = screen.getByRole("searchbox", {
+    const canonicalInput = screen.getByRole("combobox", {
       name: "Find a guide",
     });
-    await user.type(canonicalInput, "phishing");
+    await user.selectOptions(canonicalInput, "Phishing response guide");
     await user.click(screen.getByRole("button", { name: "Search guides" }));
 
     expect(onAction).toHaveBeenCalledWith(
       { ...taskBearingSearch, taskId: undefined },
-      "phishing",
+      "Phishing response guide",
     );
     rerender(
       <SystemToolPanel
         actions={[{ ...taskBearingSearch, taskId: undefined }]}
         onAction={onAction}
         systemId="knowledge_base"
-        view={{ ...guideView(), kbQuery: "phishing" }}
+        view={{ ...guideView(), kbQuery: "Phishing response guide" }}
       />,
     );
-    expect(screen.getByRole("searchbox", { name: "Find a guide" })).toHaveValue(
-      "phishing",
+    expect(screen.getByRole("combobox", { name: "Find a guide" })).toHaveValue(
+      "Phishing response guide",
     );
     expect(
       screen.queryByRole("button", { name: /Login alert guide kb document/ }),
@@ -262,40 +244,43 @@ describe("Guide search", () => {
         view={{ ...guideView(), kbQuery: "login" }}
       />,
     );
-    expect(screen.getByRole("searchbox", { name: "Find a guide" })).toHaveValue(
+    expect(screen.getByRole("combobox", { name: "Find a guide" })).toHaveValue(
       "login",
     );
-    expect(screen.getByRole("searchbox", { name: "Find a guide" })).toHaveValue(
+    expect(screen.getByRole("combobox", { name: "Find a guide" })).toHaveValue(
       "login",
     );
   });
 });
 
-it("does not submit a no-match procedure query; a relevant keyword enables recording", async () => {
+it("does not record an unrelated guide; a relevant authored guide enables recording", async () => {
   const user = userEvent.setup();
   const onAction = vi.fn();
+  const view = guideView();
+  const template = view.artifacts[0];
+  if (!template) throw new Error("Guide fixture missing");
+  view.artifacts.push({ ...template, id: "other-guide", title: "Other case guide", eventIds: ["other-event"] });
   render(
     <SystemToolPanel
       actions={[{ ...taskBearingSearch, taskId: undefined }]}
       onAction={onAction}
       systemId="knowledge_base"
       selectedEventId="guide-event"
-      view={guideView()}
+      view={view}
     />,
   );
-  const query = screen.getByRole("searchbox", { name: "Find a guide" });
-  expect(screen.getAllByRole("searchbox")).toHaveLength(1);
-  await user.type(query, "no-matching-procedure{Enter}");
+  const query = screen.getByRole("combobox", { name: "Find a guide" });
+  expect(screen.getAllByRole("combobox", { name: "Find a guide" })).toHaveLength(1);
+  await user.selectOptions(query, "Other case guide");
   expect(screen.getByRole("button", { name: "Search guides" })).toBeDisabled();
   expect(
     screen.getByText(/Your procedure step has not advanced/),
   ).toBeVisible();
   expect(onAction).not.toHaveBeenCalled();
-  await user.clear(query);
-  await user.type(query, "phishing");
+  await user.selectOptions(query, "Phishing response guide");
   await user.click(screen.getByRole("button", { name: "Search guides" }));
   expect(onAction).toHaveBeenCalledExactlyOnceWith(
     { ...taskBearingSearch, taskId: undefined },
-    "phishing",
+    "Phishing response guide",
   );
 });

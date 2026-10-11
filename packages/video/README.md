@@ -18,7 +18,7 @@ background (`LandingPage`, skipped under `prefers-reduced-motion`).
 
 Or directly: `npx remotion studio`, `npx remotion render HeroSting out/hero-sting.mp4`.
 
-## Rules (from the motion-graphics skill)
+## Composition conventions
 
 - Spring entrances only — no linear interpolation on props.
 - 2–3 prop entrances per shot, staggered 3–6 frames.

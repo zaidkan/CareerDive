@@ -20,14 +20,21 @@ import type { PublicCareer } from "../src/careers/types.js";
 import { SiteApp } from "../src/site/SiteApp.js";
 import { CareerCard } from "../src/site/careers/CareerCard.js";
 import { WorkshopShelf } from "../src/site/careers/WorkshopShelf.js";
+import { createBrowserStorage } from "./helpers/browserStorage.js";
 
 beforeEach(() => {
   window.scrollTo = vi.fn();
+  vi.stubGlobal("localStorage", createBrowserStorage());
+  vi.stubEnv("PROD", false);
+  vi.stubEnv("VITE_SUPABASE_URL", "");
+  vi.stubEnv("VITE_SUPABASE_ANON_KEY", "");
 });
 
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   window.history.replaceState(null, "", "/");
 });
 
@@ -276,23 +283,35 @@ describe("Career Explorer interaction", () => {
   it("hydrates server state and persists request changes", async () => {
     const user = userEvent.setup();
     const fetch = vi
-      .fn()
-      .mockResolvedValue(
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(
         new Response(
           JSON.stringify({ requestedCareerIds: ["registered-nurse"] }),
           { headers: { "content-type": "application/json" } },
         ),
       );
     vi.stubGlobal("fetch", fetch);
-    render(<WorkshopShelf careers={[careerAt(1)]} />);
+    const { unmount } = render(<WorkshopShelf careers={[careerAt(1)]} />);
     const button = screen.getByRole("button", {
       name: "Request Registered Nurse",
     });
+    expect(button).toBeDisabled();
     await waitFor(() => {
       expect(button).toBeEnabled();
     });
     expect(button).toHaveAttribute("aria-pressed", "true");
-    fetch.mockResolvedValue(
+    const owner = window.localStorage.getItem("careerdive-local-identity");
+    expect(owner).toMatch(/^[0-9a-f-]{36}$/);
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      expect.stringMatching(/\/api\/career-requests\/state$/),
+      expect.objectContaining({
+        method: "POST",
+        body: "{}",
+        headers: { "Content-Type": "application/json", "x-user-id": owner },
+      }),
+    );
+    fetch.mockResolvedValueOnce(
       new Response(
         JSON.stringify({
           careerId: "registered-nurse",
@@ -307,8 +326,39 @@ describe("Career Explorer interaction", () => {
       expect(button).toBeEnabled();
     });
     expect(button).toHaveAttribute("aria-pressed", "false");
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      expect.stringMatching(/\/api\/career-requests$/),
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ careerId: "registered-nurse", requested: false }),
+        headers: { "Content-Type": "application/json", "x-user-id": owner },
+      }),
+    );
     expect(screen.queryByText(/aren't collected yet/i)).toBeNull();
-    vi.unstubAllGlobals();
+    expect(screen.queryByRole("alert")).toBeNull();
+    unmount();
+    fetch.mockResolvedValueOnce(
+      new Response(JSON.stringify({ requestedCareerIds: [] }), {
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    render(<WorkshopShelf careers={[careerAt(1)]} />);
+    const restored = screen.getByRole("button", {
+      name: "Request Registered Nurse",
+    });
+    await waitFor(() => {
+      expect(restored).toBeEnabled();
+    });
+    expect(restored).toHaveAttribute("aria-pressed", "false");
+    expect(fetch).toHaveBeenCalledTimes(3);
+    expect(fetch).toHaveBeenNthCalledWith(
+      3,
+      expect.stringMatching(/\/api\/career-requests\/state$/),
+      expect.objectContaining({
+        headers: { "Content-Type": "application/json", "x-user-id": owner },
+      }),
+    );
   });
 
   it("shows Workshop safety and authenticity notes in the Preview", async () => {

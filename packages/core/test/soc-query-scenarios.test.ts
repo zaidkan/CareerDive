@@ -15,11 +15,10 @@ import {
 //
 // Bridge: real cybersecurity pack -> runtime datasets -> canonical query
 // engine -> deterministic results. Proves the real scenario is investigable
-// through the query system once the structured-dataset pack worker lands.
+// through the query system using the authored structured datasets.
 //
 // Rules: no "correct evidence" assertions (query behavior only); targeted
-// IDs/counts/order/history, no giant snapshots, no UI text. These tests are
-// EXPECTED RED until the concurrent pack-dataset commit lands; the A-1204
+// IDs/counts/order/history, no giant snapshots, no UI text. The A-1204
 // cluster stays skipped until its proposed content exists.
 // ---------------------------------------------------------------------------
 

@@ -7,6 +7,8 @@ export type SitePath =
   | "/how-it-works"
   | "/trust"
   | "/faq"
+  | "/privacy"
+  | "/terms"
   | "/start";
 
 export type SiteRoute =
@@ -16,6 +18,8 @@ export type SiteRoute =
   | { kind: "how-it-works" }
   | { kind: "trust" }
   | { kind: "faq" }
+  | { kind: "privacy" }
+  | { kind: "terms" }
   | { kind: "start" }
   | { kind: "not-found"; pathname: string };
 
@@ -26,6 +30,8 @@ export function parseRoute(pathname: string): SiteRoute {
   if (path === "/how-it-works") return { kind: "how-it-works" };
   if (path === "/trust") return { kind: "trust" };
   if (path === "/faq") return { kind: "faq" };
+  if (path === "/privacy") return { kind: "privacy" };
+  if (path === "/terms") return { kind: "terms" };
   if (path === "/start") return { kind: "start" };
   const match = /^\/careers\/([a-z0-9]+(?:-[a-z0-9]+)*)$/.exec(path);
   if (match?.[1] && getCareerBySlug(match[1])?.detailPublished) {

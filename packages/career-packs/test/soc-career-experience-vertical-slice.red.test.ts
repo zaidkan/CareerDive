@@ -25,8 +25,7 @@ import * as core from "@sim/core";
 // green; then rename the file off `.red.test.ts` and fold the assertion back
 // into the default slice suite.
 //
-// Canonical source: docs/superpowers/specs/soc-structured-content-pack.md and
-// docs/superpowers/specs/interactivity-and-content-depth-design.md.
+// Contracts cover SOC content depth using the default pack and core actions.
 // ---------------------------------------------------------------------------
 
 const HANDOFF = "handoff-1";

@@ -170,6 +170,7 @@ it.each(["sim", "briefing"])(
       getDebrief: vi.fn(),
     };
     render(<StartPage client={client} />);
+    fireEvent.click(screen.getByRole("button", { name: "Start your first day" }));
     fireEvent.click(
       await screen.findByRole("button", { name: /Security Operations/i }, { timeout: 6000 }),
     );

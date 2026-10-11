@@ -44,12 +44,14 @@ it.each(["desk"] as const)(
     expect(button).toHaveAttribute("data-action-id", "search_knowledge_base");
     expect(button).toHaveAttribute("data-event-id", event.id);
     expect(button).toBeDisabled();
-    fireEvent.change(screen.getByRole("searchbox", { name: "Find a guide" }), {
-      target: { value: "vpn" },
+    const guide = view.artifacts.find(a => a.id === "vpn-context-1");
+    if (!guide) throw new Error("Missing VPN guide");
+    fireEvent.change(screen.getByRole("combobox", { name: "Find a guide" }), {
+      target: { value: guide.title },
     });
     expect(button).toBeEnabled();
     fireEvent.click(button);
-    expect(onAction).toHaveBeenCalledWith(action, "vpn");
+    expect(onAction).toHaveBeenCalledWith(action, guide.title);
     expect(screen.queryByText(/V-218 maps to exit/)).toBeNull();
   },
 );

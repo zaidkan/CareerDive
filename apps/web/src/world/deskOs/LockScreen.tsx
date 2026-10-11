@@ -57,8 +57,8 @@ export function LockScreen({
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState<string>();
   const [now, setNow] = useState(() => new Date());
-  const userRef = useRef<HTMLInputElement>(null);
-  const passRef = useRef<HTMLInputElement>(null);
+  const userRef = useRef<HTMLSelectElement>(null);
+  const passRef = useRef<HTMLSelectElement>(null);
   const slipRef = useRef<HTMLElement>(null);
   const timerRef = useRef<number | undefined>(undefined);
   const curtainTimerRef = useRef<number | undefined>(undefined);
@@ -225,7 +225,7 @@ export function LockScreen({
             >
               <div className="login-field">
                 <label htmlFor="desk-os-login-user">Username</label>
-                <input
+                <select
                   aria-describedby={error ? "desk-os-login-error" : undefined}
                   aria-invalid={error ? true : undefined}
                   autoComplete="username"
@@ -235,14 +235,16 @@ export function LockScreen({
                     setUser(e.target.value);
                   }}
                   ref={userRef}
-                  type="text"
                   value={user}
-                />
+                >
+                  <option value={DESK_LOGIN.username}>{DESK_LOGIN.username}</option>
+                  <option value="visitor@verdaly.local">Visitor workstation profile</option>
+                </select>
               </div>
               <div className="login-field">
                 <label htmlFor="desk-os-login-pass">Password</label>
                 <div className="login-pass-row">
-                  <input
+                  <select
                     aria-describedby={error ? "desk-os-login-error" : undefined}
                     aria-invalid={error ? true : undefined}
                     autoComplete="current-password"
@@ -252,9 +254,12 @@ export function LockScreen({
                       setPass(e.target.value);
                     }}
                     ref={passRef}
-                    type={showPass ? "text" : "password"}
                     value={pass}
-                  />
+                  >
+                    <option value="">Choose an issued code</option>
+                    <option value={DESK_LOGIN.password}>{showPass ? DESK_LOGIN.password : "Provisioning slip code"}</option>
+                    <option value="Visitor!">{showPass ? "Visitor!" : "Visitor code"}</option>
+                  </select>
                   <button
                     aria-label={showPass ? "Hide password" : "Show password"}
                     aria-pressed={showPass}

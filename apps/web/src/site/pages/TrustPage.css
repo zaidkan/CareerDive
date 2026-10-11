@@ -167,15 +167,15 @@
 .trust-access-lines p {
   margin-bottom: 0;
 }
-.trust-ai .ui-editorial-split {
+.trust-dialogue .ui-editorial-split {
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
 }
-.trust-ai-boundary {
+.trust-dialogue-boundary {
   padding: clamp(2rem, 4vw, 4rem);
   background: var(--ui-surface-c);
   border-top: 1px solid var(--action-primary);
 }
-.trust-ai-boundary span {
+.trust-dialogue-boundary span {
   display: block;
   margin-bottom: 2.5rem;
   color: var(--text-muted);
@@ -183,19 +183,19 @@
   letter-spacing: 0.07em;
   text-transform: uppercase;
 }
-.trust-ai-boundary strong {
+.trust-dialogue-boundary strong {
   display: block;
   max-width: 13ch;
   color: var(--text-primary);
   font: 700 clamp(1.7rem, 3vw, 3.2rem)/1.15 var(--font-display);
   letter-spacing: -0.025em;
 }
-.trust-ai-boundary p {
+.trust-dialogue-boundary p {
   max-width: 34ch;
   margin: 1.5rem 0 0;
   font-size: 0.94rem;
 }
-.trust-ai .ui-editorial-split > div:last-child > p {
+.trust-dialogue .ui-editorial-split > div:last-child > p {
   max-width: 58ch;
 }
 .trust-no-score h2 {
@@ -281,7 +281,7 @@
   .trust-hero,
   .trust-section-head,
   .trust-controls .ui-editorial-split,
-  .trust-ai .ui-editorial-split {
+  .trust-dialogue .ui-editorial-split {
     grid-template-columns: 1fr;
   }
   .trust-hero-note {

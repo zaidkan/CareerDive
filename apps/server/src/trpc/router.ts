@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import type { LlmProvider } from "@sim/ai";
 import {
   applyAction,
   applyTaskAttempt,
@@ -10,7 +9,6 @@ import {
   toClientView,
 } from "@sim/core";
 import { buildDebrief, evidenceFromAction } from "@sim/evidence";
-import { deterministicInputSafety, validateUserFacingText } from "@sim/safety";
 import {
   ClientViewSchema,
   DebriefSchema,
@@ -28,7 +26,6 @@ import {
 } from "@sim/schemas";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { generateSafeNpcReply } from "../ai/npc-dialogue.js";
 import { getDefaultCareerPack } from "../career-pack.js";
 import { EvidenceNotFoundError } from "../domain/errors.js";
 import {
@@ -51,8 +48,6 @@ import {
 export function createAppRouter(
   repository: SimulationRepository,
   options: {
-    llmProvider?: LlmProvider;
-    aiBudgetUsd?: number;
     careerPack?: CareerPack;
     requireCreateRequestId?: boolean;
   } = {},
@@ -389,47 +384,7 @@ export function createAppRouter(
           await repository.saveSession(session);
           return { view: toClientView(session.state), sequence };
         }),
-      submitFreeText: authenticatedProcedure
-        .input(SessionIdSchema.extend({ text: z.string().max(2_000) }))
-        .output(
-          z.object({
-            accepted: z.boolean(),
-            response: z.string(),
-          }),
-        )
-        .mutation(async ({ ctx, input }) => {
-          const session = await repository.getSession(
-            ctx.userId,
-            input.sessionId,
-          );
-          const safety = deterministicInputSafety(input.text);
-          if (!safety.allowed) {
-            return {
-              accepted: false,
-              response: safety.fallback ?? "That input cannot be used here.",
-            };
-          }
-          if (options.llmProvider) {
-            const reply = await generateSafeNpcReply({
-              provider: options.llmProvider,
-              state: session.state,
-              npcId: "manager",
-              userText: input.text,
-              budgetUsd:
-                options.aiBudgetUsd ?? careerPack.scenario.maxAiCostUsd,
-            });
-            return {
-              accepted: reply.source === "generated",
-              response: reply.dialogue,
-            };
-          }
-          return {
-            accepted: true,
-            response: validateUserFacingText(
-              "Morgan recommends reviewing available evidence and documenting uncertainty before deciding.",
-            ),
-          };
-        }),
+
     }),
     reflection: t.router({
       submit: authenticatedProcedure
@@ -439,8 +394,7 @@ export function createAppRouter(
             eventId: z.string(),
             enjoyment: z.enum(["draining", "neutral", "energizing"]),
             confidence: z.enum(["uncertain", "comfortable"]),
-            note: z.string().max(2_000).optional(),
-          }),
+          }).strict(),
         )
         .output(ReflectionSchema)
         .mutation(async ({ ctx, input }) => {
@@ -450,7 +404,6 @@ export function createAppRouter(
             eventId: input.eventId,
             enjoyment: input.enjoyment,
             confidence: input.confidence,
-            ...(input.note === undefined ? {} : { note: input.note }),
             createdAt: new Date().toISOString(),
           });
           return repository.submitReflection(ctx.userId, reflection);

@@ -31,19 +31,31 @@ const FAQS: Faq[] = [
   },
   {
     q: "Can teachers or career counselors use CareerDive?",
-    a: "Yes. Teachers and career counselors can use the short simulation as a starting point for career exploration and discussion. Students try the work, then discuss what interested them, what felt difficult, and what they would like to explore next.",
+    a: "CareerDive is currently for individual exploration by people 13 or older. School and institutional accounts, enrollment, and classroom management are not enabled. It is not presented as a school assessment or as FERPA- or COPPA-certified.",
   },
   {
     q: "What if something doesn’t load, or I get stuck?",
     a: "If something doesn't load, CareerDive can retry the shift, check compatibility, offer a fallback recovery path, and let you report the problem directly. Keyboard support and reduced motion are available. On the shift screen, use Retry starting shift when offered, or Report a problem. If the office cannot open, a compatibility check can offer the recovery workstation. If report delivery is unavailable, your draft stays during this tab session; use Copy report details or retry delivery later.",
   },
   {
-    q: "If I write about how I felt, who sees it?",
-    a: "Submitted reflections are stored with your shift on the server and protected by identity and owner checks. They are not published or sent to employers. Public sharing links are not currently available.",
+    q: "What happens if I submit a reflection?",
+    a: "Reflections save your selected enjoyment and confidence choices with your anonymous shift; there is no free-text reflection field. API authentication and owner checks separate visitors' saved data. Service operators and hosting/database providers may process it to run and support CareerDive. It is not posted publicly or sent to employers. Public sharing links are not offered at launch.",
   },
   {
-    q: "Does AI decide what happens in the simulation?",
-    a: "No. CareerDive defines the scenario, allowed information, and outcomes. Where AI-assisted dialogue is used, it works inside those strict constraints. It does not get to invent scenario facts or independently change the simulation outcome.",
+    q: "How long is my simulation saved?",
+    a: "Automatic cleanup deletes simulation sessions older than 90 days and their associated activity, observations, and reflections. Database-backed servers run it at startup and hourly; outages can delay cleanup. Support reports, authentication records, and provider logs are handled separately. Clearing browser storage does not itself delete server records.",
+  },
+  {
+    q: "Do I need an account, and is anything tracked?",
+    a: "No name, email, or manual signup is needed for the simulation. CareerDive uses a browser-based Supabase anonymous identity to save and resume your data; anonymous use does not mean no data is collected. Optional analytics and PostHog are off at launch. CareerDive does not sell personal information. Render and Supabase process ordinary operational and network information, including IP addresses and logs; fonts are served from CareerDive itself.",
+  },
+  {
+    q: "Who can start a shift?",
+    a: "CareerDive is intended for people 13 or older. By clicking Start, you confirm that you are at least 13 and agree to the Terms and Privacy Policy. CareerDive does not verify your age.",
+  },
+  {
+    q: "How are dialogue and outcomes determined?",
+    a: "CareerDive uses prewritten dialogue. Its deterministic rules define the scenario, allowed information, and outcomes. Conversations cannot invent scenario facts or independently change the simulation outcome.",
   },
   {
     q: "What does “Taking shape” mean?",

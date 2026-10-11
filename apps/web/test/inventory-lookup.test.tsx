@@ -27,10 +27,10 @@ it.each(["visual"] as const)("finds an exact device before and after canonical o
     };
     const { rerender } = render(tree());
     const lookup = within(screen.getByRole("region", { name: "Device inventory lookup" }));
-    const query = lookup.getByRole("searchbox", {
+    const query = lookup.getByRole("combobox", {
         name: "Find an exact device",
     });
-    await user.type(query, "unknown-laptop-17");
+    await user.selectOptions(query, "unknown-laptop-17");
     expect(lookup.getByRole("heading", { name: "Device inventory · j.patel" })).toBeVisible();
     const preview = toClientView(state).artifacts.find(({ id }) => id === "device-inventory-1");
     expect(preview).toMatchObject({
@@ -49,18 +49,13 @@ it.each(["visual"] as const)("finds an exact device before and after canonical o
     const opened = toClientView(state).artifacts.find(({ id }) => id === "device-inventory-1");
     expect(opened?.observed).toBe(true);
     expect(opened?.body).toContain("no enrollment or MDM check-in record");
-    await user.clear(query);
-    await user.type(query, " UNKNOWN-LAPTOP-17 ");
-    expect(lookup.getByRole("heading", { name: "Device inventory · j.patel" })).toBeVisible();
-    for (const invalid of [
-        "unknown-laptop",
-        "unknown-laptop-170",
-        "enrolled",
-        "j.patel",
-    ]) {
-        await user.clear(query);
-        await user.type(query, invalid);
-        expect(lookup.queryByRole("heading", { name: "Device inventory · j.patel" })).toBeNull();
-        expect(lookup.getByRole("status")).toHaveTextContent("No inventory records match");
+    expect(lookup.queryByRole("searchbox")).toBeNull();
+    for (const invalid of ["unknown-laptop", "unknown-laptop-170", "enrolled", "j.patel"]) {
+        expect(lookup.queryByRole("option", { name: (name) => name === invalid })).toBeNull();
     }
+    await user.selectOptions(query, "");
+    expect(query).toHaveValue("");
+    await user.selectOptions(query, "unknown-laptop-17");
+    expect(lookup.getByRole("heading", { name: "Device inventory · j.patel" })).toBeVisible();
+    expect(onOpen).toHaveBeenCalledTimes(1);
 });

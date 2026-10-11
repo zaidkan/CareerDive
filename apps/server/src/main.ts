@@ -1,10 +1,8 @@
-import Anthropic from "@anthropic-ai/sdk";
-import type { MessageCreateParamsNonStreaming } from "@anthropic-ai/sdk/resources/messages";
 import { SupabasePublicKeySchema } from "@sim/schemas";
-import { AnthropicLlmProvider } from "@sim/ai";
 import { createOwnerResolver } from "./auth.js";
 import { poolerCompatibleOptions } from "./db/connection.js";
 import { verifyMigrations } from "./db/migrations.js";
+import { purgeExpiredSessions, startSessionRetention } from "./db/retention.js";
 import { healthRoutes } from "./routes/health.js";
 import { supportRoutes } from "./routes/support.js";
 import { launchRoutes } from "./routes/launch.js";
@@ -144,47 +142,31 @@ await server.register(launchRoutes, {
     else if (isProduction) throw new Error("Database unavailable");
   },
 });
+let stopRetention: (() => Promise<void>) | undefined;
+server.addHook("onReady", async () => {
+  if (!sql) return;
+  let verified = false;
+  stopRetention = startSessionRetention(
+    async () => {
+      if (!verified) {
+        await verifyMigrations(sql);
+        verified = true;
+      }
+      return purgeExpiredSessions(sql);
+    },
+    (result) => {
+      server.log.info(result, "Simulation retention cleanup completed");
+      if (result.more) server.log.warn("Simulation retention backlog requires another cleanup run");
+    },
+    () => { server.log.error("Simulation retention cleanup failed; next hourly run will retry"); },
+  );
+});
 server.addHook("onClose", async () => {
+  await stopRetention?.();
   await sql?.end({ timeout: 5 });
 });
-const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
-const llmProvider = anthropicApiKey
-  ? new AnthropicLlmProvider(
-      {
-        messages: {
-          create: async (request: unknown) => {
-            const client = new Anthropic({ apiKey: anthropicApiKey });
-            const response = await client.messages.create(
-              request as MessageCreateParamsNonStreaming,
-            );
-            return {
-              content: response.content.map((block) =>
-                block.type === "tool_use"
-                  ? {
-                      type: "tool_use" as const,
-                      name: block.name,
-                      input: block.input,
-                    }
-                  : { type: block.type },
-              ),
-              usage: {
-                input_tokens: response.usage.input_tokens,
-                output_tokens: response.usage.output_tokens,
-              },
-            };
-          },
-        },
-      },
-      {
-        inputUsdPerMillion: 3,
-        outputUsdPerMillion: 15,
-      },
-    )
-  : undefined;
 const appRouter = createAppRouter(repository, {
-  ...(llmProvider ? { llmProvider } : {}),
   requireCreateRequestId: isProduction,
-  aiBudgetUsd: Number(process.env.AI_SESSION_BUDGET_USD ?? 0.05),
 });
 
 await server.register(fastifyTRPCPlugin, {

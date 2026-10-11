@@ -1,83 +1,80 @@
 # CareerDive
 
-Bounded career-exploration beta centered on ordinary Junior Cybersecurity Analyst work. Deterministic TypeScript core owns state, time, rules, consequences, evidence, and NPC knowledge. AI may generate validated dialogue only.
+CareerDive is a career-exploration beta where people try selected workplace
+tasks instead of only reading job descriptions. The current playable
+experience is a Junior Cybersecurity Analyst shift in Verdaly Technologies,
+a fictional workplace. Other careers appear as Workshop previews; they do
+not yet have playable simulations.
+
+The shift combines a 3D office with Desk OS tools for email, alerts, record
+search, inventory, tickets, and team communication. Players review evidence,
+work within approval boundaries, document uncertainty, and hand off findings.
+CareerDive is a short exploration of selected tasks, not a complete account
+of an occupation or a career-fit score.
 
 ## Local development
 
-Requires Node 24 and pnpm 11.
+Requires **Node.js 24 or newer** and **pnpm 11**. The exact pnpm version is
+pinned in `package.json`.
 
 ```bash
-cp .env.example .env
-pnpm install
+pnpm install --frozen-lockfile
 pnpm dev
 ```
 
-Exact start command: **`pnpm dev`**.
-
-| Service | URL |
-|---|---|
-| Web | `http://localhost:5173` |
+| Service | Address |
+| --- | --- |
+| Web client | `http://localhost:5173` |
 | API health | `http://localhost:3001/health` |
-| Session/tRPC | `http://localhost:3001/trpc` |
+| tRPC API | `http://localhost:3001/trpc` |
 
-After both processes are up, optionally verify:
+After startup, verify the local services with `pnpm check:dev`. Open the web
+client, choose the Cybersecurity Analyst room from the start page, and enter
+the workplace. At the workstation, use the in-sim Desk OS login to open the shift's tools.
 
-```bash
-pnpm check:dev
-```
-
-### Port collisions (fail fast)
-
-CareerDive local dev is intentionally **strict** about ports:
-
-- Web must bind **5173** (`strictPort`). Vite will **not** silently fall back to 5174/5175.
-- API must bind **3001**. A second stack or stale process fails with `EADDRINUSE` and a recovery hint.
-- Development CORS only allows `http://localhost:5173` and `http://127.0.0.1:5173` — a jumped web port cannot create sessions.
-
-**How to recognize a collision**
-
-- Vite exits immediately with a port-in-use error for 5173 (instead of printing a different port).
-- Server logs `API port 3001 is already in use (EADDRINUSE)` and exits non-zero.
-- Do not start a second `pnpm dev` while one is already running.
-
-**Inspect a holder (do not auto-kill):**
+Ports 5173 and 3001 must be free. Vite uses a strict port; development CORS
+allows `http://localhost:5173` and `http://127.0.0.1:5173`. A second stack
+fails instead of silently choosing another port. To inspect a port holder:
 
 ```bash
 lsof -nP -iTCP:5173 -sTCP:LISTEN
 lsof -nP -iTCP:3001 -sTCP:LISTEN
 ```
 
-Stop only the process you recognize (stale Vite/tsx from a previous session).
+Stop only a process you recognize before restarting the stack.
 
-## Current playable shift
+Local development works without `DATABASE_URL`, using a process-local
+in-memory repository. Production requires a PostgreSQL connection and
+Supabase authentication configuration. The [environment contract](docs/ops/environment-contract.md)
+documents server variables and public web build variables. `.env.example`
+is a configuration reference; the root development command does not load
+that file automatically. Supply variables through the process environment.
 
-**CareerDive simulates actually doing ordinary career work, not answering questions about work.**
+## Architecture
 
-One assessed session per run: landing → arrival film → **Begin your first day** → 3D workplace → walk to your workstation → Desk OS. There are no practice/tutorial shifts and no user-facing product modes; an in-experience accessibility recovery path exists only for navigation/WebGL failure.
+CareerDive is a TypeScript monorepo managed by pnpm workspaces and Turborepo.
 
-Canonical systems: **Alert Dashboard · Email · Ticket Queue · Knowledge Base · Team Chat**. Canonical events on `zaidkan/product-experimental` (pack `cybersecurity_analyst@1.0.0`):
+| Location | Responsibility |
+| --- | --- |
+| `apps/web` | React 19 and Vite web client; Three.js and React Three Fiber workplace rendering; public career pages and accessible recovery workspace |
+| `apps/server` | Fastify and tRPC API; authenticated session ownership, PostgreSQL persistence through Drizzle, and Supabase Auth integration |
+| `packages/core` | Deterministic state transitions, task rules, scheduling, queries, and replay |
+| `packages/schemas` | Shared Zod schemas and typed contracts |
+| `packages/career-packs` | Loading and validation of authored career packs |
+| `packages/safety` | Validation of user-facing text and exploration guardrails |
+| `packages/evidence` and `packages/pathways` | Evidence records and career pathway data |
+| `packages/testing` | Shared simulation verification and renderer parity contracts |
+| `packages/video` | Remotion compositions rendered to media files separately from the web runtime |
+| `content/packs` | Authored career scenarios, records, tasks, and review metadata |
 
-- **Incomplete shift handoff** (`handoff-1`, Email + Team Chat) — read the handoff email, identify the unfinished device check and missing scanner reference, confirm priority with Morgan.
-- **Suspicious-login investigation** (`suspicious-login-1`, A-1042) — review the alert timeline, isolate device/network clues, compare the account baseline (HQ Wi-Fi + enrolled MacBook vs. unknown Windows laptop + residential ISP), test the VPN route explanation (S-0731/V-218 at `198.51.100.20` vs. S-0741 at `203.0.113.44` without a VPN ID), match `unknown-laptop-17` in inventory, incorporate the employee reply and travel-record coverage limit, then build the ticket (evidence → uncertainty → route comparison → collection limits → next step) and escalate.
-- **Routine scanner interruption** (`routine-alert-1`, A-1180, arrives ~25m in) — triage the new low-priority alert, match it to the approved scanner window (`vuln-scan-03`, finance, Mon 10:00–12:00) and recorded run (`RUN-FIN-031`, `SCAN-FIN-MON`), distinguish recorded event time (Mon 10:18) from queue-arrival time, document scope/coverage, and close as expected.
+The server's deterministic core owns simulation state, time, consequences,
+evidence, and available knowledge. Replaying the same seed and interaction
+log produces the same state. Workplace dialogue is prewritten and selected by deterministic rules. The
+browser renders the authorized client projection and submits typed actions.
 
-Work is deterministic and replayable (same seed + same interaction log = same state). Dismissing the login without escalation can create a **delayed consequence** (`delayMinutes: 40`, `escalateOnApply`) while later work is underway; break-room work and idle time never change evidence. Manager guidance is procedural only and cannot change canonical outcomes.
+## Scripts and verification
 
-The break-room loop is also deterministic: the fridge has finite snack bars (2), each carried bar has three bites, and coffee follows start → finish → pour → drink (2 servings). Energy changes only through canonical work and these finite resources; it never drains while idle and there is no automatic collapse or refill loop. If energy is exhausted, the one-time manager recovery is the only fallback (and it does not create a refill loop).
-
-> **Not live on this branch:** employee phishing report, quarantine/message actions, and other phishing artifacts remain quarantined (Phase 1 R1) and are not offered by any progression; calm false-positive review beyond the current `routine_alert_review` scanner path is not a live scenario. Those remain future content and must not be presented as playable.
-
-## Manual acceptance route
-
-After `pnpm dev`, open `http://localhost:5173`, play the arrival film, begin
-your first day (one assessed session), walk the 3D office to your workstation,
-log in to Desk OS, then read and acknowledge the handoff, investigate the
-suspicious login, handle the optional routine scanner interruption, take one
-break (snack or coffee and Jules), document the ticket, escalate, and wrap up.
-
-Without `DATABASE_URL`, server uses in-memory repository for local development. Production requires Supabase URL, anon key, and Postgres connection string.
-
-## Verification
+Run the default checks from the repository root:
 
 ```bash
 pnpm lint
@@ -86,38 +83,50 @@ pnpm test
 pnpm build
 ```
 
-Paid AI reliability tests use separate config and do not run through normal test command:
+| Command | Purpose |
+| --- | --- |
+| `pnpm dev` | Start the web and API development services |
+| `pnpm check:dev` | Check local ports and API connectivity |
+| `pnpm check:product-contract` | Validate the single-experience product contract |
+| `pnpm test` | Run the default Vitest regression suite |
+| `pnpm test:red` | Run separate development contracts for unimplemented capabilities; failures may be intentional |
+| `pnpm test:golden-path` | Start the local web/API services and run Playwright browser checks |
+| `pnpm capture:product-media` | Capture product images using the local browser harness |
+| `pnpm build` | Build workspace packages and the production web client |
 
-```bash
-pnpm vitest run --config vitest.ai.config.ts
-```
+Browser checks and media capture require Playwright's browsers; media capture
+also requires `cwebp`. Keep ports 5173 and 3001 free before running
+`pnpm test:golden-path`. Ordinary development and the default tests do not require cloud credentials.
 
 ## Privacy and deployment
 
 - The database migration defines owner-scoped RLS for reflections. Live enforcement depends on deployed roles and configuration.
 - Sharing grants require a recipient and expiry in the API; no public self-service sharing control is wired.
 - Default policy data marks institutional use unavailable; the current entry path does not enforce a school-use gate.
-- Apply `apps/server/drizzle/0001_initial.sql`, `0002_decision_reviews.sql`, then `0003_decision_option_set.sql` to the deployment database before production.
-- `0002_decision_reviews.sql` is repeatable; `0003_decision_option_set.sql` depends on it. Missing review storage leaves core shift completion intact and hides community comparison.
-- Debrief browser QA uses `apps/server/test/debrief-browser-server.ts` to seed prior shift work, then performs the real final completion in Chromium. Start that server with `PORT=3008 pnpm --filter @sim/server exec tsx test/debrief-browser-server.ts`, start Vite with `VITE_SERVER_URL=http://127.0.0.1:3008 pnpm --filter @sim/web exec vite --host 127.0.0.1 --port 5178 --strictPort`, then run `DEBRIEF_BROWSER_FIXTURE=1 WEB_ORIGIN=http://127.0.0.1:5178 pnpm exec playwright test apps/web/e2e/debrief.spec.ts`.
-- For assessed-entry browser QA when port 5173 is occupied, start the same test router unseeded with `ASSESSED_BROWSER_FIXTURE=1 PORT=3018 pnpm --filter @sim/server exec tsx test/debrief-browser-server.ts`, start Vite with `VITE_SERVER_URL=http://127.0.0.1:3018 pnpm --filter @sim/web exec vite --host 127.0.0.1 --port 5218 --strictPort`, then run `WEB_ORIGIN=http://127.0.0.1:5218 API_ORIGIN=http://127.0.0.1:3018 pnpm exec playwright test apps/web/e2e/golden-path.spec.ts`.
-- Render blueprint lives in `render.yaml`.
 
-See `docs/validation-gate.md` before any 3D or second-career work.
+Production deployment uses the Docker services in `render.yaml`. Before
+applying migrations to an explicitly selected database, inspect the
+checksummed plan:
 
-## Brand and repository activation
+```bash
+pnpm --filter @sim/server db:plan
+```
 
-The platform is **CareerDive**. **Verdaly** remains the fictional workplace
-inside the Cybersecurity Analyst simulation.
+The migration runner provides `db:migrate` and `db:verify` for that selected
+database. It requires `DATABASE_URL`; the plan command does not connect.
+See the [environment contract](docs/ops/environment-contract.md) for
+build-time origins, runtime configuration, and the web/API boundary.
 
-The GitHub repository is `https://github.com/zaidkan/CareerDive`.
-The local checkout directory and registered git remote still use `Career-Expo`.
-The owner can update the remote URL and rename the local checkout separately,
-after accounting for its registered worktrees. This change does not rename
-GitHub repositories, rewrite git remotes, or move any local directories.
+## Documentation and contribution
 
-`https://careerdive.example.com` is a placeholder, not a production domain.
-Set `SITE_ORIGIN` to the real origin when building for deployment.
-Existing `career-expo-*`, `career-expo.*`, and `career-expo:*` browser-storage
-keys remain stable so saved shifts, pending requests, preferences, and support
-drafts survive the rebrand. Package namespaces (`@sim/*`) also remain stable.
+- [Contributing](CONTRIBUTING.md): setup, conventions, and verification.
+- [Public career content](docs/content/public-career-content-packet.md): published career data and source references.
+- [First-shift content map](docs/content/cybersecurity-first-shift-map.md): cybersecurity workplace situations and their learning boundaries.
+- [Art direction](docs/ui-1-art-direction.md): interface tokens and reusable visual components.
+- [Visual verification](docs/ui-visual-freeze-checklist.md): browser and presentation checks.
+- [Validation gate](docs/validation-gate.md): criteria for expanding the product.
+- [Incident response](docs/incidents.md): operational incident playbooks.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

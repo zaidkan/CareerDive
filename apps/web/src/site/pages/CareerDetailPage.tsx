@@ -1,3 +1,4 @@
+import { StartLink } from "../StartConsent.js";
 import { availabilityLabel } from "../../careers/publicCopy.js";
 import type { PublicCareer } from "../../careers/types.js";
 import { CyberDetail } from "../careers/CyberDetail.js";
@@ -21,9 +22,9 @@ export function CareerDetailPage({ career }: { career: PublicCareer }) {
         <p className="lede">{career.shortSummary}</p>
         <p>{career.workplaceSummary}</p>
         {career.simulationRoute ? (
-          <SiteLink className="start-shift" to={career.simulationRoute}>
+          <StartLink className="start-shift">
             Start your first day
-          </SiteLink>
+          </StartLink>
         ) : null}
       </header>
       <section className="page-section" aria-labelledby="career-work-title">

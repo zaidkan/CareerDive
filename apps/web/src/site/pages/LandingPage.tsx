@@ -1,3 +1,4 @@
+import { StartLink } from "../StartConsent.js";
 import {
   availabilityLabel,
   FIRST_SHIFT_DURATION_COMPACT,
@@ -231,10 +232,10 @@ export function LandingPage() {
                 reasoning against the evidence—not a quiz score.
               </p>
               <div className="home-hero-actions">
-                <SiteLink className="start-shift v2-primary" to="/start">
+                <StartLink className="start-shift v2-primary">
                   {startLabel}
                   <span aria-hidden="true"> ↗</span>
-                </SiteLink>
+                </StartLink>
                 <SiteLink className="v2-text-link" to="/careers">
                   Career and previews <span aria-hidden="true">→</span>
                 </SiteLink>
@@ -525,10 +526,10 @@ export function LandingPage() {
               Try the work before investing in the path. Free, with no application.
             </p>
             <div className="home-final-actions">
-              <SiteLink className="start-shift v2-primary" to="/start">
+              <StartLink className="start-shift v2-primary">
                 {startLabel}
                 <span aria-hidden="true"> ↗</span>
-              </SiteLink>
+              </StartLink>
               <SiteLink className="v2-text-link" to="/careers">
                 Career and previews <span aria-hidden="true">→</span>
               </SiteLink>

@@ -1,16 +1,16 @@
 # Incident Playbooks
 
-## LLM provider outage
+## Authentication or database outage
 
-1. Confirm deterministic actions remain available.
-2. Verify all open dialogue uses approved fallback.
-3. Disable open-ended dialogue feature flag if failures persist.
-4. Review telemetry; never replay unvalidated provider output.
+1. Confirm which service is unavailable and check readiness.
+2. Preserve saved session ownership; do not create replacement identities.
+3. Restore service connectivity and retry the affected request.
+4. Verify session ownership and resume behavior after recovery.
 
 ## Restricted-fact leakage
 
 1. Disable affected NPC/pack dialogue immediately.
-2. Preserve redacted trace IDs, model role, pack version, and validator result.
+2. Preserve redacted trace IDs, pack version, and validation result.
 3. Delete exposed raw text under retention policy.
 4. Add adversarial regression case before re-enabling.
 
@@ -19,7 +19,7 @@
 1. Remove output from user-visible history where legally and technically permitted.
 2. Route safety concern through approved escalation procedure.
 3. Identify failed layer and add invariant test.
-4. Narrow generation scope until reliability threshold passes.
+4. Narrow affected content until reliability checks pass.
 
 ## Data-access failure
 

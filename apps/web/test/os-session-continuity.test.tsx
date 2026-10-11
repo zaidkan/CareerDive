@@ -157,7 +157,7 @@ it("restores the authenticated tool, case, and scratchpad after stand, leave, re
     screen.getByRole("heading", { name: "Sign in to Verdaly" }),
   ).toBeVisible();
   expect(screen.getByLabelText("Username")).toHaveValue(DESK_LOGIN.username);
-  await user.type(screen.getByLabelText("Password"), DESK_LOGIN.password);
+  await user.selectOptions(screen.getByLabelText("Password"), DESK_LOGIN.password);
   await user.click(screen.getByRole("button", { name: "Sign in" }));
   expect(
     await screen.findByRole("navigation", { name: "Workstation tools" }),
@@ -165,7 +165,7 @@ it("restores the authenticated tool, case, and scratchpad after stand, leave, re
   expect(onLogin).toHaveBeenCalledTimes(1);
   await user.click(screen.getByRole("button", { name: "Tickets" }));
   await user.click(screen.getByText("Personal scratchpad (optional)"));
-  await user.type(
+  await user.selectOptions(
     screen.getByLabelText("Scratch notes"),
     "Check the device label",
   );

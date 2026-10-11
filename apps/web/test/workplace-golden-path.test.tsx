@@ -755,8 +755,8 @@ describe("rendered workplace golden path", () => {
       await perform("review_alert", suspicious);
       await perform("inspect_login_context", suspicious);
       await openSystem("knowledge_base");
-      await user.type(
-        screen.getByRole("searchbox", { name: "Find an exact device" }),
+      await user.selectOptions(
+        screen.getByRole("combobox", { name: "Find an exact device" }),
         "unknown-laptop-17",
       );
       await activate(
@@ -772,9 +772,9 @@ describe("rendered workplace golden path", () => {
       await activate(screen.getByRole("button", { name: "Handle now" }));
       await perform("review_alert", routine);
       await openSystem("knowledge_base");
-      await user.type(
-        screen.getByRole("searchbox", { name: "Find a guide" }),
-        "scanner",
+      await user.selectOptions(
+        screen.getByRole("combobox", { name: "Find a guide" }),
+        required(toClientView(state).artifacts.find(a => a.id === "scanner-window"), "scanner guide").title,
       );
       await activate(
         required(
@@ -791,7 +791,7 @@ describe("rendered workplace golden path", () => {
       await perform("dismiss_alert", routine);
       await perform("inspect_account_history", suspicious);
       await perform("check_device_inventory", suspicious);
-      // Sol content coverage: access request, login help, Morgan status check.
+      // Workplace content coverage: access request, login help, Morgan status check.
       await perform("route_access_request", "access-request-1");
       await perform("resolve_login_help", "login-help-1");
       await perform("send_status_update", "status-check-1");
@@ -822,7 +822,7 @@ describe("rendered workplace golden path", () => {
         "do not identify who used the unfamiliar laptop",
       );
       await perform("escalate_alert", suspicious);
-      // Sol content coverage: end-of-shift handoff before complete.
+      // Workplace content coverage: end-of-shift handoff before complete.
       await perform("submit_shift_handoff", "shift-handoff-1");
       await verifyAvailableTargets();
       await perform("complete_shift", "shift");

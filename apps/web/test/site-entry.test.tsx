@@ -33,6 +33,7 @@ afterEach(() => {
   vi.restoreAllMocks();
   try {
     window.sessionStorage.removeItem("first-shift-start-gate");
+    window.sessionStorage.removeItem("careerdive-start-consent");
   } catch {
     // Storage unavailable in this environment.
   }
@@ -341,9 +342,7 @@ describe("site routes", () => {
     );
     window.history.pushState(null, "", "/");
     render(<SiteApp />);
-    const cta = screen.getAllByRole("link", {
-      name: /start your first day/i,
-    })[0];
+    const cta = document.querySelector<HTMLAnchorElement>('.home-hero a[href="/start"]');
     if (!cta) throw new Error("hero start CTA missing");
     fireEvent.click(cta);
     expect(
@@ -381,6 +380,7 @@ describe("site routes", () => {
       getDebrief: vi.fn(),
     };
     render(<StartPage client={client} />);
+    fireEvent.click(screen.getByRole("button", { name: "Start your first day" }));
     expect(
       await screen.findByRole("heading", {
         name: /head to security operations/i,
@@ -416,6 +416,7 @@ describe("site routes", () => {
       getDebrief: vi.fn(),
     };
     render(<StartPage client={client} />);
+    fireEvent.click(screen.getByRole("button", { name: "Start your first day" }));
     expect(
       await screen.findByRole("heading", {
         name: /head to security operations/i,
@@ -447,6 +448,7 @@ describe("site routes", () => {
     };
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
     render(<StartPage client={client as any} />);
+    fireEvent.click(screen.getByRole("button", { name: "Start your first day" }));
     // legacy "briefing" now maps directly to sim — no intermediate page.
     expect(
       screen.queryByRole("heading", { name: /you are at the doors/i }),

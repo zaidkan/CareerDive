@@ -1,3 +1,4 @@
+import { SiteLink } from "../SiteLink.js";
 import {
   ArtifactStage,
   ChapterSeparator,
@@ -14,8 +15,7 @@ export function TrustPage() {
           CareerDive is the platform. Verdaly is just a fictional workplace inside the Cybersecurity Analyst simulation—it does not collect any data. Here is what CareerDive currently saves, what it checks, and where its limits are.
         </p>
         <p className="trust-hero-note">
-          This is a product summary from current code, not a legal policy or a
-          promise about every deployment.
+          CareerDive is for people 13 or older. Clicking Start confirms that you meet that age requirement and agree to the <SiteLink to="/terms">Terms</SiteLink> and <SiteLink to="/privacy">Privacy Policy</SiteLink>.
         </p>
       </header>
 
@@ -25,7 +25,7 @@ export function TrustPage() {
           <h2 id="trust-kept">What we keep</h2>
           <p>
             CareerDive needs a record of the shift to resume work and explain
-            the debrief. Optional reflections are saved only when submitted.
+            the debrief. Optional reflections save your selected enjoyment and confidence choices when submitted; there is no free-text reflection entry.
           </p>
         </div>
         <ArtifactStage
@@ -57,7 +57,7 @@ export function TrustPage() {
           caption="The server stores current state as well as an action log; it does not rebuild the shift from clicks alone."
         />
         <p className="trust-quiet-note">
-          There is no single fixed retention period. Depending on how CareerDive is currently running, your data may only last until the system restarts, or it may be saved so you can resume your shift later.
+          Automatic cleanup deletes simulation sessions older than 90 days and their associated activity, observations, and reflections. The database-backed server runs cleanup at startup and hourly; service outages can delay a run. Support reports, authentication records, and provider logs are handled separately. Read the <SiteLink to="/privacy">Privacy Policy</SiteLink> for details.
         </p>
       </PublicChapter>
 
@@ -71,23 +71,21 @@ export function TrustPage() {
           <div>
             <h2 id="trust-controls">Your controls</h2>
             <p>
-              The server supports exporting stored shift data, deleting one
-              shift, or deleting CareerDive session and profile records.
+              To request access or deletion, use the contact listed in the <SiteLink to="/privacy">Privacy Policy</SiteLink>. Clearing browser storage can remove your ability to resume, but does not delete stored server data.
             </p>
           </div>
           <div className="trust-control-proof">
             <p>
-              <strong>Available in code</strong>
+              <strong>Server operations</strong>
               <span>
-                Export data · delete one shift · revoke a recipient grant
+                Owner-checked export and deletion of stored shifts
               </span>
             </p>
             <p>
               <strong>Current limit</strong>
               <span>
                 These are not yet self-service controls on this public page.
-                Deleting CareerDive data does not prove deletion of an
-                identity-provider account.
+                Authentication records and hosting-provider logs are separate from saved simulation data. Public sharing links are not offered at launch.
               </span>
             </p>
           </div>
@@ -108,13 +106,13 @@ export function TrustPage() {
           <div>
             <strong>Session checks</strong>
             <p>
-              The system requires proof of the active session. It is designed to block access if someone tries to request a shift that belongs to another session.
+              The API verifies the browser's authentication token and checks the owner of each stored shift. A valid token for one visitor does not authorize access to another visitor's shift.
             </p>
           </div>
           <div>
             <strong>Data boundaries</strong>
             <p>
-              Database rules are designed to keep one session's data separate from another. Those protections depend on the deployed database configuration being applied correctly.
+              The deployed browser does not directly read or write simulation tables. The server uses a privileged database connection and enforces owner checks. People operating the service and its providers may process stored information to run and support it; anonymous use does not mean no data is collected.
             </p>
           </div>
         </div>
@@ -125,16 +123,8 @@ export function TrustPage() {
         <h2>Services involved</h2>
         <ul>
           <li>
-            Google Fonts serves the site's fonts. Loading them sends network
-            requests to Google, including your IP address.
-          </li>
-          <li>
             Supabase provides anonymous authentication and, in the production
             setup, the database for stored CareerDive data.
-          </li>
-          <li>
-            When AI dialogue is enabled, Anthropic receives the dialogue request
-            and the limited scenario context used to phrase Morgan's reply.
           </li>
           <li>
             Render is the hosting provider in our deployment configuration and
@@ -142,29 +132,27 @@ export function TrustPage() {
           </li>
         </ul>
         <p>
-          Which services are active depends on the deployment. Local development
-          can use server memory and prepared dialogue instead.
+          Hosting providers process ordinary network and operational information, including IP addresses and logs. Fonts are served by CareerDive itself. Optional analytics and PostHog are off at launch; there is no session replay or keystroke recording. CareerDive does not sell personal information.
         </p>
       </PublicChapter>
 
       <ChapterSeparator />
-      <PublicChapter surface="base" rhythm="standard" className="trust-ai">
+      <PublicChapter surface="base" rhythm="standard" className="trust-dialogue">
         <div className="ui-editorial-split ui-editorial-split--reverse">
-          <div className="trust-ai-boundary" aria-label="AI dialogue boundary">
-            <span>When AI is configured</span>
+          <div className="trust-dialogue-boundary" aria-label="Authored dialogue boundary">
+            <span>Always authored</span>
             <strong>Known facts → Morgan&apos;s reply</strong>
             <p>
-              The dialogue route returns text. It does not apply a case action
-              or change the shift state.
+              Selecting an authored dialogue choice can record an action and use shift time. The simulation's deterministic rules handle that action.
             </p>
           </div>
           <div>
-            <h2 id="trust-ai">What AI can and cannot do</h2>
+            <h2 id="trust-dialogue">How workplace dialogue works</h2>
             <p>
-              AI can help phrase Morgan&apos;s answer. CareerDive limits which scenario facts the dialogue can use. Without an AI connection, it uses a prepared line.
+              Morgan and Jules use prewritten dialogue selected by deterministic rules. Their replies stay within the scenario context they are allowed to know.
             </p>
             <p>
-              If the generated reply tries to break the rules, the game falls back to a prepared line. These checks help keep the simulation on track.
+              CareerDive has no generative-AI dialogue provider. Conversations use authored choices; scenario facts and outcomes follow the simulation's deterministic rules.
             </p>
           </div>
         </div>
@@ -215,17 +203,16 @@ export function TrustPage() {
         <details>
           <summary>See how this works</summary>
           <p>
-            Short source excerpts behind the claims above. A migration shows
-            intended database rules; it is not proof of a live deployment.
+            Source excerpts illustrate the checks described above. They do not verify the configuration of a live deployment.
           </p>
           <div className="trust-wiring-excerpts">
             <div>
-              <h3>Owner policy</h3>
-              <p>Database migration</p>
+              <h3>Owner check</h3>
+              <p>Server database query</p>
               <pre>
                 <code>
                   {
-                    "CREATE POLICY simulation_sessions_owner_all ON simulation_sessions\n  FOR ALL USING (auth.uid() = owner_id)\n  WITH CHECK (auth.uid() = owner_id);"
+                    "WHERE id = ${sessionId}::uuid AND owner_id = ${ownerId}::uuid"
                   }
                 </code>
               </pre>
@@ -242,12 +229,12 @@ export function TrustPage() {
               </pre>
             </div>
             <div>
-              <h3>AI boundary</h3>
-              <p>Character context and dialogue route</p>
+              <h3>Dialogue boundary</h3>
+              <p>Character knowledge and authored dialogue</p>
               <pre>
                 <code>
                   {
-                    "facts: Object.values(state.facts).filter((fact) =>\n  speakerMayKnow(fact, npcId),\n);"
+                    "const body = managerRecap(view, action.eventId, choice);"
                   }
                 </code>
               </pre>

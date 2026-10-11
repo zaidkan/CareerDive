@@ -857,8 +857,8 @@ section[aria-labelledby="structured-title"],
   text-transform: uppercase;
 }
 
-.notes-editor textarea,
-.kb-search input {
+.notes-editor select,
+.kb-search select {
   width: 100%;
   border: 1px solid var(--line-bright);
   background: var(--surface-base);
@@ -868,18 +868,6 @@ section[aria-labelledby="structured-title"],
   font-size: 0.95rem;
 }
 
-.notes-editor textarea {
-  min-height: 6.5rem;
-  resize: vertical;
-  background:
-    repeating-linear-gradient(
-      transparent,
-      transparent 1.45rem,
-      rgb(110 168 254 / 8%) 1.46rem
-    ),
-    var(--surface-base);
-  line-height: 1.5rem;
-}
 
 .notes-editor button,
 .kb-search button {
@@ -3547,7 +3535,7 @@ section[aria-labelledby="structured-title"],
   font-weight: 600;
 }
 
-.desk-os-login-form input {
+.desk-os-login-form select {
   padding: 0.5rem 0.6rem;
   border: 1px solid var(--line-bright);
   border-radius: 8px;
@@ -3557,7 +3545,7 @@ section[aria-labelledby="structured-title"],
   font-size: 0.85rem;
 }
 
-.desk-os-login-form input:focus {
+.desk-os-login-form select:focus {
   outline: 2px solid var(--phosphor);
   outline-offset: 1px;
   border-color: var(--phosphor);

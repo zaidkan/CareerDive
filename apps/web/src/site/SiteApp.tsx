@@ -31,6 +31,9 @@ const StartPage = lazy(() =>
 const TrustPage = lazy(() =>
   import("./pages/TrustPage.js").then((mod) => ({ default: mod.TrustPage })),
 );
+const LegalPage = lazy(() =>
+  import("./pages/LegalPage.js").then((mod) => ({ default: mod.LegalPage })),
+);
 
 /** Removed route: map to home first, then rewrite the history entry (no push, no popstate dispatch). */
 function resolveInitialRoute(pathname: string): SiteRoute {
@@ -150,6 +153,9 @@ export function SiteApp({ initialRoute }: { initialRoute?: SitePath }) {
         ) : null}
         {route.kind === "trust" ? <TrustPage /> : null}
         {route.kind === "faq" ? <FaqPage /> : null}
+        {route.kind === "privacy" || route.kind === "terms" ? (
+          <LegalPage document={route.kind} />
+        ) : null}
         {route.kind === "start" ? <StartPage /> : null}
       </Suspense>
     </SiteChrome>

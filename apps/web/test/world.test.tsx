@@ -333,7 +333,7 @@ describe("spatial presentation", () => {
     expect(
       await screen.findByRole("heading", { name: /Sign in/i }),
     ).toBeVisible();
-    await user.type(screen.getByLabelText(/^Password$/i), "FirstDay!");
+    await user.selectOptions(screen.getByLabelText(/^Password$/i), "FirstDay!");
     await user.click(screen.getByRole("button", { name: /^Sign in$/i }));
     expect(
       await screen.findByRole(

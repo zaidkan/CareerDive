@@ -9,7 +9,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import {
   applyWorkplaceInteraction,
@@ -18,6 +18,7 @@ import {
 } from "@sim/core";
 import { HttpSimulationClient } from "../src/client.js";
 import { StartPage } from "../src/site/pages/StartPage.js";
+import { createBrowserStorage } from "./helpers/browserStorage.js";
 
 vi.mock("../src/world/RoomCanvas.js", () => ({
   RoomCanvas: ({
@@ -54,10 +55,20 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
     );
   },
 }));
+beforeEach(() => {
+  // Exercise real identity/header handling with durable browser storage, not
+  // Node's experimental localStorage placeholder exposed through jsdom.
+  vi.stubGlobal("localStorage", createBrowserStorage());
+  vi.stubGlobal("sessionStorage", createBrowserStorage());
+  vi.stubEnv("PROD", false);
+  vi.stubEnv("VITE_SUPABASE_URL", "");
+  vi.stubEnv("VITE_SUPABASE_ANON_KEY", "");
+});
 afterEach(() => {
   cleanup();
   window.sessionStorage.clear();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   vi.restoreAllMocks();
 });
 
@@ -81,6 +92,7 @@ it("creates exactly one assessed session directly from Start, plays film after r
     workplace: { ...view.workplace, energy: { current: 99, max: 100 } },
   };
   const requests: { url: string; body: unknown }[] = [];
+  const owners: (string | null)[] = [];
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
@@ -90,6 +102,7 @@ it("creates exactly one assessed session directly from Start, plays film after r
         throw new Error("Expected JSON request body");
       const body: unknown = JSON.parse(init.body);
       requests.push({ url, body });
+      owners.push(new Headers(init.headers).get("x-user-id"));
       const data = url.endsWith("session.create")
         ? { sessionId: view.sessionId, view }
         : url.endsWith("simulation.performWorkplaceInteraction")
@@ -116,19 +129,27 @@ it("creates exactly one assessed session directly from Start, plays film after r
       <StartPage client={client} />
     </StrictMode>,
   );
+  expect(requests).toHaveLength(0);
+  expect(screen.getByText(/confirm you're 13 or older/)).toBeVisible();
+  expect(screen.queryByRole("button", { name: /Security Operations/ })).toBeNull();
+  expect(document.querySelector('video[src="/arrival-film.mp4"]')).toBeNull();
+  await user.click(screen.getByRole("button", { name: "Start your first day" }));
   expect(screen.queryByRole("button", { name: /Continue to floor/i })).toBeNull();
   vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
   vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(
     () => undefined,
   );
-  expect(document.querySelector('video[src="/arrival-film.mp4"]')).toBeNull();
-  await user.click(
+  expect(
     await screen.findByRole(
-      "button",
-      { name: /Security Operations/ },
+      "heading",
+      { name: "Head to Security Operations" },
       { timeout: 6000 },
     ),
-  );
+  ).toBeVisible();
+  const soc = screen.getByRole("button", { name: /Security Operations/ });
+  expect(soc).toBeEnabled();
+  expect(document.querySelector('video[src="/arrival-film.mp4"]')).toBeNull();
+  expect(screen.queryByRole("button", { name: "Move through office" })).toBeNull();
   expect(
     requests.filter(({ url }) => url.endsWith("session.create")),
   ).toHaveLength(1);
@@ -136,12 +157,19 @@ it("creates exactly one assessed session directly from Start, plays film after r
     sessionKind: "assessed",
     pacingMode: "standard",
   });
-  const video = document.querySelector('video[src="/arrival-film.mp4"]');
-  if (!video) throw new Error("Room-entry arrival video missing");
-  expect(
-    screen.getByRole("dialog", { name: "Arrival at Verdaly" }),
-  ).toBeVisible();
+  await user.click(soc);
+  const arrival = await screen.findByRole("dialog", {
+    name: "Arrival at Verdaly",
+  });
+  expect(arrival).toBeVisible();
+  const video = arrival.querySelector('video[src="/arrival-film.mp4"]');
+  if (!(video instanceof HTMLVideoElement))
+    throw new Error("Room-entry arrival video missing");
+  expect(screen.queryByRole("button", { name: "Move through office" })).toBeNull();
   fireEvent.ended(video);
+  await waitFor(() => {
+    expect(screen.queryByRole("dialog", { name: "Arrival at Verdaly" })).toBeNull();
+  });
   expect(screen.queryByRole("navigation", { name: /Choose how/ })).toBeNull();
   expect(
     screen.queryByText(
@@ -167,7 +195,7 @@ it("creates exactly one assessed session directly from Start, plays film after r
   });
   await user.click(screen.getByRole("button", { name: "Sit at desk" }));
   await user.click(await screen.findByTestId("login-surface"));
-  await user.type(screen.getByLabelText(/^Password$/i), "FirstDay!");
+  await user.selectOptions(screen.getByLabelText(/^Password$/i), "FirstDay!");
   await user.click(screen.getByRole("button", { name: /^Sign in$/ }));
   await user.click(await screen.findByRole("button", { name: /^Email/ }));
   await user.click(
@@ -191,4 +219,8 @@ it("creates exactly one assessed session directly from Start, plays film after r
   expect(
     requests.filter(({ url }) => url.endsWith("session.create")),
   ).toHaveLength(1);
+  const owner = window.localStorage.getItem("careerdive-local-identity");
+  expect(owner).toMatch(/^[0-9a-f-]{36}$/);
+  expect(owners).toHaveLength(requests.length);
+  expect(owners.every((id) => id === owner)).toBe(true);
 }, 15000);

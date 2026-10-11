@@ -1,0 +1,184 @@
+[
+  {
+    "family": "DM Sans",
+    "file": "dm-sans-0b63e3b6e6.woff2",
+    "source": "https://fonts.gstatic.com/s/dmsans/v17/rP2Wp2ywxg089UriCZaSExdy3sGt9zz86GPwyKK58UfivUw4aw.woff2",
+    "sha256": "f01f87dc7f64b876651d8d820286ba9374717eb22195b860f852dd0bdbabf6c3",
+    "bytes": 15172
+  },
+  {
+    "family": "DM Sans",
+    "file": "dm-sans-8db2854980.woff2",
+    "source": "https://fonts.gstatic.com/s/dmsans/v17/rP2Wp2ywxg089UriCZaSExdy3sGt9zz86GPwyKy58UfivUw.woff2",
+    "sha256": "a3ea623fec2a53e17b55994dfdf92de634c3e50e08958ebf00f4cdf2e719eccd",
+    "bytes": 28400
+  },
+  {
+    "family": "DM Sans",
+    "file": "dm-sans-4671269ff7.woff2",
+    "source": "https://fonts.gstatic.com/s/dmsans/v17/rP2Hp2ywxg089UriCZ2IHTWEBlwu8Q.woff2",
+    "sha256": "0d0609aee778d21b40bda1d27b7e6b5b3cb1a3e96b90b8831c681aca097c2219",
+    "bytes": 31312
+  },
+  {
+    "family": "DM Sans",
+    "file": "dm-sans-9eb71af0ef.woff2",
+    "source": "https://fonts.gstatic.com/s/dmsans/v17/rP2Hp2ywxg089UriCZOIHTWEBlw.woff2",
+    "sha256": "aa530716b0d351866af7dbfa3eee4120fb36f2d071baff8c234185141865c7ff",
+    "bytes": 62556
+  },
+  {
+    "family": "IBM Plex Mono",
+    "file": "ibm-plex-mono-c3a25aa854.woff2",
+    "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n1iIq131nj-otFQ.woff2",
+    "sha256": "c6f09ee0e0a24b7c85ecb2a601eb99332f65b1f6b37c31e0bbe73fb307625eca",
+    "bytes": 4348
+  },
+  {
+    "family": "IBM Plex Mono",
+    "file": "ibm-plex-mono-757e9d7228.woff2",
+    "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n1isq131nj-otFQ.woff2",
+    "sha256": "7b59d6bf7f8b8408ac28f27d01dca9a890abeae77045d343b1d8ccb089a92e54",
+    "bytes": 5476
+  },
+  {
+    "family": "IBM Plex Mono",
+    "file": "ibm-plex-mono-bde7db9249.woff2",
+    "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n1iAq131nj-otFQ.woff2",
+    "sha256": "0a8b854cc18641bd1b8222afa7ec82a75e59bc6501f777744ec87db1b6cd7a2c",
+    "bytes": 4000
+  },
+  {
+    "family": "IBM Plex Mono",
+    "file": "ibm-plex-mono-2532acb5e3.woff2",
+    "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n1iEq131nj-otFQ.woff2",
+    "sha256": "f1050dc5317b43434c0aeda599d4624c774ffc162e87a8cf204b949b6a85816d",
+    "bytes": 8860
+  },
+  {
+    "family": "IBM Plex Mono",
+    "file": "ibm-plex-mono-01c04f4d69.woff2",
+    "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n1i8q131nj-o.woff2",
+    "sha256": "c36f509c0a8f9f85f29cb44bc8701d8a9e0b14c499e77a884f789ead7093a7ac",
+    "bytes": 10052
+  },
+  {
+    "family": "IBM Plex Mono",
+    "file": "ibm-plex-mono-cb1a242b90.woff2",
+    "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJwl1FgsAXHNlYzg.woff2",
+    "sha256": "311098be73eac339128f0b5a6e33d72645b6f87488541fdf467c402152d297fd",
+    "bytes": 4336
+  },
+  {
+    "family": "IBM Plex Mono",
+    "file": "ibm-plex-mono-0b5c2db191.woff2",
+    "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJwlRFgsAXHNlYzg.woff2",
+    "sha256": "d524dc8ff6dbf7ed69772f3b2ff4affaf5a89b5762b270e36c3f21da0d4e39f5",
+    "bytes": 5500
+  },
+  {
+    "family": "IBM Plex Mono",
+    "file": "ibm-plex-mono-0e213dc59c.woff2",
+    "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJwl9FgsAXHNlYzg.woff2",
+    "sha256": "b2529fba93fd07a50ffb8fc3d103eb04b0c298d4f6564d2833c44fde286de7e4",
+    "bytes": 4036
+  },
+  {
+    "family": "IBM Plex Mono",
+    "file": "ibm-plex-mono-7300d08cc3.woff2",
+    "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJwl5FgsAXHNlYzg.woff2",
+    "sha256": "77f03e26f981c582bdba3a7abed4baa2d3149211c01366bb3ab3ba7622ec4ae5",
+    "bytes": 8848
+  },
+  {
+    "family": "IBM Plex Mono",
+    "file": "ibm-plex-mono-5778b1a208.woff2",
+    "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJwlBFgsAXHNk.woff2",
+    "sha256": "a76f53ca6612e7b3828eec2311098675b7f9849ae4169a8bcef6302aec02a6c0",
+    "bytes": 10060
+  },
+  {
+    "family": "IBM Plex Mono",
+    "file": "ibm-plex-mono-2eab9668f9.woff2",
+    "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3vAOwl1FgsAXHNlYzg.woff2",
+    "sha256": "f746246b6b0b641f99d9e26e0bf4e42197bde692126857857f0195a94362d52a",
+    "bytes": 4320
+  },
+  {
+    "family": "IBM Plex Mono",
+    "file": "ibm-plex-mono-4065b246a6.woff2",
+    "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3vAOwlRFgsAXHNlYzg.woff2",
+    "sha256": "b814a03d7e57b0626a906f76911b9361d173a1aabc5544c40f72d6a35a1e4940",
+    "bytes": 5548
+  },
+  {
+    "family": "IBM Plex Mono",
+    "file": "ibm-plex-mono-784e5ede32.woff2",
+    "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3vAOwl9FgsAXHNlYzg.woff2",
+    "sha256": "69744cabbccc9faf77516ce9b744361e1e6be7f8081400006035a153797d2965",
+    "bytes": 4116
+  },
+  {
+    "family": "IBM Plex Mono",
+    "file": "ibm-plex-mono-2d8cfbcbf9.woff2",
+    "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3vAOwl5FgsAXHNlYzg.woff2",
+    "sha256": "1b6b18fd0fd240bc6d5850f4df621484722d4b5d3650ebdd1e3a8bbd81c75854",
+    "bytes": 8960
+  },
+  {
+    "family": "IBM Plex Mono",
+    "file": "ibm-plex-mono-11ced52deb.woff2",
+    "source": "https://fonts.gstatic.com/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3vAOwlBFgsAXHNk.woff2",
+    "sha256": "ad4580d8cb4b5f627c2d18457656732f7f7b070f7837fbc380e08054157e6f6c",
+    "bytes": 10120
+  },
+  {
+    "family": "Plus Jakarta Sans",
+    "file": "plus-jakarta-sans-74276ca973.woff2",
+    "source": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko70yygg_vbd-E.woff2",
+    "sha256": "a16f29d7d2a21a4f9b3249a82eb2725ed5bdb91500dfb5c4758977de27477f20",
+    "bytes": 1716
+  },
+  {
+    "family": "Plus Jakarta Sans",
+    "file": "plus-jakarta-sans-b6548330f4.woff2",
+    "source": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko50yygg_vbd-E.woff2",
+    "sha256": "5c913fc1b1f86f4b475e5df45a796aa480d1f7f0891ed6f1a5991d6d1be887c3",
+    "bytes": 8292
+  },
+  {
+    "family": "Plus Jakarta Sans",
+    "file": "plus-jakarta-sans-1193e553c6.woff2",
+    "source": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko40yygg_vbd-E.woff2",
+    "sha256": "0303e02b53b0298fb26a0193941a2e8754f0f9a9fce50d90b178d8da3424873f",
+    "bytes": 21688
+  },
+  {
+    "family": "Plus Jakarta Sans",
+    "file": "plus-jakarta-sans-61f3d37295.woff2",
+    "source": "https://fonts.gstatic.com/s/plusjakartasans/v12/LDIoaomQNQcsA88c7O9yZ4KMCoOg4Ko20yygg_vb.woff2",
+    "sha256": "cd8db90cd950e26bc8761f65d323588bd5cd112d326d6d322bc7c8ea86771215",
+    "bytes": 27272
+  },
+  {
+    "family": "Syne",
+    "file": "syne-08bf094c66.woff2",
+    "source": "https://fonts.gstatic.com/s/syne/v24/8vIH7w4qzmVxm2NL9G78HEZnMg.woff2",
+    "sha256": "bbe669d7448c351de7dc0a945a94aa6e0d9c0464ea2ccd85152cb3f53229306a",
+    "bytes": 11252
+  },
+  {
+    "family": "Syne",
+    "file": "syne-477f44659f.woff2",
+    "source": "https://fonts.gstatic.com/s/syne/v24/8vIH7w4qzmVxm25L9G78HEZnMg.woff2",
+    "sha256": "79bc839264c4a3c9b988de4acbc0dcf0d9ca4b41e2df523940f81b78e3d6fdb3",
+    "bytes": 14652
+  },
+  {
+    "family": "Syne",
+    "file": "syne-b8418c5b18.woff2",
+    "source": "https://fonts.gstatic.com/s/syne/v24/8vIH7w4qzmVxm2BL9G78HEY.woff2",
+    "sha256": "cfff412005eed2f0152d1c110c78ac564642b943e64322fbd687083177d6fa70",
+    "bytes": 34560
+  }
+]

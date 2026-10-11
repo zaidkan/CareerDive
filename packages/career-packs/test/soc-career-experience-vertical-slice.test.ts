@@ -27,9 +27,7 @@ import {
 // zero-result searches, coworkers, documentation, context switching,
 // consequences — never a quiz over hidden answer keys."
 //
-// Canonical sources: docs/superpowers/specs/interactivity-and-content-depth-
-// design.md and docs/superpowers/specs/soc-structured-content-pack.md. Tests
-// drive the REAL default pack via canonical actions only; they never depend
+// Tests drive the real default pack via canonical actions only; they never depend
 // on authored option IDs or answer keys.
 //
 // GREEN  = capability exists in the current runtime/pack (asserted).

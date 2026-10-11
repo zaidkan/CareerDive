@@ -35,7 +35,7 @@ export const ROUTE_META: Record<
   trust: {
     title: "Privacy and safety · CareerDive",
     description:
-      "What CareerDive stores during a first shift, how access checks work, current AI limits, and why the debrief has no career-fit score.",
+      "What CareerDive stores during a first shift, how anonymous access checks work, authored dialogue, and why the debrief has no career-fit score.",
     path: "/trust",
     index: true,
   },
@@ -44,6 +44,18 @@ export const ROUTE_META: Record<
     description:
       "Questions about exploring careers, trying a cybersecurity career simulation, privacy and the debrief. Understand what a short shift can and cannot tell you.",
     path: "/faq",
+    index: true,
+  },
+  privacy: {
+    title: "Privacy Policy | CareerDive",
+    description: "CareerDive's privacy policy: anonymous sessions, saved simulation information, browser storage, service providers, and deletion requests.",
+    path: "/privacy",
+    index: true,
+  },
+  terms: {
+    title: "Terms of Use | CareerDive",
+    description: "Terms for CareerDive's educational career simulations, including age 13+ access, responsible use, availability, and contact information.",
+    path: "/terms",
     index: true,
   },
   start: {

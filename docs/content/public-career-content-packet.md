@@ -42,7 +42,7 @@ Index order is load-bearing: tests read `careerAt(0)` as Cybersecurity Analyst a
   - claim: An alert means something is confirmed compromised. correction: An alert is a signal to verify. The analyst records what the evidence supports and what is still open.
 - reality notes: Alert work arrives in bursts with quiet stretches between them. Unfinished work is written down and handed to the next shift rather than closed out by guesswork.
 - content caveats: none for this career (published detail page renders `caveats` only).
-- provenance: `content/packs/cybersecurity-analyst/pack.yaml` (reviewStatus `approved`, sources BLS OOH Information Security Analysts and the NIST NICE Workforce Framework); CHAT 11 worker brief.
+- provenance: `content/packs/cybersecurity-analyst/pack.yaml` (reviewStatus `approved`, sources BLS OOH Information Security Analysts and the NIST NICE Workforce Framework).
 
 ### 1. Registered Nurse — Workshop
 
@@ -58,7 +58,7 @@ Index order is load-bearing: tests read `careerAt(0)` as Cybersecurity Analyst a
   - claim: Nurses carry out a doctor's orders and nothing else. correction: Nursing includes independent assessment, prioritization of what changes first, escalation, and continuous documentation — the preview is built around noticing and communicating a change, not prescribing one.
   - claim: The job is bedside tasks only. correction: A large share of the work is recording information accurately and handing it to the next person cleanly, which is why documentation and handoff are first-class tasks here.
 - reality notes: Schedules commonly include nights, weekends, and holidays. Everything in the Workshop preview is synthetic; completing it confers no clinical competence, credential, or license.
-- provenance: CHAT 11 Control Tower canonical Workshop copy; BLS OOH Registered Nurses.
+- provenance: Approved Workshop preview copy; BLS OOH Registered Nurses.
 
 ### 2. Mechanical Engineer — Workshop
 
@@ -74,7 +74,7 @@ Index order is load-bearing: tests read `careerAt(0)` as Cybersecurity Analyst a
   - claim: Engineering is solving equations until the number comes out right. correction: The work is framing a problem that can be tested, choosing constraints, reading imperfect results, and recommending a change someone can build.
   - claim: A design is finished when it looks right on paper. correction: Most of the cycle is revision after test data or a failure contradicts the first idea — which is why "investigate a failure" is a planned task here.
 - reality notes: Expect iteration rather than a single breakthrough. Simulation results are instructional only; simulated work is not reviewed, sealed, or certified by a licensed professional engineer.
-- provenance: CHAT 11 Control Tower canonical Workshop copy; BLS OOH Mechanical Engineers.
+- provenance: Approved Workshop preview copy; BLS OOH Mechanical Engineers.
 
 ### 3. Electrician — Workshop
 
@@ -90,7 +90,7 @@ Index order is load-bearing: tests read `careerAt(0)` as Cybersecurity Analyst a
   - claim: The job is tracing a wire diagram. correction: Plans are the starting point; the actual work is inspecting an installed system, comparing it to what should be there, and deciding what happens next safely.
   - claim: Apprentices begin by doing live work on their own. correction: Apprenticeship is supervised hours plus classroom instruction; independent, licensed work comes after the program and the state test.
 - reality notes: Work happens in unfinished spaces, outdoors, and inside finished buildings, often against a schedule. Safety procedure is part of the task itself. The Workshop preview reasons about abstract, de-energized situations only and is not a substitute for supervised training.
-- provenance: CHAT 11 Control Tower canonical Workshop copy; BLS OOH Electricians.
+- provenance: Approved Workshop preview copy; BLS OOH Electricians.
 
 ### 4. Lawyer / Attorney — Workshop
 
@@ -106,7 +106,7 @@ Index order is load-bearing: tests read `careerAt(0)` as Cybersecurity Analyst a
   - claim: Lawyers spend the day in a courtroom. correction: Most of the work is reading, comparing, and writing — organizing facts and sources so a team can decide. That is exactly what these three preview tasks practice.
   - claim: If it is on the internet, it is usable law. correction: What applies depends on jurisdiction and date, and nothing here is advice for a real situation.
 - reality notes: The substance is reading and writing under real deadlines, not drama. Jurisdiction and year matter, so a fact can be right and still not apply. The preview is a simulated analysis exercise only; it creates no attorney-client relationship and is not legal advice.
-- provenance: Wave 2.5 Control Tower Lawyer / Attorney brief; BLS OOH Lawyers.
+- provenance: Approved Lawyer / Attorney preview copy; BLS OOH Lawyers.
 
 ## Removed career
 

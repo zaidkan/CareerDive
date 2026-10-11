@@ -361,7 +361,7 @@
   border-top: 1px solid var(--border-subtle);
   padding-top: 1rem;
 }
-.desk-workspace .workspace-scratchpad textarea {
+.desk-workspace .workspace-scratchpad select {
   display: block;
   width: 100%;
   margin-top: 0.5rem;
