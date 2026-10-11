@@ -15,12 +15,14 @@ import { AmbientClockDriver, useAmbient } from "../props/ambientClock.js";
 import { DustMotes, VentPapers } from "../props/atmosphere.js";
 import {
   CeilingAC,
+  CityGlazing,
   FeatureWall,
   FROSTED_PANE_HEIGHT,
   FrostedGlassWall,
   Thermostat,
   WallPanel,
 } from "../props/building.js";
+import { Cityscape } from "../props/cityscape.js";
 import {
   AccentPoster,
   FramedCertificate,
@@ -67,6 +69,7 @@ import {
   FEATURE_WALL,
   FEATURE_WALL_SPOTS,
   GLASS_SUITE,
+  GLAZING,
   HERO_PLANT,
   HOT_DESK,
   INNER,
@@ -394,9 +397,23 @@ export function SocRoom({
         <CeilingAC position={[-6.5, 3.12, -3.6]} rotationY={Math.PI / 2} />
       ) : null}
 
-      <WallPanel position={[0, WALL_H / 2, -ROOM.halfZ]} size={[floorW, WALL_H, 0.3]} />
+      {/* North and east facades: solid where the back office and break corner sit, glazed elsewhere */}
+      <WallPanel
+        position={[(-ROOM.halfX + GLAZING.north.minX) / 2, WALL_H / 2, -ROOM.halfZ]}
+        size={[GLAZING.north.minX + ROOM.halfX, WALL_H, 0.3]}
+      />
       <WallPanel position={[-ROOM.halfX, WALL_H / 2, 0]} size={[0.3, WALL_H, floorD]} />
-      <WallPanel position={[ROOM.halfX, WALL_H / 2, 0]} size={[0.3, WALL_H, floorD]} />
+      <WallPanel
+        position={[ROOM.halfX, WALL_H / 2, (GLAZING.east.maxZ + ROOM.halfZ) / 2]}
+        size={[0.3, WALL_H, ROOM.halfZ - GLAZING.east.maxZ]}
+      />
+      <CityGlazing from={GLAZING.north.minX} to={GLAZING.north.maxX} at={-ROOM.halfZ} axis="x" />
+      <CityGlazing from={GLAZING.east.minZ} to={GLAZING.east.maxZ} at={ROOM.halfX} axis="z" />
+      <mesh position={[ROOM.halfX, WALL_H / 2, -ROOM.halfZ]} castShadow>
+        <boxGeometry args={[0.34, WALL_H, 0.34]} />
+        <meshStandardMaterial color="#1b1c1d" roughness={0.45} metalness={0.3} />
+      </mesh>
+      <Cityscape tier={quality.tier} animated={!seated} />
       {/* South wall split around exit doorway */}
       <WallPanel
         position={[-(floorW / 4 + 0.55), WALL_H / 2, ROOM.halfZ]}
@@ -757,7 +774,8 @@ export function SocRoom({
       {quality.contactShadows ? (
         <ContactShadows
           opacity={0.28}
-          scale={24}
+          // Room footprint only: a larger plane hangs outside the glazing and veils the street.
+          scale={[floorW, floorD]}
           blur={2.4}
           far={4.5}
           color="#3a2c20"

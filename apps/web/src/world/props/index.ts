@@ -5,7 +5,7 @@
  */
 export {
   CeilingAC,
-  OfficeWindow,
+  CityGlazing,
   Thermostat,
   WallPanel,
 } from "./building.js";

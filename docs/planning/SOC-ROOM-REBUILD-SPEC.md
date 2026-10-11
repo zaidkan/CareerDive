@@ -102,3 +102,35 @@ their IDs and meaning stay. Monitors keep showing the real Case-queue / Investig
 `pnpm lint && pnpm typecheck && pnpm test && pnpm build` all green (reachability test included). Provide
 screenshots: (a) entry/spawn view vs the film final frame, (b) the window at 2–3 look angles showing parallax.
 Do NOT merge — leave the branch for owner playtest.
+
+---
+
+## HANDOFF
+
+**Status:** Phases 1–3 are all done and committed on `feat/soc-room-film-match`. Verify is green
+(150 test files, 1041 tests). Not merged; waiting on the owner's playtest. Nothing is in progress.
+
+**As built, where it differs from this spec:**
+- **Frosted glass:** an interior curtain wall at `x = −3.9` (`GLASS_SUITE`), not `x = −10.6`, which falls
+  outside the spawn view. The `04` wall closes the suite's north end.
+- **Break nook:** in the SE back corner (`BREAK_NOOK`). The east glazing stops at `z = 1.2` so the nook keeps a
+  solid wall.
+- **North glazing:** runs from `x = −0.4` to the NE corner; the back office keeps its solid wall. Both runs are
+  in `GLAZING` in `socLayout.ts`. Collisions are unchanged, because the perimeter clamp treats glass as wall.
+- **Pendants:** run along X, as in the film.
+- **Depth windows:**
+  - Real low-poly city geometry at true scale, 42 m below the office floor. `world/cityLayout.ts` is the pure
+    plan (tested in `test/cityscape-layout.test.ts`); `props/cityscape.tsx` renders it.
+  - Cost: 6 draw calls, with no per-frame CPU work beyond one time uniform.
+  - The tier sets the radius, car count, trees and cloud detail.
+  - Traffic and clouds freeze on LOW, under reduced motion, and while seated.
+- **Camera and lighting:**
+  - Camera `far` went 48 → 1200 to reach the city.
+  - The sun light moved to `[11, 9, 2]` (low in the east).
+  - `ContactShadows` now covers only the room footprint; the old 24 m plane hung outside the glazing.
+- **Removed:** the flat `OfficeWindow` texture.
+
+**Playtest focus:**
+- The look from the north and east glazing, including looking down.
+- LOW tier on a Chromebook-class device.
+- Whether the frosted suite reads from spawn.

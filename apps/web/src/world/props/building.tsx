@@ -289,120 +289,74 @@ export function WallPanel({
   );
 }
 
-let skylineTexture: THREE.CanvasTexture | undefined;
+/** Glazing frame rails, in the same charcoal as the frosted-suite mullions. */
+const GLAZING_FRAME = { sill: 0.12, head: 3.25, top: 3.4, depth: 0.34, mullion: 0.08 } as const;
 
-/** One shared, static city backdrop; no downloads or per-frame work. */
-function makeSkylineTexture(): THREE.CanvasTexture {
-  if (skylineTexture) return skylineTexture;
-  const canvas = document.createElement("canvas");
-  canvas.width = 256;
-  canvas.height = 192;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("OfficeWindow requires a 2D canvas context");
-  const sky = ctx.createLinearGradient(0, 0, 0, 192);
-  sky.addColorStop(0, "#172b40");
-  sky.addColorStop(0.65, "#60808d");
-  sky.addColorStop(1, "#b4a78c");
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, 256, 192);
-  for (let layer = 0; layer < 2; layer += 1) {
-    const step = layer === 0 ? 22 : 30;
-    for (let i = 0; i < 13; i += 1) {
-      const x = i * step - 12;
-      const top = 82 + ((i * 31 + layer * 19) % 65);
-      ctx.fillStyle = layer === 0 ? "#425e70" : "#263e50";
-      ctx.fillRect(x, top, step - 4, 192 - top);
-      if (layer === 0) continue;
-      for (let y = top + 8; y < 190; y += 12) {
-        for (let col = 0; col < 3; col += 1) {
-          ctx.fillStyle = (i + col + y) % 3 === 0 ? "#cfb887" : "#526c7a";
-          ctx.fillRect(x + 4 + col * 7, y, 3, 5);
-        }
-      }
-    }
-  }
-  skylineTexture = new THREE.CanvasTexture(canvas);
-  skylineTexture.colorSpace = THREE.SRGBColorSpace;
-  return skylineTexture;
-}
-
-export function OfficeWindow({
-  position,
-  rotationY = 0,
-  width = 2.4,
-  height = 1.8,
+/**
+ * Floor-to-ceiling exterior glazing: charcoal sill, head and mullions around a
+ * faint blue-grey tint. The view is the real city geometry outside, so it
+ * holds parallax from every spot; the glass stays a solid wall to collision.
+ */
+export function CityGlazing({
+  from,
+  to,
+  at,
+  axis,
+  bay = 1.55,
 }: {
-  position: [number, number, number];
-  rotationY?: number;
-  width?: number;
-  height?: number;
+  /** Run start and end along `axis`, at wall line `at` on the other axis. */
+  from: number;
+  to: number;
+  at: number;
+  axis: "x" | "z";
+  bay?: number;
 }) {
-  const skyline = useMemo(() => makeSkylineTexture(), []);
-  /** Blinds are raised to the header, so the view stays readable. */
-  const slatCount = 5;
-  const blinds = Array.from({ length: slatCount }, (_, i) => (
-    <mesh key={i} position={[0, height / 2 - 0.14 - i * 0.035, 0.05]}>
-      <boxGeometry args={[width - 0.14, 0.03, 0.05]} />
-      <meshStandardMaterial color="#d8d0c0" roughness={0.7} />
-    </mesh>
-  ));
-
+  const length = to - from;
+  const mid = (from + to) / 2;
+  const glassHeight = GLAZING_FRAME.head - GLAZING_FRAME.sill;
+  const frame = useMemo<InstancedBox[]>(() => {
+    const place = (s: number, y: number, along: number, height: number, across: number): InstancedBox =>
+      axis === "x"
+        ? { position: [s, y, at], size: [along, height, across] }
+        : { position: [at, y, s], size: [across, height, along] };
+    const bays = Math.max(1, Math.round(length / bay));
+    return [
+      place(mid, GLAZING_FRAME.sill / 2, length, GLAZING_FRAME.sill, GLAZING_FRAME.depth),
+      place(
+        mid,
+        (GLAZING_FRAME.head + GLAZING_FRAME.top) / 2,
+        length,
+        GLAZING_FRAME.top - GLAZING_FRAME.head,
+        GLAZING_FRAME.depth,
+      ),
+      ...Array.from({ length: bays + 1 }, (_, i) =>
+        place(
+          from + (length * i) / bays,
+          GLAZING_FRAME.sill + glassHeight / 2,
+          GLAZING_FRAME.mullion,
+          glassHeight,
+          GLAZING_FRAME.depth - 0.04,
+        ),
+      ),
+    ];
+  }, [at, axis, bay, from, glassHeight, length, mid]);
   return (
-    <group position={position} rotation={[0, rotationY, 0]}>
-      {/* Reveal behind the glass so the wall never shows through */}
-      <mesh position={[0, 0, -0.04]}>
-        <boxGeometry args={[width + 0.02, height + 0.02, 0.06]} />
-        <meshStandardMaterial color="#0d1418" roughness={0.9} />
-      </mesh>
-      <mesh position={[0, 0, 0.01]}>
-        <planeGeometry args={[width, height]} />
-        <meshBasicMaterial map={skyline} toneMapped={false} />
-      </mesh>
-      {/* City band at the horizon reads as an outside view */}
-      <mesh position={[0, -height * 0.22, 0.02]}>
-        <planeGeometry args={[width, height * 0.3]} />
-        <meshStandardMaterial color="#243a48" roughness={0.8} />
-      </mesh>
-      {/* Outer casing, built as four sides so glass is never buried */}
-      {(
-        [
-          [0, height / 2 + 0.055, width + 0.14, 0.11],
-          [0, -height / 2 - 0.055, width + 0.14, 0.11],
-        ] as const
-      ).map(([x, y, w, hh]) => (
-        <mesh key={`h${String(y)}`} position={[x, y, 0.02]} castShadow>
-          <boxGeometry args={[w, hh, 0.12]} />
-          <meshStandardMaterial color="#54636a" metalness={0.55} roughness={0.38} />
-        </mesh>
-      ))}
-      {([-1, 1] as const).map((side) => (
-        <mesh
-          key={`v${String(side)}`}
-          position={[side * (width / 2 + 0.055), 0, 0.02]}
-          castShadow
-        >
-          <boxGeometry args={[0.11, height + 0.14, 0.12]} />
-          <meshStandardMaterial color="#54636a" metalness={0.55} roughness={0.38} />
-        </mesh>
-      ))}
-      {/* Mullions */}
-      <mesh position={[0, 0, 0.03]}>
-        <boxGeometry args={[0.05, height, 0.04]} />
-        <meshStandardMaterial color="#829093" metalness={0.55} roughness={0.34} />
-      </mesh>
-      <mesh position={[0, height * 0.12, 0.03]}>
-        <boxGeometry args={[width, 0.045, 0.04]} />
-        <meshStandardMaterial color="#829093" metalness={0.55} roughness={0.34} />
-      </mesh>
-      {/* Blind header + raised stack, then sill */}
-      <mesh position={[0, height / 2 - 0.07, 0.06]}>
-        <boxGeometry args={[width - 0.06, 0.09, 0.09]} />
-        <meshStandardMaterial color="#c4b8a4" />
-      </mesh>
-      {blinds}
-      <mesh position={[0, -height / 2 - 0.09, 0.08]} castShadow receiveShadow>
-        <boxGeometry args={[width + 0.2, 0.06, 0.22]} />
-        <meshStandardMaterial color="#a3aaa6" roughness={0.48} />
+    <group>
+      <InstancedBoxes boxes={frame} color="#1b1c1d" roughness={0.45} metalness={0.3} castShadow />
+      <mesh
+        position={axis === "x" ? [mid, GLAZING_FRAME.sill + glassHeight / 2, at] : [at, GLAZING_FRAME.sill + glassHeight / 2, mid]}
+        rotation={[0, axis === "x" ? 0 : -Math.PI / 2, 0]}
+      >
+        <planeGeometry args={[length, glassHeight]} />
+        <meshStandardMaterial
+          color="#9fb3c2"
+          transparent
+          opacity={0.1}
+          roughness={0.08}
+          metalness={0.1}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
       </mesh>
     </group>
   );

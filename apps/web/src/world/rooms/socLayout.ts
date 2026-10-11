@@ -111,6 +111,17 @@ export const HERO_PLANT: [number, number, number] = [-2.75, 0, 1.55];
 /** Smaller planter in the corner between the glass and the entry wall. */
 export const ENTRY_PLANTER: [number, number, number] = [-3.25, 0, 6.65];
 
+/**
+ * City glazing on the two exterior facades. The north run spans the open
+ * office (the back office keeps its solid wall for the racks and alert
+ * boards); the east run stops at the break corner. Colliders are unchanged:
+ * the perimeter clamp treats the glass as wall.
+ */
+export const GLAZING = {
+  north: { minX: -0.4, maxX: INNER.maxX },
+  east: { minZ: INNER.minZ, maxZ: 1.2 },
+} as const;
+
 /** Underside of the linear pendants; the 04 wall and cubicles stay well below. */
 export const PENDANT_HANG_Y = 3.02;
 /** Long black pendants in parallel rows over the desk field, plus one entry run. */

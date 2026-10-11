@@ -2,8 +2,9 @@ import type { ReactElement, ReactNode } from "react";
 import { COL, ROW } from "./socLayout.js";
 
 /**
- * Bright, even daylight from the north and east glazing with a warm floor
- * bounce and a warm break-corner accent, using the existing four-light budget.
+ * Bright, even daylight with a warm floor bounce and a warm break-corner
+ * accent, using the existing four-light budget. The sun sits low in the east
+ * so it streams through the east glazing, matching the city outside.
  */
 export function SocLighting({
   seated,
@@ -19,7 +20,7 @@ export function SocLighting({
       <directionalLight
         castShadow={directionalShadows}
         intensity={seated ? 1.4 : 2.1}
-        position={[9, 11, -4]}
+        position={[11, 9, 2]}
         color="#fff3e2"
         shadow-mapSize-width={512}
         shadow-mapSize-height={512}
