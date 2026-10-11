@@ -132,9 +132,9 @@ export const PENDANT_RUNS = [
 /** LED spot track over the credenza, washing the 04 wall. */
 export const FEATURE_WALL_SPOTS = { x: CREDENZA.x, z: FEATURE_WALL_FACE_Z + 0.9 } as const;
 
-/** Back office behind the 04 wall: alert boards, racks, Samir, parts. */
+/** Back office behind the 04 wall: alert boards, racks, Reed, parts. */
 export const ALERT_POS: [number, number, number] = [-4.4, 0, -6.2];
-export const SAMIR_DESK: [number, number, number] = [-10.25, 0, -3.4];
+export const REED_DESK: [number, number, number] = [-10.25, 0, -3.4];
 export const SERVER_RACK_XS = [-9.8, -9.0, -8.2] as const;
 /** Parts cabinets back onto the suite wall and open north into the office. */
 export const PARTS_CABINETS = {
@@ -240,7 +240,6 @@ export const BREAK_INTERIOR_HOTSPOTS: HotspotDef[] = [
     position: [7.45, 0, 6.4],
     radius: 1.15,
   },
-  { id: "fridge", label: "Fridge", position: [9.7, 0, 6.35], radius: 1.35 },
 ];
 
 export function hotspotAnchor(
@@ -295,12 +294,12 @@ export const ROOM_COLLIDERS: Aabb[] = [
     minZ: ENTRY_PLANTER[2] - 0.4,
     maxZ: INNER.maxZ,
   },
-  /** Samir's wall desk. */
+  /** Reed's wall desk. */
   {
-    minX: SAMIR_DESK[0] - 0.6,
-    maxX: SAMIR_DESK[0] + 1.15,
-    minZ: SAMIR_DESK[2] - 1.1,
-    maxZ: SAMIR_DESK[2] + 1.1,
+    minX: REED_DESK[0] - 0.6,
+    maxX: REED_DESK[0] + 1.15,
+    minZ: REED_DESK[2] - 1.1,
+    maxZ: REED_DESK[2] + 1.1,
   },
   /** Alert boards. */
   {

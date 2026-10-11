@@ -19,12 +19,8 @@ import {
   type JulesDialogueReply,
 } from "@sim/core";
 import { MutationStatus } from "../components/MutationStatus.js";
-import {
-  BreakRoomPanel,
-  CarriedSnackControl,
-  EmergencyRecoveryControl,
-} from "./BreakRoomPanel.js";
-import { coffeeControl, fridgeControl } from "./breakRoom.js";
+import { BreakRoomPanel, EmergencyRecoveryControl } from "./BreakRoomPanel.js";
+import { coffeeControl } from "./breakRoom.js";
 import { ControlsHelp } from "./ControlsHelp.js";
 import { LaptopOverlay } from "./deskOs/LaptopOverlay.js";
 import { writeTabValue } from "../useTabDraft.js";
@@ -32,7 +28,9 @@ import { OsSessionProvider, useOsSession } from "./deskOs/osSession.js";
 import { FloorMap } from "./FloorMap.js";
 import { MorganDialogue } from "./dialogue/MorganDialogue.js";
 import { ShiftHints } from "./dialogue/ShiftHints.js";
-import { unlockDialogueAudio } from "./dialogue/audio.js";
+import { AudioToggle } from "./dialogue/AudioToggle.js";
+import "./SocHud.css";
+import { playWorldSound, unlockDialogueAudio } from "./dialogue/audio.js";
 import { JulesDialogue } from "./JulesDialogue.js";
 import { getJourneyStep } from "../journey.js";
 import { INITIAL_SPATIAL, reduceSpatialEvent } from "./presentation.js";
@@ -162,7 +160,8 @@ function SpatialShellStage({
 
   const onNearbyChange = useCallback(
     (id?: HotspotId, label?: string, choices?: HotspotId[]) => {
-      setNearbyChoices(choices ?? (id ? [id] : []));
+      if (id === "fridge") { id = undefined; label = undefined; }
+      setNearbyChoices((choices ?? (id ? [id] : [])).filter((choice) => choice !== "fridge"));
       if (id) setInteractionMiss(false);
       if (id === undefined) {
         dispatch({ type: "set_nearby" });
@@ -300,6 +299,7 @@ function SpatialShellStage({
       unlockDialogueAudio();
       switch (id) {
         case "desk_player":
+          playWorldSound("sit");
           setJulesOpen(false);
           dispatch({ type: "sit_desk" });
           break;
@@ -323,11 +323,9 @@ function SpatialShellStage({
           setJulesOpen(true);
           break;
         }
-        case "fridge": {
-          const interaction = fridgeControl(view.workplace).interaction;
-          if (interaction) requestWorkplaceInteraction(interaction);
+        case "fridge":
+          // Retained ID for saved sessions; no longer an interactive prop.
           break;
-        }
         case "coffee": {
           const interaction = coffeeControl(view.workplace).interaction;
           if (interaction) requestWorkplaceInteraction(interaction);
@@ -379,25 +377,13 @@ function SpatialShellStage({
   const labelFor = (id: HotspotId): string =>
     id === "coffee"
       ? coffeeControl(view.workplace).label
-      : id === "fridge"
-        ? fridgeControl(view.workplace).label
-        : id === "break_door"
-          ? id === nearbyHotspotId
-            ? (nearbyLabel ?? "Use door")
-            : "Use door"
-          : (INTERACT_LABEL[id] ?? "Interact");
-  const nearbyPrompt = nearbyLabel
-    ? nearbyLabel === "Your chair"
-      ? "At your chair — press E or Sit to use the computer"
-      : `Near: ${nearbyLabel} · press E to ${nearbyHotspotId ? labelFor(nearbyHotspotId) : "interact"}`
-    : undefined;
+      : id === "break_door"
+        ? id === nearbyHotspotId
+          ? (nearbyLabel ?? "Use door")
+          : "Use door"
+        : (INTERACT_LABEL[id] ?? "Interact");
   const highlightHotspotId: HotspotId | undefined =
     journey.target?.kind === "hotspot" ? journey.target.hotspotId : undefined;
-  /** Spawning beside the exit should not bury the step the player is actually on. */
-  const nearbyIsTarget =
-    highlightHotspotId !== undefined &&
-    highlightHotspotId === spatial.nearbyHotspotId;
-
   const maximized = spatial.phase === "focus_desk";
   const deskPhase =
     spatial.phase === "desk_login" ||
@@ -407,13 +393,10 @@ function SpatialShellStage({
       : undefined;
   const roomLabel = "Security Operations";
   const fullscreenLabel = fullscreen ? "Exit fullscreen" : "Fullscreen";
-  const compass = highlightHotspotId === "desk_player"
-    ? "Your desk · follow the blue marker · approach the open front of the cubicle"
-    : undefined;
-  const breakStation =
-    nearbyHotspotId === "fridge" || nearbyHotspotId === "coffee"
-      ? nearbyHotspotId
-      : undefined;
+  const objectiveCue = highlightHotspotId === "desk_player"
+    ? "Follow the blue marker to the open side of your desk."
+    : "Return to your desk when you are ready to continue.";
+  const breakStation = nearbyHotspotId === "coffee" ? "coffee" : undefined;
   const canonicalMutationPending = Boolean(mutationState.pendingKey);
   const resourcePending = workplacePending || canonicalMutationPending;
   const movementMutationPending =
@@ -554,21 +537,17 @@ function SpatialShellStage({
                 <span className="room-hud-count">{stepLabel}</span>
                 {journey.title}
               </p>
-              {nearbyHotspotId && !playerMovementBlocked ? (
-                <p className="room-context-action">
-                  <kbd>E</kbd> {labelFor(nearbyHotspotId)}
-                </p>
-              ) : null}
-              <p className="room-hud-line">
-                {nearbyIsTarget && nearbyPrompt ? nearbyPrompt : journey.body}
-              </p>
-              {compass ? <p className="room-hud-compass">{compass}</p> : null}
+              <p className="room-hud-line">{objectiveCue}</p>
+              <details className="room-objective-details">
+                <summary>Objective details</summary>
+                <p>{journey.body}</p>
+              </details>
               <p className="room-hud-nearby" role="status">
                 {playerMovementBlocked
-                  ? "Interaction paused · finish the current action or close the conversation to move and use E"
-                  : nearbyPrompt
-                    ? `Ready · ${nearbyPrompt}`
-                    : "Out of reach · move closer to a floor marker to use E"}
+                  ? "Paused · finish the action or close the conversation"
+                  : nearbyHotspotId && nearbyLabel
+                    ? `Ready · ${nearbyLabel} · E to ${labelFor(nearbyHotspotId)}`
+                    : "Out of reach · move closer to use E"}
               </p>
               {nearbyChoices.length > 1 ? (
                 <div className="room-hud-choices" aria-label="Nearby actions">
@@ -618,6 +597,11 @@ function SpatialShellStage({
                   </button>
                 </div>
               ) : null}
+              <EmergencyRecoveryControl
+                workplace={view.workplace}
+                onSubmit={requestWorkplaceInteraction}
+                pending={resourcePending || !onWorkplaceInteraction}
+              />
               {breakStation ? (
                 <BreakRoomPanel
                   onSubmit={requestWorkplaceInteraction}
@@ -627,21 +611,7 @@ function SpatialShellStage({
                 />
               ) : null}
             </div>
-            <div className="room-hud-status">
-              <details className="room-hud-details">
-                <summary>Supplies</summary>
-                <EmergencyRecoveryControl
-                  workplace={view.workplace}
-                  onSubmit={requestWorkplaceInteraction}
-                  pending={resourcePending || !onWorkplaceInteraction}
-                />
-                <CarriedSnackControl
-                  onSubmit={requestWorkplaceInteraction}
-                  pending={resourcePending || !onWorkplaceInteraction}
-                  workplace={view.workplace}
-                />
-              </details>
-            </div>
+            <span className="visually-hidden">Lunchbox by the fridge: My breakfast — DO NOT touch. yeah, I'm talking to you, Morgan.</span>
             <div className="room-hud-actions">
               {nearbyHotspotId && !breakStation ? (
                 <button
@@ -674,6 +644,7 @@ function SpatialShellStage({
               >
                 Floor map
               </button>
+              <AudioToggle />
               <ControlsHelp />
             </div>
           </div>

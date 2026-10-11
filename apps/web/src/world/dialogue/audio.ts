@@ -14,6 +14,16 @@ const BLIP_PITCHES = [1046.5, 880, 1174.7, 1046.5, 784, 880] as const;
 let nextPitch = 0;
 const voices = new Set<OscillatorNode>();
 const listeners = new Set<() => void>();
+let worldVoice: OscillatorNode | undefined;
+
+function stopWorldSound() {
+  try {
+    worldVoice?.stop();
+  } catch {
+    /* Already stopped or unavailable. */
+  }
+  worldVoice = undefined;
+}
 
 export function stopDialogueAudio() {
   for (const voice of voices) {
@@ -39,7 +49,10 @@ export function unlockDialogueAudio() {
 
 export function setSimulationMuted(next: boolean) {
   muted = next;
-  if (next) stopDialogueAudio();
+  if (next) {
+    stopDialogueAudio();
+    stopWorldSound();
+  }
   try {
     localStorage.setItem(STORAGE_KEY, String(next));
   } catch {
@@ -111,4 +124,68 @@ export function useSimulationMuted() {
     () => muted,
     () => false,
   );
+}
+
+// Foley-like low creaks and soft latch tones; one brief effect voice, no queue.
+const WORLD_SOUNDS = {
+  sit: { pitch: 130, endPitch: 65, duration: 0.18, waveform: "triangle" },
+  "glass-open": { pitch: 360, endPitch: 190, duration: 0.14, waveform: "sine" },
+  "glass-close": { pitch: 240, endPitch: 120, duration: 0.1, waveform: "sine" },
+  "fridge-open": {
+    pitch: 155,
+    endPitch: 82,
+    duration: 0.16,
+    waveform: "triangle",
+  },
+} as const;
+
+/** Reuses gesture-unlocked dialogue audio; never creates/resumes a context here. */
+export function playWorldSound(cue: keyof typeof WORLD_SOUNDS) {
+  if (
+    muted ||
+    document.hidden ||
+    !context ||
+    context.state !== "running" ||
+    (typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+  )
+    return;
+  stopWorldSound();
+  let voice: OscillatorNode | undefined;
+  let gain: GainNode | undefined;
+  try {
+    const sound = WORLD_SOUNDS[cue];
+    const start = context.currentTime;
+    voice = context.createOscillator();
+    gain = context.createGain();
+    voice.type = sound.waveform;
+    voice.frequency.value = sound.pitch;
+    voice.frequency.linearRampToValueAtTime(
+      sound.endPitch,
+      start + sound.duration,
+    );
+    gain.gain.setValueAtTime(0, start);
+    gain.gain.linearRampToValueAtTime(0.007, start + 0.012);
+    gain.gain.linearRampToValueAtTime(0, start + sound.duration);
+    voice.connect(gain).connect(context.destination);
+    const current = voice;
+    const envelope = gain;
+    voice.onended = () => {
+      if (worldVoice === current) worldVoice = undefined;
+      current.disconnect();
+      envelope.disconnect();
+    };
+    worldVoice = voice;
+    voice.start(start);
+    voice.stop(start + sound.duration);
+  } catch {
+    // Missing/blocked audio must never prevent an interaction.
+    stopWorldSound();
+    try {
+      voice?.disconnect();
+      gain?.disconnect();
+    } catch {
+      /* Optional audio. */
+    }
+  }
 }

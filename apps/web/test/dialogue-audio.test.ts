@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   dialogueTick,
+  playWorldSound,
   setSimulationMuted,
   stopDialogueAudio,
   unlockDialogueAudio,
@@ -28,7 +29,7 @@ class TestAudioContext {
     oscillatorGate();
     const voice = {
       type: "",
-      frequency: { value: 0 },
+      frequency: { value: 0, linearRampToValueAtTime() {} },
       connect: () => ({ connect() {} }),
       disconnect: vi.fn(),
       start,
@@ -154,4 +155,37 @@ it("degrades silently when AudioContext construction is blocked", async () => {
   expect(() => { audio.dialogueTick(7000); }).not.toThrow();
   expect(start).not.toHaveBeenCalled();
   audio.setSimulationMuted(true);
+});
+
+
+it("plays distinct, quiet world cues with one effect voice and shared mute", () => {
+  vi.stubGlobal("matchMedia", () => ({ matches: false }));
+  setSimulationMuted(false);
+  for (const cue of ["sit", "glass-open", "glass-close", "fridge-open"] as const) {
+    playWorldSound(cue);
+  }
+  expect(start).toHaveBeenCalledTimes(4);
+  expect(new Set(oscillators.map(v => v.frequency.value)).size).toBe(4);
+  expect(gainRamp.mock.calls.every(([value]) => value >= 0 && value <= 0.009)).toBe(true);
+  expect(stop.mock.invocationCallOrder[1]).toBeLessThan(start.mock.invocationCallOrder[1] ?? 0);
+  setSimulationMuted(true);
+  const stopped = stop.mock.calls.length;
+  playWorldSound("sit");
+  expect(start).toHaveBeenCalledTimes(4);
+  expect(stopped).toBeGreaterThan(4);
+});
+
+it("keeps world cues silent for reduced motion, hidden tabs and blocked audio", () => {
+  setSimulationMuted(false);
+  vi.stubGlobal("matchMedia", () => ({ matches: true }));
+  playWorldSound("sit");
+  expect(start).not.toHaveBeenCalled();
+  vi.stubGlobal("matchMedia", () => ({ matches: false }));
+  Object.defineProperty(document, "hidden", { configurable: true, value: true });
+  playWorldSound("glass-open");
+  expect(start).not.toHaveBeenCalled();
+  Object.defineProperty(document, "hidden", { configurable: true, value: false });
+  oscillatorGate.mockImplementationOnce(() => { throw new Error("Audio blocked"); });
+  expect(() => { playWorldSound("fridge-open"); }).not.toThrow();
+  expect(start).not.toHaveBeenCalled();
 });

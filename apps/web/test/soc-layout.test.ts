@@ -121,12 +121,13 @@ describe("SOC layout reachability", () => {
     expect(nearestHotspot([x, 1.6, z], BASE_HOTSPOTS)?.id).toBe("desk_player");
   });
 
-  it("keeps finite resources in the break room", () => {
+  it("keeps coffee and Jules reachable without an interactive fridge", () => {
     const baseIds: readonly string[] = BASE_HOTSPOTS.map(({ id }) => id);
     expect(baseIds).not.toContain("snack");
     expect(BREAK_INTERIOR_HOTSPOTS.map(({ id }) => id)).toEqual(
-      expect.arrayContaining(["fridge", "coffee", "jules"]),
+      expect.arrayContaining(["coffee", "jules"]),
     );
+    expect(BREAK_INTERIOR_HOTSPOTS.map((h) => h.id)).not.toContain("fridge");
   });
 
   it("spawns the player somewhere legal", () => {
