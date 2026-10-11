@@ -145,38 +145,13 @@ export function Hotspot({
       {active || target ? (
         <Html
           center
-          distanceFactor={10}
           position={[0, 1.45, 0]}
           style={{ pointerEvents: "none", userSelect: "none" }}
           zIndexRange={[12, 0]}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.45rem",
-              whiteSpace: "nowrap",
-              background: "rgba(13, 17, 23, 0.9)",
-              border: `1px solid ${color}`,
-              borderRadius: "6px",
-              padding: "0.3rem 0.5rem",
-              color: "#e8edf3",
-              fontSize: "12px",
-              fontWeight: 600,
-              letterSpacing: "0.01em",
-            }}
-          >
+          <div className="soc-hotspot-label" style={{ borderColor: color }}>
             <span>{promptFor(def)}</span>
-            <kbd
-              style={{
-                border: "1px solid rgba(232, 237, 243, 0.4)",
-                background: "rgba(110, 168, 254, 0.15)",
-                borderRadius: "4px",
-                padding: "0.05rem 0.35rem",
-                fontSize: "11px",
-                fontFamily: "inherit",
-              }}
-            >
+            <kbd>
               {active
                 ? interactionEnabled
                   ? "E · Ready"

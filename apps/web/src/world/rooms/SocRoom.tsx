@@ -1,4 +1,5 @@
-import { coffeeControl, fridgeControl } from "../breakRoom.js";
+import { playWorldSound } from "../dialogue/audio.js";
+import { coffeeControl } from "../breakRoom.js";
 import { ContactShadows } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -83,7 +84,7 @@ import {
   PLAYER_SEAT_LOOK,
   PLAYER_SPAWN,
   ROOM,
-  SAMIR_DESK,
+  REED_DESK,
   SEAT,
   SERVER_RACK_XS,
   SHREDDER,
@@ -96,7 +97,7 @@ import {
  * Film layout, from the entry looking north:
  * - Left: frosted-glass suite meeting the 04 feature wall, credenza, plant
  * - Right half: two cubicle rows; You (front, east) with Morgan behind
- * - Back office behind the 04 wall: alert boards, racks, Samir, parts
+ * - Back office behind the 04 wall: alert boards, racks, Reed, parts
  * - Break room in the south-east corner, beside the entry
  *
  * Every coordinate lives in socLayout.ts so the reachability test can guard it.
@@ -250,9 +251,7 @@ export function SocRoom({
           }
         : h.id === "coffee"
           ? { ...h, label: coffeeControl(workplace).label }
-          : h.id === "fridge"
-            ? { ...h, label: fridgeControl(workplace).label }
-            : h,
+          : h,
     );
   }, [doorOpen, workplace]);
 
@@ -284,6 +283,7 @@ export function SocRoom({
       else window.dispatchEvent(new Event("soc-interaction-miss"));
     };
     const onToggle = () => {
+      playWorldSound(doorOpen ? "glass-close" : "glass-open");
       setDoorOpen((v) => !v);
     };
     const onStorage = () => {
@@ -297,7 +297,7 @@ export function SocRoom({
       window.removeEventListener("soc-break-door", onToggle);
       window.removeEventListener("soc-storage", onStorage);
     };
-  }, [enabled, hotspots, onInteract]);
+  }, [doorOpen, enabled, hotspots, onInteract]);
 
   useEffect(() => {
     const near = nearestHotspot(playerPos.current, hotspots, nearbyId.current);
@@ -478,7 +478,7 @@ export function SocRoom({
         height={CREDENZA.height}
       />
       <HeroPlant position={HERO_PLANT} />
-      {/* Back-office perimeter glazing behind Samir */}
+      {/* Back-office perimeter glazing behind Reed */}
       <FrostedGlassWall
         position={[INNER.minX + 0.02, 0, (INNER.minZ + GLASS_SUITE.minZ) / 2]}
         length={GLASS_SUITE.minZ - INNER.minZ}
@@ -624,7 +624,7 @@ export function SocRoom({
         rotationY={CHAIR_FACE_DESK + 0.35}
       />
 
-      {/* Priya by the east glazing, out of the entry shot */}
+      {/* Dana by the east glazing, out of the entry shot */}
       <Figure
         activity="idle"
         animated={!seated}
@@ -638,17 +638,18 @@ export function SocRoom({
         seed={2}
       />
 
-      {/* Samir on the back-office wall, behind the 04 wall */}
-      <MonitorArmDesk position={SAMIR_DESK} rotationY={Math.PI / 2} />
+      {/* Reed on the back-office wall, behind the 04 wall */}
+      <MonitorArmDesk position={REED_DESK} rotationY={Math.PI / 2} />
+      <StationPlate text="REED" position={[REED_DESK[0] + 0.25, 0.94, REED_DESK[2] + 0.6]} rotationY={Math.PI / 2} />
       <OfficeChair
-        position={[SAMIR_DESK[0] + 1.05, 0, SAMIR_DESK[2]]}
+        position={[REED_DESK[0] + 1.05, 0, REED_DESK[2]]}
         rotationY={-Math.PI / 2}
       />
       <Figure
         activity="typing"
         animated={!seated}
         lookAtRef={lookAtRef}
-        position={[SAMIR_DESK[0] + 1.0, 0, SAMIR_DESK[2]]}
+        position={[REED_DESK[0] + 1.0, 0, REED_DESK[2]]}
         rotationY={-Math.PI / 2}
         primary="#6a7a88"
         secondary="#243038"

@@ -47,24 +47,6 @@
 .simulation-main .mutation-status-success {
   color: var(--status-success-fg);
 }
-.simulation-main .room-hud-route {
-  pointer-events: auto;
-  margin-top: 0.65rem;
-}
-.simulation-main .room-hud-route summary {
-  cursor: pointer;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  padding-block: 0.35rem;
-}
-.simulation-main .room-hud-brief {
-  background: var(--surface-base);
-  color: var(--text-primary);
-  padding: 1rem 1.25rem;
-}
-.simulation-main .room-hud-count {
-  color: var(--text-muted);
-}
 .threshold-brief-guidance {
   margin-block: 1rem;
 }
@@ -631,16 +613,6 @@
   }
 }
 
-/* Scene controls need an opaque semantic surface in either site theme. */
-.simulation-main .room-hud-actions,
-.simulation-main .room-look-hint,
-.simulation-main .room-hud-status,
-.simulation-main .room-hud-actions button,
-.simulation-main .room-hud-actions label,
-.simulation-main .room-hud-status button,
-.simulation-main .room-hud-status summary {
-  color: var(--text-primary);
-}
 .desk-os .artifact-body {
   max-height: none;
   overflow: visible;
@@ -829,26 +801,6 @@ body:has(.site-main-start .desk-os) :is(.site-nav, .site-footer),
 
 .desk-os .os-status-note {
   color: var(--text-secondary);
-}
-
-/* Dialogue HUD keeps the shared surface and its matching semantic text. */
-.simulation-main .room-hud .room-hud-brief .room-hud-step {
-  color: var(--text-primary);
-}
-.simulation-main .room-hud .room-hud-brief .room-hud-line {
-  color: var(--text-secondary);
-}
-.simulation-main .room-hud .room-hud-brief .room-hud-compass,
-.simulation-main .room-hud .room-hud-brief .room-flavor {
-  color: var(--status-info-fg);
-}
-
-.simulation-main .room-hud-actions .start-shift {
-  color: var(--action-on-primary);
-}
-.simulation-main .room-hud-details > summary {
-  color: var(--text-secondary);
-  background: var(--surface-base);
 }
 
 /* Source links belong to their checkbox statement, including at narrow widths. */

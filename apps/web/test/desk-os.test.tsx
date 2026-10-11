@@ -52,11 +52,11 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
       </button>
       <button
         onClick={() => {
-          onInteract("fridge");
+          onInteract("coffee");
         }}
         type="button"
       >
-        Open fridge
+        Start coffee
       </button>
       <button onClick={onBreakRoomExit} type="button">
         Exit break room
@@ -429,7 +429,7 @@ describe("Desk OS mutation coordination", () => {
       ),
     );
     await user.click(
-      await screen.findByRole("button", { name: "Open fridge" }),
+      await screen.findByRole("button", { name: "Start coffee" }),
     );
     await user.click(screen.getByRole("button", { name: "Exit break room" }));
 
@@ -452,7 +452,7 @@ describe("Desk OS mutation coordination", () => {
       expect(performWorkplaceInteraction).toHaveBeenCalledTimes(1);
     });
     expect(performWorkplaceInteraction).toHaveBeenCalledWith("session-1", {
-      type: "open_fridge",
+      type: "start_coffee",
     });
 
     await enterDesk(user);

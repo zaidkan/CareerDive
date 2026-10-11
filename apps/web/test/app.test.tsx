@@ -22,9 +22,9 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
         Exit room
       </button>
       <button type="button" onClick={() => {
-            onNearbyChange("fridge", "Fridge");
+            onNearbyChange("coffee", "Coffee maker");
         }}>
-        Approach fridge
+        Approach coffee maker
       </button>
     </div>),
 }));
@@ -338,12 +338,13 @@ describe("assessed shift and debrief", () => {
                 energy: { current: 63, max: 100 },
                 fridgeOpen: true,
                 fridgeSnackBars: 1,
+                coffeeStage: "brewing",
             },
         };
         const performWorkplaceInteraction = vi.fn(() => Promise.resolve({
             view: openedView,
             sequence: 1,
-            feedback: "fridge_opened" as const,
+            feedback: "coffee_started" as const,
         }));
         const client = {
             ...clientInteractionStubs,
@@ -355,12 +356,12 @@ describe("assessed shift and debrief", () => {
         render(<App client={client}/>);
     
         await user.click(await screen.findByRole("button", { name: /Security Operations/i }));
-        await user.click(await screen.findByRole("button", { name: "Approach fridge" }, { timeout: 6000 }));
-        await user.click(screen.getByRole("button", { name: "Open fridge" }));
+        await user.click(await screen.findByRole("button", { name: "Approach coffee maker" }, { timeout: 6000 }));
+        await user.click(screen.getByRole("button", { name: "Start coffee" }));
         expect(performWorkplaceInteraction).toHaveBeenCalledWith("session-1", {
-            type: "open_fridge",
+            type: "start_coffee",
         });
-        expect(await screen.findByText("1 snack bar inside")).toBeVisible();
+        expect(await screen.findByRole("button", { name: "Finish brewing" })).toBeVisible();
         expect(screen.queryByRole("meter", { name: "Energy" })).toBeNull();
     });
     it("renders all eight debrief sections", () => {

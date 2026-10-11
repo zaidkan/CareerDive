@@ -76,11 +76,11 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
       </button>
       <button
         onClick={() => {
-          onNearbyChange("fridge", "Fridge");
+          onNearbyChange("coffee", "Coffee maker");
         }}
         type="button"
       >
-        Approach fridge
+        Approach coffee maker
       </button>
       <button
         onClick={() => {
@@ -371,8 +371,8 @@ describe("purposeful Jules dialogue panel", () => {
       screen.queryByRole("dialog", { name: "Conversation with Jules" }),
     ).toBeNull();
 
-    await user.click(screen.getByRole("button", { name: "Approach fridge" }));
-    expect(screen.getByRole("button", { name: "Open fridge" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Approach coffee maker" }));
+    expect(screen.getByRole("button", { name: "Start coffee" })).toBeDisabled();
     const coffee = screen.getByRole("button", {
       name: "Coffee resource hotspot",
     });
@@ -386,7 +386,7 @@ describe("purposeful Jules dialogue panel", () => {
       await talking.promise;
     });
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Open fridge" })).toBeEnabled();
+      expect(screen.getByRole("button", { name: "Start coffee" })).toBeEnabled();
     });
   });
 
@@ -442,8 +442,8 @@ describe("purposeful Jules dialogue panel", () => {
       within(dialog).getByRole("button", { name: "Current work" }),
     );
 
-    await user.click(screen.getByRole("button", { name: "Approach fridge" }));
-    expect(screen.getByRole("button", { name: "Close fridge" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Approach coffee maker" }));
+    expect(screen.getByRole("button", { name: "Start coffee" })).toBeDisabled();
     const coffee = screen.getByRole("button", {
       name: "Coffee resource hotspot",
     });
@@ -513,8 +513,8 @@ describe("purposeful Jules dialogue panel", () => {
       type: "close_fridge",
     });
 
-    await user.click(screen.getByRole("button", { name: "Approach fridge" }));
-    expect(screen.getByRole("button", { name: "Close fridge" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Approach coffee maker" }));
+    expect(screen.getByRole("button", { name: "Start coffee" })).toBeDisabled();
     await user.click(
       screen.getByRole("button", { name: "Cross break-room threshold" }),
     );
@@ -537,7 +537,7 @@ describe("purposeful Jules dialogue panel", () => {
     expect(onWorkplaceInteraction).toHaveBeenCalledTimes(2);
     await waitFor(() => {
       expect(
-        screen.getByRole("button", { name: "Close fridge" }),
+        screen.getByRole("button", { name: "Start coffee" }),
       ).toBeEnabled();
     });
   });
@@ -557,7 +557,7 @@ it("shows explicit alternatives without changing the displayed E action", async 
   await user.click(
     await screen.findByRole("button", { name: "Approach shared area" }),
   );
-  expect(screen.getByText(/Ready · Near: Jules/)).toBeVisible();
+  expect(screen.getByText(/Ready · Jules/)).toBeVisible();
   const choices = screen.getByLabelText("Nearby actions");
   await user.click(
     within(choices).getByRole("button", { name: /Start coffee/ }),
@@ -567,7 +567,7 @@ it("shows explicit alternatives without changing the displayed E action", async 
       type: "start_coffee",
     });
   });
-  expect(screen.getByText(/Ready · Near: Jules/)).toBeVisible();
+  expect(screen.getByText(/Ready · Jules/)).toBeVisible();
   await user.click(
     screen.getByRole("button", { name: "Leave interaction range" }),
   );

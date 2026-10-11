@@ -22,7 +22,6 @@ export function NameTag({
   return (
     <Html
       center
-      distanceFactor={11}
       position={position}
       style={{ pointerEvents: "none", userSelect: "none" }}
       zIndexRange={[12, 0]}

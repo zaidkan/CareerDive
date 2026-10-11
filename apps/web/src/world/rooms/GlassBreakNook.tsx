@@ -3,7 +3,7 @@
  * entry and out of the arrival shot. The door faces west onto the entry aisle.
  */
 import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { RefObject } from "react";
 import type { CoffeeStage } from "@sim/schemas";
 import * as THREE from "three";
@@ -18,7 +18,8 @@ import {
   WallArt,
 } from "../props/decor.js";
 import { BreakTable, OfficeChair } from "../props/furniture.js";
-import { CoffeePot, Fridge, SnackBasket } from "../props/kitchen.js";
+import { CoffeePot, Fridge, Lunchbox } from "../props/kitchen.js";
+import { playWorldSound } from "../dialogue/audio.js";
 import { MeshLabel, StickyNotes } from "../props/signage.js";
 import {
   BreakTableSupplies,
@@ -154,6 +155,11 @@ export function GlassBreakNook({
   fridgeSnackBars: number;
   coffeeStage: CoffeeStage;
 }) {
+  const previousFridgeOpen = useRef(fridgeOpen);
+  useEffect(() => {
+    if (fridgeOpen && !previousFridgeOpen.current) playWorldSound("fridge-open");
+    previousFridgeOpen.current = fridgeOpen;
+  }, [fridgeOpen]);
   const door = useRef<THREE.Group>(null);
   const angle = useRef(0);
   const { cornerX, cornerZ, wallX, wallZ, doorZ } = BREAK_NOOK;
@@ -309,7 +315,7 @@ export function GlassBreakNook({
 
       {/* Plaques flush on outer west glass (local +Z faces aisle after -90° Y) */}
       <EmployeeOfMonth
-        name="Priya"
+        name="Dana"
         position={[cornerX - 0.052, 1.55, doorZ - 1.45]}
         rotationY={-Math.PI / 2}
       />
@@ -348,7 +354,7 @@ export function GlassBreakNook({
       <group position={[7.45, 1.09, 6.87]} rotation={[0, Math.PI, 0]}>
         <CoffeePot animated={animated} position={[0, 0, 0]} stage={coffeeStage} />
       </group>
-      <SnackBasket position={[8.85, 0.945, 6.72]} />
+      <Lunchbox position={[9.05, 0.945, 6.72]} />
       <VentPapers animated={animated} position={[8.4, 0.96, 6.68]} />
       {/* Mug shelf on the wall above the counter */}
       <mesh position={[8.15, 1.62, 7.11]} castShadow>

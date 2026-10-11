@@ -78,6 +78,11 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
 }));
 
 import { SpatialShell } from "../src/world/SpatialShell.js";
+import { playWorldSound } from "../src/world/dialogue/audio.js";
+vi.mock("../src/world/dialogue/audio.js", async (importOriginal) => ({
+  ...await importOriginal<typeof import("../src/world/dialogue/audio.js")>(),
+  playWorldSound: vi.fn(),
+}));
 
 const baseView: ClientView = {
   sessionId: "break-room-session",
@@ -172,122 +177,34 @@ describe("finite break-room interaction loop", () => {
     expect(requestAnimationFrame).not.toHaveBeenCalled();
   });
 
-  it("opens, takes from, and manually closes the canonical fridge", async () => {
+  it("keeps fridge and supplies inert, with objective detail available on demand", async () => {
     const user = userEvent.setup();
-    const onWorkplaceInteraction = vi
-      .fn()
-      .mockResolvedValue(interactionResult(baseView));
-    const { rerender } = render(
-      <SpatialShell
-        onAction={() => undefined}
-        onWorkplaceInteraction={onWorkplaceInteraction}
-        view={baseView}
-      />,
-    );
+    const onWorkplaceInteraction = vi.fn();
+    render(<SpatialShell onAction={() => undefined} onWorkplaceInteraction={onWorkplaceInteraction} view={baseView} />);
     await enterSoc(user);
     await user.click(screen.getByRole("button", { name: "Approach fridge" }));
-
-    await user.click(screen.getByRole("button", { name: "Open fridge" }));
-    expect(onWorkplaceInteraction).toHaveBeenLastCalledWith({
-      type: "open_fridge",
-    });
-
-    const opened = viewWith({ fridgeOpen: true });
-    rerender(
-      <SpatialShell
-        onAction={() => undefined}
-        onWorkplaceInteraction={onWorkplaceInteraction}
-        view={opened}
-      />,
-    );
-    expect(screen.getByText("2 snack bars inside")).toBeVisible();
-    await user.click(
-      screen.getByRole("button", { name: "Take one snack bar" }),
-    );
-    expect(onWorkplaceInteraction).toHaveBeenLastCalledWith({
-      type: "take_snack",
-    });
-
-    rerender(
-      <SpatialShell
-        onAction={() => undefined}
-        onWorkplaceInteraction={onWorkplaceInteraction}
-        view={viewWith({
-          carriedSnackBites: 3,
-          fridgeOpen: true,
-          fridgeSnackBars: 1,
-        })}
-      />,
-    );
-    expect(screen.getByText("Your hands are full.")).toBeVisible();
-    expect(
-      screen.queryByRole("button", { name: "Take one snack bar" }),
-    ).not.toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Close fridge" }));
-    expect(onWorkplaceInteraction).toHaveBeenLastCalledWith({
-      type: "close_fridge",
-    });
+    expect(screen.queryByRole("button", { name: "Open fridge" })).toBeNull();
+    expect(screen.queryByText("Supplies")).toBeNull();
+    expect(screen.queryByRole("region", { name: "Fridge controls" })).toBeNull();
+    expect(onWorkplaceInteraction).not.toHaveBeenCalled();
+    const detail = screen.getByText("Objective details");
+    expect(detail.closest("details")).not.toHaveAttribute("open");
+    await user.click(detail);
+    expect(detail.closest("details")).toHaveAttribute("open");
+    expect(screen.getByRole("button", { name: /Sound on — turn sound off/ })).toBeVisible();
   });
 
-  it("shows empty-fridge copy without exposing hidden stock", async () => {
+  it("removes carried supplies after leaving the desk, without changing saved resources", async () => {
     const user = userEvent.setup();
-    render(
-      <SpatialShell
-        onAction={() => undefined}
-        view={viewWith({ fridgeOpen: true, fridgeSnackBars: 0 })}
-      />,
-    );
-    await enterSoc(user);
-    await user.click(screen.getByRole("button", { name: "Approach fridge" }));
-
-    expect(screen.getByText("The fridge is empty.")).toBeVisible();
-    expect(screen.queryByText(/snack bars inside/i)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Close fridge" })).toBeVisible();
-  });
-
-  it("keeps exact carried-bite recovery controls available after leaving the desk", async () => {
-    const user = userEvent.setup();
-    const onWorkplaceInteraction = vi
-      .fn()
-      .mockResolvedValue(interactionResult(baseView, "snack_bite_eaten"));
-    const { rerender } = render(
-      <SpatialShell
-        onAction={() => undefined}
-        onWorkplaceInteraction={onWorkplaceInteraction}
-        view={viewWith({ carriedSnackBites: 3 })}
-      />,
-    );
+    const onWorkplaceInteraction = vi.fn();
+    render(<SpatialShell onAction={() => undefined} onWorkplaceInteraction={onWorkplaceInteraction} view={viewWith({ carriedSnackBites: 3 })} />);
     await enterSoc(user);
     await user.click(screen.getByRole("button", { name: "Sit at desk" }));
-
-    expect(screen.queryByText(/Desk resources/)).toBeNull();
+    expect(playWorldSound).toHaveBeenCalledWith("sit");
     await user.click(screen.getByRole("button", { name: "Leave desk" }));
-    await user.click(screen.getByText("Supplies"));
-
-    for (const bites of [3, 2, 1] as const) {
-      expect(
-        screen.getByRole("button", {
-          name: `Eat snack — ${String(bites)} ${bites === 1 ? "bite" : "bites"} remaining`,
-        }),
-      ).toBeVisible();
-      await user.click(
-        screen.getByRole("button", {
-          name: `Eat snack — ${String(bites)} ${bites === 1 ? "bite" : "bites"} remaining`,
-        }),
-      );
-      expect(onWorkplaceInteraction).toHaveBeenLastCalledWith({
-        type: "eat_snack_bite",
-      });
-      if (bites > 1) {
-        rerender(
-          <SpatialShell
-            onAction={() => undefined}
-            onWorkplaceInteraction={onWorkplaceInteraction}
-            view={viewWith({ carriedSnackBites: bites - 1 })}
-          />,
-        );
-      }
-    }
+    expect(screen.queryByText("Supplies")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Eat snack/ })).toBeNull();
+    expect(onWorkplaceInteraction).not.toHaveBeenCalled();
   });
 
   it("exposes deterministic coffee transitions without real-time advancement", async () => {
@@ -413,7 +330,7 @@ describe("finite break-room interaction loop", () => {
     );
   });
 
-  it("queues one close from the canonical open result when exit races the open", async () => {
+  it("closes a legacy open fridge when exit races a coffee result", async () => {
     const user = userEvent.setup();
     const opened = deferred<WorkplaceInteractionResult>();
     const closed = deferred<WorkplaceInteractionResult>();
@@ -429,8 +346,8 @@ describe("finite break-room interaction loop", () => {
       />,
     );
     await enterSoc(user);
-    await user.click(screen.getByRole("button", { name: "Approach fridge" }));
-    await user.click(screen.getByRole("button", { name: "Open fridge" }));
+    await user.click(screen.getByRole("button", { name: "Approach coffee maker" }));
+    await user.click(screen.getByRole("button", { name: "Start coffee" }));
 
     const threshold = screen.getByRole("button", {
       name: "Cross break-room threshold",
@@ -456,7 +373,7 @@ describe("finite break-room interaction loop", () => {
       expect(onWorkplaceInteraction).toHaveBeenCalledTimes(2);
     });
     expect(onWorkplaceInteraction).toHaveBeenNthCalledWith(1, {
-      type: "open_fridge",
+      type: "start_coffee",
     });
     expect(onWorkplaceInteraction).toHaveBeenNthCalledWith(2, {
       type: "close_fridge",
@@ -487,8 +404,7 @@ describe("finite break-room interaction loop", () => {
       />,
     );
     await enterSoc(user);
-    await user.click(screen.getByRole("button", { name: "Approach fridge" }));
-    await user.click(screen.getByRole("button", { name: "Close fridge" }));
+    await user.click(screen.getByRole("button", { name: "Cross break-room threshold" }));
 
     const hotspot = screen.getByRole("button", {
       name: "Coffee resource hotspot",
@@ -529,8 +445,8 @@ describe("finite break-room interaction loop", () => {
       />,
     );
     await enterSoc(user);
-    await user.click(screen.getByRole("button", { name: "Approach fridge" }));
-    await user.click(screen.getByRole("button", { name: "Open fridge" }));
+    await user.click(screen.getByRole("button", { name: "Approach coffee maker" }));
+    await user.click(screen.getByRole("button", { name: "Start coffee" }));
     await user.click(
       screen.getByRole("button", { name: "Cross break-room threshold" }),
     );

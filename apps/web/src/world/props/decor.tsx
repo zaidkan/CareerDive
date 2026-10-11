@@ -361,7 +361,7 @@ export function FramedCertificate({
 export function EmployeeOfMonth({
   position,
   rotationY = 0,
-  name = "Priya",
+  name = "Dana",
 }: {
   position: [number, number, number];
   rotationY?: number;

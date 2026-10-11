@@ -2,7 +2,7 @@
  * Break-room appliances — fridge, coffee pot.
  */
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { CoffeeStage } from "@sim/schemas";
 import * as THREE from "three";
 import { makeSoftParticleTexture } from "../textures.js";
@@ -300,6 +300,52 @@ export function SnackBasket({
           <meshStandardMaterial color={bar.color} roughness={0.55} />
         </mesh>
       ))}
+    </group>
+  );
+}
+
+
+/** Someone's breakfast, not a resource station. No handlers or simulation state. */
+export function Lunchbox({ position }: { position: [number, number, number] }) {
+  const note = useMemo(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 512;
+    canvas.height = 256;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Lunchbox label requires a 2D canvas context");
+    ctx.fillStyle = "#f3eddb";
+    ctx.fillRect(0, 0, 512, 256);
+    ctx.fillStyle = "#344538";
+    ctx.textAlign = "center";
+    ctx.font = "32px sans-serif";
+    ctx.fillText("My breakfast", 256, 62);
+    ctx.font = "bold 40px sans-serif";
+    ctx.fillText("— DO NOT touch", 256, 126);
+    ctx.font = "23px sans-serif";
+    ctx.fillText("yeah, I'm talking to you, Morgan.", 256, 200);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }, []);
+  useEffect(() => () => { note.dispose(); }, [note]);
+  return (
+    <group position={position}>
+      <mesh position={[0, 0.14, 0]} castShadow>
+        <boxGeometry args={[0.52, 0.26, 0.34]} />
+        <meshStandardMaterial color="#748a6c" roughness={0.8} />
+      </mesh>
+      <mesh position={[0, 0.28, 0]} castShadow>
+        <boxGeometry args={[0.55, 0.045, 0.36]} />
+        <meshStandardMaterial color="#c6cdb5" roughness={0.75} />
+      </mesh>
+      <mesh position={[0, 0.33, 0]}>
+        <torusGeometry args={[0.065, 0.012, 6, 12, Math.PI]} />
+        <meshStandardMaterial color="#35483a" roughness={0.8} />
+      </mesh>
+      <mesh position={[0, 0.15, -0.176]} rotation={[0, Math.PI, 0]}>
+        <planeGeometry args={[0.49, 0.22]} />
+        <meshBasicMaterial map={note} toneMapped={false} />
+      </mesh>
     </group>
   );
 }
