@@ -62,3 +62,48 @@ it("production requires verified bearer; forged IDs and failed auth never fall b
   ).toBe(401);
   await server.close();
 });
+
+it("isolates simultaneous bearer verification and one owner's auth outage", async () => {
+  const owners = [randomUUID(), randomUUID()];
+  let release: () => void = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const getUser = vi.fn(async (token: string) => {
+    if (token === "slow-owner") {
+      await gate;
+      throw new Error("Authentication unavailable for this request");
+    }
+    return {
+      data: { user: { id: token === "first-owner" ? owners[0] : owners[1] } },
+      error: null,
+    };
+  });
+  const resolve = createOwnerResolver(true, { auth: { getUser } } as never);
+  const server = Fastify();
+  server.get("/owner", async (req) => ({ owner: await resolve(req) }));
+  try {
+    const blocked = server.inject({
+      url: "/owner",
+      headers: { authorization: "Bearer slow-owner" },
+    });
+    const responses = await Promise.all(
+      Array.from({ length: 16 }, (_, index) =>
+        server.inject({
+          url: "/owner",
+          headers: {
+            authorization: `Bearer ${index % 2 ? "second-owner" : "first-owner"}`,
+          },
+        }),
+      ),
+    );
+    responses.forEach((response, index) => {
+      expect(response.json()).toEqual({ owner: owners[index % 2] });
+    });
+    release();
+    expect((await blocked).json()).toEqual({ owner: "" });
+  } finally {
+    release();
+    await server.close();
+  }
+});

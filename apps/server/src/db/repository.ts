@@ -1,4 +1,5 @@
 import postgres from "postgres";
+import { poolerCompatibleOptions } from "./connection.js";
 import {
   ActionLogEntrySchema,
   EvidenceSignalSchema,
@@ -352,6 +353,7 @@ export class PostgresRepository implements SimulationRepository {
 export function createPostgresRepository(databaseUrl: string) {
   return new PostgresRepository(
     postgres(databaseUrl, {
+      ...poolerCompatibleOptions,
       max: 10,
       idle_timeout: 20,
       connect_timeout: 10,

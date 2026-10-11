@@ -4,6 +4,7 @@ import { expect, it } from "vitest";
 import { createInitialWorldState } from "@sim/core";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import { PostgresRepository } from "../src/db/repository.js";
+import { poolerCompatibleOptions } from "../src/db/connection.js";
 import {
   PostgresSupportStore,
   SupportRateLimitError,
@@ -17,7 +18,10 @@ import { createAppRouter } from "../src/trpc/router.js";
 it.skipIf(!process.env.TEST_DATABASE_URL)(
   "Postgres dedupes concurrent starts/reports and denies browser authoritative/private writes",
   async () => {
-    const sql = postgres(process.env.TEST_DATABASE_URL ?? "", { max: 8 });
+    const sql = postgres(process.env.TEST_DATABASE_URL ?? "", {
+      ...poolerCompatibleOptions,
+      max: 8,
+    });
     const owner = randomUUID();
     const other = randomUUID();
     try {
@@ -158,6 +162,14 @@ it.skipIf(!process.env.TEST_DATABASE_URL)(
       await sql.begin(async (tx) => {
         await tx`GRANT SELECT, UPDATE ON simulation_sessions TO authenticated`;
         await tx`SET LOCAL ROLE authenticated`;
+        await tx`SELECT set_config('request.jwt.claim.sub', ${owner}, true)`;
+        expect(
+          await tx`SELECT id FROM simulation_sessions WHERE id = ${sessionId}::uuid`,
+        ).toHaveLength(1);
+        await tx`SELECT set_config('request.jwt.claim.sub', ${other}, true)`;
+        expect(
+          await tx`SELECT id FROM simulation_sessions WHERE id = ${sessionId}::uuid`,
+        ).toHaveLength(0);
         await tx`SELECT set_config('request.jwt.claim.sub', ${owner}, true)`;
         expect(
           await tx`UPDATE simulation_sessions SET current_state = '{}'::jsonb WHERE id = ${sessionId}::uuid RETURNING id`,

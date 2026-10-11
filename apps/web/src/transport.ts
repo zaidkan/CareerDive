@@ -31,6 +31,17 @@ async function identityHeaders(): Promise<Record<string, string>> {
       autoRefreshToken: true,
       detectSessionInUrl: false,
     },
+    global: {
+      fetch: (input, init) => {
+        const deadline = AbortSignal.timeout(5000);
+        const signal =
+          init?.signal ?? (input instanceof Request ? input.signal : undefined);
+        return fetch(input, {
+          ...init,
+          signal: signal ? AbortSignal.any([signal, deadline]) : deadline,
+        });
+      },
+    },
   });
   const { data, error } = await supabase.auth.getSession();
   if (error) throw new Error("Identity unavailable");
@@ -57,6 +68,7 @@ export function authHeaders(): Promise<Record<string, string>> {
     if (typeof navigator !== "undefined" && "locks" in navigator)
       return await navigator.locks.request(
         "career-expo-anonymous-identity",
+        { signal: AbortSignal.timeout(8000) },
         identityHeaders,
       );
     return identityHeaders();

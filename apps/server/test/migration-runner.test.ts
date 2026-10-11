@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import postgres from "postgres";
+import { poolerCompatibleOptions } from "../src/db/connection.js";
 import { describe, expect, it } from "vitest";
 import {
   discoverMigrations,
@@ -46,6 +47,7 @@ describe("migration runner", () => {
     async () => {
       // Requires a disposable DB with auth fixture only; run once against a fresh DB.
       const sql = postgres(process.env.TEST_MIGRATION_DATABASE_URL ?? "", {
+        ...poolerCompatibleOptions,
         max: 3,
       });
       try {

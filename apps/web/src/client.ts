@@ -42,6 +42,7 @@ export function actionFailureMessage(
 }
 
 export const PENDING_SESSION_KEY = "career-expo-start-pending";
+const PENDING_CREATE_REQUEST_KEY = "career-expo-start-pending-request";
 
 export interface SimulationClient {
   createSession(input: {
@@ -153,12 +154,16 @@ export class HttpSimulationClient implements SimulationClient {
     // The default app preserves an ambiguous start across remounts/reloads.
     if (
       this === defaultClient &&
-      readTabValue<boolean>(PENDING_SESSION_KEY, false)
+      readTabValue<boolean>(PENDING_SESSION_KEY, false) &&
+      (!input.createRequestId ||
+        readTabValue<string | undefined>(
+          PENDING_CREATE_REQUEST_KEY,
+          undefined,
+        ) !== input.createRequestId)
     ) {
       throw new StartupFailure(false, "creation-unconfirmed");
     }
-    // Stable createRequestId makes unknown outcomes safe to retry.
-    // Only a failed read is safe to repeat; session.create has no idempotency contract.
+    // Retry an ambiguous write only with the original owner-scoped request ID.
     try {
       const response = await fetch(`${this.#baseUrl}/ready`, {
         signal: AbortSignal.timeout(5000),
@@ -167,7 +172,16 @@ export class HttpSimulationClient implements SimulationClient {
     } catch {
       throw new StartupFailure(true, "service-unavailable");
     }
-    if (this === defaultClient) writeTabValue(PENDING_SESSION_KEY, true);
+    if (this === defaultClient) {
+      if (input.createRequestId) {
+        writeTabValue(PENDING_CREATE_REQUEST_KEY, input.createRequestId);
+        if (
+          readTabValue(PENDING_CREATE_REQUEST_KEY, "") !== input.createRequestId
+        )
+          throw new StartupFailure(false, "storage-unavailable");
+      }
+      writeTabValue(PENDING_SESSION_KEY, true);
+    }
     try {
       return SessionResultSchema.parse(
         await this.#client.mutation("session.create", input, {

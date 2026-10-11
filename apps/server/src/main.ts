@@ -4,6 +4,7 @@ import { SupabasePublicKeySchema } from "@sim/schemas";
 import { AnthropicLlmProvider } from "@sim/ai";
 import { createOwnerResolver } from "./auth.js";
 import { verifyMigrations } from "./db/migrations.js";
+import { poolerCompatibleOptions } from "./db/connection.js";
 import { healthRoutes } from "./routes/health.js";
 import { supportRoutes } from "./routes/support.js";
 import { launchRoutes } from "./routes/launch.js";
@@ -70,6 +71,7 @@ const supabase =
 const resolveOwner = createOwnerResolver(isProduction, supabase);
 const sql = process.env.DATABASE_URL
   ? postgres(process.env.DATABASE_URL, {
+      ...poolerCompatibleOptions,
       connect_timeout: 5,
       max: 10,
       connection: { statement_timeout: 5000 },
