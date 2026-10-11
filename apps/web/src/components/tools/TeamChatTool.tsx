@@ -8,7 +8,6 @@ import {
 import { AudioToggle } from "../../world/dialogue/AudioToggle.js";
 import { MORGAN_CHOICES } from "../../world/dialogue/MorganDialogue.js";
 import { unlockDialogueAudio } from "../../world/dialogue/audio.js";
-import { useTabDraft } from "../../useTabDraft.js";
 import type { AvailableAction, ClientView } from "@sim/schemas";
 import { useOptionalOsSession } from "../../world/deskOs/osSession.js";
 import {
@@ -34,10 +33,6 @@ export function TeamChatTool({
   actions?: AvailableAction[];
   onAction?: (action: AvailableAction, freeText?: string) => void;
 }) {
-  const [drafts, setDrafts] = useTabDraft<Record<string, string>>(
-    `chat:${view.sessionId}`,
-    {},
-  );
   const [recap, setRecap] = useState<{
     eventId: string;
     body: string;
@@ -147,7 +142,6 @@ export function TeamChatTool({
       ) : null}
       {chatActions.map((action) => {
         const key = `${action.id}:${action.eventId}`;
-        const draft = drafts[key] ?? "";
         if (action.id === "ask_manager")
           return (
             <section
@@ -182,47 +176,7 @@ export function TeamChatTool({
                   </button>
                 ))}
               </div>
-              <details>
-                <summary>Ask a specific case question</summary>
-                <form
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    if (draft.trim()) {
-                      if (dialogueRef.current?.isRevealing()) {
-                        dialogueRef.current.finish();
-                        return;
-                      }
-                      unlockDialogueAudio();
-                      consult(action, draft.trim());
-                      setDrafts((current) => ({ ...current, [key]: "" }));
-                    }
-                  }}
-                >
-                  <label>
-                    Question for your manager
-                    <textarea
-                      maxLength={2000}
-                      value={draft}
-                      onChange={(event) => {
-                        setDrafts((current) => ({
-                          ...current,
-                          [key]: event.target.value,
-                        }));
-                      }}
-                    />
-                  </label>
-                  <button
-                    type="submit"
-                    disabled={
-                      !draft.trim() ||
-                      Boolean(mutationState?.pendingKey) ||
-                      !onAction
-                    }
-                  >
-                    Send case question
-                  </button>
-                </form>
-              </details>
+
             </section>
           );
         return (

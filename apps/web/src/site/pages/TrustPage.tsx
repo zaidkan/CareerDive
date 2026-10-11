@@ -1,3 +1,4 @@
+import { SiteLink } from "../SiteLink.js";
 import {
   ArtifactStage,
   ChapterSeparator,
@@ -57,7 +58,7 @@ export function TrustPage() {
           caption="The server stores current state as well as an action log; it does not rebuild the shift from clicks alone."
         />
         <p className="trust-quiet-note">
-          There is no single fixed retention period. Depending on how CareerDive is currently running, your data may only last until the system restarts, or it may be saved so you can resume your shift later.
+          Read the <SiteLink to="/privacy">Privacy Policy</SiteLink> for the published retention and deletion policy. Local in-memory development data lasts only until the server restarts.
         </p>
       </PublicChapter>
 
@@ -133,25 +134,21 @@ export function TrustPage() {
             setup, the database for stored CareerDive data.
           </li>
           <li>
-            When AI dialogue is enabled, Anthropic receives the dialogue request
-            and the limited scenario context used to phrase Morgan's reply.
-          </li>
-          <li>
             Render is the hosting provider in our deployment configuration and
             handles requests to the hosted site and API.
           </li>
         </ul>
         <p>
           Which services are active depends on the deployment. Local development
-          can use server memory and prepared dialogue instead.
+          can use server memory. Workplace dialogue is always authored.
         </p>
       </PublicChapter>
 
       <ChapterSeparator />
-      <PublicChapter surface="base" rhythm="standard" className="trust-ai">
+      <PublicChapter surface="base" rhythm="standard" className="trust-dialogue">
         <div className="ui-editorial-split ui-editorial-split--reverse">
-          <div className="trust-ai-boundary" aria-label="AI dialogue boundary">
-            <span>When AI is configured</span>
+          <div className="trust-dialogue-boundary" aria-label="Authored dialogue boundary">
+            <span>Always authored</span>
             <strong>Known facts → Morgan&apos;s reply</strong>
             <p>
               The dialogue route returns text. It does not apply a case action
@@ -159,12 +156,12 @@ export function TrustPage() {
             </p>
           </div>
           <div>
-            <h2 id="trust-ai">What AI can and cannot do</h2>
+            <h2 id="trust-dialogue">How workplace dialogue works</h2>
             <p>
-              AI can help phrase Morgan&apos;s answer. CareerDive limits which scenario facts the dialogue can use. Without an AI connection, it uses a prepared line.
+              Morgan and Jules use prewritten dialogue selected by deterministic rules. Their replies stay within the scenario context they are allowed to know.
             </p>
             <p>
-              If the generated reply tries to break the rules, the game falls back to a prepared line. These checks help keep the simulation on track.
+              Player text is not sent to a generative dialogue provider. Authored conversations provide context without changing case facts or deciding outcomes.
             </p>
           </div>
         </div>
@@ -242,12 +239,12 @@ export function TrustPage() {
               </pre>
             </div>
             <div>
-              <h3>AI boundary</h3>
-              <p>Character context and dialogue route</p>
+              <h3>Dialogue boundary</h3>
+              <p>Character knowledge and authored dialogue</p>
               <pre>
                 <code>
                   {
-                    "facts: Object.values(state.facts).filter((fact) =>\n  speakerMayKnow(fact, npcId),\n);"
+                    "const body = managerRecap(view, action.eventId, choice);"
                   }
                 </code>
               </pre>

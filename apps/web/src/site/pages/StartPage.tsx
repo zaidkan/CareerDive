@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import type { SimulationClient } from "../../client.js";
+import { acknowledgeStart, hasStartConsent, StartConsent } from "../StartConsent.js";
 
 const App = lazy(async () => {
   const mod = await import("../../index.js");
@@ -18,6 +19,33 @@ function isResume(): boolean {
 }
 
 export function StartPage({ client }: { client?: SimulationClient }) {
+  const [accepted, setAccepted] = useState(hasStartConsent);
+  if (!accepted) {
+    return (
+      <article className="page-section page-hero start-entry">
+        <h1>Start your first day</h1>
+        <p className="lede">Try the Cybersecurity Analyst shift at fictional Verdaly.</p>
+        <div className="start-cta">
+          <button
+            type="button"
+            className="start-shift"
+            aria-describedby="start-entry-consent"
+            onClick={() => {
+              acknowledgeStart();
+              setAccepted(true);
+            }}
+          >
+            Start your first day
+          </button>
+          <StartConsent id="start-entry-consent" />
+        </div>
+      </article>
+    );
+  }
+  return <ConsentedStart {...(client ? { client } : {})} />;
+}
+
+function ConsentedStart({ client }: { client?: SimulationClient }) {
   // Capture fresh entry before marking this tab as a resume.
   const [resume] = useState(isResume);
   useEffect(() => {

@@ -5,4 +5,6 @@
   <url><loc>https://careerdive.example.com/careers/cybersecurity-analyst</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://careerdive.example.com/trust</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://careerdive.example.com/faq</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://careerdive.example.com/privacy</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://careerdive.example.com/terms</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
 </urlset>

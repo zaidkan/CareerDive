@@ -74,36 +74,22 @@ it("Desk OS repeats show a recap instead of dispatching another simulation actio
   ).toHaveTextContent("Recap · no time or energy spent");
   expect(onAction).not.toHaveBeenCalled();
 });
-it("specific-question synonyms reuse the same intent recap without sending", () => {
-  const view = toClientView(
-    applyAction(createInitialWorldState("ui-specific-recap", 7, {}, pack), {
-      id: "ask_manager",
-      actorId: "player",
-      eventId: "suspicious-login-1",
-      freeText: "Which device should I check?",
-    }).state,
-  );
-  const onAction = vi.fn();
+it("offers authored manager choices without a free-text dialogue entry", () => {
+  const view = consulted();
   render(
     <TeamChatTool
       view={view}
       actions={view.availableActions.filter(
         (a) => a.id === "ask_manager" && a.eventId === "suspicious-login-1",
       )}
-      onAction={onAction}
+      onAction={vi.fn()}
     />,
   );
-  fireEvent.click(screen.getByText("Ask a specific case question"));
-  fireEvent.change(
-    screen.getByRole("textbox", { name: "Question for your manager" }),
-    { target: { value: "How do I look up this laptop?" } },
-  );
-  fireEvent.click(screen.getByRole("button", { name: "Send case question" }));
-  expect(
-    screen.getByRole("status", { name: "Morgan recap" }),
-  ).toHaveTextContent("exact laptop label");
-  expect(onAction).not.toHaveBeenCalled();
+  expect(screen.queryByRole("textbox")).toBeNull();
+  expect(screen.queryByText("Ask a specific case question")).toBeNull();
+  expect(screen.getByRole("button", { name: question })).toBeVisible();
 });
+
 it("closing a floor line uses Back to work, while a real next turn keeps Continue", () => {
   const close = vi.fn();
   const { unmount } = render(

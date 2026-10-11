@@ -116,6 +116,8 @@ it("creates exactly one assessed session directly from Start, plays film after r
       <StartPage client={client} />
     </StrictMode>,
   );
+  expect(requests).toHaveLength(0);
+  await user.click(screen.getByRole("button", { name: "Start your first day" }));
   expect(screen.queryByRole("button", { name: /Continue to floor/i })).toBeNull();
   vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
   vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(

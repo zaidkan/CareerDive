@@ -38,6 +38,8 @@ describe("public SEO", () => {
         "/careers",
         "/faq",
         "/trust",
+        "/privacy",
+        "/terms",
         ...careers
           .filter((c) => c.detailPublished)
           .map((c) => `/careers/${c.slug}`),
@@ -65,6 +67,8 @@ describe("public SEO", () => {
     for (const path of [
       "/careers/cybersecurity-analyst",
       "/faq",
+      "/privacy",
+      "/terms",
       "/start",
       "/missing",
       "/",

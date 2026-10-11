@@ -30,7 +30,7 @@ pnpm dev
 
 After startup, verify the local services with `pnpm check:dev`. Open the web
 client, choose the Cybersecurity Analyst room from the start page, and enter
-the workplace. The workstation provides the shift's Desk OS tools.
+the workplace. At the workstation, use the in-sim Desk OS login to open the shift's tools.
 
 Ports 5173 and 3001 must be free. Vite uses a strict port; development CORS
 allows `http://localhost:5173` and `http://127.0.0.1:5173`. A second stack
@@ -61,7 +61,7 @@ CareerDive is a TypeScript monorepo managed by pnpm workspaces and Turborepo.
 | `packages/core` | Deterministic state transitions, task rules, scheduling, queries, and replay |
 | `packages/schemas` | Shared Zod schemas and typed contracts |
 | `packages/career-packs` | Loading and validation of authored career packs |
-| `packages/ai` and `packages/safety` | Optional dialogue generation, context restrictions, schema validation, and safety checks |
+| `packages/safety` | Validation of user-facing text and exploration guardrails |
 | `packages/evidence` and `packages/pathways` | Evidence records and career pathway data |
 | `packages/testing` | Shared simulation verification and renderer parity contracts |
 | `packages/video` | Remotion compositions rendered to media files separately from the web runtime |
@@ -69,8 +69,7 @@ CareerDive is a TypeScript monorepo managed by pnpm workspaces and Turborepo.
 
 The server's deterministic core owns simulation state, time, consequences,
 evidence, and available knowledge. Replaying the same seed and interaction
-log produces the same state. Optional AI generates validated dialogue within
-the allowed context; it does not decide scenario facts or outcomes. The
+log produces the same state. Workplace dialogue is prewritten and selected by deterministic rules. The
 browser renders the authorized client projection and submits typed actions.
 
 ## Scripts and verification
@@ -97,8 +96,7 @@ pnpm build
 
 Browser checks and media capture require Playwright's browsers; media capture
 also requires `cwebp`. Keep ports 5173 and 3001 free before running
-`pnpm test:golden-path`. Ordinary development and the default tests do not require
-paid dialogue-provider credentials.
+`pnpm test:golden-path`. Ordinary development and the default tests do not require cloud credentials.
 
 ## Privacy and deployment
 

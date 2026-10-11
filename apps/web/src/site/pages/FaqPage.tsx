@@ -42,8 +42,8 @@ const FAQS: Faq[] = [
     a: "Submitted reflections are stored with your shift on the server and protected by identity and owner checks. They are not published or sent to employers. Public sharing links are not currently available.",
   },
   {
-    q: "Does AI decide what happens in the simulation?",
-    a: "No. CareerDive defines the scenario, allowed information, and outcomes. Where AI-assisted dialogue is used, it works inside those strict constraints. It does not get to invent scenario facts or independently change the simulation outcome.",
+    q: "How are dialogue and outcomes determined?",
+    a: "CareerDive uses prewritten dialogue. Its deterministic rules define the scenario, allowed information, and outcomes. Conversations cannot invent scenario facts or independently change the simulation outcome.",
   },
   {
     q: "What does “Taking shape” mean?",

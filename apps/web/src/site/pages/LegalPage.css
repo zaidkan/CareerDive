@@ -1,0 +1,48 @@
+.legal-page {
+  color: var(--text-secondary);
+  padding-bottom: clamp(3rem, 6vw, 6rem);
+}
+
+.legal-page .ui-chapter {
+  max-width: 72ch;
+}
+
+.legal-page h1,
+.legal-page h2,
+.legal-page strong {
+  color: var(--text-primary);
+}
+
+.legal-page h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 1.15;
+  text-wrap: balance;
+}
+
+.legal-page h2 {
+  margin: 2.5rem 0 0.75rem;
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
+  line-height: 1.35;
+}
+
+.legal-page p,
+.legal-page ul {
+  margin: 0 0 1.25rem;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.legal-page ul {
+  padding-inline-start: 1.5rem;
+}
+
+.legal-page li + li {
+  margin-top: 0.5rem;
+}
+
+.legal-page a,
+.start-consent a {
+  color: var(--action-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}

@@ -39,9 +39,7 @@ Render Docker environment values must be available as build arguments matching t
 
 | Variable                           | Scope / default                                                                                                                                                           |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_LAUNCH_ANALYTICS_ENABLED`    | Public build boolean string; only `true` enables first-party launch events. Docker default `false`, blueprint launch template `true`. Product functions with it disabled. |
-| `ANTHROPIC_API_KEY`                | API runtime secret only. Omit for prepared dialogue; no paid AI required for launch.                                                                                      |
-| `AI_SESSION_BUDGET_USD`            | API runtime; default `0.05` when optional AI is enabled                                                                                                                   |
+| `VITE_LAUNCH_ANALYTICS_ENABLED`    | Public build boolean string; only `true` enables first-party launch events. Docker default `false`, blueprint launch template `false`. Product functions with it disabled. |
 | `INSTITUTIONAL_DEPLOYMENT_ENABLED` | Keep `false`; institutional launch is outside this scope                                                                                                                  |
 | `TEST_DATABASE_URL`                | Test runner only; disposable migrated local DB. Never point tests at production.                                                                                          |
 | `TEST_MIGRATION_DATABASE_URL`      | Test runner only; fresh disposable DB with auth test fixture. Migration concurrency test requires a fresh database on each run.                                           |
@@ -51,6 +49,6 @@ No PostHog variables or SDK are required or installed by this change. First-part
 
 ## Local development
 
-With no DB or Supabase values, the API uses in-memory repositories and the browser sends a fixed local development UUID. It is not persistent across API restarts. Production startup rejects missing DB/auth/origin configuration; production browser auth rejects missing Supabase public values. A supplied invalid bearer token never falls back to a development identity. Persistent browser storage is required before creating an anonymous identity or a retryable shift, preventing duplicate owners/starts when storage is blocked.
+With no DB or Supabase values, the API uses in-memory repositories and the browser stores a random local development UUID per browser profile. It is not persistent across API restarts. Production startup rejects missing DB/auth/origin configuration; production browser auth rejects missing Supabase public values. A supplied invalid bearer token never falls back to a development identity. Persistent browser storage is required before creating an anonymous identity or a retryable shift, preventing duplicate owners/starts when storage is blocked.
 
 Anonymous identity belongs to this browser profile. Clearing its site storage loses that identity; this launch contract has no email/account recovery flow. Keep the same profile for reload/refresh smoke. A missing or foreign owner cannot resume an old session by supplying its ID.

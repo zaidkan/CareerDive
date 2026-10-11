@@ -1598,3 +1598,30 @@ a:focus-visible {
   min-height: 44px;
   margin-bottom: 1rem;
 }
+
+/* Keep the acknowledgment adjacent to its Start action in both themes. */
+.start-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+.start-consent {
+  max-width: 42ch;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.start-consent a {
+  color: var(--action-primary);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.start-entry .start-cta {
+  margin-top: 1.5rem;
+}

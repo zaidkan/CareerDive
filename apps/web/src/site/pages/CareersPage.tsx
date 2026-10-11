@@ -1,3 +1,4 @@
+import { StartLink } from "../StartConsent.js";
 import { PublicChapter, ChapterSeparator, ArtifactStage } from "../ArtDirection.js";
 import { selectProductMedia, type ProductMediaId } from "../productMedia.js";
 import {
@@ -73,7 +74,7 @@ export function CareersPage() {
           <h3 className="ui-type-h2">{cyber?.title || "Cybersecurity Analyst"}</h3>
           <p className="ui-type-body-large">{cyber?.shortSummary}</p>
           <div className="cp-actions">
-            <SiteLink to="/start" className="button-primary">Start your first day</SiteLink>
+            <StartLink className="button-primary">Start your first day</StartLink>
             {cyber && <SiteLink to={careerPath(cyber)} className="button-secondary" aria-label={`${cyber.title} details`}>View career</SiteLink>}
           </div>
         </div>

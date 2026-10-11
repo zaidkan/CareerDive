@@ -19,7 +19,7 @@ describe("trust page proof", () => {
       "What we keep",
       "Your controls",
       "How access is protected",
-      "What AI can and cannot do",
+      "How workplace dialogue works",
       "No grades. No fit score.",
       "Current school-use status",
     ]) {
@@ -45,7 +45,7 @@ describe("trust page proof", () => {
       "packages/evidence/test/evidence.test.ts",
       "utf8",
     );
-    const ai = readFileSync("packages/ai/src/index.ts", "utf8");
+    const dialogue = readFileSync("apps/web/src/world/dialogue/MorganDialogue.tsx", "utf8");
     expect(sql).toContain(
       "CREATE POLICY simulation_sessions_owner_all ON simulation_sessions",
     );
@@ -56,7 +56,7 @@ describe("trust page proof", () => {
     expect(evidenceTest).toContain(
       "expect(Object.keys(debrief.sections)).toHaveLength(8);",
     );
-    expect(ai).toContain("speakerMayKnow(fact, npcId)");
+    expect(dialogue).toContain("managerRecap(view, action.eventId, choice)");
     expect(
       screen.getByText(/CREATE POLICY simulation_sessions_owner_all/),
     ).toBeVisible();

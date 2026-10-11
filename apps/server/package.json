@@ -16,10 +16,8 @@
     "db:plan": "tsx scripts/migrate.ts --plan"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.55.1",
     "@fastify/cors": "^11.0.1",
     "@fastify/rate-limit": "^10.3.0",
-    "@sim/ai": "workspace:*",
     "@sim/career-packs": "workspace:*",
     "@sim/core": "workspace:*",
     "@sim/evidence": "workspace:*",

@@ -3,28 +3,12 @@ import {
   DEFAULT_JURISDICTION_POLICIES,
   InMemoryRepository,
   createAppRouter,
-  generateSafeNpcReply,
   resolveConsentRequirement,
   type AppContext,
 } from "../src/index.js";
-import { FakeLlmProvider } from "@sim/ai";
-import { createInitialWorldState } from "@sim/core";
-import { loadDefaultCybersecurityPack } from "@sim/career-packs";
-
-const pack = loadDefaultCybersecurityPack();
-const world = (sessionId: string, seed: number) =>
-  createInitialWorldState(sessionId, seed, {}, pack);
-
-function setup(
-  userId = "user-1",
-  provider?: ConstructorParameters<typeof FakeLlmProvider>[0],
-) {
+function setup(userId = "user-1") {
   const repository = new InMemoryRepository();
-  const router = createAppRouter(repository, {
-    ...(provider
-      ? { llmProvider: new FakeLlmProvider(provider), aiBudgetUsd: 0.05 }
-      : {}),
-  });
+  const router = createAppRouter(repository);
   const context: AppContext = { userId };
   return {
     repository,
@@ -465,32 +449,10 @@ describe("authenticated simulation API", () => {
     ).rejects.toThrow("Session not found");
   });
 
-  it("routes free text through bounded generated dialogue when configured", async () => {
-    const { caller } = setup("user-1", {
-      dialogue: "Review the visible alert and document uncertainty.",
-      tone: "neutral",
-      referencedFactIds: ["alert-visible"],
-      proposedMinorStateUpdates: [],
-    });
-    const created = await caller.session.create({
-      seed: 42,
-      sessionKind: "assessed",
-      pacingMode: "standard",
-    });
 
-    const reply = await caller.simulation.submitFreeText({
-      sessionId: created.sessionId,
-      text: "What should I review?",
-    });
-
-    expect(reply).toEqual({
-      accepted: true,
-      response: "Review the visible alert and document uncertainty.",
-    });
-  });
 });
 
-describe("mixed-age policy and bounded dialogue", () => {
+describe("jurisdiction policy", () => {
   it("derives guardian requirements from jurisdiction config", () => {
     expect(
       resolveConsentRequirement(DEFAULT_JURISDICTION_POLICIES, "US-NY", 15),
@@ -505,42 +467,4 @@ describe("mixed-age policy and bounded dialogue", () => {
     ).toBe(false);
   });
 
-  it("returns approved fallback when generation fails", async () => {
-    const provider = {
-      generate: async () => {
-        throw new Error("provider unavailable");
-      },
-    };
-
-    const result = await generateSafeNpcReply({
-      provider,
-      state: world("session-1", 42),
-      npcId: "manager",
-      userText: "What context should I review?",
-      budgetUsd: 0.05,
-    });
-
-    expect(result.source).toBe("fallback");
-    expect(result.dialogue).toContain("temporarily unavailable");
-  });
-
-  it("accepts only permitted facts from generated dialogue", async () => {
-    const provider = new FakeLlmProvider({
-      dialogue: "Review the visible alert details and document uncertainty.",
-      tone: "neutral",
-      referencedFactIds: ["alert-visible"],
-      proposedMinorStateUpdates: [],
-    });
-
-    const result = await generateSafeNpcReply({
-      provider,
-      state: world("session-1", 42),
-      npcId: "manager",
-      userText: "What context should I review?",
-      budgetUsd: 0.05,
-    });
-
-    expect(result.source).toBe("generated");
-    expect(result.dialogue).toContain("visible alert");
-  });
 });

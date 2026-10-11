@@ -13,7 +13,20 @@ async function identityHeaders(): Promise<Record<string, string>> {
   if (!url || !key) {
     if (import.meta.env.PROD)
       throw new Error("Anonymous authentication is not configured");
-    return { "x-user-id": "00000000-0000-4000-8000-000000000001" };
+    // Development also isolates visitors; this header is never a production identity.
+    try {
+      const storageKey = "careerdive-local-identity";
+      let owner = window.localStorage.getItem(storageKey);
+      if (!owner || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(owner)) {
+        owner = crypto.randomUUID();
+        window.localStorage.setItem(storageKey, owner);
+      }
+      if (window.localStorage.getItem(storageKey) !== owner)
+        throw new Error("Storage unavailable");
+      return { "x-user-id": owner };
+    } catch {
+      throw new Error("Persistent identity storage unavailable");
+    }
   }
   // Identity must survive reload before any owner-bound mutation can proceed.
   try {

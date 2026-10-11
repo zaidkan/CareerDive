@@ -1,3 +1,4 @@
+import { StartLink } from "../StartConsent.js";
 import { availabilityLabel } from "../../careers/publicCopy.js";
 import { careerPath } from "../../careers/careers.js";
 import type { PublicCareer } from "../../careers/types.js";
@@ -51,9 +52,9 @@ export function CareerCard({
       ) : null}
       <div className="career-card-actions">
         {career.simulationRoute ? (
-          <SiteLink className="start-shift" to={career.simulationRoute}>
+          <StartLink className="start-shift">
             Start your first day
-          </SiteLink>
+          </StartLink>
         ) : null}
         {career.detailPublished ? (
           <SiteLink className="career-detail-link" to={careerPath(career)}>
