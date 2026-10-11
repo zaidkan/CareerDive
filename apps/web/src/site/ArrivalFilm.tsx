@@ -124,6 +124,11 @@ export function ArrivalFilm({
         ).focus();
       }}
     >
+      {phase === "playing" ? (
+        <p className="arrival-handoff-notice" aria-live="polite">
+          Switching to fullscreen… Press Esc to exit.
+        </p>
+      ) : null}
       {!reducedMotion && !mediaFailed ? (
         <video
           ref={videoRef}

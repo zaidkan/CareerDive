@@ -61,7 +61,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-it("creates exactly one assessed session after the brief, plays film after room selection, and preserves class-client methods through movement and Desk OS", async () => {
+it("creates exactly one assessed session directly from Start, plays film after room selection, and preserves class-client methods through movement and Desk OS", async () => {
   const user = userEvent.setup();
   const initial = createInitialWorldState(
     "entry",
@@ -116,15 +116,12 @@ it("creates exactly one assessed session after the brief, plays film after room 
       <StartPage client={client} />
     </StrictMode>,
   );
-  expect(requests).toEqual([]);
+  expect(screen.queryByRole("button", { name: /Continue to floor/i })).toBeNull();
   vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
   vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(
     () => undefined,
   );
   expect(document.querySelector('video[src="/arrival-film.mp4"]')).toBeNull();
-  await user.click(
-    await screen.findByRole("button", { name: /Continue to floor/i }),
-  );
   await user.click(
     await screen.findByRole(
       "button",

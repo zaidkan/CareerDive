@@ -16,7 +16,7 @@ test("landing defers simulation runtime until Start", async ({ page }) => {
       )
       .map((entry) => entry.name),
   );
-  // StartPage is the eager brief shell; the simulation runtime stays lazy.
+  // StartPage is a lightweight entry shell; the simulation runtime stays lazy.
   expect(
     scripts.some((url) =>
       /RoomCanvas|SpatialShell|\/src\/index\.tsx/.test(url),
@@ -28,7 +28,7 @@ test("landing defers simulation runtime until Start", async ({ page }) => {
     .click();
   await expect(
     page.getByRole("heading", {
-      name: /A short simulated first shift/,
+      name: "Head to Security Operations",
     }),
   ).toBeVisible();
   await expect(page.locator('video[src="/arrival-film.mp4"]')).toHaveCount(0);
@@ -44,6 +44,12 @@ test("performance diagnostics do not crash the workplace", async ({ page }) => {
   await page
     .getByRole("button", { name: /Security Operations/ })
     .click({ force: true });
+  // Diagnostics live inside the deferred WebGL scene, not the HTML room shell.
+  await expect(page.locator(".room-stage")).toHaveAttribute(
+    "data-scene-ready",
+    "true",
+    { timeout: 60_000 },
+  );
   await expect(page.getByTestId("perf-overlay")).toContainText("tier");
   await expect(page.locator(".room-stage")).toBeVisible();
   expect(errors).toEqual([]);

@@ -4,7 +4,7 @@ import { DESK_LOGIN } from "../src/world/deskLogin.js";
 /**
  * CareerDive golden-path smoke test — the permanent product experience.
  *
- * Landing → brief → exactly ONE assessed session → floor map → SOC film
+ * Landing → exactly ONE assessed session + floor map → SOC film
  * → 3D workplace → walk → sit → login → Desk OS → leave/return.
  *
  * Determinism rules:
@@ -224,32 +224,33 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
     expect(await scanStaleConcepts(page)).toEqual([]);
   });
 
-  await test.step("2 · unchanged start CTA opens the brief", async () => {
+  await test.step("2 · start CTA opens the floor map", async () => {
     await page
       .getByRole("link", { name: /Start your first day/ })
       .first()
       .click();
     await expect(
       page.getByRole("heading", {
-        name: /^A short simulated first shift as a .+ at Verdaly$/,
+        name: "Head to Security Operations",
       }),
     ).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('video[src="/arrival-film.mp4"]')).toHaveCount(0);
   });
 
-  await test.step("3 · independent brief creates no session", async () => {
-    expect(sessionCreates.length, "brief creates no session").toBe(0);
+  await test.step("3 · no intermediate brief or entry rail", async () => {
     await expect(
       page.getByRole("button", { name: "Continue to floor" }),
-    ).toBeFocused();
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("navigation", { name: "Threshold" }),
+    ).toHaveCount(0);
     expect(await scanStaleConcepts(page)).toEqual([]);
   });
 
-  await test.step("4 · continue enters the floor map", async () => {
-    await page.getByRole("button", { name: "Continue to floor" }).click();
+  await test.step("4 · floor map waits for SOC before playing media", async () => {
     await expect(
-      page.getByRole("heading", { name: "Head to Security Operations" }),
-    ).toBeVisible({ timeout: 60_000 });
+      page.getByRole("button", { name: /Security Operations/ }),
+    ).toBeVisible();
     await expect(page.locator('video[src="/arrival-film.mp4"]')).toHaveCount(0);
   });
 
@@ -322,28 +323,44 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
     // Align with the visible chair marker while still in the open front aisle.
     // A timed northward overshoot after the 5m request can land behind the
     // cubicle on faster renderers. Both legs still use real keyboard input.
-    const marker = page.getByText("Sit at your desk", { exact: true }).locator("..");
+    const marker = page
+      .getByText("Sit at your desk", { exact: true })
+      .locator("..");
     const viewportWidth = await page.evaluate(() => window.innerWidth);
     await page.keyboard.down("d");
     try {
-      await expect.poll(async () => {
-        await page.keyboard.down("d");
-        const box = await marker.boundingBox();
-        return box ? box.x + box.width / 2 : Infinity;
-      }, { timeout: 20_000, intervals: [100] }).toBeLessThan(viewportWidth * 0.55);
+      await expect
+        .poll(
+          async () => {
+            await page.keyboard.down("d");
+            const box = await marker.boundingBox();
+            return box ? box.x + box.width / 2 : Infinity;
+          },
+          { timeout: 20_000, intervals: [100] },
+        )
+        .toBeLessThan(viewportWidth * 0.55);
     } finally {
       await page.keyboard.up("d");
     }
     await page.keyboard.down("w");
     try {
-      await expect.poll(async () => {
-        await page.keyboard.down("w");
-        return page.getByRole("button", { name: "Sit at computer" }).isVisible();
-      }, { timeout: 45_000, intervals: [100] }).toBe(true);
+      await expect
+        .poll(
+          async () => {
+            await page.keyboard.down("w");
+            return page
+              .getByRole("button", { name: "Sit at computer" })
+              .isVisible();
+          },
+          { timeout: 45_000, intervals: [100] },
+        )
+        .toBe(true);
     } finally {
       await page.keyboard.up("w");
     }
-    await expect.poll(() => movementCalls[0]?.status, { timeout: 10_000 }).toBe(200);
+    await expect
+      .poll(() => movementCalls[0]?.status, { timeout: 10_000 })
+      .toBe(200);
   });
 
   await test.step("8 · sit and sign in", async () => {
@@ -398,14 +415,20 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
     await page.getByRole("button", { name: "Next hint" }).click();
     await expect(
       page.getByRole("status").filter({ hasText: "Optional hint" }),
-    ).toContainText("Source rows support your claim; opening a record alone does not save one.");
+    ).toContainText(
+      "Source rows support your claim; opening a record alone does not save one.",
+    );
     await page.getByRole("button", { name: "Dismiss hint" }).click();
     await page.keyboard.press("f");
     // Exiting nested laptop fullscreen can reveal the still-fullscreen room.
     await expect
-      .poll(() => page.evaluate(() => Boolean(
-        document.fullscreenElement?.classList.contains("desk-os-laptop"),
-      )))
+      .poll(() =>
+        page.evaluate(() =>
+          Boolean(
+            document.fullscreenElement?.classList.contains("desk-os-laptop"),
+          ),
+        ),
+      )
       .toBe(false);
   });
 
@@ -418,9 +441,14 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
       .getByRole("textbox", { name: "Scratch notes", exact: true })
       .fill("continuity probe");
     await page.getByRole("button", { name: "Leave desk" }).click();
-    const exitRoomFullscreen = page.getByRole("button", { name: "Exit fullscreen", exact: true });
+    const exitRoomFullscreen = page.getByRole("button", {
+      name: "Exit fullscreen",
+      exact: true,
+    });
     if (await exitRoomFullscreen.isVisible()) await exitRoomFullscreen.click();
-    await expect.poll(() => page.evaluate(() => document.fullscreenElement === null)).toBe(true);
+    await expect
+      .poll(() => page.evaluate(() => document.fullscreenElement === null))
+      .toBe(true);
     await expect(page.locator(".site-nav")).toBeVisible();
     await expect(page.locator(".site-footer")).toBeVisible();
     await expect(

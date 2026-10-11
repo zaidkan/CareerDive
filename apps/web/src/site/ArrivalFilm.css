@@ -69,3 +69,17 @@
 main:has(.room-stage-arriving:not(:fullscreen)) {
   z-index: 21;
 }
+
+.arrival-handoff-notice {
+  position: absolute;
+  z-index: 1;
+  top: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 2rem);
+  padding: 0.6rem 0.9rem;
+  background: #0c0f14;
+  color: #f5f7fa;
+  text-align: center;
+  font-size: 0.875rem;
+}

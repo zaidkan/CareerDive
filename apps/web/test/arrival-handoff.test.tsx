@@ -87,6 +87,9 @@ describe("arrival handoff presentation", () => {
     );
     expect(video()).toHaveAttribute("autoplay");
     expect(video().muted).toBe(true);
+    expect(
+      screen.getByText("Switching to fullscreen… Press Esc to exit."),
+    ).toBeVisible();
     expect(video()).toHaveAttribute("playsinline");
     expect(video()).toHaveAttribute("src", "/arrival-film.mp4");
     expect(play).toHaveBeenCalled();

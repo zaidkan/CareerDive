@@ -89,14 +89,9 @@ export function ShiftHints({
         if (phase === "room_walk" && before.phase === "floor_map")
           hints.push({
             id: "arrival",
-            title: "YOUR FIRST SHIFT",
+            title: "SHIFT STARTED",
             subtitle:
               "Follow the workstation marker through the open aisle to your chair.",
-          });
-        if (phase === "seated_monitor" && before.phase === "desk_login")
-          hints.push({
-            id: "login",
-            title: "SHIFT STARTED",
           });
       }
       if (phase !== "floor_map" && !view.completed) {
@@ -141,7 +136,7 @@ export function ShiftHints({
   }, [view, phase]);
   const current = queue[0];
   useEffect(() => {
-    if (!current) return;
+    if (!current || paused) return;
     const timer = setTimeout(() => {
       setQueue((q) => q.filter((h) => h.id !== current.id));
     }, 2600);
@@ -153,7 +148,7 @@ export function ShiftHints({
       clearTimeout(timer);
       document.removeEventListener("visibilitychange", hide);
     };
-  }, [current]);
+  }, [current, paused]);
   if (paused || view.completed) return null;
   return (
     <>

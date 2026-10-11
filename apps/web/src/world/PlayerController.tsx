@@ -233,11 +233,14 @@ export function PlayerController({
     const onBlur = () => {
       keys.current.clear();
       vel.current.set(0, 0, 0);
+      movingRef.current = false;
+      bobAmt.current = 0;
     };
 
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
     window.addEventListener("blur", onBlur);
+    document.addEventListener("fullscreenchange", onBlur);
 
     return () => {
       window.removeEventListener("keydown", onKeyDown);
@@ -245,6 +248,7 @@ export function PlayerController({
       disposeLook();
       onBlur();
       window.removeEventListener("blur", onBlur);
+      document.removeEventListener("fullscreenchange", onBlur);
     };
   }, [enabled, gl.domElement, seated]);
 

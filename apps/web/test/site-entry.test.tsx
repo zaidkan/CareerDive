@@ -11,11 +11,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SiteApp } from "../src/site/SiteApp.js";
 import { parseRoute } from "../src/site/routes.js";
 import { LandingPage } from "../src/site/pages/LandingPage.js";
+import { HttpSimulationClient } from "../src/client.js";
+import { loadDefaultCybersecurityPack } from "@sim/career-packs";
+import { createInitialWorldState, toClientView } from "@sim/core";
 import { StartPage } from "../src/site/pages/StartPage.js";
 
 vi.mock("../src/world/RoomCanvas.js", () => ({
   RoomCanvas: () => <div>room mock</div>,
 }));
+
+const entryView = toClientView(
+  createInitialWorldState("s-1", 7, {}, loadDefaultCybersecurityPack()),
+);
 
 beforeEach(() => {
   window.scrollTo = vi.fn();
@@ -23,6 +30,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
   try {
     window.sessionStorage.removeItem("first-shift-start-gate");
   } catch {
@@ -68,7 +76,10 @@ describe("site routes", () => {
   });
 
   it("renders landing without creating a simulation session", () => {
-    const createSession = vi.fn();
+    const createSession = vi.spyOn(
+      HttpSimulationClient.prototype,
+      "createSession",
+    );
     render(<SiteApp initialRoute="/" />);
     expect(
       screen.getByRole("heading", {
@@ -278,6 +289,7 @@ describe("site routes", () => {
       expect(cyber).toHaveAttribute("aria-pressed", "false");
     } finally {
       cleanup();
+      vi.restoreAllMocks();
       vi.useRealTimers();
       vi.unstubAllGlobals();
     }
@@ -323,7 +335,10 @@ describe("site routes", () => {
     ).toBeInTheDocument();
   });
 
-  it("landing hero routes directly into the independent brief", async () => {
+  it("landing hero routes directly to the floor map", async () => {
+    vi.spyOn(HttpSimulationClient.prototype, "createSession").mockResolvedValue(
+      { sessionId: "s-1", view: entryView },
+    );
     window.history.pushState(null, "", "/");
     render(<SiteApp />);
     const cta = screen.getAllByRole("link", {
@@ -335,14 +350,15 @@ describe("site routes", () => {
       await screen.findByRole(
         "heading",
         {
-          name: /a short simulated first shift as a junior/i,
+          name: /head to security operations/i,
         },
         { timeout: 6000 },
       ),
     ).toBeVisible();
     expect(
-      screen.getByRole("button", { name: /continue to floor/i }),
-    ).toHaveFocus();
+      screen.queryByRole("button", { name: /continue to floor/i }),
+    ).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "Threshold" })).toBeNull();
     expect(document.querySelector('video[src="/arrival-film.mp4"]')).toBeNull();
     const laterHeading = document.createElement("h1");
     laterHeading.textContent = "Later simulation heading";
@@ -352,9 +368,9 @@ describe("site routes", () => {
     window.history.pushState(null, "", "/");
   });
 
-  it("opens the unchanged brief before creating exactly one assessed session", async () => {
+  it("opens the floor map and creates exactly one assessed session", async () => {
     const createSession = vi.fn(() =>
-      Promise.resolve({ sessionId: "s-1", view: undefined as never }),
+      Promise.resolve({ sessionId: "s-1", view: entryView }),
     );
     const client = {
       createSession,
@@ -365,20 +381,19 @@ describe("site routes", () => {
       getDebrief: vi.fn(),
     };
     render(<StartPage client={client} />);
-    expect(createSession).not.toHaveBeenCalled();
     expect(
       await screen.findByRole("heading", {
-        name: /a short simulated first shift as a junior/i,
+        name: /head to security operations/i,
       }),
     ).toBeVisible();
     expect(
-      screen.getByText(/walk the floor map into security operations/i),
-    ).toBeVisible();
+      screen.queryByRole("button", { name: /continue to floor/i }),
+    ).toBeNull();
+    expect(screen.queryByRole("navigation", { name: "Threshold" })).toBeNull();
     expect(
       screen.queryByRole("button", { name: /play arrival film/i }),
     ).toBeNull();
     expect(document.querySelector('video[src="/arrival-film.mp4"]')).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /continue to floor/i }));
     await waitFor(() => {
       expect(createSession).toHaveBeenCalledTimes(1);
     });
@@ -387,9 +402,11 @@ describe("site routes", () => {
     );
   });
 
-  it("maps the old film gate to the brief without an upfront media dependency", async () => {
+  it("maps the old film gate to the floor without upfront media", async () => {
     window.sessionStorage.setItem("first-shift-start-gate", "film");
-    const createSession = vi.fn();
+    const createSession = vi
+      .fn()
+      .mockResolvedValue({ sessionId: "s-1", view: entryView });
     const client = {
       createSession,
       performAction: vi.fn(),
@@ -400,10 +417,12 @@ describe("site routes", () => {
     };
     render(<StartPage client={client} />);
     expect(
-      await screen.findByRole("button", { name: /continue to floor/i }),
+      await screen.findByRole("heading", {
+        name: /head to security operations/i,
+      }),
     ).toBeVisible();
     expect(document.querySelector('video[src="/arrival-film.mp4"]')).toBeNull();
-    expect(createSession).not.toHaveBeenCalled();
+    expect(createSession).toHaveBeenCalledTimes(1);
   });
 
   it("sets per-route document title", () => {
@@ -417,7 +436,7 @@ describe("site routes", () => {
       createSession: vi.fn(() =>
         Promise.resolve({
           sessionId: "s-1",
-          view: undefined as never,
+          view: entryView,
         }),
       ),
       performAction: vi.fn(),
@@ -435,6 +454,9 @@ describe("site routes", () => {
     expect(
       screen.queryByRole("heading", { name: /short preview film/i }),
     ).toBeNull();
+    await screen.findByRole("heading", {
+      name: /head to security operations/i,
+    });
     // Sim bootstraps immediately (no film re-gate).
     expect(client.createSession).toHaveBeenCalledTimes(1);
   });

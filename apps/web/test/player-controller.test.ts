@@ -52,6 +52,31 @@ function tick() {
   for (let i = 0; i < 60; i++) harness.frames[0]?.({}, 1 / 60);
 }
 describe("office movement", () => {
+  it("clears held movement on fullscreen exit and re-entry, then accepts fresh input", () => {
+    const distance = vi.fn();
+    const camera = setup({ onAcceptedDistance: distance });
+    window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW" }));
+    tick();
+    expect(camera.position.z).toBeLessThan(2);
+    document.dispatchEvent(new Event("fullscreenchange"));
+    distance.mockClear();
+    // The next render removes the cosmetic walking bob without moving the player.
+    harness.frames[0]?.({}, 0);
+    const stopped = camera.position.clone();
+    tick();
+    expect(camera.position.x).toBe(stopped.x);
+    expect(camera.position.z).toBe(stopped.z);
+    expect(distance).not.toHaveBeenCalled();
+    document.dispatchEvent(new Event("fullscreenchange"));
+    tick();
+    expect(camera.position.x).toBe(stopped.x);
+    expect(camera.position.z).toBe(stopped.z);
+    window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyD" }));
+    tick();
+    expect(camera.position.x).toBeGreaterThan(2.5);
+    expect(distance).toHaveBeenCalled();
+  });
+
   it("accepts WASD and arrows after a HUD button click without stealing button activation", () => {
     const camera = setup();
     const button = document.createElement("button");

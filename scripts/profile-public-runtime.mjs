@@ -38,10 +38,10 @@ try {
       .click();
     await page
       .getByRole("heading", {
-        name: "A short simulated first shift as a Junior Cybersecurity Analyst at Verdaly",
+        name: "Head to Security Operations",
       })
       .waitFor();
-    output[i].startToBriefMs = Date.now() - startAt;
+    output[i].startToMapMs = Date.now() - startAt;
     await context.close();
   }
 } finally {
@@ -54,7 +54,7 @@ writeFileSync(
 console.log(
   output.map((x) => ({
     load: x.load,
-    startToBriefMs: x.startToBriefMs,
+    startToMapMs: x.startToMapMs,
     lcp: x.lcp,
     cls: x.cls,
     js: x.resources

@@ -3,10 +3,15 @@ import { expect, test, type Page } from "@playwright/test";
 async function chooseSoc(page: Page) {
   await page.goto("/start");
   await expect(
-    page.getByRole("heading", { name: /A short simulated first shift/ }),
+    page.getByRole("heading", { name: "Head to Security Operations" }),
   ).toBeVisible();
   await expect(page.locator('video[src="/arrival-film.mp4"]')).toHaveCount(0);
-  await page.getByRole("button", { name: "Continue to floor" }).click();
+  await expect(
+    page.getByRole("button", { name: "Continue to floor" }),
+  ).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Threshold" })).toHaveCount(
+    0,
+  );
   await page.getByRole("button", { name: /Security Operations/ }).click();
 }
 async function expectLiveRoom(page: Page) {
@@ -119,7 +124,9 @@ test("film end holds a fullscreen entering veil until the delayed WebGL scene re
   }
 });
 
-test("denied native fullscreen keeps the film above the site header and still enters live SOC", async ({ page }) => {
+test("denied native fullscreen keeps the film above the site header and still enters live SOC", async ({
+  page,
+}) => {
   await page.addInitScript(() => {
     HTMLElement.prototype.requestFullscreen = () =>
       Promise.reject(new DOMException("Fullscreen denied", "NotAllowedError"));
@@ -130,9 +137,13 @@ test("denied native fullscreen keeps the film above the site header and still en
   const enter = page.getByRole("button", { name: "Enter Security Operations" });
   await expect(enter).toBeFocused();
   expect(await page.evaluate(() => document.fullscreenElement)).toBeNull();
-  expect(await page.evaluate(() => Boolean(
-    document.elementFromPoint(40, 30)?.closest(".room-stage-arriving"),
-  ))).toBe(true);
+  expect(
+    await page.evaluate(() =>
+      Boolean(
+        document.elementFromPoint(40, 30)?.closest(".room-stage-arriving"),
+      ),
+    ),
+  ).toBe(true);
   await page.keyboard.press("Enter");
   await expectLiveRoom(page);
 });
