@@ -919,6 +919,7 @@
 .careers-page-v4 .cp-actions {
   display: flex;
   gap: var(--space-md);
+  flex-wrap: wrap;
   justify-content: center;
   margin-top: var(--space-lg);
 }
@@ -977,6 +978,15 @@
 
 /* UI-4 Typography & Control System (Fixing P0s) */
 .careers-page-v4 {
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+  --space-4xl: clamp(4rem, 8vw, 8rem);
+  --text-sm: 0.9rem;
   --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
   --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
 }
@@ -1092,7 +1102,7 @@
   --status-success-fg: #276548;
 }
 :root[data-theme="light"] .cyber-detail .start-shift {
-  color: #fff;
+  color: var(--action-on-primary);
 }
 
 @media (max-width: 900px) {

@@ -19,9 +19,9 @@ export const ROUTE_META: Record<
   RouteMeta
 > = {
   home: {
-    title: "Try a short cybersecurity shift and debrief · CareerDive",
+    title: "Explore Careers with a Career Simulation | CareerDive",
     description:
-      "Try a ~10–15-minute Junior Cybersecurity Analyst first-shift simulation. Review recorded decisions, evidence and unknowns. One playable career; four previews.",
+      "Unsure what career you want? Explore a junior cybersecurity analyst’s work in a 10–15-minute career simulation, then review your decisions. Four previews.",
     path: "/",
     index: true,
   },
@@ -40,29 +40,30 @@ export const ROUTE_META: Record<
     index: true,
   },
   faq: {
-    title: "FAQ: scope, access, assessment limits · CareerDive",
+    title: "How Do I Know What Career I Want? Career FAQ | CareerDive",
     description:
-      "How long is the shift, do you need gaming skill, what does AI do, are reflections shared, is 3D required, is this a real job assessment?",
+      "Questions about exploring careers, trying a cybersecurity career simulation, privacy and the debrief. Understand what a short shift can and cannot tell you.",
     path: "/faq",
     index: true,
   },
   start: {
-    title: "Start your short first-shift simulation · CareerDive",
+    title: "Start a Cybersecurity Career Simulation | CareerDive",
     description:
       "Watch the short arrival film, then try a ~10–15-minute cybersecurity first-shift simulation at fictional Verdaly and review your evidence-based debrief.",
     path: "/start",
     index: false,
   },
   careers: {
-    title: "One playable career and four previews · CareerDive",
+    title: "Explore Careers: Cybersecurity and Career Previews | CareerDive",
     description:
-      "Start with one playable career, Junior Cybersecurity Analyst: a ~10–15-minute simulated slice and evidence-based debrief. Four other careers are previews only.",
+      "Explore careers through selected work tasks. Try a junior cybersecurity analyst simulation; preview nursing, mechanical engineering, electrical work and law.",
     path: "/careers",
     index: true,
   },
 };
 
-function metaForRoute(route: SiteRoute): RouteMeta {
+export function metaForRoute(route: SiteRoute): RouteMeta {
+  if (route.kind === "how-it-works") return ROUTE_META.home;
   if (route.kind === "not-found") {
     return {
       title: "Page not found · CareerDive",
@@ -79,8 +80,11 @@ function metaForRoute(route: SiteRoute): RouteMeta {
         pathname: `/careers/${route.slug}`,
       });
     return {
-      title: `${career.title} · CareerDive`,
-      description: career.shortSummary,
+      title: `${career.title}: Day in the Life Simulation | CareerDive`,
+      description:
+        career.slug === "cybersecurity-analyst"
+          ? "Curious about a cybersecurity analyst’s day? Try a 10–15-minute simulated first shift: review alerts, check evidence and leave a handoff. Not a full workday."
+          : career.shortSummary,
       path: `/careers/${career.slug}`,
       index: true,
     };
@@ -88,8 +92,71 @@ function metaForRoute(route: SiteRoute): RouteMeta {
   return ROUTE_META[route.kind];
 }
 
+/** Origin is supplied by the existing Vite SITE_ORIGIN contract, like the sitemap. */
+export function canonicalUrl(path: string): string {
+  return new URL(path, `${BASE_URL}/`).href;
+}
+
+export function structuredDataForRoute(route: SiteRoute) {
+  const meta = metaForRoute(route);
+  if (!meta.index) return null;
+  const url = canonicalUrl(meta.path);
+  const website = {
+    "@type": "WebSite",
+    "@id": canonicalUrl("/#website"),
+    name: SITE_NAME,
+    url: canonicalUrl("/"),
+    description: ROUTE_META.home.description,
+    inLanguage: "en",
+  };
+  const page = {
+    "@type": route.kind === "careers" ? "CollectionPage" : "WebPage",
+    "@id": `${url}#webpage`,
+    url,
+    name: meta.title,
+    description: meta.description,
+    inLanguage: "en",
+    isPartOf: { "@id": website["@id"] },
+    ...(route.kind === "career"
+      ? { about: { "@id": `${url}#occupation` } }
+      : {}),
+  };
+  const graph: Record<string, unknown>[] = [website, page];
+  if (route.kind !== "home") {
+    const crumbs = [{ name: SITE_NAME, item: canonicalUrl("/") }];
+    if (route.kind === "career")
+      crumbs.push({ name: "Explore careers", item: canonicalUrl("/careers") });
+    crumbs.push({ name: meta.title.split(" | ")[0] ?? meta.title, item: url });
+    graph.push({
+      "@type": "BreadcrumbList",
+      "@id": `${url}#breadcrumbs`,
+      itemListElement: crumbs.map((crumb, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        ...crumb,
+      })),
+    });
+  }
+  if (route.kind === "career") {
+    const career = getCareerBySlug(route.slug);
+    if (career?.detailPublished) {
+      // Describes the occupation discussed on the page, not a vacancy,
+      // certification, assessment, salary promise, or complete working day.
+      graph.push({
+        "@type": "Occupation",
+        "@id": `${url}#occupation`,
+        name: career.title,
+        description: career.workplaceSummary,
+        skills: career.skills.join(", "),
+        mainEntityOfPage: { "@id": page["@id"] },
+      });
+    }
+  }
+  return { "@context": "https://schema.org", "@graph": graph };
+}
+
 function upsertMeta(selector: string, create: () => HTMLElement): HTMLElement {
-  const existing = document.querySelector(selector);
+  const existing = document.head.querySelector(selector);
   if (existing instanceof HTMLElement) return existing;
   const element = create();
   document.head.appendChild(element);
@@ -99,52 +166,66 @@ function upsertMeta(selector: string, create: () => HTMLElement): HTMLElement {
 export function useRouteMeta(route: SiteRoute): void {
   useEffect(() => {
     const meta = metaForRoute(route);
+    const url = canonicalUrl(meta.path);
+    const image = canonicalUrl("/og.png");
+    const imageAlt =
+      "Verdaly tower entrance with glowing doors beneath the VERDALY sign";
     document.title = meta.title;
 
-    const description = upsertMeta('meta[name="description"]', () => {
-      const el = document.createElement("meta");
-      el.setAttribute("name", "description");
-      return el;
-    });
-    description.setAttribute("content", meta.description);
-
+    const tags = {
+      description: meta.description,
+      robots: meta.index ? "index,follow" : "noindex,follow",
+      "twitter:card": "summary_large_image",
+      "twitter:title": meta.title,
+      "twitter:description": meta.description,
+      "twitter:image": image,
+      "twitter:image:alt": imageAlt,
+    };
+    const properties = {
+      "og:type": "website",
+      "og:site_name": SITE_NAME,
+      "og:locale": "en_US",
+      "og:title": meta.title,
+      "og:description": meta.description,
+      "og:url": url,
+      "og:image": image,
+      "og:image:width": "1200",
+      "og:image:height": "630",
+      "og:image:alt": imageAlt,
+    };
+    for (const [attribute, values] of [
+      ["name", tags],
+      ["property", properties],
+    ] as const) {
+      for (const [key, content] of Object.entries(values)) {
+        const element = upsertMeta(`meta[${attribute}="${key}"]`, () => {
+          const el = document.createElement("meta");
+          el.setAttribute(attribute, key);
+          return el;
+        });
+        element.setAttribute("content", content);
+      }
+    }
     const canonical = upsertMeta('link[rel="canonical"]', () => {
       const el = document.createElement("link");
       el.setAttribute("rel", "canonical");
       return el;
     });
-    canonical.setAttribute("href", `${BASE_URL}${meta.path}`);
+    canonical.setAttribute("href", url);
 
-    const robots = upsertMeta('meta[name="robots"]', () => {
-      const el = document.createElement("meta");
-      el.setAttribute("name", "robots");
+    const data = structuredDataForRoute(route);
+    const existing = document.head.querySelector("#site-structured-data");
+    if (!data) {
+      existing?.remove();
+      return;
+    }
+    const script = upsertMeta("#site-structured-data", () => {
+      const el = document.createElement("script");
+      el.id = "site-structured-data";
+      el.setAttribute("type", "application/ld+json");
       return el;
     });
-    robots.setAttribute(
-      "content",
-      meta.index ? "index,follow" : "noindex,follow",
-    );
-
-    const ogTitle = upsertMeta('meta[property="og:title"]', () => {
-      const el = document.createElement("meta");
-      el.setAttribute("property", "og:title");
-      return el;
-    });
-    ogTitle.setAttribute("content", meta.title);
-
-    const ogDescription = upsertMeta('meta[property="og:description"]', () => {
-      const el = document.createElement("meta");
-      el.setAttribute("property", "og:description");
-      return el;
-    });
-    ogDescription.setAttribute("content", meta.description);
-
-    const ogUrl = upsertMeta('meta[property="og:url"]', () => {
-      const el = document.createElement("meta");
-      el.setAttribute("property", "og:url");
-      return el;
-    });
-    ogUrl.setAttribute("content", `${BASE_URL}${meta.path}`);
+    script.textContent = JSON.stringify(data).replace(/</g, "\\u003c");
   }, [route]);
 }
 

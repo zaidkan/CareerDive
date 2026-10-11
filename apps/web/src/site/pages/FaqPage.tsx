@@ -8,6 +8,14 @@ type Faq = {
 };
 
 const FAQS: Faq[] = [
+  {
+    q: "How do I know what career I want?",
+    a: "Start by exploring what the work involves, rather than looking for a quiz to choose for you. Try selected tasks, reflect on what interested you and what felt difficult, and compare that with further research or conversations with people in the field. CareerDive offers one short cybersecurity simulation as a starting point; it cannot decide your career or establish your fit.",
+  },
+  {
+    q: "Can I explore a cybersecurity analyst’s day in the life?",
+    a: "CareerDive samples selected junior cybersecurity analyst tasks: read a handoff, review alerts, check evidence, document your reasoning and leave a next step. The 10–15-minute simulation is a slice of the work, not a complete day in the life. The debrief shows recorded decisions, supporting evidence and unknowns, not a hiring assessment or credential.",
+  },
   ...HOME_FAQ,
   {
     q: "What does the short first shift involve?",
