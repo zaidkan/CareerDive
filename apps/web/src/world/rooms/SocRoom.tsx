@@ -730,30 +730,32 @@ export function SocRoom({
       />
 
       {/* Exit door — charcoal frame, oak leaf, and readable label */}
-      <group position={[0, 0, ROOM.halfZ - 0.2]}>
-        {/* Solid recess closes the complete 2.2m wall opening behind the leaf.
-            Keep plaque surfaces proud of the leaf to avoid z-fighting. */}
-        <mesh position={[0, 1.2, 0.19]} castShadow receiveShadow>
-          <boxGeometry args={[2.22, 2.4, 0.3]} />
-          <meshStandardMaterial color="#2a2b2c" roughness={0.8} />
+      <group name="soc-exit-door" position={[0, 0, ROOM.halfZ - 0.2]}>
+        {/* Full-height solid backing embeds 20cm into either wall and extends
+            below the floor/above the lintel. Its front (+0.14) sits behind
+            the wall face (+0.05) and clear of the leaf back (+0.09).
+            Visible leaf/frame faces never overlap; only hidden wall volumes do. */}
+        <mesh name="soc-exit-backing" position={[0, WALL_H / 2, 0.44]} castShadow receiveShadow>
+          <boxGeometry args={[2.6, WALL_H + 0.1, 0.6]} />
+          <meshStandardMaterial color="#2a2b2c" roughness={0.8} transparent={false} opacity={1} depthWrite />
         </mesh>
         <mesh position={[-1.04, 1.25, 0]} castShadow>
-          <boxGeometry args={[0.14, 2.5, 0.18]} />
+          <boxGeometry args={[0.16, 2.5, 0.18]} />
           <meshStandardMaterial color="#2a2b2c" roughness={0.55} />
         </mesh>
         <mesh position={[1.04, 1.25, 0]} castShadow>
-          <boxGeometry args={[0.14, 2.5, 0.18]} />
+          <boxGeometry args={[0.16, 2.5, 0.18]} />
           <meshStandardMaterial color="#2a2b2c" roughness={0.55} />
         </mesh>
-        <mesh position={[0, 2.55, 0]} castShadow>
-          <boxGeometry args={[2.22, 0.14, 0.2]} />
+        <mesh position={[0, 2.58, 0]} castShadow>
+          <boxGeometry args={[2.24, 0.16, 0.18]} />
           <meshStandardMaterial color="#2a2b2c" roughness={0.55} />
         </mesh>
-        <mesh position={[0, 1.25, 0.02]} castShadow>
-          <boxGeometry args={[1.98, 2.5, 0.14]} />
-          <meshStandardMaterial color="#c9a97f" roughness={0.55} />
+        <mesh name="soc-exit-leaf" position={[0, 1.27, 0.02]} castShadow>
+          <boxGeometry args={[1.86, 2.38, 0.14]} />
+          <meshStandardMaterial color="#c9a97f" roughness={0.65} transparent={false} opacity={1} depthWrite />
         </mesh>
-        <mesh position={[0.65, 1.25, 0.08]}>
+        <mesh position={[0.65, 1.25, -0.07]}>
           <boxGeometry args={[0.06, 0.28, 0.05]} />
           <meshStandardMaterial
             color="#c4a060"
@@ -761,19 +763,19 @@ export function SocRoom({
             roughness={0.35}
           />
         </mesh>
-        <mesh position={[0, 2.35, -0.11]}>
+        <mesh position={[0, 2.35, -0.07]}>
           <boxGeometry args={[0.7, 0.18, 0.04]} />
           <meshStandardMaterial color="#1a3028" />
         </mesh>
         <MeshLabel
           text="EXIT"
-          position={[0, 2.35, -0.135]}
+          position={[0, 2.35, -0.105]}
           rotationY={Math.PI}
           width={0.65}
           height={0.14}
         />
         <mesh position={[0, 0.04, -0.15]} receiveShadow>
-          <boxGeometry args={[2.0, 0.06, 0.45]} />
+          <boxGeometry args={[2.24, 0.06, 0.45]} />
           <meshStandardMaterial color="#3b3c3b" roughness={0.8} />
         </mesh>
       </group>
