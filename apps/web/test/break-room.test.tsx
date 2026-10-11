@@ -149,7 +149,8 @@ async function enterSoc(user: ReturnType<typeof userEvent.setup>) {
   await user.click(
     screen.getByRole("button", { name: /Security Operations/i }),
   );
-  await screen.findByRole("button", { name: "Approach fridge" });
+  // RoomCanvas is lazy: cold transforms must fit the existing spatial budget.
+  await screen.findByRole("button", { name: "Approach fridge" }, { timeout: 6000 });
 }
 
 describe("finite break-room interaction loop", () => {

@@ -1,0 +1,75 @@
+{
+  "environment": {
+    "node": "25.9.0",
+    "pnpm": "11.5.3",
+    "vitest": "3.2.6",
+    "platform": "darwin",
+    "arch": "arm64",
+    "availableCPUs": 8
+  },
+  "runs": [
+    {
+      "run": 1,
+      "started": "2026-10-11T15:16:52.287060+00:00",
+      "seconds": 105.58,
+      "pressureWorkers": 6,
+      "exitCode": 0,
+      "passed": 1074,
+      "failed": 0,
+      "pending": 13,
+      "failures": []
+    },
+    {
+      "run": 2,
+      "started": "2026-10-11T15:18:37.868818+00:00",
+      "seconds": 100.47,
+      "pressureWorkers": 6,
+      "exitCode": 0,
+      "passed": 1074,
+      "failed": 0,
+      "pending": 13,
+      "failures": []
+    },
+    {
+      "run": 3,
+      "started": "2026-10-11T15:20:18.342142+00:00",
+      "seconds": 96.18,
+      "pressureWorkers": 6,
+      "exitCode": 0,
+      "passed": 1074,
+      "failed": 0,
+      "pending": 13,
+      "failures": []
+    },
+    {
+      "run": 4,
+      "started": "2026-10-11T15:21:54.523322+00:00",
+      "seconds": 90.93,
+      "pressureWorkers": 6,
+      "exitCode": 0,
+      "passed": 1074,
+      "failed": 0,
+      "pending": 13,
+      "failures": []
+    },
+    {
+      "run": 5,
+      "started": "2026-10-11T15:23:25.449139+00:00",
+      "seconds": 95.5,
+      "pressureWorkers": 6,
+      "exitCode": 0,
+      "passed": 1074,
+      "failed": 0,
+      "pending": 13,
+      "failures": []
+    }
+  ],
+  "testFiles": 159,
+  "testIdentifiers": 1087,
+  "statuses": {
+    "passed": 1074,
+    "skipped": 13
+  },
+  "allFiveInventoriesMatchBaseline": true,
+  "inventorySha256": "26a37b9e3d51f1d2e78fca73df3e007c9075a7bd82bfec15238a41f17898af0a"
+}
