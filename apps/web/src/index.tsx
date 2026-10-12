@@ -83,6 +83,20 @@ export function App({ client = defaultClient, arrivalFilmEnabled = false }: {
     setView(undefined);
     setDebrief(undefined);
     setDebriefStatus(undefined);
+    // Reassure the user while a spun-down API cold-starts (feature-detected;
+    // mock clients in tests simply omit the hook).
+    const readyWaitAware = client as {
+      onReadyWait?: (listener: ((attempt: number) => void) | undefined) => void;
+    };
+    readyWaitAware.onReadyWait?.((attempt) => {
+      if (!startupActiveRef.current) return;
+      if (generation !== sessionGenerationRef.current) return;
+      setStartupStatus(
+        attempt <= 1
+          ? "Waking the workplace… this can take up to a minute."
+          : "Still waking the workplace… hang tight.",
+      );
+    });
     const freshInput = {
       createRequestId: crypto.randomUUID(),
       seed: Date.now() & 0x7fffffff,
@@ -203,6 +217,7 @@ export function App({ client = defaultClient, arrivalFilmEnabled = false }: {
     return () => {
       startupActiveRef.current = false;
       sessionGenerationRef.current += 1;
+      readyWaitAware.onReadyWait?.(undefined);
     };
   }, [client, invalidateMutations, sessionRequest]);
 

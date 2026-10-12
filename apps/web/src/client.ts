@@ -23,6 +23,14 @@ import {
 import { z } from "zod";
 import { readTabValue, writeTabValue } from "./useTabDraft.js";
 
+// Free-tier hosts (e.g. Render) spin down idle instances and can take ~50s to
+// cold-start. The /ready pre-check polls within this budget before a shift is
+// created, so a sleeping API recovers on its own instead of surfacing an error.
+// Repeating the pre-check is safe: no session exists until it succeeds.
+const READY_WAIT_BUDGET_MS = 60_000;
+const READY_ATTEMPT_TIMEOUT_MS = 5_000;
+const READY_RETRY_DELAY_MS = 1_500;
+
 /** Preserve only handled status validation guidance; unexpected errors stay generic. */
 export function actionFailureMessage(
   cause: unknown,
@@ -122,6 +130,14 @@ export class StartupFailure extends Error {
 export class HttpSimulationClient implements SimulationClient {
   readonly #baseUrl: string;
   readonly #client: ReturnType<typeof createTRPCUntypedClient>;
+  // Optional progress hook: called with the attempt number while waiting for a
+  // cold-starting API so the UI can reassure the user instead of looking frozen.
+  #onReadyWait: ((attempt: number) => void) | undefined;
+
+  onReadyWait(listener: ((attempt: number) => void) | undefined): this {
+    this.#onReadyWait = listener;
+    return this;
+  }
 
   constructor(baseUrl: string) {
     this.#baseUrl = baseUrl;
@@ -159,12 +175,35 @@ export class HttpSimulationClient implements SimulationClient {
     }
     // Stable createRequestId makes unknown outcomes safe to retry.
     // Only a failed read is safe to repeat; session.create has no idempotency contract.
-    try {
-      const response = await fetch(`${this.#baseUrl}/ready`, {
-        signal: AbortSignal.timeout(5000),
-      });
-      if (!response.ok) throw new Error("Unavailable");
-    } catch {
+    // A spun-down free-tier instance can take ~50s to cold-start, so poll /ready
+    // with backoff before giving up. No session is created until this read succeeds,
+    // so repeating it cannot start a duplicate shift.
+    const readyDeadline = Date.now() + READY_WAIT_BUDGET_MS;
+    let readyError: unknown;
+    for (let attempt = 0; ; attempt += 1) {
+      try {
+        const response = await fetch(`${this.#baseUrl}/ready`, {
+          signal: AbortSignal.timeout(READY_ATTEMPT_TIMEOUT_MS),
+        });
+        if (response.ok) {
+          readyError = undefined;
+          break;
+        }
+        readyError = new Error("Unavailable");
+      } catch (cause) {
+        readyError = cause;
+      }
+      const remaining = readyDeadline - Date.now();
+      if (remaining <= 0) break;
+      this.#onReadyWait?.(attempt + 1);
+      await new Promise((resolve) =>
+        setTimeout(
+          resolve,
+          Math.min(READY_RETRY_DELAY_MS * (attempt + 1), remaining),
+        ),
+      );
+    }
+    if (readyError !== undefined) {
       throw new StartupFailure(true, "service-unavailable");
     }
     if (this === defaultClient) writeTabValue(PENDING_SESSION_KEY, true);
