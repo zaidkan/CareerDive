@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { readFileSync } from "node:fs";
 import { afterEach, expect, it, vi } from "vitest";
-import { LaunchEventNameSchema } from "@sim/schemas";
 
 const { authHeaders } = vi.hoisted(() => ({ authHeaders: vi.fn() }));
 vi.mock("../src/transport.js", () => ({ apiOrigin: "https://api.offline.invalid", authHeaders }));
@@ -10,21 +9,29 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
-it("launch configuration suppresses every event without network calls, identity creation, or storage writes", async () => {
+it("launch configuration enables first-party events using no third-party analytics SDK", async () => {
   const blueprint = readFileSync("render.yaml", "utf8");
-  expect(blueprint).toMatch(/key: VITE_LAUNCH_ANALYTICS_ENABLED\s+value: "false"/);
-  expect(readFileSync(".env.example", "utf8")).toContain("VITE_LAUNCH_ANALYTICS_ENABLED=false");
-  vi.stubEnv("VITE_LAUNCH_ANALYTICS_ENABLED", "false");
-  const fetch = vi.fn();
-  const setItem = vi.fn();
+  expect(blueprint).toMatch(/key: VITE_LAUNCH_ANALYTICS_ENABLED\s+value: "true"/);
+  vi.stubEnv("VITE_LAUNCH_ANALYTICS_ENABLED", "true");
+  authHeaders.mockResolvedValue({});
+  const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ saved: true }) });
+  const store: Record<string, string> = {};
   vi.stubGlobal("fetch", fetch);
-  vi.stubGlobal("sessionStorage", { setItem });
+  vi.stubGlobal("sessionStorage", {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => {
+      store[key] = value;
+    },
+  });
   const { launchEvent } = await import("../src/analytics.js");
-  for (const event of LaunchEventNameSchema.options) {
-    launchEvent(event, "cybersecurity-analyst", "offline-occurrence");
-  }
-  expect(fetch).not.toHaveBeenCalled();
-  expect(authHeaders).not.toHaveBeenCalled();
-  expect(setItem).not.toHaveBeenCalled();
+  launchEvent("landing");
+  await vi.waitFor(() => {
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+  const call = fetch.mock.calls[0] ?? [];
+  const url = call[0] as string;
+  const init = call[1] as RequestInit;
+  expect(url).toBe("https://api.offline.invalid/api/launch-events");
+  expect(JSON.parse(init.body as string)).toMatchObject({ name: "landing" });
   expect(readFileSync("apps/web/package.json", "utf8")).not.toMatch(/posthog/i);
 });

@@ -47,7 +47,7 @@ const FAQS: Faq[] = [
   },
   {
     q: "Do I need an account, and is anything tracked?",
-    a: "No name, email, or manual signup is needed for the simulation. CareerDive uses a browser-based Supabase anonymous identity to save and resume your data; anonymous use does not mean no data is collected. Optional analytics and PostHog are off at launch. CareerDive does not sell personal information. Render and Supabase process ordinary operational and network information, including IP addresses and logs; fonts are served from CareerDive itself.",
+    a: "No name, email, or manual signup is needed for the simulation. CareerDive uses a browser-based Supabase anonymous identity to save and resume your data; anonymous use does not mean no data is collected. CareerDive records only anonymous, aggregate usage counts (such as how many times the site is opened or a shift is started), with no third-party analytics. CareerDive does not sell personal information. Render and Supabase process ordinary operational and network information, including IP addresses and logs; fonts are served from CareerDive itself.",
   },
   {
     q: "Who can start a shift?",

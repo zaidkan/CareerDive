@@ -40,4 +40,4 @@ services:
       - key: BUILD_SHA
         sync: false
       - key: VITE_LAUNCH_ANALYTICS_ENABLED
-        value: "false"
+        value: "true"

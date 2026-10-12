@@ -132,7 +132,7 @@ export function TrustPage() {
           </li>
         </ul>
         <p>
-          Hosting providers process ordinary network and operational information, including IP addresses and logs. Fonts are served by CareerDive itself. Optional analytics and PostHog are off at launch; there is no session replay or keystroke recording. CareerDive does not sell personal information.
+          Hosting providers process ordinary network and operational information, including IP addresses and logs. Fonts are served by CareerDive itself. CareerDive records only anonymous, aggregate usage counts (such as how many times the site is opened or a shift is started) with no third-party analytics, session replay, or keystroke recording. CareerDive does not sell personal information.
         </p>
       </PublicChapter>
 
