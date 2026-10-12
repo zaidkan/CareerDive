@@ -518,6 +518,7 @@ function SpatialShellStage({
         {walking && morganOpen ? (
           <MorganDialogue
             view={view}
+            canDiscussHandoff={Boolean(spatial.deskAuthenticated)}
             actions={view.availableActions.filter(
               (a) => a.id === "ask_manager",
             )}

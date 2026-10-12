@@ -258,6 +258,8 @@ export function collectMetrics({ leakPatterns = [] } = {}) {
     })(),
     homeReflectLeft: document.querySelector(".home-reflect-content")?.getBoundingClientRect().left ?? null,
     homeShiftLeft: document.querySelector(".home-shift-chapter")?.getBoundingClientRect().left ?? null,
+    homeStartBlocks: document.querySelectorAll(".v2-home .start-cta").length,
+    homeConsentLines: document.querySelectorAll(".v2-home .start-consent").length,
     homeSectionOrder: Array.from(document.querySelectorAll(".v2-home > section")).map((section) => section.className),
     homeAnalysisCropWidth: document.querySelector(".home-debrief-crop")?.clientWidth ?? 0,
     homeAnalysisCropHeight: document.querySelector(".home-debrief-crop")?.clientHeight ?? 0,
@@ -423,8 +425,10 @@ export function evaluateChecks({ route, theme, motion, metrics }) {
   if (route.key === "home") {
     const order = metrics.homeSectionOrder ?? [];
     push("home-feature-order", JSON.stringify(order) === JSON.stringify([
-      "home-hero", "home-place", "home-realwork", "home-analysis", "home-shift", "home-launch", "home-reflect", "home-faq", "home-final",
+      "home-hero", "home-place", "home-realwork", "home-analysis", "home-shift", "home-launch", "home-reflect", "home-faq",
     ]), order);
+    push("one-home-start-and-consent", metrics.homeStartBlocks === 1 && metrics.homeConsentLines === 1,
+      { starts: metrics.homeStartBlocks, consents: metrics.homeConsentLines });
     push("home-launch-manual-playback", metrics.homeLaunchManual === true, metrics.homeLaunchManual);
     push("home-reflection-aligned", metrics.homeReflectLeft !== null &&
       metrics.homeShiftLeft !== null && Math.abs(metrics.homeReflectLeft - metrics.homeShiftLeft) <= 1,

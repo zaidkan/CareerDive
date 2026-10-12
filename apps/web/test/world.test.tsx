@@ -22,6 +22,7 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
       >
         Sit at desk
       </button>
+      <button type="button" onClick={() => { onInteract("morgan_station"); }}>Talk to Morgan</button>
       <button
         type="button"
         onClick={() => {
@@ -351,4 +352,16 @@ describe("spatial presentation", () => {
       await screen.findByRole("button", { name: /Sit at desk/i }),
     ).toBeVisible();
   });
+});
+
+it.each([false, true])("gates Morgan handoff choices using actual desk authentication (%s)", async (deskAuthenticated) => {
+  const user = userEvent.setup();
+  const current = structuredClone(view);
+  current.availableActions.push({ id: "ask_manager", eventId: "suspicious-login-1", systemId: "team_chat", label: "Ask your manager", description: "Discuss this case", simulatedMinutes: 2 });
+  render(<SpatialShell view={current} onAction={vi.fn()} recoveryPresentation={{ current: { phase: "room_walk", roomId: "soc", deskAuthenticated } }} />);
+  await user.click(await screen.findByRole("button", { name: "Talk to Morgan" }));
+  const handoff = screen.queryByRole("button", { name: "What should the next analyst know?" });
+  if (deskAuthenticated) expect(handoff).toBeVisible();
+  else expect(handoff).toBeNull();
+  expect(screen.getByRole("button", { name: "What case context do we have?" })).toBeVisible();
 });

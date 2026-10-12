@@ -37,6 +37,9 @@
 .home-hero-grid {
   align-items: center;
 }
+.home-hero-copy {
+  min-width: 0;
+}
 .home-hero-copy h1 {
   max-width: 16ch;
   margin: 0 0 1.35rem;
@@ -51,10 +54,9 @@
   max-width: 40ch;
 }
 .home-hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem 1.65rem;
+  display: grid;
+  justify-items: start;
+  gap: 0.8rem;
   margin-top: 1.9rem;
 }
 .home-hero-meta {
@@ -72,13 +74,28 @@
   justify-self: end;
 }
 .v2-home .home-hero-grid {
+  width: min(100%, 1120px);
+  margin-inline: auto;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
-  gap: clamp(3rem, 6vw, 6rem);
+  gap: clamp(2rem, 4.4vw, 4rem);
 }
 @media (max-width: 1000px) {
   .v2-home .home-hero-grid {
     grid-template-columns: 1fr;
     gap: 3rem;
+  }
+  .home-hero-copy {
+    text-align: center;
+  }
+  .home-hero-copy h1,
+  .home-hero-copy .ui-type-proof {
+    margin-inline: auto;
+  }
+  .home-hero-actions {
+    justify-items: center;
+  }
+  .home-hero-actions .start-cta {
+    align-items: center;
   }
   .home-hero-stage {
     justify-self: center;
@@ -321,25 +338,6 @@
   .home-debrief-crop {
     aspect-ratio: 4 / 5;
   }
-}
-
-/* —— Final —— */
-.home-final-inner {
-  display: grid;
-  justify-items: center;
-  gap: 0.35rem;
-  text-align: center;
-}
-.home-final-inner h2 {
-  max-width: 20ch;
-}
-.home-final-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem 1.65rem;
-  margin-top: 1.6rem;
 }
 
 /* —— Restored career work-sample excerpts (verbatim approved pack quotes) —— */
