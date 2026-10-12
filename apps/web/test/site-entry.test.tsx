@@ -6,6 +6,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SiteApp } from "../src/site/SiteApp.js";
@@ -202,7 +203,6 @@ describe("site routes", () => {
       "home-launch",
       "home-reflect",
       "home-faq",
-      "home-final",
     ]);
     expect(
       screen.getByRole("heading", { name: "An honest review, not a score." }),
@@ -229,10 +229,17 @@ describe("site routes", () => {
     ).toBeNull();
     expect(screen.queryByText(/requests stay on this page/i)).toBeNull();
     expect(
-      screen.getByRole("heading", {
+      screen.queryByRole("heading", {
         name: "Try a shift. See how you reasoned.",
       }),
-    ).toBeVisible();
+    ).toBeNull();
+    expect(document.querySelector(".home-final")).toBeNull();
+    expect(document.querySelectorAll(".v2-home .start-cta")).toHaveLength(1);
+    const hero = document.querySelector(".home-hero");
+    if (!hero) throw new Error("Missing hero");
+    expect(within(hero as HTMLElement).getByRole("link", { name: /Start your first day/ })).toHaveAttribute("href", "/start");
+    expect(within(hero as HTMLElement).getByRole("link", { name: "Terms" })).toHaveAttribute("href", "/terms");
+    expect(within(hero as HTMLElement).getByRole("link", { name: "Privacy Policy" })).toHaveAttribute("href", "/privacy");
     expect(
       screen.getByRole("heading", { name: /questions, answered plainly/i }),
     ).toBeVisible();

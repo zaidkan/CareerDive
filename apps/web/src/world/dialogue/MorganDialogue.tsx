@@ -14,12 +14,15 @@ export function MorganDialogue({
   actions,
   onAction,
   pending,
+  canDiscussHandoff = false,
   onClose,
 }: {
   view: ClientView;
   actions: AvailableAction[];
   onAction: (action: AvailableAction, freeText?: string) => void;
   pending: boolean;
+  /** Presentation gate: wrap-up questions become relevant after workstation login. */
+  canDiscussHandoff?: boolean;
   onClose: () => void;
 }) {
   const source = view.artifacts.find(
@@ -119,7 +122,9 @@ export function MorganDialogue({
         onAdvance={onClose}
       >
         <div className="jules-dialogue-topics">
-          {MORGAN_CHOICES.map((choice, index) => (
+          {MORGAN_CHOICES.filter((choice) =>
+            canDiscussHandoff || choice !== "What should the next analyst know?",
+          ).map((choice, index) => (
             <button
               autoFocus={index === 0}
               type="button"

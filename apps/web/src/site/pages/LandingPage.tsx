@@ -169,7 +169,6 @@ export function LandingPage() {
   const analysisRef = useChapterReveal<HTMLDivElement>();
   const reflectRef = useChapterReveal<HTMLDivElement>();
   const faqRef = useChapterReveal<HTMLDivElement>();
-  const finalRef = useChapterReveal<HTMLDivElement>();
 
   // Hero cards: one finite rearrangement cycle, settling on Cyber.
   const [heroActive, setHeroActive] = useState(0);
@@ -506,37 +505,7 @@ export function LandingPage() {
         </PublicChapter>
       </section>
 
-      <section className="home-final" aria-labelledby="home-final-title">
-        <PublicChapter
-          as="div"
-          surface="finale"
-          rhythm="final"
-          width="wide"
-          className="home-final-chapter"
-        >
-          <div
-            ref={finalRef}
-            data-motion="chapter-reveal"
-            className="home-final-inner"
-          >
-            <h2 id="home-final-title" data-motion-role="argument">
-              Try a shift. See how you reasoned.
-            </h2>
-            <p>
-              Try the work before investing in the path. Free, with no application.
-            </p>
-            <div className="home-final-actions">
-              <StartLink className="start-shift v2-primary">
-                {startLabel}
-                <span aria-hidden="true"> ↗</span>
-              </StartLink>
-              <SiteLink className="v2-text-link" to="/careers">
-                Career and previews <span aria-hidden="true">→</span>
-              </SiteLink>
-            </div>
-          </div>
-        </PublicChapter>
-      </section>
+
     </div>
   );
 }

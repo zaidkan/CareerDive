@@ -140,3 +140,17 @@ it("reopened Morgan selects the most recent exchanged case", () => {
     "deadline isn't an access approval",
   );
 });
+
+it("offers floor handoff questions only after workstation login while retaining first-contact choices", () => {
+  const view = consulted();
+  const onAction = vi.fn();
+  const props = { view, actions: view.availableActions.filter(a => a.id === "ask_manager"), onAction, onClose: vi.fn(), pending: false };
+  const { rerender } = render(<MorganDialogue {...props} />);
+  expect(screen.queryByRole("button", { name: "What should the next analyst know?" })).toBeNull();
+  expect(screen.getByRole("button", { name: "What case context do we have?" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "What remains uncertain?" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Back to work" })).toBeVisible();
+  rerender(<MorganDialogue {...props} canDiscussHandoff />);
+  fireEvent.click(screen.getByRole("button", { name: "What should the next analyst know?" }));
+  expect(onAction).toHaveBeenCalledWith(expect.objectContaining({ id: "ask_manager", eventId: "suspicious-login-1" }), "What should the next analyst know?");
+});
