@@ -539,11 +539,14 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
       "That workplace interaction could not be completed.",
     );
     expect(await scanStaleConcepts(page)).toEqual([]);
-    // A selectable experience-mode screen would surface as radio/select controls.
+    // Only the case picker and closed-ended scratch notes use select controls.
     await expect(
       page.getByRole("combobox", { name: "Current case" }),
     ).toHaveCount(1);
-    expect(await page.locator("select").count()).toBe(1);
+    await expect(
+      page.getByRole("combobox", { name: "Scratch notes", exact: true }),
+    ).toHaveCount(1);
+    expect(await page.locator("select").count()).toBe(2);
     expect(await page.locator('[role="radio"]').count()).toBe(0);
     expect(sessionCreates.length).toBe(1);
     expect(sessionCreates[0]?.status).toBe(200);
