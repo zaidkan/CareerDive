@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 async function chooseSoc(page: Page) {
   await page.goto("/start");
+  await page.getByRole("button", { name: "Start your first day", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Head to Security Operations" }),
   ).toBeVisible();

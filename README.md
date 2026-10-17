@@ -6,14 +6,21 @@ playable experience is a Junior Cybersecurity Analyst shift inside a fictional c
 Technologies — walk a 3D office, sit at a workstation, investigate a suspicious-login alert using
 desk tools, weigh evidence, and hand off your findings.
 
-<!-- TODO(owner): add the live URL + a screenshot or short GIF of the SOC office here before sharing.
-     Example:
-     🔗 Live: https://<your>.onrender.com
-     ![CareerDive — Security Operations office](docs/media/soc-office.png)
--->
-
 > It's a short, honest slice of selected tasks — not a complete account of a career, and not a
 > "career-fit score." The goal is to let someone *feel* what a kind of work is like before committing to it.
+
+## Demo
+
+The walkthrough is: **Start your first day → Security Operations → arrival film →
+walk to your desk → sign in → investigate with Desk OS**. Other careers are Workshop
+previews, not playable simulations.
+
+![CareerDive Security Operations office rendered in the browser](docs/media/soc-office.jpg)
+
+![Desk OS walkthrough switching between investigation tools](docs/media/desk-os-demo.gif)
+
+These captures show the current source running locally with the development API.
+See [capture details](docs/media/README.md) and [local setup](#local-development).
 
 ---
 
@@ -45,11 +52,15 @@ it — not by taking a test about yourself.
   keep the contract honest end to end.
 - **Real-time 3D in React.** The workplace is Three.js / React Three Fiber with adaptive quality
   tiers and reduced-motion support, including a depth-parallax city skyline behind glass curtain walls.
-- **Privacy by design.** Anonymous sessions (no accounts), closed-ended inputs only, analytics off,
-  90-day auto-deletion, no third-party AI in the runtime. See [Privacy](docs/planning/PRIVACY-POLICY.md).
-- **Tested like production.** ~1,080 passing tests across unit, integration, renderer-parity, and
-  Playwright browser checks; a checksummed, lock-serialized database migration runner; owner-scoped
-  data isolation verified against real PostgreSQL.
+- **Transactional persistence.** PostgreSQL transactions and revision checks protect concurrent
+  simulation writes. A checksummed migration runner uses an advisory transaction lock to serialize
+  migration attempts. The repository includes hand-authored SQL migrations and transactional queries.
+- **Anonymous exploration.** No signup; anonymous authentication provides session ownership.
+  Simulation inputs use predefined choices, dialogue is authored, and the runtime calls no AI provider.
+  Render build defaults enable first-party aggregate milestone counts; no third-party analytics SDK.
+- **Verification at several layers.** Vitest covers simulation rules, API behavior, React components,
+  and renderer parity. Playwright separately checks browser flows. PostgreSQL integration tests
+  require explicitly configured disposable databases and otherwise skip; see [verification](#scripts-and-verification).
 
 ## Tech stack
 
@@ -74,8 +85,10 @@ pnpm dev
 | API health | `http://localhost:3001/health` |
 | tRPC API | `http://localhost:3001/trpc` |
 
-After startup, verify local services with `pnpm check:dev`, open the web client, choose the
-Cybersecurity Analyst room, and enter the workplace. Local dev runs without `DATABASE_URL` (uses a
+After startup, verify local services with `pnpm check:dev`, open the web client, click
+**Start your first day**, and select **Security Operations** on the floor map. After the arrival
+film, use WASD to reach the desk and E to sit. The fictional workstation's sign-in details appear
+on its sticky note. Local dev runs without `DATABASE_URL` (uses a
 process-local in-memory repository). Production requires PostgreSQL + Supabase config; see the
 [environment contract](docs/ops/environment-contract.md). Ports 5173 and 3001 must be free (Vite uses
 a strict port):
@@ -127,10 +140,21 @@ pnpm build
 Browser checks and media capture require Playwright's browsers (media capture also needs `cwebp`).
 Ordinary development and the default tests do not require cloud credentials.
 
+`pnpm test` runs the default Vitest suite; it does not run Playwright or intentionally failing
+development contracts (`pnpm test:red`). Live-database tests skip without their test database
+variables. GitHub's [CI workflow](https://github.com/zaidkan/CareerDive/actions/workflows/ci.yml)
+runs lint, type checking, the default tests, and the production build; check the run for the
+commit being reviewed before treating it as verified.
+
 ## Deployment
 
-Production uses the Docker services in `render.yaml` (Render), with PostgreSQL + anonymous auth via
-Supabase. Database migrations use a checksummed runner — inspect the plan before applying:
+`render.yaml` defines Docker web/API services for Render, with PostgreSQL and anonymous authentication
+via Supabase. Automatic deployment is disabled in the blueprint; its presence does not establish
+which commit a live service runs. Compare each service's successful deployed commit with the
+intended release before redeploying, especially if production was pinned to a fix on another branch.
+README, screenshots, and test-only changes do not require a production redeploy.
+
+Database migrations use a checksummed runner — inspect the plan before applying:
 
 ```bash
 pnpm --filter @sim/server db:plan     # offline, does not connect
@@ -143,9 +167,13 @@ configuration, and the web/API boundary (web `VITE_*`/`SITE_ORIGIN`/`BUILD_SHA` 
 
 ## Privacy
 
-Anonymous use (no accounts), closed-ended inputs, analytics off at launch, 90-day data retention, no
-runtime AI. Intended for ages 13+. Full policy: [Privacy Policy](docs/planning/PRIVACY-POLICY.md) ·
-[Terms](docs/planning/TERMS.md).
+Intended for ages 13+, with anonymous authentication and predefined simulation inputs. Optional
+support reports are separate from simulation input. The web build can enable first-party aggregate
+milestone counts; Render defaults enable them. No third-party analytics SDK or runtime AI provider.
+Database-backed servers run hourly cleanup for simulation sessions older than 90 days; this does
+not delete authentication users, support reports, or career requests. See
+[retention details](docs/ops/simulation-retention.md), [Privacy Policy](apps/web/src/site/legal/privacy.md),
+and [Terms](apps/web/src/site/legal/terms.md).
 
 ## Documentation
 

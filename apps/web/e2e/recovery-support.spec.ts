@@ -1,11 +1,5 @@
 import { expect, test } from "@playwright/test";
 
-test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() =>
-    { sessionStorage.setItem("first-shift-start-gate", "sim"); },
-  );
-});
-
 test("temporary connection failure retries once, manual retry starts one shift", async ({
   page,
 }) => {
@@ -20,6 +14,7 @@ test("temporary connection failure retries once, manual retry starts one shift",
     if (request.url().includes("/trpc/session.create")) sessions++;
   });
   await page.goto("/start");
+  await page.getByRole("button", { name: "Start your first day", exact: true }).click();
   const retry = page.getByRole("button", { name: "Retry starting shift" });
   await expect(retry).toBeVisible();
   await expect(retry).toBeFocused();
@@ -69,6 +64,7 @@ test("no WebGL offers compatible workstation and useful report without backend",
     route.fulfill({ status: 404 }),
   );
   await page.goto("/start");
+  await page.getByRole("button", { name: "Start your first day", exact: true }).click();
   await page.getByRole("button", { name: /Security Operations/ }).click();
   await expect(
     page.getByRole("heading", { name: "Continue in the recovery workstation" }),
@@ -135,6 +131,7 @@ test("unconfirmed creation never repeats POST", async ({ page }) => {
     await route.abort("failed");
   });
   await page.goto("/start");
+  await page.getByRole("button", { name: "Start your first day", exact: true }).click();
   await expect(
     page.getByText(/couldn't confirm whether your shift started/),
   ).toBeVisible();

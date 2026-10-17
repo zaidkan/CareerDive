@@ -23,8 +23,8 @@ test("landing defers simulation runtime until Start", async ({ page }) => {
     ),
   ).toBe(false);
   await page
+    .locator(".home-hero")
     .getByRole("link", { name: /Start your first day/ })
-    .first()
     .click();
   await expect(
     page.getByRole("heading", {
@@ -37,10 +37,8 @@ test("landing defers simulation runtime until Start", async ({ page }) => {
 test("performance diagnostics do not crash the workplace", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(String(error)));
-  await page.addInitScript(() => {
-    sessionStorage.setItem("first-shift-start-gate", "sim");
-  });
   await page.goto("/start?perf=1");
+  await page.getByRole("button", { name: "Start your first day", exact: true }).click();
   await page
     .getByRole("button", { name: /Security Operations/ })
     .click({ force: true });
@@ -61,9 +59,6 @@ test("unconfirmed session creation stays paused across reload", async ({
   page,
 }) => {
   let creates = 0;
-  await page.addInitScript(() => {
-    sessionStorage.setItem("first-shift-start-gate", "sim");
-  });
   await page.route("**/ready", async (route) => {
     await route.fulfill({ json: { status: "ok" } });
   });
@@ -72,6 +67,7 @@ test("unconfirmed session creation stays paused across reload", async ({
     await route.abort("failed");
   });
   await page.goto("/start");
+  await page.getByRole("button", { name: "Start your first day", exact: true }).click();
   await expect(
     page.getByText(/couldn't confirm whether your shift started/),
   ).toBeVisible();
