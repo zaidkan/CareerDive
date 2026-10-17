@@ -34,10 +34,10 @@ test("completion opens five-decision debrief across themes and viewports", async
 
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.addInitScript(() => {
-    sessionStorage.setItem("first-shift-start-gate", "sim");
     localStorage.setItem("career-expo-theme", "dark");
   });
   await page.goto("/start", { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "Start your first day", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Head to Security Operations" })).toBeVisible();
   await page.getByRole("button", { name: /Security Operations/ }).click({ force: true });
   await expect(page.getByRole("region", { name: "Workplace space" })).toBeVisible();

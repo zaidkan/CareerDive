@@ -125,6 +125,11 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
   // Includes HUD help clicks before walking; allow slow software-rendered 3D input.
   test.setTimeout(360_000);
 
+  // The film follows the saved sound preference; exercise the muted path.
+  await page.addInitScript(() => {
+    localStorage.setItem("career-expo:simulation-muted", "true");
+  });
+
   const sessionCreates: SessionCreateCall[] = [];
   const movementCalls: MovementCall[] = [];
   const failedApiResponses: string[] = [];
@@ -219,15 +224,15 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
       }),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: /Start your first day/ }).first(),
+      page.locator(".home-hero").getByRole("link", { name: /Start your first day/ }),
     ).toBeVisible();
     expect(await scanStaleConcepts(page)).toEqual([]);
   });
 
   await test.step("2 · start CTA opens the floor map", async () => {
     await page
+      .locator(".home-hero")
       .getByRole("link", { name: /Start your first day/ })
-      .first()
       .click();
     await expect(
       page.getByRole("heading", {
@@ -534,11 +539,14 @@ test("entry → walk → sit → login → Desk OS continuity", async ({ page })
       "That workplace interaction could not be completed.",
     );
     expect(await scanStaleConcepts(page)).toEqual([]);
-    // A selectable experience-mode screen would surface as radio/select controls.
+    // Only the case picker and closed-ended scratch notes use select controls.
     await expect(
       page.getByRole("combobox", { name: "Current case" }),
     ).toHaveCount(1);
-    expect(await page.locator("select").count()).toBe(1);
+    await expect(
+      page.getByRole("combobox", { name: "Scratch notes", exact: true }),
+    ).toHaveCount(1);
+    expect(await page.locator("select").count()).toBe(2);
     expect(await page.locator('[role="radio"]').count()).toBe(0);
     expect(sessionCreates.length).toBe(1);
     expect(sessionCreates[0]?.status).toBe(200);

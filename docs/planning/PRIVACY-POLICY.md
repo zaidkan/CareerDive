@@ -1,6 +1,6 @@
 # CareerDive Privacy Policy
 
-**Last updated: October 11, 2026**
+**Last updated: October 12, 2026**
 
 CareerDive is a free, non-commercial educational project created and operated by **Zaid Khan as an individual**. It is not a company, and it does not earn money from your use of the site.
 
@@ -40,11 +40,13 @@ CareerDive does **not** sell personal information, build advertising profiles, r
 
 ## 4. Analytics, cookies, and browser storage
 
-**Optional analytics are not enabled at launch.** PostHog analytics are disabled. CareerDive does not use session replay, heatmaps, keystroke recording, or tracking cookies.
+**CareerDive collects a small number of anonymous, aggregate usage counts.** These are first-party counts that measure how many times basic milestones happen — for example, that someone opened the site, viewed a career, or started or completed a shift. Each count is stored as a random one-time identifier, the name of the milestone, and the time it happened. These records contain **no names, no email addresses, no free text, no IP addresses, no device fingerprints, and no link to your anonymous session identity**. They cannot be used to recognize you, and they are only used in aggregate to understand overall usage of the project.
+
+CareerDive does **not** use any third-party analytics service, session replay, heatmaps, keystroke recording, cross-site tracking, or tracking cookies.
 
 CareerDive does use browser storage for necessary functions, such as keeping an anonymous authentication session and remembering certain simulation or interface state. This is different from using cookies to track you across websites.
 
-If analytics are added later, I will review the information collected and update this policy before enabling them, including any choices or notices required by applicable law.
+If I later add a third-party analytics service or collect anything beyond these anonymous aggregate counts, I will review the information collected and update this policy before enabling it, including any choices or notices required by applicable law.
 
 ## 5. Services that help run CareerDive
 
@@ -53,11 +55,9 @@ CareerDive uses the following service providers:
 - **Render** hosts the website and backend service. It may process ordinary request, network, and operational information, including IP addresses and logs.
 - **Supabase** provides the database and anonymous authentication. It processes the session identifier, authentication information, and information stored by the simulation.
 
-The current website code also loads some fonts from **Google Fonts**. When a browser requests those fonts, Google can receive ordinary connection information, such as the visitor's IP address. This is separate from CareerDive's simulation records. If those fonts are self-hosted before publication, this paragraph should be removed.
-
 ## 6. How long information is kept
 
-**Saved simulation data is automatically deleted after 90 days.** This includes the simulation records covered by CareerDive's retention process, such as saved session activity, observations, and reflections.
+**Saved simulation sessions older than 90 days are automatically deleted**, measured from when each session was created. Updating or resuming a shift does not restart that period. Database-backed servers run cleanup at startup and hourly; outages, active writes, or a large backlog can delay deletion. The cleanup includes associated activity, observations, and reflections.
 
 The 90-day simulation-data rule does not necessarily apply to optional support reports, emails sent to me, anonymous authentication records, or network/security logs maintained by service providers. These are handled separately for support and operational purposes. You may contact me to request deletion of information associated with your use of CareerDive.
 
