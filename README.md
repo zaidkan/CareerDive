@@ -11,6 +11,8 @@ desk tools, weigh evidence, and hand off your findings.
 
 ## Demo
 
+[Open the live demo](https://careerdive.onrender.com/)
+
 The walkthrough is: **Start your first day → Security Operations → arrival film →
 walk to your desk → sign in → investigate with Desk OS**. Other careers are Workshop
 previews, not playable simulations.
