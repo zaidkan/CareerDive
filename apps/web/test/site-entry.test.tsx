@@ -12,7 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SiteApp } from "../src/site/SiteApp.js";
 import { parseRoute } from "../src/site/routes.js";
 import { LandingPage } from "../src/site/pages/LandingPage.js";
-import { HttpSimulationClient } from "../src/client.js";
+import { HttpSimulationClient, type SimulationClient } from "../src/client.js";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import { createInitialWorldState, toClientView } from "@sim/core";
 import { StartPage } from "../src/site/pages/StartPage.js";
@@ -375,7 +375,7 @@ describe("site routes", () => {
   });
 
   it("opens the floor map and creates exactly one assessed session", async () => {
-    const createSession = vi.fn(() =>
+    const createSession = vi.fn<SimulationClient["createSession"]>(() =>
       Promise.resolve({ sessionId: "s-1", view: entryView }),
     );
     const client = {
@@ -406,7 +406,9 @@ describe("site routes", () => {
     });
     expect(createSession).toHaveBeenCalledWith(
       expect.objectContaining({ sessionKind: "assessed" }),
+      expect.anything(),
     );
+    expect(createSession.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
   });
 
   it("maps the old film gate to the floor without upfront media", async () => {

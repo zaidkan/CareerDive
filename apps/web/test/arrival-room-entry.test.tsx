@@ -13,6 +13,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { loadDefaultCybersecurityPack } from "@sim/career-packs";
 import { createInitialWorldState, toClientView } from "@sim/core";
 import { SpatialShell } from "../src/world/SpatialShell.js";
+import { StartupFailure } from "../src/client.js";
 import { StartPage } from "../src/site/pages/StartPage.js";
 
 let reportReady: (() => void) | undefined;
@@ -158,7 +159,7 @@ it("disables film completely without changing entry into the same room", async (
 });
 
 it.each(["sim", "briefing"])(
-  "does not replay the film when StartPage resumes the saved %s gate",
+  "plays the unfinished film despite the old %s startup gate",
   async (gate) => {
     window.sessionStorage.setItem("first-shift-start-gate", gate);
     const client = {
@@ -175,12 +176,57 @@ it.each(["sim", "briefing"])(
       await screen.findByRole("button", { name: /Security Operations/i }, { timeout: 6000 }),
     );
     expect(
-      await screen.findByRole("button", { name: "Live room control" }, { timeout: 6000 }),
-    ).toBeEnabled();
-    expect(document.querySelector("video")).toBeNull();
+      await screen.findByRole("button", { name: "Live room control", hidden: true }, { timeout: 6000 }),
+    ).toBeDisabled();
+    expect(document.querySelector("video")).not.toBeNull();
     expect(
       screen.queryByRole("button", { name: /continue to floor/i }),
     ).toBeNull();
     expect(client.createSession).toHaveBeenCalledTimes(1);
+  },
+);
+
+it("keeps the film after failed startup followed by refresh", async () => {
+  const create = vi.fn()
+    .mockRejectedValueOnce(new StartupFailure(true, "service-unavailable"))
+    .mockRejectedValueOnce(new StartupFailure(true, "service-unavailable"))
+    .mockResolvedValue({ sessionId: view.sessionId, view });
+  const client = {
+    createSession: create, performAction: vi.fn(), performWorkplaceInteraction: vi.fn(),
+    submitTaskAttempt: vi.fn(), respondToNotification: vi.fn(), getDebrief: vi.fn(),
+  };
+  const first = render(<StartPage client={client} />);
+  fireEvent.click(screen.getByRole("button", { name: "Start your first day" }));
+  await screen.findByRole("button", { name: "Retry starting shift" });
+  expect(sessionStorage.getItem("first-shift-start-gate")).toBe("sim");
+  first.unmount();
+  render(<StartPage client={client} />);
+  fireEvent.click(await screen.findByRole("button", { name: /Security Operations/i }));
+  expect(await screen.findByRole("dialog", { name: "Arrival at Verdaly" })).toBeVisible();
+  expect(create).toHaveBeenCalledTimes(3);
+});
+
+it.each(["unfinished", "ended", "skipped", "failed"] as const)(
+  "restores only an unfinished film on reload (previous film: %s)",
+  async (outcome) => {
+    const presentation = { current: { phase: "floor_map" as const } };
+    const mount = () => render(<SpatialShell arrivalFilmEnabled view={view}
+      onAction={vi.fn()} recoveryPresentation={presentation} />);
+    const first = mount();
+    fireEvent.click(screen.getByRole("button", { name: /Security Operations/i }));
+    await waitFor(() => { expect(reportReady).toBeDefined(); });
+    act(() => { reportReady?.(); });
+    if (outcome !== "unfinished") {
+      if (outcome === "skipped") fireEvent.click(screen.getByRole("button", { name: "Skip film" }));
+      else {
+        const video = document.querySelector("video");
+        if (!video) throw new Error("Film missing after SOC click");
+        fireEvent(video, new Event(outcome === "ended" ? "ended" : "error"));
+      }
+      await waitFor(() => { expect(screen.queryByRole("dialog")).toBeNull(); });
+    }
+    first.unmount();
+    mount();
+    expect(Boolean(screen.queryByRole("dialog"))).toBe(outcome === "unfinished" || outcome === "failed");
   },
 );

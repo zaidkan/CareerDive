@@ -148,3 +148,35 @@ test("denied native fullscreen keeps the film above the site header and still en
   await page.keyboard.press("Enter");
   await expectLiveRoom(page);
 });
+
+
+test("slow startup and refresh before or during arrival preserve the film and create one session", async ({ page }) => {
+  let sessionPosts = 0;
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().includes("/trpc/session.create")) sessionPosts++;
+  });
+  await page.route("**/ready", async (route) => {
+    // Longer than the former five-second readiness timeout.
+    await new Promise((resolve) => setTimeout(resolve, 6500));
+    await route.continue();
+  });
+  await page.goto("/start");
+  await page.getByRole("button", { name: "Start your first day", exact: true }).click();
+  await expect(page.getByText(
+    "Connecting to your shift… The first connection can take up to 90 seconds.",
+    { exact: true },
+  )).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Head to Security Operations" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retry starting shift" })).toHaveCount(0);
+  await page.reload();
+  await page.getByRole("button", { name: /Security Operations/ }).click();
+  await expect(page.getByRole("dialog", { name: "Arrival at Verdaly" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("dialog", { name: "Arrival at Verdaly" })).toBeVisible();
+  await page.getByRole("button", { name: "Skip film" }).click();
+  await expectLiveRoom(page);
+  await page.reload();
+  await expect(page.locator(".room-stage")).toHaveAttribute("data-scene-ready", "true", { timeout: 60_000 });
+  await expect(page.locator(".arrival-handoff")).toHaveCount(0);
+  expect(sessionPosts).toBe(1);
+});

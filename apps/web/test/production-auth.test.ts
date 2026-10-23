@@ -54,7 +54,7 @@ it("real simulation transport signs in anonymously, resumes, and refreshes using
   const headers: Headers[] = [];
   vi.stubGlobal("fetch", vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const url = input instanceof Request ? input.url : input.toString();
-    if (url.endsWith("/ready")) return new Response("ok");
+    if (url.endsWith("/ready")) return Response.json({ status: "ready" });
     headers.push(new Headers(init?.headers));
     return new Response(JSON.stringify({ result: { data: { sessionId: view.sessionId, view } } }), {
       headers: { "content-type": "application/json" },

@@ -60,7 +60,7 @@ test("unconfirmed session creation stays paused across reload", async ({
 }) => {
   let creates = 0;
   await page.route("**/ready", async (route) => {
-    await route.fulfill({ json: { status: "ok" } });
+    await route.fulfill({ json: { status: "ready" } });
   });
   await page.route("**/trpc/session.create", async (route) => {
     creates++;

@@ -24,7 +24,7 @@ import { BreakRoomPanel, EmergencyRecoveryControl } from "./BreakRoomPanel.js";
 import { coffeeControl } from "./breakRoom.js";
 import { ControlsHelp } from "./ControlsHelp.js";
 import { LaptopOverlay } from "./deskOs/LaptopOverlay.js";
-import { writeTabValue } from "../useTabDraft.js";
+import { readTabValue, writeTabValue } from "../useTabDraft.js";
 import { OsSessionProvider, useOsSession } from "./deskOs/osSession.js";
 import { FloorMap } from "./FloorMap.js";
 import { MorganDialogue } from "./dialogue/MorganDialogue.js";
@@ -110,8 +110,13 @@ function SpatialShellStage({
   const { dispatch: osDispatch } = useOsSession();
   // Retain camera/door state after entry; no WebGL on the initial map.
   const [roomEntered, setRoomEntered] = useState(spatial.phase !== "floor_map");
-  const arrivalPending = useRef(arrivalFilmEnabled && spatial.phase === "floor_map");
-  const [arrivalActive, setArrivalActive] = useState(false);
+  const arrivalKey = `arrival-film-complete:${view.sessionId}`;
+  const arrivalUnfinished = arrivalFilmEnabled && !spatial.visitedDesk &&
+    !readTabValue<boolean>(arrivalKey, false);
+  const arrivalPending = useRef(arrivalUnfinished && spatial.phase === "floor_map");
+  const [arrivalActive, setArrivalActive] = useState(
+    arrivalUnfinished && spatial.phase === "room_walk" && spatial.roomId === "soc",
+  );
   const [sceneReady, setSceneReady] = useState(false);
   const onSceneReady = useCallback(() => { setSceneReady(true); }, []);
   const [nearbyLabel, setNearbyLabel] = useState<string>();
@@ -129,10 +134,11 @@ function SpatialShellStage({
   const { active: fullscreen, toggle: toggleFullscreen, exit: exitFullscreen } =
     useFullscreen(stageRef);
 
-  const finishArrival = useCallback(() => {
+  const finishArrival = useCallback((completed: boolean) => {
+    if (completed) writeTabValue(arrivalKey, true);
     setArrivalActive(false);
     stageRef.current?.focus({ preventScroll: true });
-  }, []);
+  }, [arrivalKey]);
 
   const onWalkBlocked = useCallback(() => { setWalkBlocked(true); }, []);
   const onRecover = useCallback(() => { setWalkBlocked(false); }, []);

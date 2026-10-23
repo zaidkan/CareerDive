@@ -10,6 +10,7 @@ import { App, type SimulationClient } from "../src/index.js";
 import { HttpSimulationClient, StartupFailure } from "../src/client.js";
 import { ExperienceShell } from "../src/experience/ExperienceShell.js";
 import { ProblemReport } from "../src/experience/ProblemReport.js";
+import { createBrowserStorage } from "./helpers/browserStorage.js";
 import { compatibilityDetails } from "../src/experience/diagnostics.js";
 
 const scene = vi.hoisted(() => ({ failed: false, renders: 0 }));
@@ -45,8 +46,10 @@ afterEach(() => {
   sessionStorage.clear();
   scene.failed = false;
   scene.renders = 0;
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 it("shares the entire safe retry through StrictMode and stops after one retry", async () => {
@@ -81,18 +84,67 @@ it("never repeats unconfirmed session creation", async () => {
     screen.queryByRole("button", { name: "Retry starting shift" }),
   ).toBeNull();
 });
-it("does not POST when health check fails", async () => {
+it("bounds readiness retries to 90 seconds and never POSTs while unavailable", async () => {
+  vi.useFakeTimers();
   const fetch = vi.fn().mockRejectedValue(new TypeError("offline"));
   vi.stubGlobal("fetch", fetch);
-  await expect(
+  const result = expect(
     new HttpSimulationClient("http://localhost:3001").createSession({
       seed: 1,
       sessionKind: "assessed",
       pacingMode: "standard",
     }),
-  ).rejects.toMatchObject({ safeToRetry: true });
-  expect(fetch).toHaveBeenCalledTimes(1);
-  expect(fetch.mock.calls[0]?.[0]).toMatch(/\/ready$/);
+  ).rejects.toMatchObject({ safeToRetry: true, category: "service-startup-timeout" });
+  await vi.advanceTimersByTimeAsync(90_000);
+  await result;
+  expect(fetch).toHaveBeenCalledTimes(45);
+  expect(fetch.mock.calls.every(([url]) => String(url).endsWith("/ready"))).toBe(true);
+});
+it("waits through a minute-long wake and proxy HTML, then creates exactly one session", async () => {
+  vi.useFakeTimers();
+  vi.stubGlobal("localStorage", createBrowserStorage());
+  vi.stubEnv("PROD", false);
+  vi.stubEnv("VITE_SUPABASE_URL", "");
+  vi.stubEnv("VITE_SUPABASE_ANON_KEY", "");
+  const started = Date.now();
+  const fetch = vi.fn(async (url: string) => {
+    if (url.endsWith("/ready")) {
+      const elapsed = Date.now() - started;
+      if (elapsed < 30_000) return new Response("Starting", { status: 503 });
+      if (elapsed < 60_000) return new Response("<html>Loading</html>");
+      return Response.json({ status: "ready" });
+    }
+    return Response.json({ result: { data: { sessionId: view.sessionId, view } } });
+  });
+  vi.stubGlobal("fetch", fetch);
+  const created = expect(new HttpSimulationClient("http://localhost:3001").createSession({
+    seed: 1, sessionKind: "assessed", pacingMode: "standard",
+  })).resolves.toEqual({ sessionId: view.sessionId, view });
+  await vi.advanceTimersByTimeAsync(60_000);
+  await created;
+  expect(fetch.mock.calls.filter(([url]) => !url.endsWith("/ready"))).toHaveLength(1);
+});
+it("cancels readiness polling on departure before any session POST", async () => {
+  vi.useFakeTimers();
+  const fetch = vi.fn().mockResolvedValue(new Response("Starting", { status: 503 }));
+  vi.stubGlobal("fetch", fetch);
+  const controller = new AbortController();
+  const result = expect(new HttpSimulationClient("http://localhost:3001").createSession({
+    seed: 1, sessionKind: "assessed", pacingMode: "standard",
+  }, { signal: controller.signal })).rejects.toMatchObject({ name: "AbortError" });
+  await vi.advanceTimersByTimeAsync(4000);
+  controller.abort();
+  const count = fetch.mock.calls.length;
+  await vi.advanceTimersByTimeAsync(90_000);
+  await result;
+  expect(fetch).toHaveBeenCalledTimes(count);
+  expect(fetch.mock.calls.every(([url]) => String(url).endsWith("/ready"))).toBe(true);
+});
+it("does not automatically repeat an exhausted startup waiting period", async () => {
+  const create = vi.fn().mockRejectedValue(new StartupFailure(true, "service-startup-timeout"));
+  render(<App client={client(create)} />);
+  expect(await screen.findByRole("button", { name: "Retry starting shift" })).toBeVisible();
+  expect(create).toHaveBeenCalledTimes(1);
 });
 it("checks compatibility after one workplace retry and keeps the same workstation data", async () => {
   scene.failed = true;

@@ -13,7 +13,7 @@ export function ArrivalFilm({
   onComplete,
 }: {
   sceneReady: boolean;
-  onComplete: () => void;
+  onComplete: (completed: boolean) => void;
 }) {
   const reducedMotion = usePrefersReducedMotion();
   const soundMuted = useSimulationMuted();
@@ -28,12 +28,17 @@ export function ArrivalFilm({
   const dialogRef = useRef<HTMLDivElement>(null);
   const alive = useRef(false);
   const completed = useRef(false);
+  const viewedOrSkipped = useRef(reducedMotion);
   const focusControl = useCallback((node: HTMLButtonElement | null) => {
     node?.focus();
   }, []);
   const finishFilm = useCallback(() => {
     setPhase("waiting");
   }, []);
+  const completeFilm = () => {
+    viewedOrSkipped.current = true;
+    finishFilm();
+  };
 
   useEffect(() => {
     let currentAttempt = true;
@@ -64,7 +69,10 @@ export function ArrivalFilm({
   }, [reducedMotion]);
 
   useEffect(() => {
-    if (reducedMotion) finishFilm();
+    if (reducedMotion) {
+      viewedOrSkipped.current = true;
+      finishFilm();
+    }
   }, [reducedMotion, finishFilm]);
 
   useEffect(() => {
@@ -87,7 +95,7 @@ export function ArrivalFilm({
     if (reducedMotion) {
       if (!completed.current) {
         completed.current = true;
-        onComplete();
+        onComplete(viewedOrSkipped.current);
       }
     } else setPhase("fading");
   }, [phase, sceneReady, reducedMotion, onComplete]);
@@ -98,7 +106,7 @@ export function ArrivalFilm({
       () => {
         if (!completed.current) {
           completed.current = true;
-          onComplete();
+          onComplete(viewedOrSkipped.current);
         }
       },
       reducedMotion ? 0 : DISSOLVE_MS,
@@ -155,7 +163,7 @@ export function ArrivalFilm({
           playsInline
           preload="auto"
           aria-hidden="true"
-          onEnded={finishFilm}
+          onEnded={completeFilm}
           onError={() => {
             setMediaFailed(true);
             finishFilm();
@@ -183,7 +191,7 @@ export function ArrivalFilm({
           ref={focusControl}
           className="arrival-handoff-skip guidance-secondary"
           type="button"
-          onClick={finishFilm}
+          onClick={completeFilm}
         >
           Skip film
         </button>

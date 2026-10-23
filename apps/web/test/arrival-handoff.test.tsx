@@ -110,6 +110,7 @@ describe("arrival handoff presentation", () => {
     expect(onComplete).not.toHaveBeenCalled();
     await waitFor(() => {
       expect(onComplete).toHaveBeenCalledTimes(1);
+      expect(onComplete).toHaveBeenCalledWith(true);
     });
   });
 
@@ -121,6 +122,7 @@ describe("arrival handoff presentation", () => {
     expect(video()).toBeInTheDocument();
     await waitFor(() => {
       expect(onComplete).toHaveBeenCalledTimes(1);
+      expect(onComplete).toHaveBeenCalledWith(true);
     });
   });
 
@@ -165,7 +167,7 @@ describe("arrival handoff presentation", () => {
     expect(onComplete).not.toHaveBeenCalled();
     rerender(<ArrivalFilm sceneReady onComplete={onComplete} />);
     await waitFor(() => {
-      expect(onComplete).toHaveBeenCalledTimes(1);
+      expect(onComplete).toHaveBeenCalledWith(false);
     });
   });
 
@@ -202,7 +204,7 @@ describe("arrival handoff presentation", () => {
       await act(async () => {
         await vi.advanceTimersByTimeAsync(300);
       });
-      expect(onComplete).toHaveBeenCalledTimes(1);
+      expect(onComplete).toHaveBeenCalledWith(false);
     } finally {
       vi.useRealTimers();
     }
