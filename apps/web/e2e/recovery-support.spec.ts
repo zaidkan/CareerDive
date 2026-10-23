@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("temporary connection failure retries once, manual retry starts one shift", async ({
+test("temporary connection failures recover without refresh and start one shift", async ({
   page,
 }) => {
   let readinessCalls = 0;
@@ -15,15 +15,11 @@ test("temporary connection failure retries once, manual retry starts one shift",
   });
   await page.goto("/start");
   await page.getByRole("button", { name: "Start your first day", exact: true }).click();
-  const retry = page.getByRole("button", { name: "Retry starting shift" });
-  await expect(retry).toBeVisible();
-  await expect(retry).toBeFocused();
-  expect(readinessCalls).toBe(2);
-  expect(sessions).toBe(0);
-  await page.keyboard.press("Enter");
   await expect(
     page.getByRole("button", { name: /Security Operations/ }),
   ).toBeVisible();
+  expect(readinessCalls).toBe(3);
+  await expect(page.getByRole("button", { name: "Retry starting shift" })).toHaveCount(0);
   expect(sessions).toBe(1);
   await page.getByText("Accessibility recovery", { exact: true }).click();
   await page
