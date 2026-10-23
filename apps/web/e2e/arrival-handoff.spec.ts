@@ -162,7 +162,10 @@ test("slow startup and refresh before or during arrival preserve the film and cr
   });
   await page.goto("/start");
   await page.getByRole("button", { name: "Start your first day", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("up to 90 seconds");
+  await expect(page.getByText(
+    "Connecting to your shift… The first connection can take up to 90 seconds.",
+    { exact: true },
+  )).toBeVisible();
   await expect(page.getByRole("heading", { name: "Head to Security Operations" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Retry starting shift" })).toHaveCount(0);
   await page.reload();
