@@ -156,6 +156,15 @@ which commit a live service runs. Compare each service's successful deployed com
 intended release before redeploying, especially if production was pinned to a fix on another branch.
 README, screenshots, and test-only changes do not require a production redeploy.
 
+For a web-client fix, merge the passing PR, then open the existing web service in Render.
+Set its deployment branch to `main`, set the web build argument `BUILD_SHA` to the full
+commit being released, and use **Manual Deploy → Deploy a specific commit** for that same
+commit. `BUILD_SHA` labels diagnostics; it does not select the source revision. Wait for
+**Live**, verify the deployed commit in Render, then check startup, arrival film, and reload
+in a fresh browser tab. Deploying a specific commit disables automatic deployment; configure
+**After CI Checks Pass** separately if you want future pushes to deploy automatically.
+The startup/film fix changes only the web client; it requires a web rebuild and deploy.
+
 Database migrations use a checksummed runner — inspect the plan before applying:
 
 ```bash

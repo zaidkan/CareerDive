@@ -97,7 +97,7 @@ it("creates exactly one assessed session directly from Start, plays film after r
     "fetch",
     vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
       const url = input instanceof Request ? input.url : input.toString();
-      if (url.endsWith("/ready")) return new Response("ok");
+      if (url.endsWith("/ready")) return Response.json({ status: "ready" });
       if (typeof init?.body !== "string")
         throw new Error("Expected JSON request body");
       const body: unknown = JSON.parse(init.body);

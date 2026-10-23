@@ -44,12 +44,15 @@ export function actionFailureMessage(
 export const PENDING_SESSION_KEY = "career-expo-start-pending";
 
 export interface SimulationClient {
-  createSession(input: {
-    createRequestId?: string;
-    seed: number;
-    sessionKind: "assessed";
-    pacingMode: "standard" | "extended" | "pause_compatible" | "no_hard_timer";
-  }): Promise<{ sessionId: string; view: ClientView }>;
+  createSession(
+    input: {
+      createRequestId?: string;
+      seed: number;
+      sessionKind: "assessed";
+      pacingMode: "standard" | "extended" | "pause_compatible" | "no_hard_timer";
+    },
+    options?: { signal?: AbortSignal },
+  ): Promise<{ sessionId: string; view: ClientView }>;
   performAction(
     sessionId: string,
     actionId: SimulationActionId,
@@ -119,6 +122,38 @@ export class StartupFailure extends Error {
     );
   }
 }
+
+/** Poll only the safe readiness read while a sleeping service starts. */
+async function waitForReady(baseUrl: string, signal?: AbortSignal): Promise<void> {
+  const deadline = Date.now() + 90_000;
+  while (Date.now() < deadline) {
+    signal?.throwIfAborted();
+    try {
+      const timeout = AbortSignal.timeout(Math.max(1, Math.min(10_000, deadline - Date.now())));
+      const response = await fetch(`${baseUrl}/ready`, {
+        signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+      });
+      if (response.ok) {
+        const body: unknown = await response.json();
+        if (
+          body && typeof body === "object" &&
+          "status" in body && body.status === "ready"
+        ) {
+          signal?.throwIfAborted();
+          return;
+        }
+      }
+    } catch {
+      // A proxy loading page, temporary 503, or timed-out GET is safe to retry.
+    }
+    signal?.throwIfAborted();
+    const remaining = deadline - Date.now();
+    if (remaining > 0)
+      await new Promise((resolve) => setTimeout(resolve, Math.min(2000, remaining)));
+  }
+  throw new StartupFailure(true, "service-startup-timeout");
+}
+
 export class HttpSimulationClient implements SimulationClient {
   readonly #baseUrl: string;
   readonly #client: ReturnType<typeof createTRPCUntypedClient>;
@@ -139,6 +174,7 @@ export class HttpSimulationClient implements SimulationClient {
 
   async createSession(
     input: Parameters<SimulationClient["createSession"]>[0],
+    options?: { signal?: AbortSignal },
   ): Promise<{ sessionId: string; view: ClientView }> {
     if (input.createRequestId) {
       try {
@@ -157,16 +193,8 @@ export class HttpSimulationClient implements SimulationClient {
     ) {
       throw new StartupFailure(false, "creation-unconfirmed");
     }
-    // Stable createRequestId makes unknown outcomes safe to retry.
-    // Only a failed read is safe to repeat; session.create has no idempotency contract.
-    try {
-      const response = await fetch(`${this.#baseUrl}/ready`, {
-        signal: AbortSignal.timeout(5000),
-      });
-      if (!response.ok) throw new Error("Unavailable");
-    } catch {
-      throw new StartupFailure(true, "service-unavailable");
-    }
+    await waitForReady(this.#baseUrl, options?.signal);
+    options?.signal?.throwIfAborted();
     if (this === defaultClient) writeTabValue(PENDING_SESSION_KEY, true);
     try {
       return SessionResultSchema.parse(

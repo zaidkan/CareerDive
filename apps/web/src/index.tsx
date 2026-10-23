@@ -48,7 +48,9 @@ export function App({ client = defaultClient, arrivalFilmEnabled = false }: {
   const [sessionId, setSessionId] = useState<string>();
   const [debrief, setDebrief] = useState<Debrief>();
   const [error, setError] = useState<string>();
-  const [startupStatus, setStartupStatus] = useState("Preparing your shift…");
+  const [startupStatus, setStartupStatus] = useState(
+    "Connecting to your shift… The first connection can take up to 90 seconds.",
+  );
   const [startupFailure, setStartupFailure] = useState<StartupFailure>();
   // Focus on attachment, before paint; passive effects can race a retry control becoming visible.
   const retryFocus = useCallback((node: HTMLButtonElement | null) => {
@@ -60,6 +62,7 @@ export function App({ client = defaultClient, arrivalFilmEnabled = false }: {
     | {
         client: SimulationClient;
         attempt: number;
+        controller: AbortController;
         promise: ReturnType<SimulationClient["createSession"]>;
       }
     | undefined
@@ -79,7 +82,9 @@ export function App({ client = defaultClient, arrivalFilmEnabled = false }: {
     invalidateMutations();
     setError(undefined);
     setStartupFailure(undefined);
-    setStartupStatus("Preparing your shift…");
+    setStartupStatus(
+      "Connecting to your shift… The first connection can take up to 90 seconds.",
+    );
     setView(undefined);
     setDebrief(undefined);
     setDebriefStatus(undefined);
@@ -106,6 +111,7 @@ export function App({ client = defaultClient, arrivalFilmEnabled = false }: {
           creationRef.current.client !== client ||
           creationRef.current.attempt !== sessionRequest
         ) {
+          const controller = new AbortController();
           // Cache the whole retry sequence: StrictMode must not duplicate session creation.
           const existing = liveSessions.get(client);
           const savedId =
@@ -137,9 +143,14 @@ export function App({ client = defaultClient, arrivalFilmEnabled = false }: {
                   "cybersecurity-analyst",
                   input.createRequestId,
                 );
-                return await client.createSession(input);
+                return await client.createSession(input, {
+                  signal: controller.signal,
+                });
               } catch (cause) {
-                if (!(cause instanceof StartupFailure) || !cause.safeToRetry)
+                if (
+                  !(cause instanceof StartupFailure) || !cause.safeToRetry ||
+                  cause.category === "service-startup-timeout"
+                )
                   throw cause;
                 if (
                   startupActiveRef.current &&
@@ -154,11 +165,13 @@ export function App({ client = defaultClient, arrivalFilmEnabled = false }: {
                   creationRef.current.attempt !== sessionRequest
                 )
                   throw cause;
-                return client.createSession(input);
+                return client.createSession(input, { signal: controller.signal });
               }
             })();
           liveSessions.set(client, { promise });
-          creationRef.current = { client, attempt: sessionRequest, promise };
+          creationRef.current = {
+            client, attempt: sessionRequest, controller, promise,
+          };
           void promise.catch(() => {
             if (liveSessions.get(client)?.promise === promise)
               liveSessions.delete(client);
@@ -203,6 +216,14 @@ export function App({ client = defaultClient, arrivalFilmEnabled = false }: {
     return () => {
       startupActiveRef.current = false;
       sessionGenerationRef.current += 1;
+      const controller = creationRef.current?.controller;
+      // StrictMode immediately reattaches; a real departure cancels readiness polling.
+      queueMicrotask(() => {
+        if (
+          !startupActiveRef.current ||
+          creationRef.current?.controller !== controller
+        ) controller?.abort();
+      });
     };
   }, [client, invalidateMutations, sessionRequest]);
 
