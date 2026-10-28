@@ -176,21 +176,24 @@ export class HttpSimulationClient implements SimulationClient {
     input: Parameters<SimulationClient["createSession"]>[0],
     options?: { signal?: AbortSignal },
   ): Promise<{ sessionId: string; view: ClientView }> {
+    const pending = this === defaultClient &&
+      readTabValue<boolean>(PENDING_SESSION_KEY, false);
     if (input.createRequestId) {
       try {
         const key = `career-expo-create:${input.createRequestId}`;
-        window.sessionStorage.setItem(key, JSON.stringify(input));
-        if (window.sessionStorage.getItem(key) !== JSON.stringify(input))
+        const serialized = JSON.stringify(input);
+        // The API deduplicates this exact owner/request. Preserve legacy unknown
+        // starts, but allow a lost response to recover the original shift.
+        if (pending && window.sessionStorage.getItem(key) !== serialized)
+          throw new StartupFailure(false, "creation-unconfirmed");
+        window.sessionStorage.setItem(key, serialized);
+        if (window.sessionStorage.getItem(key) !== serialized)
           throw new Error("Storage unavailable");
-      } catch {
+      } catch (cause) {
+        if (cause instanceof StartupFailure) throw cause;
         throw new StartupFailure(false, "storage-unavailable");
       }
-    }
-    // The default app preserves an ambiguous start across remounts/reloads.
-    if (
-      this === defaultClient &&
-      readTabValue<boolean>(PENDING_SESSION_KEY, false)
-    ) {
+    } else if (pending) {
       throw new StartupFailure(false, "creation-unconfirmed");
     }
     await waitForReady(this.#baseUrl, options?.signal);
