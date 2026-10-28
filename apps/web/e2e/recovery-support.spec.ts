@@ -120,22 +120,25 @@ test("no WebGL offers compatible workstation and useful report without backend",
   ).toBe(true);
 });
 
-test("unconfirmed creation never repeats POST", async ({ page }) => {
-  let sessions = 0;
+test("failed creation retries the same request once and offers manual recovery", async ({ page }) => {
+  const requests: (string | null)[] = [];
+  let recovered = false;
   await page.route("**/trpc/session.create", async (route) => {
-    sessions++;
-    await route.abort("failed");
+    requests.push(route.request().postData());
+    if (recovered) await route.continue();
+    else await route.abort("failed");
   });
   await page.goto("/start");
   await page.getByRole("button", { name: "Start your first day", exact: true }).click();
-  await expect(
-    page.getByText(/couldn't confirm whether your shift started/),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Retry starting shift" }),
-  ).toHaveCount(0);
-  await expect(
-    page.getByRole("button", { name: "Report a problem" }),
-  ).toBeVisible();
-  expect(sessions).toBe(1);
+  const retry = page.getByRole("button", { name: "Retry starting shift" });
+  await expect(retry).toBeVisible();
+  await expect(retry).toBeFocused();
+  await expect(page.getByRole("button", { name: "Report a problem" })).toBeVisible();
+  expect(requests).toHaveLength(2);
+  expect(new Set(requests).size).toBe(1);
+  recovered = true;
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "Head to Security Operations" })).toBeVisible();
+  expect(requests).toHaveLength(3);
+  expect(new Set(requests).size).toBe(1);
 });

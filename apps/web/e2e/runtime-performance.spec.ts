@@ -55,25 +55,33 @@ test("performance diagnostics do not crash the workplace", async ({ page }) => {
   await expect(page.getByTestId("perf-overlay")).toHaveCount(0);
 });
 
-test("unconfirmed session creation stays paused across reload", async ({
-  page,
-}) => {
-  let creates = 0;
+test("reload recovers a committed shift after both creation responses were lost", async ({ page }) => {
+  const requests: (string | null)[] = [];
+  const savedSessions: string[] = [];
   await page.route("**/ready", async (route) => {
     await route.fulfill({ json: { status: "ready" } });
   });
   await page.route("**/trpc/session.create", async (route) => {
-    creates++;
-    await route.abort("failed");
+    requests.push(route.request().postData());
+    if (requests.length <= 2) {
+      const response = await route.fetch();
+      expect(response.status()).toBe(200);
+      const body = await response.json() as { result: { data: { sessionId: string } } };
+      savedSessions.push(body.result.data.sessionId);
+      await route.abort("failed");
+    } else await route.continue();
   });
   await page.goto("/start");
   await page.getByRole("button", { name: "Start your first day", exact: true }).click();
-  await expect(
-    page.getByText(/couldn't confirm whether your shift started/),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retry starting shift" })).toBeVisible();
+  expect(requests).toHaveLength(2);
+  expect(new Set(savedSessions).size).toBe(1);
   await page.reload();
-  await expect(
-    page.getByText(/couldn't confirm whether your shift started/),
-  ).toBeVisible();
-  expect(creates).toBe(1);
+  await expect(page.getByRole("heading", { name: "Head to Security Operations" })).toBeVisible();
+  const resumedId = await page.evaluate(() => JSON.parse(
+    sessionStorage.getItem("career-expo-active-session") ?? "null",
+  ) as string | null);
+  expect(resumedId).toBe(savedSessions[0]);
+  expect(requests).toHaveLength(3);
+  expect(new Set(requests).size).toBe(1);
 });
