@@ -103,6 +103,59 @@ export function isLowEndDevice(nav: NavBits | undefined): boolean {
   return nav.deviceMemory !== undefined && nav.deviceMemory <= 4;
 }
 
+type WebGLContextSource = {
+  getContext: () => WebGLRenderingContext | WebGL2RenderingContext;
+};
+type DebugRendererInfo = {
+  UNMASKED_VENDOR_WEBGL: number;
+  UNMASKED_RENDERER_WEBGL: number;
+};
+
+/** Read the local WebGL renderer for quality selection and opt-in diagnostics. */
+export function readWebGLRenderer(
+  gl: WebGLContextSource | undefined,
+): string | undefined {
+  try {
+    const context = gl?.getContext();
+    if (!context) return undefined;
+    const debug = context.getExtension("WEBGL_debug_renderer_info") as
+      | DebugRendererInfo
+      | null;
+    const vendor: unknown = context.getParameter(
+      debug?.UNMASKED_VENDOR_WEBGL ?? context.VENDOR,
+    );
+    const renderer: unknown = context.getParameter(
+      debug?.UNMASKED_RENDERER_WEBGL ?? context.RENDERER,
+    );
+    const parts = [vendor, renderer].filter(
+      (value): value is string => typeof value === "string" && value.trim().length > 0,
+    );
+    return parts.join(" / ").replace(/\s+/g, " ").slice(0, 120) || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function isSoftwareRenderer(renderer?: string): boolean {
+  return /swiftshader|llvmpipe|software rasterizer|microsoft basic render driver|mesa offscreen/i.test(
+    renderer ?? "",
+  );
+}
+
+export function initialQualityProfile(
+  nav: NavBits | undefined,
+  renderer?: string,
+): { lowEnd: boolean; startTier: QualityTier; allowRestore: boolean } {
+  const lowEnd = isLowEndDevice(nav) || isSoftwareRenderer(renderer);
+  return {
+    lowEnd,
+    // Avoid paying for bloom/contact shadows while the first scene is compiling.
+    // Capable devices can restore HIGH after the frame-time sampler proves it is stable.
+    startTier: lowEnd ? 0 : 1,
+    allowRestore: !lowEnd,
+  };
+}
+
 export function createQualityMachine(opts: {
   startTier: QualityTier;
   allowRestore: boolean;
@@ -312,18 +365,22 @@ function getReducedMotion(): boolean {
 
 export function useAdaptiveQuality(seated: boolean): AdaptiveQuality {
   const setDpr = useThree((state) => state.setDpr);
+  const gl = useThree((state) => state.gl);
   const reducedMotion = useSyncExternalStore(
     subscribeReducedMotion,
     getReducedMotion,
     () => false,
   );
-  const [lowEnd] = useState(() => isLowEndDevice(readNavigator()));
-  const [tier, setTier] = useState<QualityTier>(() => (lowEnd ? 0 : 2));
+  const [profile] = useState(() =>
+    initialQualityProfile(readNavigator(), readWebGLRenderer(gl)),
+  );
+  const lowEnd = profile.lowEnd;
+  const [tier, setTier] = useState<QualityTier>(() => profile.startTier);
   const machineRef = useRef<QualityMachine | undefined>(undefined);
   if (machineRef.current === undefined) {
     machineRef.current = createQualityMachine({
-      startTier: lowEnd ? 0 : 2,
-      allowRestore: !lowEnd,
+      startTier: profile.startTier,
+      allowRestore: profile.allowRestore,
     });
   }
 

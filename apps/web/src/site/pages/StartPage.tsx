@@ -1,6 +1,11 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import type { SimulationClient } from "../../client.js";
 import { acknowledgeStart, hasStartConsent, StartConsent } from "../StartConsent.js";
+import {
+  markStartIntent,
+  markStartIntentIfMissing,
+  warmApiServer,
+} from "../apiWarmup.js";
 
 const App = lazy(async () => {
   const mod = await import("../../index.js");
@@ -20,7 +25,11 @@ export function StartPage({ client }: { client?: SimulationClient }) {
             type="button"
             className="start-shift"
             aria-describedby="start-entry-consent"
+            onPointerEnter={() => { if (!client) warmApiServer(); }}
+            onFocus={() => { if (!client) warmApiServer(); }}
             onClick={() => {
+              markStartIntent();
+              if (!client) warmApiServer();
               acknowledgeStart();
               setAccepted(true);
             }}
@@ -37,6 +46,8 @@ export function StartPage({ client }: { client?: SimulationClient }) {
 
 function ConsentedStart({ client }: { client?: SimulationClient }) {
   useEffect(() => {
+    markStartIntentIfMissing();
+    if (!client) warmApiServer();
     try {
       window.sessionStorage.setItem(GATE_KEY, "sim");
     } catch {

@@ -178,6 +178,18 @@ export function App({ client = defaultClient, arrivalFilmEnabled = false }: {
           });
         }
         const created = await creationRef.current.promise;
+        if (typeof performance !== "undefined") {
+          performance.mark("careerdive:session-ready");
+          try {
+            performance.measure(
+              "careerdive:session-startup",
+              "careerdive:start-intent",
+              "careerdive:session-ready",
+            );
+          } catch {
+            // A restored session can exist without a same-page start mark.
+          }
+        }
         if (client === defaultClient) {
           writeTabValue(SESSION_KEY, created.sessionId);
           writeTabValue(PENDING_SESSION_KEY, false);

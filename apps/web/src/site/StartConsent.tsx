@@ -1,5 +1,6 @@
 import { useId, type ReactNode } from "react";
 import { SiteLink } from "./SiteLink.js";
+import { markStartIntent, warmApiServer } from "./apiWarmup.js";
 
 const CONSENT_KEY = "careerdive-start-consent";
 const CONSENT_VERSION = "2026-10-11";
@@ -45,7 +46,13 @@ export function StartLink({
         to="/start"
         className={className}
         aria-describedby={id}
-        onNavigate={acknowledgeStart}
+        onPointerEnter={warmApiServer}
+        onFocus={warmApiServer}
+        onNavigate={() => {
+          acknowledgeStart();
+          markStartIntent();
+          warmApiServer();
+        }}
       >
         {children}
       </SiteLink>
