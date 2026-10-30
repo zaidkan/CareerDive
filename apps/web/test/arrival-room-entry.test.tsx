@@ -17,7 +17,10 @@ import { StartupFailure } from "../src/client.js";
 import { StartPage } from "../src/site/pages/StartPage.js";
 
 let reportReady: (() => void) | undefined;
-vi.mock("../src/world/RoomCanvas.js", () => ({
+const roomCanvasModule = vi.hoisted(() => ({ loaded: vi.fn() }));
+vi.mock("../src/world/RoomCanvas.js", () => {
+  roomCanvasModule.loaded();
+  return {
   RoomCanvas: ({
     onReady,
     enabled,
@@ -30,7 +33,8 @@ vi.mock("../src/world/RoomCanvas.js", () => ({
     }, [onReady]);
     return <button disabled={!enabled}>Live room control</button>;
   },
-}));
+  };
+});
 const view = toClientView(
   createInitialWorldState("film-entry", 24, {}, loadDefaultCybersecurityPack()),
 );
@@ -43,6 +47,11 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
+  document.head
+    .querySelectorAll('link[data-careerdive-arrival-preload="true"]')
+    .forEach((link) => {
+      link.remove();
+    });
   window.sessionStorage.clear();
   vi.restoreAllMocks();
 });
@@ -78,6 +87,13 @@ it("mounts the room under the film, waits for a ready frame, and retains the sam
     );
     const stage = container.querySelector(".room-stage");
     expect(document.querySelector("video")).toBeNull();
+    await waitFor(() => {
+      expect(roomCanvasModule.loaded).toHaveBeenCalledTimes(1);
+    });
+    expect(reportReady).toBeUndefined();
+    expect(
+      document.querySelector('link[data-careerdive-arrival-preload="true"]'),
+    ).not.toBeNull();
     fireEvent.click(
       screen.getByRole("button", { name: /Security Operations/i }),
     );

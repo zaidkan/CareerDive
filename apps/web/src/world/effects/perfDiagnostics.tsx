@@ -8,7 +8,9 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import type { WebGLRenderer } from "three";
-import type { AdaptiveQuality } from "./useAdaptiveQuality.js";
+import { readWebGLRenderer, type AdaptiveQuality } from "./useAdaptiveQuality.js";
+
+declare const __BUILD_SHA__: string;
 
 const SAMPLE_WINDOW = 120;
 const UI_HZ = 2;
@@ -93,11 +95,59 @@ function readRendererStats(gl: WebGLRenderer): {
   };
 }
 
+function readDeviceSummary(): string {
+  if (typeof navigator === "undefined") return "CPU ? · RAM ?";
+  const nav = navigator as Navigator & { deviceMemory?: number };
+  const cpu = typeof nav.hardwareConcurrency === "number"
+    ? String(nav.hardwareConcurrency) + "c"
+    : "?c";
+  const memory = typeof nav.deviceMemory === "number"
+    ? String(nav.deviceMemory) + "GB"
+    : "?GB";
+  return "CPU " + cpu + " · RAM " + memory;
+}
+
+function readBuildSha(): string {
+  return typeof __BUILD_SHA__ === "string" ? __BUILD_SHA__.slice(0, 12) : "unknown";
+}
+
+function latestMark(name: string): number | undefined {
+  if (typeof performance === "undefined") return undefined;
+  const entries = performance.getEntriesByName(name, "mark");
+  return entries[entries.length - 1]?.startTime;
+}
+
+function latestMeasure(name: string): number | undefined {
+  if (typeof performance === "undefined") return undefined;
+  const entries = performance.getEntriesByName(name, "measure");
+  return entries[entries.length - 1]?.duration;
+}
+
+function readTraceSummary(): string {
+  const session = latestMeasure("careerdive:session-startup");
+  const room = latestMeasure("careerdive:room-load");
+  const events = [
+    { label: "playing", time: latestMark("careerdive:arrival-film-playing") },
+    { label: "blocked", time: latestMark("careerdive:arrival-film-blocked") },
+    { label: "error", time: latestMark("careerdive:arrival-film-error") },
+    { label: "ended", time: latestMark("careerdive:arrival-film-ended") },
+  ].filter((event): event is { label: string; time: number } => event.time !== undefined);
+  events.sort((a, b) => a.time - b.time);
+  const film = events[events.length - 1]?.label ?? "pending";
+  const duration = (value: number | undefined) =>
+    value === undefined ? "pending" : String(Math.round(value)) + "ms";
+  return "session " + duration(session) + " · room " + duration(room) + " · film " + film;
+}
+
 function formatReport(input: {
   ring: FrameTimeRing;
   gl: WebGLRenderer;
   quality: AdaptiveQuality;
   dpr: number;
+  gpu: string;
+  device: string;
+  build: string;
+  trace: string;
 }): string {
   const s = input.ring.stats();
   const r = readRendererStats(input.gl);
@@ -106,6 +156,9 @@ function formatReport(input: {
   return [
     `FPS ${s.fps.toFixed(0)} · avg ${s.avgFps.toFixed(1)}`,
     `p95 ${s.p95Ms.toFixed(1)}ms · worst ${s.worstMs.toFixed(1)}ms`,
+    `GPU ${input.gpu}`,
+    `${input.device} · build ${input.build}`,
+    `startup ${input.trace}`,
     `calls ${String(r.calls)} · tris ${String(r.triangles)}`,
     `lines ${String(r.lines)} · points ${String(r.points)}`,
     `geos ${String(r.geometries)} · tex ${String(r.textures)} · programs ${String(r.programs)}`,
@@ -125,6 +178,9 @@ export function PerfOverlay({ quality }: { quality: AdaptiveQuality }) {
   const dpr = useThree((state) => state.viewport.dpr);
   const hostRef = useRef<HTMLDivElement>(null);
   const ring = useMemo(() => new FrameTimeRing(), []);
+  const gpu = useMemo(() => readWebGLRenderer(gl) ?? "unavailable", [gl]);
+  const device = useMemo(readDeviceSummary, []);
+  const build = useMemo(readBuildSha, []);
   const lastUi = useRef(0);
   const qualityRef = useRef(quality);
   qualityRef.current = quality;
@@ -169,6 +225,10 @@ export function PerfOverlay({ quality }: { quality: AdaptiveQuality }) {
       gl,
       quality: qualityRef.current,
       dpr,
+      gpu,
+      device,
+      build,
+      trace: readTraceSummary(),
     });
   });
 

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   createQualityMachine,
   isLowEndDevice,
+  initialQualityProfile,
+  readWebGLRenderer,
   QUALITY,
   resolveEffects,
   smoothedFps,
@@ -61,9 +63,51 @@ describe("quality machine", () => {
     expect(machine.sampler.count).toBe(QUALITY.sampleCount);
   });
 
-  it("starts capable devices at high quality", () => {
-    const machine = createQualityMachine({ startTier: 2, allowRestore: true });
+  it("starts capable devices at medium and restores high only after sustained stable frames", () => {
+    const profile = initialQualityProfile(
+      { hardwareConcurrency: 8, deviceMemory: 8 },
+      "Google Inc. / ANGLE (NVIDIA GeForce RTX 2060)",
+    );
+    expect(profile).toEqual({
+      lowEnd: false,
+      startTier: 1,
+      allowRestore: true,
+    });
+    const machine = createQualityMachine({
+      startTier: profile.startTier,
+      allowRestore: profile.allowRestore,
+    });
+    expect(machine.tier).toBe(1);
+    drive(machine, FPS_60, QUALITY.warmupSeconds + QUALITY.restoreHoldSeconds + 0.5);
     expect(machine.tier).toBe(2);
+  });
+
+  it("starts software renderers at low with restoration disabled", () => {
+    const profile = initialQualityProfile(
+      { hardwareConcurrency: 8, deviceMemory: 16 },
+      "Google Inc. / ANGLE (Google SwiftShader)",
+    );
+    expect(profile).toEqual({
+      lowEnd: true,
+      startTier: 0,
+      allowRestore: false,
+    });
+  });
+
+  it("reads the unmasked GPU renderer when the browser exposes it", () => {
+    const extension = {
+      UNMASKED_VENDOR_WEBGL: 0x9245,
+      UNMASKED_RENDERER_WEBGL: 0x9246,
+    };
+    const context = {
+      getExtension: () => extension,
+      getParameter: (parameter: number) =>
+        parameter === extension.UNMASKED_VENDOR_WEBGL
+          ? "NVIDIA"
+          : "ANGLE (NVIDIA GeForce RTX 2060)",
+    } as unknown as WebGLRenderingContext;
+    expect(readWebGLRenderer({ getContext: () => context })).toContain("RTX 2060");
+    expect(readWebGLRenderer(undefined)).toBeUndefined();
   });
 
   it("does not degrade during warmup", () => {

@@ -48,10 +48,34 @@ import {
   type MutationState,
 } from "../useMutationCoordinator.js";
 
-const RoomCanvas = lazy(async () => {
-  const mod = await import("./RoomCanvas.js");
-  return { default: mod.RoomCanvas };
-});
+let roomCanvasModule: Promise<typeof import("./RoomCanvas.js")> | undefined;
+
+function loadRoomCanvas() {
+  if (!roomCanvasModule) {
+    roomCanvasModule = import("./RoomCanvas.js").catch((error: unknown) => {
+      roomCanvasModule = undefined;
+      throw error;
+    });
+  }
+  return roomCanvasModule;
+}
+
+const RoomCanvas = lazy(async () => ({
+  default: (await loadRoomCanvas()).RoomCanvas,
+}));
+
+function preloadArrivalFilm(): void {
+  if (typeof document === "undefined") return;
+  if (document.querySelector('link[data-careerdive-arrival-preload="true"]')) return;
+  const link = document.createElement("link");
+  link.rel = "preload";
+  link.as = "video";
+  link.href = "/arrival-film.mp4";
+  link.type = "video/mp4";
+  link.setAttribute("fetchpriority", "low");
+  link.dataset.careerdiveArrivalPreload = "true";
+  document.head.append(link);
+}
 
 const FLAVOR: Partial<Record<HotspotId, string>> = {
   break_door:
@@ -392,6 +416,17 @@ function SpatialShellStage({
 
   const isFloorMap = spatial.phase === "floor_map";
 
+  useEffect(() => {
+    if (!isFloorMap) return;
+    // Download the scene code before the user selects Security Operations.
+    void loadRoomCanvas().catch(() => undefined);
+    if (!arrivalUnfinished) return;
+    const reducedMotion =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reducedMotion) preloadArrivalFilm();
+  }, [isFloorMap, arrivalUnfinished]);
+
   const nearbyHotspotId = spatial.nearbyHotspotId;
   const labelFor = (id: HotspotId): string =>
     id === "coffee"
@@ -436,6 +471,9 @@ function SpatialShellStage({
           returning={Boolean(spatial.visitedDesk)}
           hint={journey.body}
           onEnterRoom={(roomId) => {
+            if (roomId === "soc" && typeof performance !== "undefined") {
+              performance.mark("careerdive:room-entry");
+            }
             if (roomId === "soc" && arrivalPending.current) {
               arrivalPending.current = false;
               setArrivalActive(true);

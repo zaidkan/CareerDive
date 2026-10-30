@@ -57,6 +57,18 @@ function SceneReady({ onReady }: { onReady: () => void }) {
   useFrame(() => {
     if (reported.current) return;
     reported.current = true;
+    if (typeof performance !== "undefined") {
+      performance.mark("careerdive:scene-ready");
+      try {
+        performance.measure(
+          "careerdive:room-load",
+          "careerdive:room-entry",
+          "careerdive:scene-ready",
+        );
+      } catch {
+        // The room may be restored without a same-page entry mark.
+      }
+    }
     frame.current = requestAnimationFrame(onReady);
   });
   useEffect(

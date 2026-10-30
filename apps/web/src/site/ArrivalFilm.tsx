@@ -57,8 +57,11 @@ export function ArrivalFilm({
             return;
           } catch { /* Existing explicit-entry fallback still applies. */ }
         }
-        if (isCurrent())
+        if (isCurrent()) {
+          if (typeof performance !== "undefined")
+            performance.mark("careerdive:arrival-film-blocked");
           setPhase((current) => (current === "playing" ? "blocked" : current));
+        }
       });
     }
     return () => {
@@ -163,8 +166,18 @@ export function ArrivalFilm({
           playsInline
           preload="auto"
           aria-hidden="true"
-          onEnded={completeFilm}
+          onPlaying={() => {
+            if (typeof performance !== "undefined")
+              performance.mark("careerdive:arrival-film-playing");
+          }}
+          onEnded={() => {
+            if (typeof performance !== "undefined")
+              performance.mark("careerdive:arrival-film-ended");
+            completeFilm();
+          }}
           onError={() => {
+            if (typeof performance !== "undefined")
+              performance.mark("careerdive:arrival-film-error");
             setMediaFailed(true);
             finishFilm();
           }}

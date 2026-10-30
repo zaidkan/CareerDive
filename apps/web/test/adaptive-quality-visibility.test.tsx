@@ -29,7 +29,7 @@ it("clears accumulated stalls across tab visibility and removes its listener", (
     document.dispatchEvent(new Event("visibilitychange"));
     harness.frame({}, 10);
   });
-  expect(screen.getByTestId("tier").textContent).toBe("2");
+  expect(screen.getByTestId("tier").textContent).toBe("1");
   unmount();
   expect(remove).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
 });
