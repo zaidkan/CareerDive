@@ -1,0 +1,65 @@
+$ turbo build
+• turbo 2.9.18
+
+   • Packages in scope: @sim/career-packs, @sim/core, @sim/evidence, @sim/pathways, @sim/safety, @sim/schemas, @sim/server, @sim/testing, @sim/video, @sim/web
+   • Running build in 10 packages
+   • Remote caching disabled, using shared worktree cache
+
+@sim/schemas:build: cache hit, replaying logs 45f9a1fc8bd1d17e
+@sim/schemas:build: $ tsc -p tsconfig.json
+@sim/safety:build: cache hit, replaying logs 4447055235557bd6
+@sim/pathways:build: cache hit, replaying logs 21897f86422a6b1b
+@sim/testing:build: cache hit, replaying logs 02643bf296d67515
+@sim/testing:build: $ tsc -p tsconfig.json
+@sim/career-packs:build: cache hit, replaying logs 654b316c05f5d299
+@sim/safety:build: $ tsc -p tsconfig.json
+@sim/pathways:build: $ tsc -p tsconfig.json
+@sim/career-packs:build: $ tsc -p tsconfig.json
+@sim/evidence:build: cache hit, replaying logs 8c6f0df78585e1b4
+@sim/evidence:build: $ tsc -p tsconfig.json
+@sim/core:build: cache hit, replaying logs f2749a7d1a3c5eb1
+@sim/core:build: $ tsc -p tsconfig.json
+@sim/web:build: cache miss, executing d211824dd6085793
+@sim/server:build: cache hit, replaying logs bb18a5363a7b73f0
+@sim/server:build: $ tsc -p tsconfig.json
+@sim/web:build: $ tsc -p tsconfig.build.json && vite build
+@sim/web:build: vite v7.3.5 building client environment for production...
+@sim/web:build: transforming...
+@sim/web:build: ✓ 1040 modules transformed.
+@sim/web:build: rendering chunks...
+@sim/web:build: computing gzip size...
+@sim/web:build: dist/index.html                                4.01 kB │ gzip:   1.24 kB
+@sim/web:build: dist/assets/LegalPage-DjyzLywv.css             0.64 kB │ gzip:   0.32 kB
+@sim/web:build: dist/assets/TrustPage-KUOFFnui.css             6.39 kB │ gzip:   1.70 kB
+@sim/web:build: dist/assets/CareersPage-BBFrqvao.css           6.96 kB │ gzip:   1.67 kB
+@sim/web:build: dist/assets/OpsConsole-BhBC5V_m.css            9.03 kB │ gzip:   2.35 kB
+@sim/web:build: dist/assets/CareerDetailPage-C-lX6HAt.css     10.73 kB │ gzip:   2.54 kB
+@sim/web:build: dist/assets/SpatialShell-YyicAviz.css         13.57 kB │ gzip:   3.44 kB
+@sim/web:build: dist/assets/index-CWz9BbTJ.css                77.06 kB │ gzip:  14.47 kB
+@sim/web:build: dist/assets/index-Dy36gd5i.css               120.48 kB │ gzip:  21.43 kB
+@sim/web:build: dist/assets/RecoveryWorkspace-BnEuBmK_.js      0.46 kB │ gzip:   0.30 kB
+@sim/web:build: dist/assets/StartPage-BQ92ZDId.js              1.43 kB │ gzip:   0.76 kB
+@sim/web:build: dist/assets/perfDiagnostics-OfVB1UNb.js        2.82 kB │ gzip:   1.45 kB
+@sim/web:build: dist/assets/FaqPage-zy0_tbf-.js                6.26 kB │ gzip:   2.80 kB
+@sim/web:build: dist/assets/TrustPage-D2B1NZYe.js              8.29 kB │ gzip:   2.83 kB
+@sim/web:build: dist/assets/CareerDetailPage-gnbqOGTN.js      11.17 kB │ gzip:   3.32 kB
+@sim/web:build: dist/assets/CareersPage-CBlgD5-B.js           20.85 kB │ gzip:   5.45 kB
+@sim/web:build: dist/assets/SpatialShell-C-YPV0h-.js          45.64 kB │ gzip:  14.63 kB
+@sim/web:build: dist/assets/transport-D0CGDwMz.js             55.85 kB │ gzip:  12.94 kB
+@sim/web:build: dist/assets/SceneEffects-q41fu5B5.js          82.22 kB │ gzip:  22.66 kB
+@sim/web:build: dist/assets/index-CWOqTzlr.js                124.29 kB │ gzip:  35.88 kB
+@sim/web:build: dist/assets/LegalPage-BAfa-s7S.js            131.21 kB │ gzip:  41.16 kB
+@sim/web:build: dist/assets/OpsConsole-CfENL4Wd.js           133.63 kB │ gzip:  38.82 kB
+@sim/web:build: dist/assets/index-B-eud744.js                238.74 kB │ gzip:  74.50 kB
+@sim/web:build: dist/assets/RoomCanvas-B7iC9XZz.js         1,041.25 kB │ gzip: 281.40 kB
+@sim/web:build: 
+@sim/web:build: (!) Some chunks are larger than 500 kB after minification. Consider:
+@sim/web:build: - Using dynamic import() to code-split the application
+@sim/web:build: - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+@sim/web:build: - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+@sim/web:build: ✓ built in 3.16s
+
+ Tasks:    9 successful, 9 total
+Cached:    8 cached, 9 total
+  Time:    9.312s 
+

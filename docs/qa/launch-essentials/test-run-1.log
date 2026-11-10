@@ -1,0 +1,238 @@
+$ vitest run
+
+ RUN  v3.2.6 /Users/zaid/orca/workspaces/Career-Expo/feat-launch-essentials
+
+ ✓ apps/web/test/workplace-golden-path.test.tsx (1 test) 5208ms
+   ✓ rendered workplace golden path > replays the legacy procedural shift through os controls  5207ms
+ ✓ apps/web/test/careers.test.tsx (24 tests) 1295ms
+   ✓ Career Explorer interaction > shows Playable now and Taking shape with useful content and no carousel  346ms
+   ✓ public routes > navigates through browser history, focuses headings, and makes no session request  391ms
+ ✓ apps/web/test/desk-os.test.tsx (19 tests) 7811ms
+   ✓ Desk OS mutation coordination > submits a rapid duplicate once and disables every canonical control while pending  1274ms
+   ✓ Desk OS mutation coordination > keeps a late response from an old session from replacing the newer view  1108ms
+   ✓ Desk OS mutation coordination > revokes queued workplace continuations before an assessed session starts  572ms
+   ✓ Desk OS mutation coordination > keeps failed canonical state unchanged and retries only the failed operation  576ms
+   ✓ Desk OS mutation coordination > does not release a failed Handle target after a successful snooze response  585ms
+   ✓ Desk OS mutation coordination > does not release a failed Handle target after a successful continue response  576ms
+   ✓ Desk OS mutation coordination > focuses the linked work only when a failed Handle retry is applied  567ms
+   ✓ Desk OS mutation coordination > re-announces an identical retry failure without an unhandled rejection  546ms
+   ✓ Desk OS mutation coordination > persistently confirms a successful utility save  605ms
+   ✓ Desk OS canonical state rendering > waits for the canonical notification view before focusing its linked event  530ms
+   ✓ Desk OS canonical state rendering > keeps step feedback through transition and confirms final task completion  593ms
+ ✓ apps/web/test/site-entry.test.tsx (14 tests) 847ms
+   ✓ site routes > landing hero routes directly to the floor map  630ms
+ ✓ apps/web/test/jules.test.tsx (8 tests) 1003ms
+   ✓ purposeful Jules dialogue panel > opens the same accessible topics visually and by keyboard with canonical IDs  472ms
+ ✓ apps/web/test/app.test.tsx (9 tests) 926ms
+   ✓ assessed shift and debrief > does not ask for desk work before the player reaches the desk  310ms
+   ✓ assessed shift and debrief > replaces the workplace view with the canonical interaction result  350ms
+ ✓ apps/web/test/break-room.test.tsx (10 tests) 853ms
+   ✓ finite break-room interaction loop > hides energy UI without starting a wall-clock drain  364ms
+ ✓ apps/web/test/desk-login.test.tsx (14 tests) 779ms
+   ✓ monitor wake, lock curtain, and sign-in > submits with Enter from the password field  474ms
+ ✓ apps/web/test/cyber-usability.test.tsx (8 tests) 1202ms
+   ✓ mounted case search discovers authored records, inspects/revisits and retains query across apps  424ms
+   ✓ handoff selections generate inspected references, preview actual work and persist on remount  387ms
+ ✓ apps/web/test/record-query.test.tsx (11 tests) 489ms
+ ✓ apps/web/test/build-case-golden-path.test.tsx (1 test) 2263ms
+   ✓ constructs sources/findings through real controls and router, survives failed saves, receives results and reaches honest debrief  2262ms
+ ✓ apps/web/test/work-tools.test.tsx (7 tests) 257ms
+ ✓ apps/web/test/world.test.tsx (11 tests) 3417ms
+   ✓ spatial presentation > lets the player enter the unlocked SOC room  2404ms
+   ✓ spatial presentation > keeps the map safe via 'Floor map' (fullscreen exit denied: false)  343ms
+   ✓ spatial presentation > moves from map to in-sim desk OS through the spatial shell  532ms
+ ✓ apps/web/test/workspace-navigation.test.tsx (7 tests) 719ms
+ ✓ apps/web/test/guide-search.test.tsx (5 tests) 342ms
+ ✓ apps/web/test/arrival-handoff.test.tsx (14 tests) 2699ms
+   ✓ arrival handoff presentation > autoplays with sound inline, then dissolves only after the live scene is ready  315ms
+   ✓ arrival handoff presentation > preserves the last film frame for a ready scene instead of flashing a loading veil  310ms
+   ✓ arrival handoff presentation > provides one Enter button when autoplay is blocked (retry also blocked: false)  324ms
+   ✓ arrival handoff presentation > provides one Enter button when autoplay is blocked (retry also blocked: true)  323ms
+   ✓ arrival handoff presentation > skips a failed media file, waiting for the actual scene rather than revealing an empty canvas  311ms
+   ✓ arrival handoff presentation > lets keyboard users skip playback without changing scene readiness  312ms
+   ✓ arrival handoff presentation > completes once under StrictMode and cancels completion when unmounted  356ms
+   ✓ falls back to muted playback when audible autoplay is denied without adding an entry gate  365ms
+ ✓ apps/web/test/morgan-intro.test.tsx (9 tests) 4020ms
+   ✓ once-per-session Morgan introduction > shows the intro in Team Chat after the first login only  905ms
+   ✓ once-per-session Morgan introduction > does not duplicate the intro across leave/return, app switching, or Team Chat reopen  631ms
+   ✓ once-per-session Morgan introduction > keeps a fresh provider session able to show the intro again for a new simulation session  1042ms
+   ✓ once-per-session Morgan introduction > creates exactly one simulation session and never opens practice or tutorial architecture  822ms
+   ✓ once-per-session Morgan introduction > keeps the intro readable as a single node inside the Morgan thread  502ms
+ ✓ apps/web/test/shift-hints.test.tsx (10 tests) 309ms
+ ✓ apps/web/test/build-case-audit.test.tsx (6 tests) 462ms
+ ✓ apps/web/test/dialogue-audio.test.ts (10 tests) 58ms
+ ✓ apps/web/test/os-notification-routing.test.tsx (5 tests) 252ms
+ ✓ apps/web/test/recovery-support.test.tsx (9 tests) 2127ms
+   ✓ shares the entire safe retry through StrictMode and stops after one retry  761ms
+   ✓ checks compatibility after one workplace retry and keeps the same workstation data  727ms
+   ✓ cancels the automatic startup retry after leaving the page  456ms
+ ✓ apps/web/test/sim-runtime-performance.test.tsx (2 tests) 532ms
+   ✓ defers scene creation until entry, then retains it while pausing on map return  475ms
+ ✓ apps/web/test/shift-lifecycle-recovery.test.tsx (4 tests) 1667ms
+   ✓ auto-recovers a failed assessed startup without a permanent error  738ms
+   ✓ retries failed assessed startup after automatic recovery also fails  426ms
+   ✓ retries only the debrief read after completion in recovery  388ms
+ ✓ apps/web/test/workplace-parity.test.tsx (5 tests) 265ms
+ ✓ apps/web/test/source-evidence.test.tsx (2 tests) 385ms
+ ✓ apps/web/test/movement-parity.test.tsx (4 tests) 884ms
+   ✓ submits spatial movement buckets without evidence  795ms
+ ✓ apps/web/test/assessed-entry.test.tsx (1 test) 1771ms
+   ✓ creates exactly one assessed session directly from Start, plays film after room selection, and preserves class-client methods through movement and Desk OS  1771ms
+ ✓ apps/web/test/movement-exertion.test.tsx (6 tests) 72ms
+ ✓ apps/web/test/player-controller.test.ts (8 tests) 11ms
+ ✓ apps/web/test/arrival-room-entry.test.tsx (5 tests) 1680ms
+   ✓ mounts the room under the film, waits for a ready frame, and retains the same fullscreen target throughout  686ms
+   ✓ does not replay on a repeat room visit and exposes a removable presentation flag  342ms
+   ✓ does not replay the film when StartPage resumes the saved sim gate  620ms
+ ✓ apps/web/test/production-auth.test.ts (5 tests) 122ms
+ ✓ apps/web/test/os-session-continuity.test.tsx (1 test) 720ms
+   ✓ restores the authenticated tool, case, and scratchpad after stand, leave, return, and sit  719ms
+ ✓ apps/web/test/fairness-clarity.test.tsx (5 tests) 345ms
+ ✓ apps/web/test/content-depth.test.tsx (6 tests) 78ms
+ ✓ apps/web/test/bucket-a-options.test.tsx (3 tests) 388ms
+ ✓ apps/web/src/site/pages/seo.test.tsx (4 tests) 41ms
+ ✓ apps/web/test/dialogue-quick-wins.test.tsx (5 tests) 116ms
+ ✓ apps/web/test/bucket-a-recovery.test.tsx (5 tests) 325ms
+ ✓ apps/web/test/decision-review.test.tsx (3 tests) 126ms
+ ✓ apps/web/test/dialogue-reveal.test.tsx (7 tests) 80ms
+ ✓ apps/web/test/look-controls.test.ts (8 tests) 8ms
+ ✓ apps/web/test/case-workspace.test.tsx (1 test) 250ms
+ ✓ apps/web/test/recovery-lifecycle.test.tsx (3 tests) 1863ms
+   ✓ focuses the safe startup retry at commit, before passive effects or paint  446ms
+   ✓ retries an initialized workplace without another lazy load before compatibility  710ms
+   ✓ uses a fresh import for an asset failure and stops at compatibility if that retry fails  708ms
+ ✓ apps/web/test/task-recovery.test.tsx (4 tests) 132ms
+ ✓ apps/web/test/ambient-props.test.ts (9 tests) 2ms
+ ✓ apps/web/test/status-source-guard.test.tsx (2 tests) 190ms
+ ✓ apps/web/test/launch-consent.test.tsx (3 tests) 710ms
+   ✓ requires an inline Start click on direct entry before creating a session  355ms
+   ✓ header Start and legacy arrival markers cannot bypass the acknowledgment  337ms
+ ✓ apps/web/test/home-media.test.tsx (5 tests) 23ms
+ ✓ apps/web/test/inventory-lookup.test.tsx (1 test) 342ms
+   ✓ finds an exact device before and after canonical opening in visual mode  341ms
+ ✓ apps/web/test/career-request-persistence.test.tsx (2 tests) 85ms
+ ✓ apps/web/test/trust-page.test.tsx (2 tests) 72ms
+ ✓ apps/web/test/consequence-updates.test.tsx (2 tests) 135ms
+ ✓ apps/web/test/experience-shell.test.tsx (3 tests) 1125ms
+   ✓ enters SpatialShell with the canonical view and no product selector  338ms
+   ✓ recovers after failure without changing canonical session state  750ms
+ ✓ apps/web/test/bucket-a-sound.test.tsx (4 tests) 44ms
+ ✓ apps/web/src/components/tools/case-source-navigation.test.tsx (2 tests) 148ms
+ ✓ apps/web/src/components/tools/login-case-depth.test.tsx (1 test) 105ms
+ ✓ apps/web/test/legal-pages.test.tsx (2 tests) 384ms
+   ✓ renders /privacy from unchanged supplied wording without creating an identity  357ms
+ ✓ apps/web/test/login-comparison-clarity.test.tsx (1 test) 144ms
+ ✓ apps/web/test/artifact-open.test.tsx (2 tests) 68ms
+ ✓ apps/web/test/site-analytics-loading.test.tsx (3 tests) 797ms
+   ✓ keeps public pages usable without collecting disabled analytics  361ms
+   ✓ preserves landing and career events when deferred analytics is enabled  370ms
+ ✓ apps/web/test/workspace-transition.test.ts (4 tests) 8ms
+ ✓ apps/web/test/controls-help.test.tsx (2 tests) 99ms
+stderr | apps/web/test/room-canvas-runtime.test.tsx
+THREE.WARNING: Multiple instances of Three.js being imported.
+
+ ✓ apps/web/test/integration-feedback.test.tsx (1 test) 55ms
+ ✓ apps/web/test/room-canvas-runtime.test.tsx (1 test) 61ms
+ ✓ apps/web/test/launch-analytics-off.test.ts (1 test) 3ms
+ ✓ apps/web/test/adaptive-quality-visibility.test.tsx (1 test) 14ms
+ ✓ apps/web/test/perf-overlay.test.tsx (1 test) 27ms
+ ✓ apps/web/test/team-chat-authors.test.tsx (1 test) 102ms
+ ✓ apps/web/test/fullscreen.test.ts (1 test) 2ms
+ ✓ apps/web/test/decision-acknowledgement.test.tsx (1 test) 32ms
+ ✓ apps/server/test/decision-review.test.ts (23 tests) 134ms
+ ✓ packages/core/test/query-engine.test.ts (21 tests) 14ms
+ ✓ packages/career-packs/test/soc-career-experience-vertical-slice.test.ts (22 tests) 911ms
+ ✓ packages/core/test/query-replay-provenance.test.ts (14 tests) 14ms
+ ✓ apps/server/test/structured-decision-review.test.ts (23 tests) 856ms
+ ✓ apps/server/test/build-case.test.ts (7 tests) 431ms
+ ✓ apps/server/test/router.test.ts (16 tests) 173ms
+ ✓ packages/career-packs/test/soc-dataset-coverage.test.ts (14 tests) 390ms
+ ✓ packages/core/test/reasoning-options.test.ts (83 tests) 972ms
+ ✓ packages/core/test/workplace.test.ts (12 tests) 133ms
+ ✓ packages/core/test/query-projection.test.ts (8 tests) 28ms
+ ✓ packages/testing/test/query-parity.test.ts (16 tests) 9ms
+ ✓ apps/server/test/cyber-usability.test.ts (9 tests) 729ms
+ ✓ packages/core/test/soc-query-scenarios.test.ts (18 tests | 2 skipped) 69ms
+ ✓ packages/core/test/dialogue-quick-wins.test.ts (27 tests) 136ms
+ ✓ packages/core/test/core.test.ts (15 tests) 188ms
+ ✓ packages/core/test/p3-handoff-investigation.test.ts (7 tests) 367ms
+ ✓ packages/career-packs/test/v3-interruption-context-switch.test.ts (6 tests) 299ms
+ ✓ packages/core/test/tasks.test.ts (9 tests) 313ms
+ ✓ packages/career-packs/test/pack-dataset-validation.test.ts (15 tests) 7ms
+ ✓ packages/career-packs/test/pack-validation.test.ts (13 tests) 49ms
+ ✓ apps/server/test/query-transport.test.ts (12 tests) 378ms
+ ✓ apps/web/test/figure-motion.test.ts (20 tests) 55ms
+ ✓ packages/core/test/v2-routine-triage.test.ts (5 tests) 298ms
+ ✓ packages/career-packs/test/p3-investigation-driven-flow.test.ts (7 tests) 313ms
+ ✓ packages/core/test/consequence-runtime-v2.test.ts (6 tests) 68ms
+ ✓ packages/schemas/test/query-schema.test.ts (15 tests) 5ms
+ ↓ apps/server/test/decision-review-postgres.test.ts (2 tests | 2 skipped)
+ ✓ packages/testing/test/query-accessibility.test.ts (11 tests | 4 skipped) 4ms
+ ↓ apps/server/test/write-budgets-postgres.test.ts (2 tests | 2 skipped)
+ ✓ packages/core/test/first-shift-depth.test.ts (5 tests) 193ms
+ ✓ packages/career-packs/test/loader.test.ts (13 tests) 369ms
+ ✓ apps/web/test/adaptive-quality.test.ts (23 tests) 4ms
+ ✓ packages/core/test/jules.test.ts (8 tests) 21ms
+ ✓ apps/web/test/soc-layout.test.ts (23 tests) 29ms
+ ✓ packages/core/test/v1-a1042-delayed-consequence.test.ts (4 tests) 236ms
+ ✓ packages/core/test/login-case-depth.test.ts (4 tests) 234ms
+ ✓ packages/core/test/coworker-provenance.test.ts (9 tests) 46ms
+ ✓ packages/core/test/morgan-a1042-context.test.ts (8 tests) 89ms
+ ↓ apps/server/test/production-postgres.test.ts (1 test | 1 skipped)
+ ✓ packages/core/test/event-lifecycle.test.ts (8 tests) 32ms
+ ✓ packages/core/test/shift-evidence-depth.test.ts (3 tests) 312ms
+ ✓ packages/core/test/ticket-composer.test.ts (3 tests) 40ms
+ ✓ packages/schemas/test/sketches.test.ts (11 tests) 68ms
+ ✓ packages/core/test/gate-release.test.ts (7 tests) 260ms
+ ✓ apps/server/test/support-health-launch.test.ts (4 tests) 124ms
+ ✓ packages/core/test/workitem-projection.test.ts (7 tests) 36ms
+ ✓ packages/core/test/source-evidence.test.ts (4 tests) 219ms
+ ✓ apps/server/test/career-requests.test.ts (4 tests) 50ms
+ ✓ packages/core/test/serializer.test.ts (5 tests) 174ms
+ ✓ packages/career-packs/test/task-contract.test.ts (6 tests) 4ms
+ ✓ apps/web/test/product-media.test.ts (3 tests) 273ms
+ ✓ apps/web/test/cityscape-layout.test.ts (5 tests) 42ms
+ ✓ apps/server/test/anonymous-isolation.test.ts (1 test) 116ms
+ ✓ apps/web/test/journey.test.ts (6 tests) 2ms
+ ✓ packages/core/test/handoff-summary.test.ts (3 tests) 2ms
+ ✓ apps/server/test/migration-runner.test.ts (2 tests | 1 skipped) 5ms
+ ✓ packages/core/test/quiet-residue-runtime.test.ts (2 tests) 209ms
+ ↓ apps/server/test/career-requests-postgres.test.ts (1 test | 1 skipped)
+ ✓ apps/server/test/migrations.test.ts (5 tests) 5ms
+ ✓ apps/web/test/cityscape-performance.test.ts (3 tests) 3ms
+ ✓ packages/core/test/guide-query.test.ts (4 tests) 181ms
+ ✓ apps/server/test/status-validation.test.ts (1 test) 142ms
+ ✓ apps/web/test/public-tokens.test.ts (1 test) 2ms
+ ✓ packages/core/test/completion-settle-v2.test.ts (2 tests) 92ms
+ ✓ apps/server/test/write-budgets.test.ts (1 test) 89ms
+ ✓ packages/evidence/test/evidence.test.ts (3 tests) 3ms
+ ✓ apps/server/test/auth.test.ts (1 test) 36ms
+ ✓ apps/server/test/config.test.ts (8 tests) 2ms
+ ✓ apps/server/test/proxy-trust.test.ts (2 tests) 34ms
+ ✓ apps/web/test/sit-zone.test.ts (4 tests) 1ms
+ ✓ apps/web/test/signage.test.ts (10 tests) 2ms
+ ✓ apps/web/test/workplace-details.test.ts (3 tests) 2ms
+ ✓ packages/core/test/delayed-transition-v2.test.ts (1 test) 78ms
+ ✓ packages/pathways/test/pathways.test.ts (3 tests) 4ms
+ ✓ packages/schemas/src/launch.test.ts (2 tests) 2ms
+ ✓ apps/web/test/soc-lighting.test.tsx (2 tests) 3ms
+ ✓ packages/testing/test/parity.test.ts (1 test) 1ms
+ ✓ apps/web/test/product-contract.test.ts (1 test) 79ms
+ ✓ apps/server/test/production-prep.test.ts (1 test) 79ms
+ ✓ packages/core/test/rng-wire-or-delete.test.ts (3 tests) 14ms
+ ✓ packages/career-packs/test/content-depth.test.ts (2 tests) 2ms
+ ✓ packages/safety/test/safety.test.ts (3 tests) 3ms
+ ✓ apps/web/test/player-motion.test.ts (3 tests) 2ms
+ ✓ packages/core/test/pack-version-isolation.test.ts (1 test) 57ms
+ ✓ apps/web/test/perf-diagnostics.test.ts (2 tests) 2ms
+ ✓ apps/web/test/navigation.test.ts (3 tests) 2ms
+ ✓ apps/web/test/vite-dev-config.test.ts (2 tests) 1ms
+ ✓ apps/web/test/desk-surface.test.ts (1 test) 1ms
+ ✓ packages/career-packs/test/default-clock.test.ts (1 test) 88ms
+ ✓ apps/web/test/look-delta.test.ts (1 test) 1ms
+
+ Test Files  158 passed | 4 skipped (162)
+      Tests  1076 passed | 13 skipped (1089)
+   Start at  17:18:44
+   Duration  57.90s (transform 2.08s, setup 0ms, collect 18.20s, tests 65.52s, environment 11.87s, prepare 4.84s)
+

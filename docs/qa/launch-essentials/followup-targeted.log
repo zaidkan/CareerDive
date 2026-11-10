@@ -1,0 +1,18 @@
+
+ RUN  v3.2.6 /Users/zaid/orca/workspaces/Career-Expo/feat-launch-essentials
+
+(node:80887) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:80888) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/careers.test.tsx (24 tests) 1316ms
+   ✓ Career Explorer interaction > shows Playable now and Taking shape with useful content and no carousel  328ms
+   ✓ public routes > navigates through browser history, focuses headings, and makes no session request  411ms
+ ✓ apps/web/test/assessed-entry.test.tsx (1 test) 1769ms
+   ✓ creates exactly one assessed session directly from Start, plays film after room selection, and preserves class-client methods through movement and Desk OS  1769ms
+
+ Test Files  2 passed (2)
+      Tests  25 passed (25)
+   Start at  17:31:05
+   Duration  2.79s (transform 618ms, setup 0ms, collect 1.06s, tests 3.09s, environment 613ms, prepare 92ms)
+

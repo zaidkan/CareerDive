@@ -1,0 +1,928 @@
+
+ RUN  v3.2.6 /Users/zaid/orca/workspaces/Career-Expo/feat-launch-essentials
+
+(node:78862) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:78863) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ apps/web/test/careers.test.tsx (24 tests | 1 failed) 2370ms
+   ✓ public career data > keeps unique public slugs and explicit simulation destinations 5ms
+   ✓ public career data > keeps the locked public career set and the Workshop membership 1ms
+   ✓ public career data > validates the optional pathway, misconception, and reality note fields 1ms
+   ✓ public career data > keeps verification markers out of every published career string 0ms
+   ✓ public career data > renders an arbitrary reordered Workshop fixture without position rules 52ms
+   ✓ Career Explorer interaction > shows Playable now and Taking shape with useful content and no carousel  352ms
+   ✓ Career Explorer interaction > opens and closes explicit inline Preview from keyboard 21ms
+   ✓ Career Explorer interaction > sends reversible desired request states without a count 20ms
+   × Career Explorer interaction > hydrates server state and persists request changes 1028ms
+     → expect(element).toBeEnabled()
+
+Received element is not enabled:
+  <button
+  aria-label="Request Registered Nurse"
+  aria-pressed="false"
+  class="button-secondary"
+  disabled=""
+  type="button"
+/>
+
+Ignored nodes: comments, script, style
+[36m<html[39m
+  [33mdata-theme[39m=[32m"dark"[39m
+[36m>[39m
+  [36m<head>[39m
+    [36m<title>[39m
+      [0mExplore Careers: Cybersecurity and Career Previews | CareerDive[0m
+    [36m</title>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"Explore careers through selected work tasks. Try a junior cybersecurity analyst simulation; preview nursing, mechanical engineering, electrical work and law."[39m
+      [33mname[39m=[32m"description"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"index,follow"[39m
+      [33mname[39m=[32m"robots"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"summary_large_image"[39m
+      [33mname[39m=[32m"twitter:card"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"Explore Careers: Cybersecurity and Career Previews | CareerDive"[39m
+      [33mname[39m=[32m"twitter:title"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"Explore careers through selected work tasks. Try a junior cybersecurity analyst simulation; preview nursing, mechanical engineering, electrical work and law."[39m
+      [33mname[39m=[32m"twitter:description"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"https://careerdive.example.com/og.png"[39m
+      [33mname[39m=[32m"twitter:image"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"Verdaly tower entrance with glowing doors beneath the VERDALY sign"[39m
+      [33mname[39m=[32m"twitter:image:alt"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"website"[39m
+      [33mproperty[39m=[32m"og:type"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"CareerDive"[39m
+      [33mproperty[39m=[32m"og:site_name"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"en_US"[39m
+      [33mproperty[39m=[32m"og:locale"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"Explore Careers: Cybersecurity and Career Previews | CareerDive"[39m
+      [33mproperty[39m=[32m"og:title"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"Explore careers through selected work tasks. Try a junior cybersecurity analyst simulation; preview nursing, mechanical engineering, electrical work and law."[39m
+      [33mproperty[39m=[32m"og:description"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"https://careerdive.example.com/careers"[39m
+      [33mproperty[39m=[32m"og:url"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"https://careerdive.example.com/og.png"[39m
+      [33mproperty[39m=[32m"og:image"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"1200"[39m
+      [33mproperty[39m=[32m"og:image:width"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"630"[39m
+      [33mproperty[39m=[32m"og:image:height"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"Verdaly tower entrance with glowing doors beneath the VERDALY sign"[39m
+      [33mproperty[39m=[32m"og:image:alt"[39m
+    [36m/>[39m
+    [36m<link[39m
+      [33mhref[39m=[32m"https://careerdive.example.com/careers"[39m
+      [33mrel[39m=[32m"canonical"[39m
+    [36m/>[39m
+  [36m</head>[39m
+  [36m<body>[39m
+    [36m<div>[39m
+      [36m<section[39m
+        [33maria-labelledby[39m=[32m"workshop-title"[39m
+        [33mclass[39m=[32m"career-shelf"[39m
+      [36m>[39m
+        [36m<h2[39m
+          [33mid[39m=[32m"workshop-title"[39m
+        [36m>[39m
+          [0mTaking shape[0m
+        [36m</h2>[39m
+        [36m<p>[39m
+          [0mThese four Workshop roles preview decisions we are considering — not playable simulations yet. Want one of these first? Mark it — you can undo anytime.[0m
+        [36m</p>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"career-request-intro"[39m
+        [36m>[39m
+          [36m<h3>[39m
+            [0mWhich career do you want to try?[0m
+          [36m</h3>[39m
+          [36m<p>[39m
+            [0mMark any Workshop role you'd like built next. Change your mind with one click — no account, no email.[0m
+          [36m</p>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"career-request-honesty"[39m
+          [36m>[39m
+            [0mRequests are saved when confirmed. They guide what we prioritize and do not guarantee build order. No public request counts.[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<ul[39m
+          [33mclass[39m=[32m"career-workshop-grid"[39m
+        [36m>[39m
+          [36m<li>[39m
+            [36m<article[39m
+              [33mclass[39m=[32m"career-card"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"career-card-field"[39m
+              [36m>[39m
+                [0mHealthcare[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"career-card-status"[39m
+              [36m>[39m
+                [0mTaking shape[0m
+              [36m</p>[39m
+              [36m<h3>[39m
+                [0mRegistered Nurse[0m
+              [36m</h3>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"career-card-summary"[39m
+              [36m>[39m
+                [0mHelp care for patients by noticing changes, organizing information, communicating with a healthcare team, and keeping accurate records.[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"career-card-task"[39m
+              [36m>[39m
+                [36m<strong>[39m
+                  [0mPossible task[0m
+                [36m</strong>[39m
+                [0m [0m
+                [0mReview synthetic patient information[0m
+              [36m</p>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"career-card-actions"[39m
+              [36m/>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"career-preview"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"career-preview-actions"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-controls[39m=[32m"_r_8_"[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"career-text-button"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mPreview Registered Nurse[0m
+                  [36m</button>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"career-request"[39m
+                  [36m>[39m
+                    [36m<button[39m
+                      [33maria-label[39m=[32m"Request Registered Nurse"[39m
+                      [33maria-pressed[39m=[32m"false"[39m
+                      [33mclass[39m=[32m"button-secondary"[39m
+                      [33mdisabled[39m=[32m""[39m
+                      [33mtype[39m=[32m"button"[39m
+                    [36m>[39m
+                      [0mRequest this career[0m
+                    [36m</button>[39m
+                    [36m<p[39m
+                      [33mclass[39m=[32m"career-request-note"[39m
+                      [33mrole[39m=[32m"alert"[39m
+                    [36m>[39m
+                      [0mRequest unavailable. Your choice has not been confirmed.[0m
+                      [36m<button[39m
+                        [33mclass[39m=[32m"button-secondary"[39m
+                        [33mtype[39m=[32m"button"[39m
+                      [36m>[39m
+                        [0mRetry connection[0m
+                      [36m</button>[39m
+                    [36m</p>[39m
+                  [36m</div>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"career-preview-panel"[39m
+                  [33mhidden[39m=[32m""[39m
+                  [33mid[39m=[32m"_r_8_"[39m
+                [36m>[39m
+                  [36m<p[39m
+                    [33mclass[39m=[32m"career-preview-lead"[39m
+                  [36m>[39m
+                    [0mYou’d decide what the evidence supports — and what still needs checking.[0m
+                  [36m</p>[39m
+                  [36m<p[39m
+                    [33mclass[39m=[32m"career-preview-label"[39m
+                  [36m>[39m
+                    [0mPossible decisions · [0m
+                    [0mHospital / care setting[0m
+                  [36m</p>[39m
+                  [36m<ul>[39m
+                    [36m<li>[39m
+                      [0mReview synthetic patient information[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [0mRecognize and communicate a meaningful change[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [0mOrganize a handoff[0m
+                    [36m</li>[39m
+                  [36m</ul>[39m
+                  [36m<p[39m
+                    [33mclass[39m=[32m"career-preview-label"[39m
+                  [36m>[39m
+                    [0mSkills in view[0m
+                  [36m</p>[39m
+                  [36m<ul>[39m
+                    [36m<li>[39m
+                      [0mObservation[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [0mCommunication[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [0mPrioritization[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [0mDocumentation[0m
+                    [36m</li>[39m
+                  [36m</ul>[39m
+                  [36m<p[39m
+                    [33mclass[39m=[32m"career-caveat"[39m
+                  [36m>[39m
+                    [36m<strong>[39m
+                      [0mReality note[0m
+                    [36m</strong>[39m
+                    [0m [0m
+                    [0mSynthetic information only; no real clinical procedure, dosing, or diagnosis instruction.[0m
+                  [36m</p>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</article>[39m
+          [36m</li>[39m
+        [36m</ul>[39m
+      [36m</section>[39m
+    [36m</div>[39m
+  [36m</body>[39m
+[36m</html>[39m
+   ✓ Career Explorer interaction > shows Workshop safety and authenticity notes in the Preview 23ms
+   ✓ Career Explorer interaction > keeps Lawyer in the Workshop without a public detail or simulation route 13ms
+   ✓ public routes > navigates through browser history, focuses headings, and makes no session request  427ms
+   ✓ public routes > published detail uses canonical data and its explicit simulation route 29ms
+   ✓ public routes > keeps modified navigation clicks available to the browser: {"ctrlKey":true} 11ms
+   ✓ public routes > keeps modified navigation clicks available to the browser: {"metaKey":true} 11ms
+   ✓ public routes > keeps modified navigation clicks available to the browser: {"button":1} 8ms
+   ✓ public routes > keeps Workshop details unpublished and cards on the Explorer 18ms
+   ✓ public routes > renders 404 for /careers/missing 9ms
+   ✓ public routes > renders 404 for /not-a-page 8ms
+   ✓ public page accessibility > passes axe at / 88ms
+   ✓ public page accessibility > passes axe at /careers 128ms
+   ✓ public page accessibility > passes axe at /careers/cybersecurity-analyst 70ms
+   ✓ public page accessibility > passes axe at /careers/registered-nurse 23ms
+   ✓ public page accessibility > passes axe at /careers/missing 22ms
+ ❯ apps/web/test/assessed-entry.test.tsx (1 test | 1 failed) 6131ms
+   × creates exactly one assessed session directly from Start, plays film after room selection, and preserves class-client methods through movement and Desk OS 6130ms
+     → Unable to find role="button" and name `/Security Operations/`
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<main[39m
+      [33mclass[39m=[32m"simulation-main"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"site-header"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"site-brand"[39m
+        [36m>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"brand-mark"[39m
+          [36m>[39m
+            [0mCareerDive[0m
+          [36m</p>[39m
+          [36m<h1>[39m
+            [0mJunior Cybersecurity Analyst[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"site-lede"[39m
+          [36m>[39m
+            [0mDay one at [0m
+            [0mVerdaly[0m
+            [0m — try the job for a shift. Read, decide, and learn what the work is really like.[0m
+          [36m</p>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"site-meta"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"site-chip"[39m
+            [36m>[39m
+              [0mAssessed shift[0m
+            [36m</span>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"site-chip site-chip-muted"[39m
+            [36m>[39m
+              [0mFloor 4 · Trust & Safety Ops[0m
+            [36m</span>[39m
+          [36m</p>[39m
+        [36m</div>[39m
+      [36m</header>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"app-alert"[39m
+        [33mrole[39m=[32m"alert"[39m
+        [33mtabindex[39m=[32m"-1"[39m
+      [36m>[39m
+        [36m<p>[39m
+          [0mWe couldn't connect to start your shift. Your place is kept. Try again when you're ready.[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mtype[39m=[32m"button"[39m
+        [36m>[39m
+          [0mRetry starting shift[0m
+        [36m</button>[39m
+        [36m<section[39m
+          [33maria-label[39m=[32m"Problem report"[39m
+          [33mclass[39m=[32m"problem-report"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-expanded[39m=[32m"false"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mReport a problem[0m
+          [36m</button>[39m
+        [36m</section>[39m
+      [36m</div>[39m
+      [36m<p[39m
+        [33maria-live[39m=[32m"polite"[39m
+        [33mclass[39m=[32m"app-loading"[39m
+      [36m>[39m
+        [0mYour place on this page is kept.[0m
+      [36m</p>[39m
+      [36m<aside[39m
+        [33mclass[39m=[32m"privacy-note"[39m
+      [36m>[39m
+        [0mSubmitted reflections become part of your CareerDive session. See Privacy and safety for access limits.[0m
+      [36m</aside>[39m
+    [36m</main>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<main[39m
+      [33mclass[39m=[32m"simulation-main"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"site-header"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"site-brand"[39m
+        [36m>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"brand-mark"[39m
+          [36m>[39m
+            [0mCareerDive[0m
+          [36m</p>[39m
+          [36m<h1>[39m
+            [0mJunior Cybersecurity Analyst[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"site-lede"[39m
+          [36m>[39m
+            [0mDay one at [0m
+            [0mVerdaly[0m
+            [0m — try the job for a shift. Read, decide, and learn what the work is really like.[0m
+          [36m</p>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"site-meta"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"site-chip"[39m
+            [36m>[39m
+              [0mAssessed shift[0m
+            [36m</span>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"site-chip site-chip-muted"[39m
+            [36m>[39m
+              [0mFloor 4 · Trust & Safety Ops[0m
+            [36m</span>[39m
+          [36m</p>[39m
+        [36m</div>[39m
+      [36m</header>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"app-alert"[39m
+        [33mrole[39m=[32m"alert"[39m
+        [33mtabindex[39m=[32m"-1"[39m
+      [36m>[39m
+        [36m<p>[39m
+          [0mWe couldn't connect to start your shift. Your place is kept. Try again when you're ready.[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mtype[39m=[32m"button"[39m
+        [36m>[39m
+          [0mRetry starting shift[0m
+        [36m</button>[39m
+        [36m<section[39m
+          [33maria-label[39m=[32m"Problem report"[39m
+          [33mclass[39m=[32m"problem-report"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-expanded[39m=[32m"false"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mReport a problem[0m
+          [36m</button>[39m
+        [36m</section>[39m
+      [36m</div>[39m
+      [36m<p[39m
+        [33maria-live[39m=[32m"polite"[39m
+        [33mclass[39m=[32m"app-loading"[39m
+      [36m>[39m
+        [0mYour place on this page is kept.[0m
+      [36m</p>[39m
+      [36m<aside[39m
+        [33mclass[39m=[32m"privacy-note"[39m
+      [36m>[39m
+        [0mSubmitted reflections become part of your CareerDive session. See Privacy and safety for access limits.[0m
+      [36m</aside>[39m
+    [36m</main>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  apps/web/test/assessed-entry.test.tsx > creates exactly one assessed session directly from Start, plays film after room selection, and preserves class-client methods through movement and Desk OS
+TestingLibraryElementError: Unable to find role="button" and name `/Security Operations/`
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<main[39m
+      [33mclass[39m=[32m"simulation-main"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"site-header"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"site-brand"[39m
+        [36m>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"brand-mark"[39m
+          [36m>[39m
+            [0mCareerDive[0m
+          [36m</p>[39m
+          [36m<h1>[39m
+            [0mJunior Cybersecurity Analyst[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"site-lede"[39m
+          [36m>[39m
+            [0mDay one at [0m
+            [0mVerdaly[0m
+            [0m — try the job for a shift. Read, decide, and learn what the work is really like.[0m
+          [36m</p>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"site-meta"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"site-chip"[39m
+            [36m>[39m
+              [0mAssessed shift[0m
+            [36m</span>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"site-chip site-chip-muted"[39m
+            [36m>[39m
+              [0mFloor 4 · Trust & Safety Ops[0m
+            [36m</span>[39m
+          [36m</p>[39m
+        [36m</div>[39m
+      [36m</header>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"app-alert"[39m
+        [33mrole[39m=[32m"alert"[39m
+        [33mtabindex[39m=[32m"-1"[39m
+      [36m>[39m
+        [36m<p>[39m
+          [0mWe couldn't connect to start your shift. Your place is kept. Try again when you're ready.[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mtype[39m=[32m"button"[39m
+        [36m>[39m
+          [0mRetry starting shift[0m
+        [36m</button>[39m
+        [36m<section[39m
+          [33maria-label[39m=[32m"Problem report"[39m
+          [33mclass[39m=[32m"problem-report"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-expanded[39m=[32m"false"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mReport a problem[0m
+          [36m</button>[39m
+        [36m</section>[39m
+      [36m</div>[39m
+      [36m<p[39m
+        [33maria-live[39m=[32m"polite"[39m
+        [33mclass[39m=[32m"app-loading"[39m
+      [36m>[39m
+        [0mYour place on this page is kept.[0m
+      [36m</p>[39m
+      [36m<aside[39m
+        [33mclass[39m=[32m"privacy-note"[39m
+      [36m>[39m
+        [0mSubmitted reflections become part of your CareerDive session. See Privacy and safety for access limits.[0m
+      [36m</aside>[39m
+    [36m</main>[39m
+  [36m</div>[39m
+[36m</body>[39m
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<main[39m
+      [33mclass[39m=[32m"simulation-main"[39m
+    [36m>[39m
+      [36m<header[39m
+        [33mclass[39m=[32m"site-header"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"site-brand"[39m
+        [36m>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"brand-mark"[39m
+          [36m>[39m
+            [0mCareerDive[0m
+          [36m</p>[39m
+          [36m<h1>[39m
+            [0mJunior Cybersecurity Analyst[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"site-lede"[39m
+          [36m>[39m
+            [0mDay one at [0m
+            [0mVerdaly[0m
+            [0m — try the job for a shift. Read, decide, and learn what the work is really like.[0m
+          [36m</p>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"site-meta"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"site-chip"[39m
+            [36m>[39m
+              [0mAssessed shift[0m
+            [36m</span>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"site-chip site-chip-muted"[39m
+            [36m>[39m
+              [0mFloor 4 · Trust & Safety Ops[0m
+            [36m</span>[39m
+          [36m</p>[39m
+        [36m</div>[39m
+      [36m</header>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"app-alert"[39m
+        [33mrole[39m=[32m"alert"[39m
+        [33mtabindex[39m=[32m"-1"[39m
+      [36m>[39m
+        [36m<p>[39m
+          [0mWe couldn't connect to start your shift. Your place is kept. Try again when you're ready.[0m
+        [36m</p>[39m
+        [36m<button[39m
+          [33mtype[39m=[32m"button"[39m
+        [36m>[39m
+          [0mRetry starting shift[0m
+        [36m</button>[39m
+        [36m<section[39m
+          [33maria-label[39m=[32m"Problem report"[39m
+          [33mclass[39m=[32m"problem-report"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-expanded[39m=[32m"false"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mReport a problem[0m
+          [36m</button>[39m
+        [36m</section>[39m
+      [36m</div>[39m
+      [36m<p[39m
+        [33maria-live[39m=[32m"polite"[39m
+        [33mclass[39m=[32m"app-loading"[39m
+      [36m>[39m
+        [0mYour place on this page is kept.[0m
+      [36m</p>[39m
+      [36m<aside[39m
+        [33mclass[39m=[32m"privacy-note"[39m
+      [36m>[39m
+        [0mSubmitted reflections become part of your CareerDive session. See Privacy and safety for access limits.[0m
+      [36m</aside>[39m
+    [36m</main>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ waitForWrapper node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:163:27
+ ❯ node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/query-helpers.js:86:33
+ ❯ apps/web/test/assessed-entry.test.tsx:128:18
+    126|   expect(document.querySelector('video[src="/arrival-film.mp4"]')).toB…
+    127|   await user.click(
+    128|     await screen.findByRole(
+       |                  ^
+    129|       "button",
+    130|       { name: /Security Operations/ },
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  apps/web/test/careers.test.tsx > Career Explorer interaction > hydrates server state and persists request changes
+Error: expect(element).toBeEnabled()
+
+Received element is not enabled:
+  <button
+  aria-label="Request Registered Nurse"
+  aria-pressed="false"
+  class="button-secondary"
+  disabled=""
+  type="button"
+/>
+
+Ignored nodes: comments, script, style
+[36m<html[39m
+  [33mdata-theme[39m=[32m"dark"[39m
+[36m>[39m
+  [36m<head>[39m
+    [36m<title>[39m
+      [0mExplore Careers: Cybersecurity and Career Previews | CareerDive[0m
+    [36m</title>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"Explore careers through selected work tasks. Try a junior cybersecurity analyst simulation; preview nursing, mechanical engineering, electrical work and law."[39m
+      [33mname[39m=[32m"description"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"index,follow"[39m
+      [33mname[39m=[32m"robots"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"summary_large_image"[39m
+      [33mname[39m=[32m"twitter:card"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"Explore Careers: Cybersecurity and Career Previews | CareerDive"[39m
+      [33mname[39m=[32m"twitter:title"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"Explore careers through selected work tasks. Try a junior cybersecurity analyst simulation; preview nursing, mechanical engineering, electrical work and law."[39m
+      [33mname[39m=[32m"twitter:description"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"https://careerdive.example.com/og.png"[39m
+      [33mname[39m=[32m"twitter:image"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"Verdaly tower entrance with glowing doors beneath the VERDALY sign"[39m
+      [33mname[39m=[32m"twitter:image:alt"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"website"[39m
+      [33mproperty[39m=[32m"og:type"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"CareerDive"[39m
+      [33mproperty[39m=[32m"og:site_name"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"en_US"[39m
+      [33mproperty[39m=[32m"og:locale"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"Explore Careers: Cybersecurity and Career Previews | CareerDive"[39m
+      [33mproperty[39m=[32m"og:title"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"Explore careers through selected work tasks. Try a junior cybersecurity analyst simulation; preview nursing, mechanical engineering, electrical work and law."[39m
+      [33mproperty[39m=[32m"og:description"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"https://careerdive.example.com/careers"[39m
+      [33mproperty[39m=[32m"og:url"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"https://careerdive.example.com/og.png"[39m
+      [33mproperty[39m=[32m"og:image"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"1200"[39m
+      [33mproperty[39m=[32m"og:image:width"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"630"[39m
+      [33mproperty[39m=[32m"og:image:height"[39m
+    [36m/>[39m
+    [36m<meta[39m
+      [33mcontent[39m=[32m"Verdaly tower entrance with glowing doors beneath the VERDALY sign"[39m
+      [33mproperty[39m=[32m"og:image:alt"[39m
+    [36m/>[39m
+    [36m<link[39m
+      [33mhref[39m=[32m"https://careerdive.example.com/careers"[39m
+      [33mrel[39m=[32m"canonical"[39m
+    [36m/>[39m
+  [36m</head>[39m
+  [36m<body>[39m
+    [36m<div>[39m
+      [36m<section[39m
+        [33maria-labelledby[39m=[32m"workshop-title"[39m
+        [33mclass[39m=[32m"career-shelf"[39m
+      [36m>[39m
+        [36m<h2[39m
+          [33mid[39m=[32m"workshop-title"[39m
+        [36m>[39m
+          [0mTaking shape[0m
+        [36m</h2>[39m
+        [36m<p>[39m
+          [0mThese four Workshop roles preview decisions we are considering — not playable simulations yet. Want one of these first? Mark it — you can undo anytime.[0m
+        [36m</p>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"career-request-intro"[39m
+        [36m>[39m
+          [36m<h3>[39m
+            [0mWhich career do you want to try?[0m
+          [36m</h3>[39m
+          [36m<p>[39m
+            [0mMark any Workshop role you'd like built next. Change your mind with one click — no account, no email.[0m
+          [36m</p>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"career-request-honesty"[39m
+          [36m>[39m
+            [0mRequests are saved when confirmed. They guide what we prioritize and do not guarantee build order. No public request counts.[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<ul[39m
+          [33mclass[39m=[32m"career-workshop-grid"[39m
+        [36m>[39m
+          [36m<li>[39m
+            [36m<article[39m
+              [33mclass[39m=[32m"career-card"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"career-card-field"[39m
+              [36m>[39m
+                [0mHealthcare[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"career-card-status"[39m
+              [36m>[39m
+                [0mTaking shape[0m
+              [36m</p>[39m
+              [36m<h3>[39m
+                [0mRegistered Nurse[0m
+              [36m</h3>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"career-card-summary"[39m
+              [36m>[39m
+                [0mHelp care for patients by noticing changes, organizing information, communicating with a healthcare team, and keeping accurate records.[0m
+              [36m</p>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"career-card-task"[39m
+              [36m>[39m
+                [36m<strong>[39m
+                  [0mPossible task[0m
+                [36m</strong>[39m
+                [0m [0m
+                [0mReview synthetic patient information[0m
+              [36m</p>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"career-card-actions"[39m
+              [36m/>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"career-preview"[39m
+              [36m>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"career-preview-actions"[39m
+                [36m>[39m
+                  [36m<button[39m
+                    [33maria-controls[39m=[32m"_r_8_"[39m
+                    [33maria-expanded[39m=[32m"false"[39m
+                    [33mclass[39m=[32m"career-text-button"[39m
+                    [33mtype[39m=[32m"button"[39m
+                  [36m>[39m
+                    [0mPreview Registered Nurse[0m
+                  [36m</button>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"career-request"[39m
+                  [36m>[39m
+                    [36m<button[39m
+                      [33maria-label[39m=[32m"Request Registered Nurse"[39m
+                      [33maria-pressed[39m=[32m"false"[39m
+                      [33mclass[39m=[32m"button-secondary"[39m
+                      [33mdisabled[39m=[32m""[39m
+                      [33mtype[39m=[32m"button"[39m
+                    [36m>[39m
+                      [0mRequest this career[0m
+                    [36m</button>[39m
+                    [36m<p[39m
+                      [33mclass[39m=[32m"career-request-note"[39m
+                      [33mrole[39m=[32m"alert"[39m
+                    [36m>[39m
+                      [0mRequest unavailable. Your choice has not been confirmed.[0m
+                      [36m<button[39m
+                        [33mclass[39m=[32m"button-secondary"[39m
+                        [33mtype[39m=[32m"button"[39m
+                      [36m>[39m
+                        [0mRetry connection[0m
+                      [36m</button>[39m
+                    [36m</p>[39m
+                  [36m</div>[39m
+                [36m</div>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"career-preview-panel"[39m
+                  [33mhidden[39m=[32m""[39m
+                  [33mid[39m=[32m"_r_8_"[39m
+                [36m>[39m
+                  [36m<p[39m
+                    [33mclass[39m=[32m"career-preview-lead"[39m
+                  [36m>[39m
+                    [0mYou’d decide what the evidence supports — and what still needs checking.[0m
+                  [36m</p>[39m
+                  [36m<p[39m
+                    [33mclass[39m=[32m"career-preview-label"[39m
+                  [36m>[39m
+                    [0mPossible decisions · [0m
+                    [0mHospital / care setting[0m
+                  [36m</p>[39m
+                  [36m<ul>[39m
+                    [36m<li>[39m
+                      [0mReview synthetic patient information[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [0mRecognize and communicate a meaningful change[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [0mOrganize a handoff[0m
+                    [36m</li>[39m
+                  [36m</ul>[39m
+                  [36m<p[39m
+                    [33mclass[39m=[32m"career-preview-label"[39m
+                  [36m>[39m
+                    [0mSkills in view[0m
+                  [36m</p>[39m
+                  [36m<ul>[39m
+                    [36m<li>[39m
+                      [0mObservation[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [0mCommunication[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [0mPrioritization[0m
+                    [36m</li>[39m
+                    [36m<li>[39m
+                      [0mDocumentation[0m
+                    [36m</li>[39m
+                  [36m</ul>[39m
+                  [36m<p[39m
+                    [33mclass[39m=[32m"career-caveat"[39m
+                  [36m>[39m
+                    [36m<strong>[39m
+                      [0mReality note[0m
+                    [36m</strong>[39m
+                    [0m [0m
+                    [0mSynthetic information only; no real clinical procedure, dosing, or diagnosis instruction.[0m
+                  [36m</p>[39m
+                [36m</div>[39m
+              [36m</div>[39m
+            [36m</article>[39m
+          [36m</li>[39m
+        [36m</ul>[39m
+      [36m</section>[39m
+    [36m</div>[39m
+  [36m</body>[39m
+[36m</html>[39m
+ ❯ apps/web/test/careers.test.tsx:292:22
+    290|     });
+    291|     await waitFor(() => {
+    292|       expect(button).toBeEnabled();
+       |                      ^
+    293|     });
+    294|     expect(button).toHaveAttribute("aria-pressed", "true");
+ ❯ runWithExpensiveErrorDiagnosticsDisabled node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/config.js:47:12
+ ❯ checkCallback node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:124:77
+ ❯ Timeout.checkRealTimersCallback node_modules/.pnpm/@testing-library+dom@10.4.1/node_modules/@testing-library/dom/dist/wait-for.js:118:16
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  2 failed (2)
+      Tests  2 failed | 23 passed (25)
+   Start at  17:29:08
+   Duration  7.14s (transform 426ms, setup 0ms, collect 1.04s, tests 8.50s, environment 603ms, prepare 95ms)
+

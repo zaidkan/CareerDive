@@ -1,0 +1,32 @@
+$ turbo lint
+• turbo 2.9.18
+
+   • Packages in scope: @sim/career-packs, @sim/core, @sim/evidence, @sim/pathways, @sim/safety, @sim/schemas, @sim/server, @sim/testing, @sim/video, @sim/web
+   • Running lint in 10 packages
+   • Remote caching disabled, using shared worktree cache
+
+@sim/schemas:lint: cache hit, replaying logs 05bc702c9a9f6d75
+@sim/video:lint: cache hit, replaying logs 43399054c9c7e67b
+@sim/schemas:lint: $ eslint src
+@sim/video:lint: $ eslint src
+@sim/safety:lint: cache hit, replaying logs 389100590cfe489e
+@sim/testing:lint: cache hit, replaying logs 8ec779a1043a435f
+@sim/career-packs:lint: cache hit, replaying logs 5bf9d99a8957e0bf
+@sim/safety:lint: $ eslint src test
+@sim/testing:lint: $ eslint src
+@sim/pathways:lint: cache hit, replaying logs badfaec505194236
+@sim/career-packs:lint: $ eslint src test
+@sim/pathways:lint: $ eslint src test
+@sim/evidence:lint: cache hit, replaying logs cd542aaeeba30812
+@sim/evidence:lint: $ eslint src test
+@sim/core:lint: cache hit, replaying logs e0602e894f1f209c
+@sim/core:lint: $ eslint src test
+@sim/server:lint: cache hit, replaying logs 72f00b242e22dac2
+@sim/server:lint: $ eslint src test scripts
+@sim/web:lint: cache miss, executing 5836e6b0f4c9ba83
+@sim/web:lint: $ eslint src test e2e fixtures
+
+ Tasks:    10 successful, 10 total
+Cached:    9 cached, 10 total
+  Time:    13.247s 
+

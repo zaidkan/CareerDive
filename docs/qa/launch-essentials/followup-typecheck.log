@@ -1,0 +1,32 @@
+$ turbo typecheck
+• turbo 2.9.18
+
+   • Packages in scope: @sim/career-packs, @sim/core, @sim/evidence, @sim/pathways, @sim/safety, @sim/schemas, @sim/server, @sim/testing, @sim/video, @sim/web
+   • Running typecheck in 10 packages
+   • Remote caching disabled, using shared worktree cache
+
+@sim/schemas:typecheck: cache hit, replaying logs 9d581f596b666b50
+@sim/schemas:typecheck: $ tsc -p tsconfig.json --noEmit
+@sim/video:typecheck: cache hit, replaying logs f007bb04b8d368e7
+@sim/video:typecheck: $ tsc -p tsconfig.json --noEmit
+@sim/pathways:typecheck: cache hit, replaying logs 87c3e5964cf7e1e7
+@sim/safety:typecheck: cache hit, replaying logs 90098f492eccfcc5
+@sim/pathways:typecheck: $ tsc -p tsconfig.json --noEmit
+@sim/career-packs:typecheck: cache hit, replaying logs 25e36c9023d05669
+@sim/safety:typecheck: $ tsc -p tsconfig.json --noEmit
+@sim/testing:typecheck: cache hit, replaying logs 115e671c11cfc401
+@sim/career-packs:typecheck: $ tsc -p tsconfig.json --noEmit
+@sim/testing:typecheck: $ tsc -p tsconfig.json --noEmit
+@sim/evidence:typecheck: cache hit, replaying logs 29d9b91f6e2dfdd8
+@sim/evidence:typecheck: $ tsc -p tsconfig.json --noEmit
+@sim/core:typecheck: cache hit, replaying logs cdeb849ce048e2ac
+@sim/core:typecheck: $ tsc -p tsconfig.json --noEmit
+@sim/web:typecheck: cache miss, executing a51849d3780665bd
+@sim/server:typecheck: cache hit, replaying logs 3fa9f30bf25d4f82
+@sim/server:typecheck: $ tsc -p tsconfig.json --noEmit
+@sim/web:typecheck: $ tsc -p tsconfig.json --noEmit
+
+ Tasks:    10 successful, 10 total
+Cached:    9 cached, 10 total
+  Time:    6.425s 
+

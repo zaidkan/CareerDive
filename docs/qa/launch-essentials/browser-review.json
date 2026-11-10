@@ -1,0 +1,146 @@
+[
+  {
+    "route": "/",
+    "width": 1366,
+    "theme": "dark",
+    "overflow": false,
+    "findings": [],
+    "errors": [],
+    "authRequests": []
+  },
+  {
+    "route": "/privacy",
+    "width": 1366,
+    "theme": "dark",
+    "overflow": false,
+    "findings": [],
+    "errors": [],
+    "authRequests": []
+  },
+  {
+    "route": "/terms",
+    "width": 1366,
+    "theme": "dark",
+    "overflow": false,
+    "findings": [],
+    "errors": [],
+    "authRequests": []
+  },
+  {
+    "route": "/start",
+    "width": 1366,
+    "theme": "dark",
+    "overflow": false,
+    "findings": [],
+    "errors": [],
+    "authRequests": []
+  },
+  {
+    "route": "/",
+    "width": 1366,
+    "theme": "light",
+    "overflow": false,
+    "findings": [],
+    "errors": [],
+    "authRequests": []
+  },
+  {
+    "route": "/privacy",
+    "width": 1366,
+    "theme": "light",
+    "overflow": false,
+    "findings": [],
+    "errors": [],
+    "authRequests": []
+  },
+  {
+    "route": "/terms",
+    "width": 1366,
+    "theme": "light",
+    "overflow": false,
+    "findings": [],
+    "errors": [],
+    "authRequests": []
+  },
+  {
+    "route": "/start",
+    "width": 1366,
+    "theme": "light",
+    "overflow": false,
+    "findings": [],
+    "errors": [],
+    "authRequests": []
+  },
+  {
+    "route": "/",
+    "width": 390,
+    "theme": "dark",
+    "overflow": false,
+    "findings": [],
+    "errors": [],
+    "authRequests": []
+  },
+  {
+    "route": "/privacy",
+    "width": 390,
+    "theme": "dark",
+    "overflow": false,
+    "findings": [],
+    "errors": [],
+    "authRequests": []
+  },
+  {
+    "route": "/terms",
+    "width": 390,
+    "theme": "dark",
+    "overflow": false,
+    "findings": [],
+    "errors": [],
+    "authRequests": []
+  },
+  {
+    "route": "/start",
+    "width": 390,
+    "theme": "dark",
+    "overflow": false,
+    "findings": [],
+    "errors": [],
+    "authRequests": []
+  },
+  {
+    "route": "/",
+    "width": 390,
+    "theme": "light",
+    "overflow": false,
+    "findings": [],
+    "errors": [],
+    "authRequests": []
+  },
+  {
+    "route": "/privacy",
+    "width": 390,
+    "theme": "light",
+    "overflow": false,
+    "findings": [],
+    "errors": [],
+    "authRequests": []
+  },
+  {
+    "route": "/terms",
+    "width": 390,
+    "theme": "light",
+    "overflow": false,
+    "findings": [],
+    "errors": [],
+    "authRequests": []
+  },
+  {
+    "route": "/start",
+    "width": 390,
+    "theme": "light",
+    "overflow": false,
+    "findings": [],
+    "errors": [],
+    "authRequests": []
+  }
+]

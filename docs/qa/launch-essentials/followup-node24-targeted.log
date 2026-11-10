@@ -1,0 +1,14 @@
+
+ RUN  v3.2.6 /Users/zaid/orca/workspaces/Career-Expo/feat-launch-essentials
+
+ ✓ apps/web/test/careers.test.tsx (24 tests) 1363ms
+   ✓ Career Explorer interaction > shows Playable now and Taking shape with useful content and no carousel  332ms
+   ✓ public routes > navigates through browser history, focuses headings, and makes no session request  408ms
+ ✓ apps/web/test/assessed-entry.test.tsx (1 test) 1801ms
+   ✓ creates exactly one assessed session directly from Start, plays film after room selection, and preserves class-client methods through movement and Desk OS  1801ms
+
+ Test Files  2 passed (2)
+      Tests  25 passed (25)
+   Start at  17:33:04
+   Duration  2.68s (transform 706ms, setup 0ms, collect 1.01s, tests 3.16s, environment 422ms, prepare 86ms)
+

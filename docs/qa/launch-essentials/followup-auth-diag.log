@@ -1,0 +1,19 @@
+
+ RUN  v3.2.6 /Users/zaid/orca/workspaces/Career-Expo/feat-launch-essentials
+
+(node:79219) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | apps/web/test/auth-environment-diagnostic.test.ts > diagnoses browser identity environment
+STORAGE undefined undefined Object
+UUID function function
+
+stdout | apps/web/test/auth-environment-diagnostic.test.ts > diagnoses browser identity environment
+IDENTITY ERROR Error: Persistent identity storage unavailable
+
+ ✓ apps/web/test/auth-environment-diagnostic.test.ts (1 test) 1ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  17:29:30
+   Duration  373ms (transform 30ms, setup 0ms, collect 40ms, tests 1ms, environment 154ms, prepare 34ms)
+

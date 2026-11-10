@@ -1,0 +1,342 @@
+$ vitest run
+
+ RUN  v3.2.6 /Users/zaid/orca/workspaces/Career-Expo/feat-launch-essentials
+
+(node:84733) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:84734) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/workplace-golden-path.test.tsx (1 test) 4849ms
+   ✓ rendered workplace golden path > replays the legacy procedural shift through os controls  4849ms
+(node:84852) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/desk-os.test.tsx (19 tests) 7788ms
+   ✓ Desk OS mutation coordination > submits a rapid duplicate once and disables every canonical control while pending  1233ms
+   ✓ Desk OS mutation coordination > keeps a late response from an old session from replacing the newer view  1075ms
+   ✓ Desk OS mutation coordination > revokes queued workplace continuations before an assessed session starts  564ms
+   ✓ Desk OS mutation coordination > keeps failed canonical state unchanged and retries only the failed operation  561ms
+   ✓ Desk OS mutation coordination > does not release a failed Handle target after a successful snooze response  574ms
+   ✓ Desk OS mutation coordination > does not release a failed Handle target after a successful continue response  566ms
+   ✓ Desk OS mutation coordination > focuses the linked work only when a failed Handle retry is applied  566ms
+   ✓ Desk OS mutation coordination > re-announces an identical retry failure without an unhandled rejection  552ms
+   ✓ Desk OS mutation coordination > persistently confirms a successful utility save  646ms
+   ✓ Desk OS canonical state rendering > waits for the canonical notification view before focusing its linked event  547ms
+   ✓ Desk OS canonical state rendering > keeps step feedback through transition and confirms final task completion  627ms
+(node:84896) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/morgan-intro.test.tsx (9 tests) 3996ms
+   ✓ once-per-session Morgan introduction > shows the intro in Team Chat after the first login only  883ms
+   ✓ once-per-session Morgan introduction > does not duplicate the intro across leave/return, app switching, or Team Chat reopen  627ms
+   ✓ once-per-session Morgan introduction > keeps a fresh provider session able to show the intro again for a new simulation session  1017ms
+   ✓ once-per-session Morgan introduction > creates exactly one simulation session and never opens practice or tutorial architecture  834ms
+   ✓ once-per-session Morgan introduction > keeps the intro readable as a single node inside the Morgan thread  537ms
+(node:84918) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/world.test.tsx (11 tests) 3546ms
+   ✓ spatial presentation > lets the player enter the unlocked SOC room  2451ms
+   ✓ spatial presentation > keeps the map safe via 'Floor map' (fullscreen exit denied: false)  384ms
+   ✓ spatial presentation > moves from map to in-sim desk OS through the spatial shell  557ms
+(node:84952) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/arrival-handoff.test.tsx (14 tests) 2739ms
+   ✓ arrival handoff presentation > autoplays with sound inline, then dissolves only after the live scene is ready  323ms
+   ✓ arrival handoff presentation > preserves the last film frame for a ready scene instead of flashing a loading veil  318ms
+   ✓ arrival handoff presentation > provides one Enter button when autoplay is blocked (retry also blocked: false)  338ms
+   ✓ arrival handoff presentation > provides one Enter button when autoplay is blocked (retry also blocked: true)  329ms
+   ✓ arrival handoff presentation > skips a failed media file, waiting for the actual scene rather than revealing an empty canvas  318ms
+   ✓ arrival handoff presentation > lets keyboard users skip playback without changing scene readiness  320ms
+   ✓ arrival handoff presentation > completes once under StrictMode and cancels completion when unmounted  352ms
+   ✓ falls back to muted playback when audible autoplay is denied without adding an entry gate  369ms
+(node:84974) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/build-case-golden-path.test.tsx (1 test) 2402ms
+   ✓ constructs sources/findings through real controls and router, survives failed saves, receives results and reaches honest debrief  2402ms
+(node:84998) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/recovery-support.test.tsx (9 tests) 2128ms
+   ✓ shares the entire safe retry through StrictMode and stops after one retry  766ms
+   ✓ checks compatibility after one workplace retry and keeps the same workstation data  726ms
+   ✓ cancels the automatic startup retry after leaving the page  455ms
+(node:85010) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/recovery-lifecycle.test.tsx (3 tests) 1888ms
+   ✓ focuses the safe startup retry at commit, before passive effects or paint  451ms
+   ✓ retries an initialized workplace without another lazy load before compatibility  723ms
+   ✓ uses a fresh import for an asset failure and stops at compatibility if that retry fails  714ms
+(node:85032) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/assessed-entry.test.tsx (1 test) 1823ms
+   ✓ creates exactly one assessed session directly from Start, plays film after room selection, and preserves class-client methods through movement and Desk OS  1823ms
+(node:85044) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/shift-lifecycle-recovery.test.tsx (4 tests) 1717ms
+   ✓ auto-recovers a failed assessed startup without a permanent error  761ms
+   ✓ retries failed assessed startup after automatic recovery also fails  433ms
+   ✓ retries only the debrief read after completion in recovery  396ms
+ ✓ apps/web/test/arrival-room-entry.test.tsx (5 tests) 1708ms
+   ✓ mounts the room under the film, waits for a ready frame, and retains the same fullscreen target throughout  697ms
+   ✓ does not replay on a repeat room visit and exposes a removable presentation flag  350ms
+   ✓ does not replay the film when StartPage resumes the saved sim gate  623ms
+(node:85120) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:85132) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/careers.test.tsx (24 tests) 1301ms
+   ✓ Career Explorer interaction > shows Playable now and Taking shape with useful content and no carousel  331ms
+   ✓ public routes > navigates through browser history, focuses headings, and makes no session request  413ms
+ ✓ apps/web/test/experience-shell.test.tsx (3 tests) 1122ms
+   ✓ enters SpatialShell with the canonical view and no product selector  340ms
+   ✓ recovers after failure without changing canonical session state  745ms
+(node:85156) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:85158) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/jules.test.tsx (8 tests) 1027ms
+   ✓ purposeful Jules dialogue panel > opens the same accessible topics visually and by keyboard with canonical IDs  463ms
+ ✓ apps/web/test/app.test.tsx (9 tests) 940ms
+   ✓ assessed shift and debrief > does not ask for desk work before the player reaches the desk  317ms
+   ✓ assessed shift and debrief > replaces the workplace view with the canonical interaction result  350ms
+(node:85181) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:85180) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/site-entry.test.tsx (14 tests) 869ms
+   ✓ site routes > landing hero routes directly to the floor map  643ms
+ ✓ apps/web/test/movement-parity.test.tsx (4 tests) 905ms
+   ✓ submits spatial movement buckets without evidence  811ms
+(node:85209) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:85208) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/site-analytics-loading.test.tsx (3 tests) 802ms
+   ✓ keeps public pages usable without collecting disabled analytics  364ms
+   ✓ preserves landing and career events when deferred analytics is enabled  373ms
+ ✓ apps/web/test/cyber-usability.test.tsx (8 tests) 803ms
+   ✓ mounted case search discovers authored records, inspects/revisits and retains query across apps  431ms
+(node:85232) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:85233) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/workspace-navigation.test.tsx (7 tests) 738ms
+ ✓ apps/web/test/break-room.test.tsx (10 tests) 850ms
+   ✓ finite break-room interaction loop > hides energy UI without starting a wall-clock drain  366ms
+(node:85246) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:85247) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/launch-consent.test.tsx (3 tests) 729ms
+   ✓ requires an inline Start click on direct entry before creating a session  357ms
+   ✓ header Start and legacy arrival markers cannot bypass the acknowledgment  341ms
+ ✓ apps/web/test/os-session-continuity.test.tsx (1 test) 731ms
+   ✓ restores the authenticated tool, case, and scratchpad after stand, leave, return, and sit  730ms
+(node:85270) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:85271) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/sim-runtime-performance.test.tsx (2 tests) 568ms
+   ✓ defers scene creation until entry, then retains it while pausing on map return  504ms
+ ✓ apps/web/test/desk-login.test.tsx (14 tests) 664ms
+   ✓ monitor wake, lock curtain, and sign-in > submits with Enter from the password field  469ms
+(node:85286) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:85287) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/record-query.test.tsx (11 tests) 535ms
+ ✓ apps/web/test/build-case-audit.test.tsx (6 tests) 480ms
+ ✓ apps/web/test/bucket-a-options.test.tsx (3 tests) 396ms
+ ✓ apps/web/test/source-evidence.test.tsx (2 tests) 432ms
+   ✓ marks baseline evidence in two records, keeps citations, then submits a cautious conclusion  332ms
+(node:85325) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:85324) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/legal-pages.test.tsx (2 tests) 386ms
+   ✓ renders /privacy from unchanged supplied wording without creating an identity  359ms
+ ✓ apps/web/test/fairness-clarity.test.tsx (5 tests) 339ms
+(node:85338) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:85339) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/guide-search.test.tsx (5 tests) 335ms
+ ✓ apps/web/test/inventory-lookup.test.tsx (1 test) 338ms
+   ✓ finds an exact device before and after canonical opening in visual mode  338ms
+(node:85354) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:85355) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/shift-hints.test.tsx (10 tests) 343ms
+ ✓ apps/web/test/bucket-a-recovery.test.tsx (5 tests) 325ms
+(node:85368) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:85370) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/work-tools.test.tsx (7 tests) 273ms
+ ✓ apps/web/test/workplace-parity.test.tsx (5 tests) 267ms
+(node:85382) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:85384) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/case-workspace.test.tsx (1 test) 260ms
+ ✓ apps/web/test/os-notification-routing.test.tsx (5 tests) 269ms
+(node:85396) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:85398) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/status-source-guard.test.tsx (2 tests) 207ms
+ ✓ apps/web/src/components/tools/case-source-navigation.test.tsx (2 tests) 149ms
+ ✓ apps/web/test/login-comparison-clarity.test.tsx (1 test) 137ms
+ ✓ apps/web/test/task-recovery.test.tsx (4 tests) 135ms
+ ✓ apps/web/test/consequence-updates.test.tsx (2 tests) 136ms
+ ✓ apps/web/test/decision-review.test.tsx (3 tests) 134ms
+ ✓ apps/web/test/production-auth.test.ts (5 tests) 127ms
+(node:85460) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/dialogue-quick-wins.test.tsx (5 tests) 115ms
+(node:85472) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/src/components/tools/login-case-depth.test.tsx (1 test) 111ms
+(node:85474) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/team-chat-authors.test.tsx (1 test) 102ms
+ ✓ apps/web/test/controls-help.test.tsx (2 tests) 95ms
+ ✓ apps/web/test/career-request-persistence.test.tsx (2 tests) 91ms
+(node:85490) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/dialogue-reveal.test.tsx (7 tests) 90ms
+(node:85492) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/content-depth.test.tsx (6 tests) 79ms
+ ✓ apps/web/test/movement-exertion.test.tsx (6 tests) 79ms
+ ✓ apps/web/test/artifact-open.test.tsx (2 tests) 73ms
+ ✓ apps/web/test/trust-page.test.tsx (2 tests) 74ms
+(node:85520) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/dialogue-audio.test.ts (10 tests) 60ms
+(node:85522) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/integration-feedback.test.tsx (1 test) 52ms
+stderr | apps/web/test/room-canvas-runtime.test.tsx
+THREE.WARNING: Multiple instances of Three.js being imported.
+
+ ✓ apps/web/test/room-canvas-runtime.test.tsx (1 test) 59ms
+ ✓ apps/web/src/site/pages/seo.test.tsx (4 tests) 45ms
+(node:85540) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/bucket-a-sound.test.tsx (4 tests) 42ms
+ ✓ apps/web/test/decision-acknowledgement.test.tsx (1 test) 34ms
+ ✓ apps/web/test/perf-overlay.test.tsx (1 test) 25ms
+ ✓ apps/web/test/home-media.test.tsx (5 tests) 20ms
+ ✓ apps/web/test/adaptive-quality-visibility.test.tsx (1 test) 14ms
+ ✓ apps/web/test/player-controller.test.ts (8 tests) 12ms
+ ✓ apps/web/test/look-controls.test.ts (8 tests) 8ms
+ ✓ apps/web/test/workspace-transition.test.ts (4 tests) 9ms
+ ✓ apps/web/test/launch-analytics-off.test.ts (1 test) 3ms
+ ✓ apps/web/test/ambient-props.test.ts (9 tests) 2ms
+ ✓ apps/web/test/fullscreen.test.ts (1 test) 2ms
+ ✓ packages/career-packs/test/soc-career-experience-vertical-slice.test.ts (22 tests) 882ms
+ ✓ packages/core/test/reasoning-options.test.ts (83 tests) 948ms
+ ✓ apps/server/test/cyber-usability.test.ts (9 tests) 470ms
+ ✓ apps/server/test/structured-decision-review.test.ts (23 tests) 840ms
+ ✓ apps/server/test/build-case.test.ts (7 tests) 415ms
+ ✓ apps/server/test/query-transport.test.ts (12 tests) 386ms
+ ✓ packages/career-packs/test/soc-dataset-coverage.test.ts (14 tests) 366ms
+ ✓ packages/core/test/p3-handoff-investigation.test.ts (7 tests) 355ms
+ ✓ packages/career-packs/test/loader.test.ts (13 tests) 333ms
+ ✓ packages/career-packs/test/p3-investigation-driven-flow.test.ts (7 tests) 317ms
+ ✓ packages/core/test/tasks.test.ts (9 tests) 315ms
+ ✓ packages/core/test/shift-evidence-depth.test.ts (3 tests) 309ms
+ ✓ packages/core/test/v2-routine-triage.test.ts (5 tests) 323ms
+ ✓ packages/career-packs/test/v3-interruption-context-switch.test.ts (6 tests) 301ms
+ ✓ apps/web/test/product-media.test.ts (3 tests) 260ms
+ ✓ packages/core/test/gate-release.test.ts (7 tests) 264ms
+ ✓ packages/core/test/login-case-depth.test.ts (4 tests) 243ms
+ ✓ packages/core/test/v1-a1042-delayed-consequence.test.ts (4 tests) 239ms
+ ✓ packages/core/test/source-evidence.test.ts (4 tests) 215ms
+ ✓ packages/core/test/quiet-residue-runtime.test.ts (2 tests) 201ms
+ ✓ packages/core/test/first-shift-depth.test.ts (5 tests) 176ms
+ ✓ packages/core/test/core.test.ts (15 tests) 176ms
+ ✓ packages/core/test/guide-query.test.ts (4 tests) 177ms
+ ✓ apps/server/test/status-validation.test.ts (1 test) 169ms
+ ✓ packages/core/test/serializer.test.ts (5 tests) 170ms
+ ✓ apps/server/test/router.test.ts (16 tests) 155ms
+ ✓ apps/web/test/product-contract.test.ts (1 test) 139ms
+ ✓ packages/core/test/workplace.test.ts (12 tests) 127ms
+ ✓ packages/core/test/dialogue-quick-wins.test.ts (27 tests) 124ms
+ ✓ apps/server/test/anonymous-isolation.test.ts (1 test) 124ms
+ ✓ apps/server/test/decision-review.test.ts (23 tests) 117ms
+ ✓ apps/server/test/support-health-launch.test.ts (4 tests) 101ms
+ ✓ packages/core/test/completion-settle-v2.test.ts (2 tests) 99ms
+ ✓ apps/server/test/write-budgets.test.ts (1 test) 86ms
+ ✓ packages/core/test/morgan-a1042-context.test.ts (8 tests) 81ms
+ ✓ packages/core/test/delayed-transition-v2.test.ts (1 test) 82ms
+ ✓ apps/server/test/production-prep.test.ts (1 test) 75ms
+ ✓ packages/career-packs/test/default-clock.test.ts (1 test) 78ms
+ ✓ packages/core/test/consequence-runtime-v2.test.ts (6 tests) 70ms
+ ✓ packages/core/test/soc-query-scenarios.test.ts (18 tests | 2 skipped) 67ms
+ ✓ packages/schemas/test/sketches.test.ts (11 tests) 62ms
+ ✓ packages/core/test/pack-version-isolation.test.ts (1 test) 52ms
+ ✓ apps/server/test/career-requests.test.ts (4 tests) 52ms
+ ✓ packages/career-packs/test/pack-validation.test.ts (13 tests) 49ms
+ ✓ apps/web/test/figure-motion.test.ts (20 tests) 49ms
+ ✓ packages/core/test/coworker-provenance.test.ts (9 tests) 48ms
+ ✓ packages/core/test/ticket-composer.test.ts (3 tests) 42ms
+ ✓ apps/web/test/cityscape-layout.test.ts (5 tests) 33ms
+ ✓ apps/server/test/auth.test.ts (1 test) 36ms
+ ✓ apps/server/test/proxy-trust.test.ts (2 tests) 33ms
+ ✓ packages/core/test/workitem-projection.test.ts (7 tests) 33ms
+ ✓ packages/core/test/event-lifecycle.test.ts (8 tests) 29ms
+(node:85896) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ packages/career-packs/test/pack-dataset-validation.test.ts (15 tests) 8ms
+ ✓ apps/web/test/soc-layout.test.ts (23 tests) 27ms
+ ✓ packages/core/test/jules.test.ts (8 tests) 22ms
+ ✓ packages/core/test/query-replay-provenance.test.ts (14 tests) 13ms
+ ✓ packages/core/test/query-projection.test.ts (8 tests) 9ms
+ ✓ packages/core/test/rng-wire-or-delete.test.ts (3 tests) 11ms
+ ✓ packages/core/test/query-engine.test.ts (21 tests) 9ms
+ ✓ packages/testing/test/query-parity.test.ts (16 tests) 7ms
+ ✓ packages/schemas/test/query-schema.test.ts (15 tests) 5ms
+ ✓ packages/career-packs/test/task-contract.test.ts (6 tests) 5ms
+ ✓ packages/testing/test/query-accessibility.test.ts (11 tests | 4 skipped) 4ms
+ ✓ apps/web/test/adaptive-quality.test.ts (23 tests) 4ms
+ ✓ apps/server/test/migrations.test.ts (5 tests) 4ms
+ ✓ packages/evidence/test/evidence.test.ts (3 tests) 3ms
+ ✓ packages/pathways/test/pathways.test.ts (3 tests) 3ms
+(node:85980) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/cityscape-performance.test.ts (3 tests) 3ms
+(node:85983) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/soc-lighting.test.tsx (2 tests) 2ms
+ ✓ apps/server/test/migration-runner.test.ts (2 tests | 1 skipped) 3ms
+ ✓ apps/server/test/config.test.ts (8 tests) 3ms
+ ✓ packages/schemas/src/launch.test.ts (2 tests) 3ms
+(node:85998) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/navigation.test.ts (3 tests) 3ms
+ ✓ packages/safety/test/safety.test.ts (3 tests) 3ms
+ ✓ apps/web/test/journey.test.ts (6 tests) 2ms
+ ✓ apps/web/test/workplace-details.test.ts (3 tests) 2ms
+ ✓ packages/core/test/handoff-summary.test.ts (3 tests) 2ms
+ ✓ packages/career-packs/test/content-depth.test.ts (2 tests) 2ms
+ ✓ apps/web/test/signage.test.ts (10 tests) 2ms
+ ✓ apps/web/test/public-tokens.test.ts (1 test) 2ms
+ ✓ apps/web/test/player-motion.test.ts (3 tests) 2ms
+ ✓ packages/testing/test/parity.test.ts (1 test) 1ms
+ ✓ apps/web/test/look-delta.test.ts (1 test) 1ms
+(node:86030) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/sit-zone.test.ts (4 tests) 1ms
+ ✓ apps/web/test/perf-diagnostics.test.ts (2 tests) 1ms
+ ✓ apps/web/test/vite-dev-config.test.ts (2 tests) 1ms
+ ✓ apps/web/test/desk-surface.test.ts (1 test) 1ms
+ ↓ apps/server/test/career-requests-postgres.test.ts (1 test | 1 skipped)
+ ↓ apps/server/test/decision-review-postgres.test.ts (2 tests | 2 skipped)
+ ↓ apps/server/test/production-postgres.test.ts (1 test | 1 skipped)
+ ↓ apps/server/test/write-budgets-postgres.test.ts (2 tests | 2 skipped)
+
+ Test Files  158 passed | 4 skipped (162)
+      Tests  1076 passed | 13 skipped (1089)
+   Start at  17:34:00
+   Duration  60.35s (transform 2.06s, setup 0ms, collect 16.98s, tests 65.00s, environment 11.73s, prepare 4.88s)
+
