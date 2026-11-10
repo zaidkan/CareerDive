@@ -1,0 +1,40 @@
+{
+  "title": "Case ticket",
+  "fields": [
+    {
+      "label": "Verified evidence",
+      "value": "Alert A-1042 records an unfamiliar successful sign-in after repeated failures. Device inventory has no enrollment or check-in record for unknown-laptop-17."
+    },
+    {
+      "label": "Uncertainty",
+      "value": "The missing inventory record does not identify the device owner or establish what data was accessed. The location estimate alone is not proof of compromise."
+    },
+    {
+      "label": "Next step",
+      "value": "Escalate the session identifiers and remaining questions for reviewer follow-up. Confirm the route and device context before attributing the activity."
+    }
+  ],
+  "decisions": [
+    {
+      "label": "Escalate with the route, device, and coverage comparisons attached.",
+      "selected": false
+    },
+    {
+      "label": "Escalate with the session identifiers and remaining questions.",
+      "selected": true
+    },
+    {
+      "label": "Close using the location explanation and preserve the comparisons.",
+      "selected": false
+    },
+    {
+      "label": "Close based on the familiar account while preserving the unresolved session owner.",
+      "selected": false
+    }
+  ],
+  "sources": [
+    "Unfamiliar successful login (suspicious-login-alert)",
+    "Device inventory · j.patel (device-inventory-1)"
+  ],
+  "status": "Canonical ticket: in progress. 2 source(s) attached."
+}

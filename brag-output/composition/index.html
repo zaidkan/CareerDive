@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1920, height=1080">
+<title>Career Expo — Know the work</title>
+<script src="assets/vendor/gsap.min.js"></script>
+<script src="assets/music/audio-data.js"></script>
+<style>
+@font-face{font-family:'Plus Jakarta Sans';src:url('assets/fonts/jakarta.woff2') format('woff2');font-weight:400 800;font-style:normal;font-display:block}
+@font-face{font-family:'IBM Plex Mono';src:url('assets/fonts/plex.woff2') format('woff2');font-weight:400 500;font-style:normal;font-display:block}
+:root{--bg:#0C0F14;--fg:#F5F7FA;--secondary:#B9C2CF;--accent:#8CB7FF;--green:#72D6A3;--panel:#181F28}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font-family:'Plus Jakarta Sans',sans-serif}
+#root{--music-energy:0;position:relative;width:100%;height:100%;overflow:hidden;background:var(--bg)}
+.clip{position:absolute;inset:0}.scene-inner{position:absolute;inset:0;background:var(--bg)}
+h1,h2,p{margin:0}.mono{font-family:'IBM Plex Mono',monospace;font-size:22px;letter-spacing:.08em;text-transform:uppercase;color:var(--secondary)}
+.brand{position:absolute;left:96px;top:65px;font-size:30px;font-weight:800;letter-spacing:-1px}
+.meta{position:absolute;right:96px;top:75px}.line{position:absolute;left:96px;right:96px;top:127px;height:2px;background:#2D3744;transform-origin:left center}
+.footer{position:absolute;left:96px;right:96px;bottom:55px;display:flex;justify-content:space-between;align-items:center;font-size:22px;color:var(--secondary)}
+.footer .number{color:var(--accent);font-family:'IBM Plex Mono',monospace;letter-spacing:.1em}
+.hook-copy{position:absolute;left:96px;top:249px;width:1060px;z-index:3}
+.hook-line{display:block;font-size:111px;font-weight:800;line-height:1.08;letter-spacing:-6px;width:1060px}
+.hook-line.accent{color:var(--accent)}.hook-support{position:absolute;left:100px;top:785px;width:780px;font-size:29px;color:var(--secondary);z-index:3}
+.hook-window{position:absolute;left:1170px;top:198px;width:650px;height:687px;overflow:hidden;border:2px solid #5B697B;border-radius:16px;box-shadow:0 22px 70px #0006}
+.hook-room{position:absolute;width:1400px;height:923px;left:-358px;top:-92px;object-fit:fill}
+.window-label{position:absolute;left:30px;bottom:26px;padding:14px 18px;background:#12171E;color:var(--fg);font-size:22px;border:1px solid #5B697B;border-radius:6px}
+.arrival-frame{position:absolute;left:96px;top:164px;width:1728px;height:755px;border-radius:16px;overflow:hidden;border:2px solid #5B697B}
+.arrival-room{position:absolute;width:2108px;height:1389px;left:-190px;top:-176px;object-fit:fill}
+.arrival-card{position:absolute;left:132px;top:568px;width:885px;padding:38px 44px;background:#0C0F14;border:2px solid #5B697B;border-radius:12px}
+.arrival-card h2{font-size:68px;line-height:1.1;letter-spacing:-3px;font-weight:800;margin-bottom:25px}
+.cta{display:flex;align-items:center;justify-content:space-between;background:var(--accent);color:#08111F;border-radius:7px;padding:23px 28px;font-weight:800;font-size:28px;width:530px}
+.cursor{position:absolute;left:593px;top:781px;width:46px;height:54px;z-index:5}
+.click-ring{position:absolute;left:590px;top:777px;width:58px;height:58px;border:3px solid var(--accent);border-radius:50%;opacity:0}
+.work-copy{position:absolute;left:96px;top:236px;width:650px}.work-copy h2{font-size:84px;line-height:1.05;letter-spacing:-4px;font-weight:800;width:650px}
+.work-kicker{margin-bottom:32px;color:var(--accent)}.case-label{margin-top:46px;font-size:26px;color:var(--secondary)}
+.fact{margin-top:45px;display:flex;align-items:baseline;gap:18px}.fact strong{font-size:100px;line-height:1;color:var(--accent)}.fact span{font-size:27px;line-height:1.3;width:285px;color:var(--secondary)}
+.fact.small{margin-top:26px}.fact.small strong{color:var(--green)}
+.screen{position:absolute;left:835px;top:184px;width:990px;height:735px;overflow:hidden;border:2px solid #5B697B;border-radius:12px;background:#12171E;box-shadow:0 24px 64px #0005}
+.screen-header{height:62px;position:absolute;inset:0 0 auto;z-index:2;background:#12171E;border-bottom:2px solid #5B697B;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:22px;color:var(--secondary)}
+.screen-header .active{color:var(--accent)}
+.alert-image{position:absolute;width:1936px;height:1403px;left:-790px;top:-73px;object-fit:fill}
+.alert-image-wrap{position:absolute;inset:62px 0 0;overflow:hidden}
+.inventory-screen{height:720px}.inventory-image{position:absolute;width:1347px;height:1036px;left:-139px;top:-162px;object-fit:fill}
+.inventory-zoom{position:absolute;left:30px;right:30px;bottom:30px;padding:25px 28px;background:#0C0F14;border:2px solid var(--accent);border-radius:8px}
+.inventory-zoom strong{display:block;font-size:33px;letter-spacing:-1px;margin-bottom:17px}.inventory-result{font-size:30px;color:var(--accent);display:flex;gap:30px}.inventory-limit{margin-top:26px;max-width:560px;font-size:26px;line-height:1.5;color:var(--secondary)}
+.inventory-device{font-size:33px;color:var(--accent);margin-top:44px;letter-spacing:-1px}.inventory-status{font-size:36px;margin-top:20px;color:var(--green)}
+.ticket-title{position:absolute;left:96px;top:190px;width:1600px;font-size:83px;font-weight:800;letter-spacing:-4px;line-height:1.1}
+.ticket-screen{position:absolute;left:96px;top:336px;width:1728px;height:464px;overflow:hidden;background:#12171E;border:2px solid #5B697B;border-radius:12px}
+.ticket-image{position:absolute;width:1910px;height:712px;left:-170px;top:-132px;object-fit:fill}
+.ticket-labels{position:absolute;left:96px;top:833px;display:flex;gap:22px}.ticket-label{display:flex;align-items:center;gap:14px;padding:21px 26px;border:2px solid #5B697B;border-radius:8px;font-size:29px;font-weight:600;background:var(--panel)}
+.ticket-label .tick{color:var(--accent);font-size:28px}.ticket-label:last-child .tick{color:var(--green)}
+.outro-copy{position:absolute;left:96px;top:256px;width:970px}.outro-title{font-size:119px;line-height:1;letter-spacing:-7px;font-weight:800}.outro-sub{margin-top:42px;font-size:50px;font-weight:600;letter-spacing:-2px;color:var(--accent)}
+.outro-cta{margin-top:47px;width:570px}.outro-window{position:absolute;left:1150px;top:236px;width:675px;height:596px;border:2px solid #5B697B;border-radius:16px;overflow:hidden}.outro-room{position:absolute;width:1200px;height:791px;left:-254px;top:-70px;object-fit:fill}
+#hook-window,#arrival-frame,#alert-screen,#inventory-screen,#ticket-screen,#outro-window{box-shadow:0 0 calc(18px + var(--music-energy)*14px) rgb(140 183 255 / calc(.04 + var(--music-energy)*.09))}
+.outro-status{position:absolute;left:96px;top:769px;display:flex;align-items:center;gap:15px;font-size:26px;color:var(--secondary)}.status-dot{width:12px;height:12px;border-radius:50%;background:var(--green)}
+#hook-line-1,#hook-line-2,#hook-line-3,#hook-window,#arrival-card,#cursor,#alert-copy,#alert-screen,#fact-fail,#fact-success,#inventory-copy,#inventory-screen,#inventory-zoom,#ticket-title,#ticket-screen,#ticket-evidence,#ticket-uncertainty,#ticket-next,#outro-copy,#outro-window,#outro-status{opacity:0}
+</style>
+</head>
+<body>
+<div data-hf-id="hf-l5uq" id="root" data-composition-id="career-expo" data-width="1920" data-height="1080" data-duration="22" data-fps="30">
+<section data-hf-id="hf-mzyn" id="hook" class="clip" data-start="0" data-duration="3.7" data-track-index="0">
+<div data-hf-id="hf-97sb" class="scene-inner">
+<div data-hf-id="hf-3hxz" class="brand">Career Expo</div><div data-hf-id="hf-7uru" class="meta mono">A career, from the inside.</div><div data-hf-id="hf-np12" class="line"></div>
+<div data-hf-id="hf-pb8a" class="hook-window" id="hook-window"><img data-hf-id="hf-9u6p" class="hook-room" id="hook-room" src="assets/product/a-11.webp" alt="Actual simulated Verdaly security operations floor" data-layout-allow-overflow=""><div data-hf-id="hf-9tsh" class="window-label mono">Verdaly / SOC</div></div>
+<h1 data-hf-id="hf-7nmf" class="hook-copy"><span data-hf-id="hf-bnay" id="hook-line-1" class="hook-line">Know the work</span><span data-hf-id="hf-tpf3" id="hook-line-2" class="hook-line">before you choose</span><span data-hf-id="hf-k3ri" id="hook-line-3" class="hook-line accent">the career.</span></h1>
+<p data-hf-id="hf-7rz9" class="hook-support">Try the ordinary work people usually don’t show you.</p>
+<div data-hf-id="hf-yh7l" class="footer"><span data-hf-id="hf-oi73">Cybersecurity Analyst · Playable now</span><span data-hf-id="hf-6ap1" class="number">01 / KNOW THE WORK</span></div>
+</div></section>
+<section data-hf-id="hf-25nn" id="arrival" class="clip" data-start="3.7" data-duration="3.16" data-track-index="0"><div data-hf-id="hf-skgb" class="scene-inner">
+<div data-hf-id="hf-jziv" class="brand">Career Expo</div><div data-hf-id="hf-k213" class="meta mono">Your first day / Verdaly</div><div data-hf-id="hf-sogq" class="line"></div>
+<div data-hf-id="hf-ujos" class="arrival-frame" id="arrival-frame"><img data-hf-id="hf-92fp" id="arrival-room" class="arrival-room" src="assets/product/a-11.webp" alt="First-person view of the real simulated workplace" data-layout-allow-overflow=""></div>
+<div data-hf-id="hf-u47m" class="arrival-card" id="arrival-card"><h2 data-hf-id="hf-u357">Begin your first day</h2><div data-hf-id="hf-g5m2" class="cta" id="begin-cta"><span data-hf-id="hf-hhcu">Cybersecurity Analyst</span><span data-hf-id="hf-o03m">↗</span></div></div>
+<svg data-hf-id="hf-lk6s" class="cursor" id="cursor" viewBox="0 0 46 54" aria-hidden="true"><path data-hf-id="hf-0xum" d="M4 2 L4 42 L15 32 L24 51 L33 47 L23 28 L40 28 Z" fill="#F5F7FA" stroke="#08111F" stroke-width="3" /></svg><div data-hf-id="hf-f5ea" class="click-ring" id="click-ring"></div>
+<div data-hf-id="hf-ll85" class="footer"><span data-hf-id="hf-etwd">Actual product capture · Simulated workplace</span><span data-hf-id="hf-9dor" class="number">02 / STEP INSIDE</span></div>
+</div></section>
+<section data-hf-id="hf-f5e8" id="alert" class="clip" data-start="6.86" data-duration="4.2" data-track-index="0"><div data-hf-id="hf-s65a" class="scene-inner">
+<div data-hf-id="hf-jl7u" class="brand">Career Expo</div><div data-hf-id="hf-5f4y" class="meta mono">Desk OS / Alert Dashboard</div><div data-hf-id="hf-t2rr" class="line"></div>
+<div data-hf-id="hf-4wjt" id="alert-copy" class="work-copy"><p data-hf-id="hf-yxp2" class="mono work-kicker">Alert A-1042</p><h2 data-hf-id="hf-b041">Check the<br data-hf-id="hf-x5px">sign-in.</h2><p data-hf-id="hf-4cds" class="case-label">An unfamiliar successful login.</p><div data-hf-id="hf-9f7n" class="fact" id="fact-fail"><strong data-hf-id="hf-e7p0">6</strong><span data-hf-id="hf-t3in">failed identity checks</span></div><div data-hf-id="hf-80np" class="fact small" id="fact-success"><strong data-hf-id="hf-em01">1</strong><span data-hf-id="hf-elfk">successful sign-in</span></div></div>
+<div data-hf-id="hf-u5tx" id="alert-screen" class="screen"><div data-hf-id="hf-qjtq" class="screen-header"><span data-hf-id="hf-jt28">A-1042 · sign-in monitoring</span><span data-hf-id="hf-aw4a" class="active">HIGH · OPEN</span></div><div data-hf-id="hf-4s6j" class="alert-image-wrap"><img data-hf-id="hf-wsbr" class="alert-image" id="alert-image" src="assets/product/a-01.webp" alt="Actual A-1042 alert with six failed challenges and one successful login" data-layout-allow-overflow=""></div></div>
+<div data-hf-id="hf-ms58" class="footer"><span data-hf-id="hf-mdln">Actual product capture · Synthetic work records</span><span data-hf-id="hf-iowp" class="number">03 / INVESTIGATE</span></div>
+</div></section>
+<section data-hf-id="hf-y2bo" id="inventory" class="clip" data-start="11.06" data-duration="3.7" data-track-index="0"><div data-hf-id="hf-rru9" class="scene-inner">
+<div data-hf-id="hf-j6wt" class="brand">Career Expo</div><div data-hf-id="hf-g90y" class="meta mono">Desk OS / Device inventory</div><div data-hf-id="hf-th2s" class="line"></div>
+<div data-hf-id="hf-k16f" id="inventory-copy" class="work-copy"><p data-hf-id="hf-yoqc" class="mono work-kicker">Follow the evidence</p><h2 data-hf-id="hf-1odf">Compare<br data-hf-id="hf-rsrt">the records.</h2><p data-hf-id="hf-29s4" class="inventory-device">unknown-laptop-17</p><p data-hf-id="hf-o0z8" class="inventory-status">Enrolled: no</p><p data-hf-id="hf-nkn3" class="inventory-limit">The record is a clue.<br data-hf-id="hf-szow">The owner remains unverified.</p></div>
+<div data-hf-id="hf-9i3m" id="inventory-screen" class="screen inventory-screen"><div data-hf-id="hf-43pe" class="screen-header"><span data-hf-id="hf-1jh8">Record search</span><span data-hf-id="hf-1kfx" class="active">DEVICE INVENTORY</span></div><img data-hf-id="hf-u9b3" id="inventory-image" class="inventory-image" src="assets/product/a-03.webp" alt="Actual device inventory query result for unknown-laptop-17" data-layout-allow-overflow=""><div data-hf-id="hf-7g9y" class="inventory-zoom" id="inventory-zoom"><strong data-hf-id="hf-vij6">unknown-laptop-17</strong><div data-hf-id="hf-dada" class="inventory-result"><span data-hf-id="hf-u5lg">ENROLLED · no</span><span data-hf-id="hf-hqie">STATE · unassigned</span></div></div></div>
+<div data-hf-id="hf-mdu7" class="footer"><span data-hf-id="hf-1swr">Actual product capture · Synthetic work records</span><span data-hf-id="hf-qf2s" class="number">04 / COMPARE</span></div>
+</div></section>
+<section data-hf-id="hf-6ek9" id="ticket" class="clip" data-start="14.76" data-duration="3.68" data-track-index="0"><div data-hf-id="hf-rdj8" class="scene-inner">
+<div data-hf-id="hf-lz20" class="brand">Career Expo</div><div data-hf-id="hf-1jaz" class="meta mono">Desk OS / Ticket Queue</div><div data-hf-id="hf-tvdt" class="line"></div>
+<h2 data-hf-id="hf-o3vu" class="ticket-title" id="ticket-title">Leave a clear handoff.</h2>
+<div data-hf-id="hf-x9ws" class="ticket-screen" id="ticket-screen"><img data-hf-id="hf-7kle" id="ticket-image" class="ticket-image" src="assets/product/a-06.webp" alt="Actual saved investigation note with verified evidence, uncertainty and a next step to senior review" data-layout-allow-overflow=""></div>
+<div data-hf-id="hf-8kio" class="ticket-labels"><div data-hf-id="hf-4sno" id="ticket-evidence" class="ticket-label"><span data-hf-id="hf-6xbx" class="tick">01</span>Verified evidence</div><div data-hf-id="hf-tny4" id="ticket-uncertainty" class="ticket-label"><span data-hf-id="hf-8490" class="tick">02</span>Uncertainty</div><div data-hf-id="hf-a1z4" id="ticket-next" class="ticket-label"><span data-hf-id="hf-7pxz" class="tick">03</span>Next step</div></div>
+<div data-hf-id="hf-nkra" class="footer"><span data-hf-id="hf-osaw">Actual product capture · One investigation path</span><span data-hf-id="hf-gk37" class="number">05 / HAND IT OFF</span></div>
+</div></section>
+<section data-hf-id="hf-mazc" id="outro" class="clip" data-start="18.44" data-duration="3.56" data-track-index="0"><div data-hf-id="hf-qz87" class="scene-inner">
+<div data-hf-id="hf-lkqz" class="brand">Career Expo</div><div data-hf-id="hf-ek62" class="meta mono">Know the work. Make your call.</div><div data-hf-id="hf-u9ou" class="line"></div>
+<div data-hf-id="hf-gyx2" class="outro-copy" id="outro-copy"><h2 data-hf-id="hf-tua9" class="outro-title">Career Expo</h2><p data-hf-id="hf-izog" class="outro-sub">Know the work.</p><div data-hf-id="hf-t6ak" class="cta outro-cta" id="outro-cta"><span data-hf-id="hf-c0ai">Start your first day</span><span data-hf-id="hf-1t5y">↗</span></div></div>
+<div data-hf-id="hf-c6b6" class="outro-window" id="outro-window"><img data-hf-id="hf-328b" id="outro-room" class="outro-room" src="assets/product/a-11.webp" alt="Career Expo simulated cybersecurity workplace" data-layout-allow-overflow=""><div data-hf-id="hf-yst6" class="window-label mono">Cybersecurity / Playable now</div></div>
+<div data-hf-id="hf-vdga" class="outro-status" id="outro-status"><span data-hf-id="hf-i0ip" class="status-dot"></span><span data-hf-id="hf-vt0f">Cybersecurity Analyst · Playable now</span></div>
+<div data-hf-id="hf-n6g9" class="footer"><span data-hf-id="hf-afm8">Try the ordinary work people usually don’t show you.</span><span data-hf-id="hf-cryw" class="number">CAREER EXPO</span></div>
+</div></section>
+<audio data-hf-id="hf-s1u1" id="music" src="assets/music/happy-beats-business-moves-vol-11-by-ende-dot-app.mp3" data-start="0" data-duration="22" data-track-index="10" data-volume="0.28" data-automation="{&quot;version&quot;:1,&quot;lanes&quot;:[{&quot;target&quot;:&quot;volume&quot;,&quot;points&quot;:[{&quot;t&quot;:0,&quot;v&quot;:0},{&quot;t&quot;:0.5,&quot;v&quot;:0.28},{&quot;t&quot;:20.4,&quot;v&quot;:0.28},{&quot;t&quot;:22,&quot;v&quot;:0}]}]}"></audio>
+<audio data-hf-id="hf-yrr0" id="sfx-office" src="assets/sfx/impactSoft_medium_001.ogg" data-start="3.7" data-duration="0.18" data-track-index="11" data-volume="0.34"></audio>
+<audio data-hf-id="hf-qhq2" id="sfx-click" src="assets/sfx/click_003.ogg" data-start="6.34" data-duration="0.02" data-track-index="12" data-volume="0.40"></audio>
+<audio data-hf-id="hf-lofg" id="sfx-ticket" src="assets/sfx/impactSoft_medium_004.ogg" data-start="14.76" data-duration="0.15" data-track-index="13" data-volume="0.32"></audio>
+</div>
+<script>
+const tl=gsap.timeline({paused:true});
+// Adapted from the registry's per-word-rise: brief cascaded entrance, stable hold.
+function rise(selector,time,offset=28){tl.fromTo(selector,{y:offset,opacity:0},{y:0,opacity:1,duration:0.48,ease:'power3.out',immediateRender:false},time)}
+rise('#hook-line-1',0.06);rise('#hook-line-2',0.16);rise('#hook-line-3',0.26);
+tl.fromTo('#hook-window',{x:60,opacity:0},{x:0,opacity:1,duration:0.6,ease:'power2.out'},0.05);
+tl.fromTo('#hook-room',{scale:1},{scale:1.06,duration:3.7,ease:'none'},0);
+// beat-locked: office reveal 3.70s.
+tl.fromTo('#arrival-room',{scale:1},{scale:1.06,x:16,duration:3.16,ease:'none',immediateRender:false},3.70);
+rise('#arrival-card',3.80,50);
+tl.fromTo('#cursor',{x:170,y:60,opacity:0},{x:0,y:0,opacity:1,duration:0.7,ease:'power2.out',immediateRender:false},5.62);
+tl.fromTo('#click-ring',{scale:0.6,opacity:0.85},{scale:1.7,opacity:0,duration:0.38,ease:'power2.out',immediateRender:false},6.34);
+tl.fromTo('#begin-cta',{scale:1},{scale:0.97,duration:0.10,yoyo:true,repeat:1,ease:'power2.out',immediateRender:false},6.34);
+rise('#alert-copy',6.98);tl.fromTo('#alert-screen',{x:90,opacity:0},{x:0,opacity:1,duration:0.48,ease:'power3.out',immediateRender:false},6.90);
+rise('#fact-fail',7.38);rise('#fact-success',8.44);
+tl.fromTo('#alert-image',{y:0},{y:-24,duration:3.4,ease:'none',immediateRender:false},7.4);
+rise('#inventory-copy',11.10);tl.fromTo('#inventory-screen',{x:70,opacity:0},{x:0,opacity:1,duration:0.45,ease:'power2.out',immediateRender:false},11.06);
+rise('#inventory-zoom',12.12,18);
+// beat-grid: ticket evidence 14.76s, uncertainty 15.81s, next step 16.86s.
+rise('#ticket-title',14.80);tl.fromTo('#ticket-screen',{y:40,opacity:0},{y:0,opacity:1,duration:0.48,ease:'power3.out',immediateRender:false},14.76);
+rise('#ticket-evidence',14.76,20);rise('#ticket-uncertainty',15.81,20);rise('#ticket-next',16.86,20);
+// beat-locked: finished brand frame enters at 18.44s.
+rise('#outro-copy',18.48,34);tl.fromTo('#outro-window',{x:70,opacity:0},{x:0,opacity:1,duration:0.50,ease:'power2.out',immediateRender:false},18.44);
+rise('#outro-status',18.74,18);tl.fromTo('#outro-room',{scale:1},{scale:1.03,duration:3.56,ease:'none',immediateRender:false},18.44);
+// Music bands gently brighten the evidence/window border; deterministic per-frame sampling.
+for(let f=0;f<660;f++){
+ const frame=AUDIO_DATA.frames[f];
+ const energy=(frame.bands[0]+frame.bands[1]+frame.bands[2])/3;
+ tl.to('#root',{'--music-energy':energy,duration:1/30,ease:'none'},f/30);
+}
+window.__timelines['career-expo']=tl;
+</script>
+</body>
+</html>

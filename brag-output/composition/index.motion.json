@@ -1,0 +1,1 @@
+{"duration":22,"assertions":[{"kind":"appearsBy","selector":"#hook-line-3","bySec":0.9},{"kind":"before","a":"#ticket-evidence","b":"#ticket-uncertainty"},{"kind":"before","a":"#ticket-uncertainty","b":"#ticket-next"},{"kind":"staysInFrame","selector":"#outro-copy"}]}

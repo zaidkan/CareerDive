@@ -1,0 +1,16 @@
+{
+  "--canvas": "#0C0F14",
+  "--surface-base": "#12171E",
+  "--surface-subtle": "#181F28",
+  "--surface-raised": "#27313F",
+  "--text-primary": "#F5F7FA",
+  "--text-secondary": "#B9C2CF",
+  "--text-muted": "#919DAE",
+  "--border-strong": "#5B697B",
+  "--action-primary": "#8CB7FF",
+  "--action-on-primary": "#08111F",
+  "--status-success-fg": "#72D6A3",
+  "--status-warning-fg": "#F2CA7A",
+  "--font-display": "\"Plus Jakarta Sans\", system-ui, sans-serif",
+  "--font-body": "\"Plus Jakarta Sans\", system-ui, sans-serif"
+}

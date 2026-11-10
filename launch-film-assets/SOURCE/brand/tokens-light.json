@@ -1,0 +1,10 @@
+{
+  "--canvas": "#F6F7F9",
+  "--surface-base": "#FFFFFF",
+  "--surface-subtle": "#EEF1F5",
+  "--text-primary": "#171B22",
+  "--text-secondary": "#495568",
+  "--action-primary": "#245EA8",
+  "--action-on-primary": "#FFFFFF",
+  "--border-strong": "#8996A7"
+}

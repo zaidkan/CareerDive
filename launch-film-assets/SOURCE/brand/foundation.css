@@ -1,0 +1,258 @@
+/* Critical path only: tokens, base layout, and site chrome shared by the
+   public pages. Full sim/desktop CSS lives in styles.css and loads with App. */
+/* CHAT 04 is the public color authority. Legacy names below are aliases for
+   existing site CSS; the semantic values are defined only here. */
+
+:root {
+  --canvas: #0C0F14;
+  --surface-base: #12171E;
+  --surface-subtle: #181F28;
+  --surface-strong: #202936;
+  --surface-raised: #27313F;
+  --text-primary: #F5F7FA;
+  --text-secondary: #B9C2CF;
+  --text-muted: #919DAE;
+  --border-subtle: #2D3744;
+  --border-strong: #5B697B;
+  --action-primary: #8CB7FF;
+  --action-on-primary: #08111F;
+  --focus-ring: #A7C8FF;
+  --status-info-fg: #8CB7FF;
+  --status-info-bg: #152236;
+  --status-success-fg: #72D6A3;
+  --status-success-bg: #132A20;
+  --status-warning-fg: #F2CA7A;
+  --status-warning-bg: #2B2414;
+  --status-danger-fg: #FF8A92;
+  --status-danger-bg: #2C171B;
+
+  --ink: var(--canvas);
+  --ink-lift: var(--surface-subtle);
+  --desk: var(--surface-base);
+  --panel: var(--surface-raised);
+  --line: var(--border-subtle);
+  --line-bright: var(--border-strong);
+  --phosphor: var(--action-primary);
+  --phosphor-dim: var(--text-muted);
+  --signal: var(--status-success-fg);
+  --signal-hot: var(--status-danger-fg);
+  --paper: var(--text-primary);
+  --fog: var(--text-secondary);
+  --mute: var(--text-muted);
+  --cta: var(--action-primary);
+  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 18%);
+  --shadow-lift: 0 10px 28px rgb(0 0 0 / 28%);
+  --grid: color-mix(in srgb, var(--text-primary) 7%, transparent);
+  color: var(--text-secondary);
+  background: var(--canvas);
+  font-family: var(--font-body);
+  font-synthesis: none;
+  line-height: 1.55;
+  font-size: 16px;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Theme toggle and early initialization both set data-theme on the root. */
+:root[data-theme="light"] {
+  --canvas: #F6F7F9;
+  --surface-base: #FFFFFF;
+  --surface-subtle: #EEF1F5;
+  --surface-strong: #E4E9EF;
+  --surface-raised: #FFFFFF;
+  --text-primary: #171B22;
+  --text-secondary: #495568;
+  --text-muted: #596678;
+  --border-subtle: #D6DCE4;
+  --border-strong: #8996A7;
+  --action-primary: #245EA8;
+  --action-on-primary: #FFFFFF;
+  --focus-ring: #1F5EA8;
+  --status-info-fg: #245EA8;
+  --status-info-bg: #EAF2FF;
+  --status-success-fg: #176941;
+  --status-success-bg: #E9F7EF;
+  --status-warning-fg: #795100;
+  --status-warning-bg: #FFF4D8;
+  --status-danger-fg: #B42332;
+  --status-danger-bg: #FDEBEC;
+  --shadow-soft: 0 1px 2px rgb(28 25 23 / 10%);
+  --shadow-lift: 0 10px 28px rgb(28 25 23 / 14%);
+}
+
+/* The simulation stylesheet loads only after entering /start. Scope these
+   public aliases so returning to the website still uses CHAT 04 colors. */
+.site-nav,
+.site-footer,
+.site-main-public {
+  --ink: var(--canvas);
+  --ink-lift: var(--surface-subtle);
+  --desk: var(--surface-base);
+  --panel: var(--surface-raised);
+  --line: var(--border-subtle);
+  --line-bright: var(--border-strong);
+  --phosphor: var(--action-primary);
+  --phosphor-dim: var(--text-muted);
+  --signal: var(--status-success-fg);
+  --signal-hot: var(--status-danger-fg);
+  --paper: var(--text-primary);
+  --fog: var(--text-secondary);
+  --mute: var(--text-muted);
+  --cta: var(--action-primary);
+  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-family: var(--font-body);
+}
+
+:root body:has(.site-main-public),
+:root[data-theme="light"] body:has(.site-main-public) {
+  color: var(--text-secondary);
+  background: var(--canvas);
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  overflow-x: clip;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--canvas);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 40;
+}
+
+button {
+  color: inherit;
+  font: inherit;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+main {
+  position: relative;
+  width: min(1240px, calc(100% - 1.5rem));
+  margin: 0 auto;
+  padding: 1.35rem 0 5.5rem;
+  z-index: 1;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  max-width: 18ch;
+  margin-bottom: 0.65rem;
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: clamp(2.15rem, 5.2vw, 3.35rem);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.site-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.55rem;
+  border: 1px solid var(--status-success-fg);
+  border-radius: 4px;
+  color: var(--status-success-fg);
+  background: var(--status-success-bg);
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.site-chip-muted {
+  border-color: var(--line);
+  color: var(--mute);
+  background: var(--surface-subtle);
+}
+
+.eyebrow {
+  margin-bottom: 0.35rem;
+  color: var(--mute);
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.privacy-note {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--mute);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+
+  body::before {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  button {
+    transition:
+      border-color 140ms ease,
+      background 140ms ease,
+      box-shadow 140ms ease,
+      transform 140ms ease;
+  }
+}

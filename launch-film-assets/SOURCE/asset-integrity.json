@@ -1,0 +1,93 @@
+[
+  {
+    "filename": "01-brand-board.png",
+    "width": 1920,
+    "height": 1080,
+    "bytes": 185578,
+    "sha256": "ea74f8c40898590f4f1e00139bb549c97fb404b1a02bf5a0ac8c2a930ca09a39"
+  },
+  {
+    "filename": "02-career-explorer.png",
+    "width": 2832,
+    "height": 1684,
+    "bytes": 231067,
+    "sha256": "e08ec96cc4da94155dd2cad67f51baafc9cfb071cbb506787fabba54e678820a"
+  },
+  {
+    "filename": "03-cybersecurity-card.png",
+    "width": 1299,
+    "height": 627,
+    "bytes": 42433,
+    "sha256": "c45f9762353e384003d0d4af0f72c874b2d1c32d16ccb718c7d74e60cd579235"
+  },
+  {
+    "filename": "04-workshop-careers.png",
+    "width": 1920,
+    "height": 1080,
+    "bytes": 89900,
+    "sha256": "69c335022f97ec6912fc7627bf2851b8e4b551fb87327d7e9c2426798be1eb5d"
+  },
+  {
+    "filename": "05-cybersecurity-career-page.png",
+    "width": 1830,
+    "height": 1070,
+    "bytes": 136627,
+    "sha256": "bf1db2e50fa2d249cca95532a8457c7897310968993fb88bab813659d9211391"
+  },
+  {
+    "filename": "06-workplace.png",
+    "width": 1438,
+    "height": 532,
+    "bytes": 256661,
+    "sha256": "4aa5f66da3fd4e3699e22c2484dcb0a3e9327ca8eaa5c95e12612aa9a50b81b5"
+  },
+  {
+    "filename": "07-desk-os.png",
+    "width": 1670,
+    "height": 822,
+    "bytes": 83882,
+    "sha256": "2d1ddab70a13df198ba7af17246319baff23ea6fb8269a0aaebe2edd62b556a6"
+  },
+  {
+    "filename": "08-alert.png",
+    "width": 1346,
+    "height": 750,
+    "bytes": 165707,
+    "sha256": "712d242e2b5a500e5d24a1704a97c0541e00d2b6307cf7428e5502b50346b98a"
+  },
+  {
+    "filename": "09-evidence.png",
+    "width": 1420,
+    "height": 1188,
+    "bytes": 224258,
+    "sha256": "08a3fe02440d127f33c09b79cf5a43a26e7079c865f655d178761a304cfcc68a"
+  },
+  {
+    "filename": "10-decision-or-ticket.png",
+    "width": 2224,
+    "height": 1170,
+    "bytes": 132196,
+    "sha256": "525c0b498f3885a5ac827e879a1954ee009e0f182ad2e1f0aa16b5e6dbf4bff7"
+  },
+  {
+    "filename": "11-handoff.png",
+    "width": 2224,
+    "height": 1608,
+    "bytes": 224130,
+    "sha256": "ee874c30fd83e23fdeda3e31f4439d9dea98717d74d59a16f5940f3602e7c05a"
+  },
+  {
+    "filename": "12-career-status-board.png",
+    "width": 1920,
+    "height": 1080,
+    "bytes": 91287,
+    "sha256": "a5a86382919e2266e85c750d96552d8fd716ddd486eb114927b603c8e401ee50"
+  },
+  {
+    "filename": "13-wordmark.png",
+    "width": 297,
+    "height": 66,
+    "bytes": 6352,
+    "sha256": "b1cf268d192cf8ee51deb30d459f8f3df0a98f3dab599274bbbd230699ffd241"
+  }
+]
