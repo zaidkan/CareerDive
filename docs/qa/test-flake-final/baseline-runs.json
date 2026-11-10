@@ -1,0 +1,71 @@
+{
+  "baseline": [
+    {
+      "run": 1,
+      "started": "2026-10-11T15:05:14.071110+00:00",
+      "seconds": 62.04,
+      "exitCode": 0,
+      "passed": 1074,
+      "failed": 0,
+      "pending": 13,
+      "failures": []
+    },
+    {
+      "run": 2,
+      "started": "2026-10-11T15:06:16.117020+00:00",
+      "seconds": 61.12,
+      "exitCode": 0,
+      "passed": 1074,
+      "failed": 0,
+      "pending": 13,
+      "failures": []
+    },
+    {
+      "run": 3,
+      "started": "2026-10-11T15:07:17.238944+00:00",
+      "seconds": 62.25,
+      "exitCode": 0,
+      "passed": 1074,
+      "failed": 0,
+      "pending": 13,
+      "failures": []
+    }
+  ],
+  "pressure-baseline": [
+    {
+      "run": 1,
+      "started": "2026-10-11T15:08:35.563180+00:00",
+      "seconds": 98.44,
+      "pressureWorkers": 6,
+      "exitCode": 0,
+      "passed": 1074,
+      "failed": 0,
+      "pending": 13,
+      "failures": []
+    },
+    {
+      "run": 2,
+      "started": "2026-10-11T15:10:14.008368+00:00",
+      "seconds": 93.8,
+      "pressureWorkers": 6,
+      "exitCode": 0,
+      "passed": 1074,
+      "failed": 0,
+      "pending": 13,
+      "failures": []
+    }
+  ],
+  "pressure-saturated": [
+    {
+      "run": 1,
+      "started": "2026-10-11T15:12:09.152953+00:00",
+      "seconds": 107.59,
+      "pressureWorkers": 8,
+      "exitCode": 0,
+      "passed": 1074,
+      "failed": 0,
+      "pending": 13,
+      "failures": []
+    }
+  ]
+}

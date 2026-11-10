@@ -1,0 +1,25 @@
+$ vitest run apps/web/test/break-room.test.tsx apps/web/test/sim-runtime-performance.test.tsx apps/web/test/arrival-room-entry.test.tsx --reporter=default --reporter=json --outputFile.json=/private/tmp/careerdive-test-flake-final/slow-import-after/report.json
+
+ RUN  v3.2.6 /Users/zaid/orca/workspaces/Career-Expo/fix-test-flake-final
+
+(node:76971) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:76972) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/break-room.test.tsx (10 tests) 1791ms
+   ✓ finite break-room interaction loop > hides energy UI without starting a wall-clock drain  1285ms
+(node:77049) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ✓ apps/web/test/arrival-room-entry.test.tsx (5 tests) 2644ms
+   ✓ mounts the room under the film, waits for a ready frame, and retains the same fullscreen target throughout  1627ms
+   ✓ does not replay on a repeat room visit and exposes a removable presentation flag  345ms
+   ✓ does not replay the film when StartPage resumes the saved sim gate  636ms
+ ✓ apps/web/test/sim-runtime-performance.test.tsx (2 tests) 1463ms
+   ✓ defers scene creation until entry, then retains it while pausing on map return  1405ms
+
+ Test Files  3 passed (3)
+      Tests  17 passed (17)
+   Start at  11:15:23
+   Duration  4.82s (transform 511ms, setup 0ms, collect 1.40s, tests 5.90s, environment 761ms, prepare 122ms)
+
+JSON report written to /private/tmp/careerdive-test-flake-final/slow-import-after/report.json

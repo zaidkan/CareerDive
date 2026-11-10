@@ -1,0 +1,29 @@
+{
+  "exitCode": 1,
+  "delayMs": 1200,
+  "passed": 14,
+  "failed": 3,
+  "failures": [
+    {
+      "file": "apps/web/test/arrival-room-entry.test.tsx",
+      "test": "mounts the room under the film, waits for a ready frame, and retains the same fullscreen target throughout",
+      "messages": [
+        "AssertionError: expected undefined to be defined"
+      ]
+    },
+    {
+      "file": "apps/web/test/break-room.test.tsx",
+      "test": "finite break-room interaction loop hides energy UI without starting a wall-clock drain",
+      "messages": [
+        "Error: Unable to find role=\"button\" and name \"Approach fridge\""
+      ]
+    },
+    {
+      "file": "apps/web/test/sim-runtime-performance.test.tsx",
+      "test": "defers scene creation until entry, then retains it while pausing on map return",
+      "messages": [
+        "Error: Unable to find an element by: [data-testid=\"scene\"]"
+      ]
+    }
+  ]
+}

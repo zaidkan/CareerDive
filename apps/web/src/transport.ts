@@ -1,9 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const configured = import.meta.env.VITE_SERVER_URL as string | undefined;
-export const apiOrigin =
-  configured?.replace(/\/$/, "") ??
-  (import.meta.env.PROD ? "" : "http://localhost:3001");
+import { apiOrigin } from "./apiOrigin.js";
+export { apiOrigin } from "./apiOrigin.js";
 let supabase: SupabaseClient | undefined;
 let pending: Promise<Record<string, string>> | undefined;
 

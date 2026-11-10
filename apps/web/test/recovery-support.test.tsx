@@ -86,6 +86,10 @@ it("never repeats unconfirmed session creation", async () => {
 });
 it("bounds readiness retries to 90 seconds and never POSTs while unavailable", async () => {
   vi.useFakeTimers();
+  vi.stubGlobal("localStorage", createBrowserStorage());
+  vi.stubEnv("PROD", false);
+  vi.stubEnv("VITE_SUPABASE_URL", "");
+  vi.stubEnv("VITE_SUPABASE_ANON_KEY", "");
   const fetch = vi.fn().mockRejectedValue(new TypeError("offline"));
   vi.stubGlobal("fetch", fetch);
   const result = expect(
@@ -126,6 +130,10 @@ it("waits through a minute-long wake and proxy HTML, then creates exactly one se
 });
 it("cancels readiness polling on departure before any session POST", async () => {
   vi.useFakeTimers();
+  vi.stubGlobal("localStorage", createBrowserStorage());
+  vi.stubEnv("PROD", false);
+  vi.stubEnv("VITE_SUPABASE_URL", "");
+  vi.stubEnv("VITE_SUPABASE_ANON_KEY", "");
   const fetch = vi.fn().mockResolvedValue(new Response("Starting", { status: 503 }));
   vi.stubGlobal("fetch", fetch);
   const controller = new AbortController();

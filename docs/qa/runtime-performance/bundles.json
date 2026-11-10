@@ -1,0 +1,98 @@
+{
+  "base": {
+    "initialJsBytes": 400944,
+    "initialJsGzipBytes": 114834,
+    "totalJsBytes": 1685109,
+    "totalJsGzipBytes": 466173,
+    "chunks": [
+      {
+        "name": "RoomCanvas-CEzwtD2Z.js",
+        "bytes": 1015427,
+        "gzipBytes": 270698
+      },
+      {
+        "name": "index-BFnQyhD1.js",
+        "bytes": 400944,
+        "gzipBytes": 114834
+      },
+      {
+        "name": "SceneEffects-CLOMKwI_.js",
+        "bytes": 82193,
+        "gzipBytes": 22581
+      },
+      {
+        "name": "SpatialShell-DZZ6AaVx.js",
+        "bytes": 74248,
+        "gzipBytes": 22608
+      },
+      {
+        "name": "NotificationBanner-DjFZP9Lp.js",
+        "bytes": 74023,
+        "gzipBytes": 21503
+      },
+      {
+        "name": "index-BecUM-c3.js",
+        "bytes": 30560,
+        "gzipBytes": 10602
+      },
+      {
+        "name": "WorkSurface-DCo1rpx9.js",
+        "bytes": 4928,
+        "gzipBytes": 1924
+      },
+      {
+        "name": "perfDiagnostics-14AetPnE.js",
+        "bytes": 2786,
+        "gzipBytes": 1423
+      }
+    ]
+  },
+  "after": {
+    "initialJsBytes": 291630,
+    "initialJsGzipBytes": 87387,
+    "totalJsBytes": 1684934,
+    "totalJsGzipBytes": 465121,
+    "chunks": [
+      {
+        "name": "RoomCanvas-7xwsRDIg.js",
+        "bytes": 1015994,
+        "gzipBytes": 270862
+      },
+      {
+        "name": "index-DrZHYi_M.js",
+        "bytes": 291630,
+        "gzipBytes": 87387
+      },
+      {
+        "name": "index-CfcE2Z6x.js",
+        "bytes": 139041,
+        "gzipBytes": 36793
+      },
+      {
+        "name": "SceneEffects-MYY-bPWQ.js",
+        "bytes": 82193,
+        "gzipBytes": 22583
+      },
+      {
+        "name": "SpatialShell-WVLZfyip.js",
+        "bytes": 74248,
+        "gzipBytes": 22606
+      },
+      {
+        "name": "NotificationBanner-C_XUUSq2.js",
+        "bytes": 74109,
+        "gzipBytes": 21522
+      },
+      {
+        "name": "WorkSurface-DMmzxYIL.js",
+        "bytes": 4928,
+        "gzipBytes": 1928
+      },
+      {
+        "name": "perfDiagnostics-DcFmun83.js",
+        "bytes": 2791,
+        "gzipBytes": 1440
+      }
+    ]
+  }
+}

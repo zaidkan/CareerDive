@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { getCareerBySlug } from "../careers/careers.js";
 import { SiteChrome } from "./SiteChrome.js";
+import { warmApi } from "../apiWarmup.js";
 import { parseRoute, type SitePath, type SiteRoute } from "./routes.js";
 import { useRouteMeta } from "./seo.js";
 import { LandingPage } from "./pages/LandingPage.js";
@@ -59,6 +60,10 @@ export function SiteApp({ initialRoute }: { initialRoute?: SitePath }) {
           : window.location.pathname,
     ),
   );
+
+  useEffect(() => {
+    if (["home", "careers", "career", "start"].includes(route.kind)) warmApi();
+  }, [route.kind]);
 
   useEffect(() => {
     if (initialRoute) return;

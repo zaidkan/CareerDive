@@ -196,7 +196,22 @@ export class HttpSimulationClient implements SimulationClient {
     } else if (pending) {
       throw new StartupFailure(false, "creation-unconfirmed");
     }
-    await waitForReady(this.#baseUrl, options?.signal);
+    // Identity setup and service wake-up are independent. Starting both now
+    // removes an authentication round trip from the path after a cold wake.
+    const readiness = new AbortController();
+    const readinessSignal = options?.signal
+      ? AbortSignal.any([readiness.signal, options.signal])
+      : readiness.signal;
+    try {
+      await Promise.all([
+        waitForReady(this.#baseUrl, readinessSignal),
+        authHeaders(),
+      ]);
+    } catch (cause) {
+      readiness.abort();
+      if (cause instanceof StartupFailure || options?.signal?.aborted) throw cause;
+      throw new StartupFailure(true, "identity-unavailable");
+    }
     options?.signal?.throwIfAborted();
     if (this === defaultClient) writeTabValue(PENDING_SESSION_KEY, true);
     try {

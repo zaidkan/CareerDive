@@ -1,0 +1,26 @@
+{
+  "errors": [],
+  "findings": [
+    {
+      "morgan": "SHIFT LEAD\n\nMorgan\nClose\nSound on\nDiscussing\nUnfamiliar successful login\nShift handoff\nWe have only the alert to go on, not an independent account of who used the flagged session. The device source has not been opened yet. Keep session ownership separate from location.\n\nWe have only the alert to go on, not an independent account of who used the flagged session. The device\n\nShow full message\nWhat case context do we have?\nWhat remains uncertain?\nWhat should the next analyst know?",
+      "audio": {
+        "contexts": 1,
+        "voices": 6,
+        "active": 0
+      }
+    },
+    {
+      "audioAfterClose": {
+        "contexts": 1,
+        "voices": 6,
+        "active": 0
+      }
+    },
+    {
+      "jules": "COWORKER\n\nJules\nClose\nSound off\nFrom what we can see, the alert is waiting. I would rather hear what does not line up than a confident answer from one clue.\n\nFrom what we can see, the alert is waiting. I would rather hear what does not line up than a confident answer from one clue.\n\nContinue conversation\nTopics\nFirst day rhythm\nCurrent work\nTaking a break\n\nBack to Alerts at your desk\n\nDISCUSSED\nCurrent work · Discussed"
+    },
+    {
+      "reducedMotion": true
+    }
+  ]
+}
